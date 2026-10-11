@@ -1,6 +1,6 @@
 # Crédits de la bibliothèque d'images de PRISME
 
-Les totems des tempéraments de ce dossier proviennent de **game-icons.net** (via le jeu d'icônes Iconify « game-icons »),
+Les totems des tempéraments et les emblèmes des styles de ce dossier proviennent de **game-icons.net** (via le jeu d'icônes Iconify « game-icons »),
 œuvres de Lorc, Delapouite et des autres contributeurs du projet, publiées sous licence
 **Creative Commons Attribution 3.0** (https://creativecommons.org/licenses/by/3.0/).
 
@@ -15,4 +15,5 @@ c'est une modification, que la licence autorise.
 
 ## Dessins originaux et compositions
 
-Aucun pour l'instant : les 20 totems (choisis par Pierre le 10/10/2026) sont des icônes game-icons, toutes au statut « exact ».
+Aucun pour l'instant : les 20 totems (choisis par Pierre le 10/10/2026) et les 20 emblèmes des styles (choisis le 11/10/2026)
+sont des icônes game-icons, toutes au statut « exact ».

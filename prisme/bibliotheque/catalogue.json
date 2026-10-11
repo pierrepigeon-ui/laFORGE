@@ -146,5 +146,147 @@
    "icone": "olive",
    "statut": "exact"
   }
+ },
+ "styles": {
+  "W.u": {
+   "style": "informer",
+   "nom": "le mégaphone",
+   "fichier": "styles/W-u.svg",
+   "icone": "megaphone",
+   "statut": "exact"
+  },
+  "W.b": {
+   "style": "porter",
+   "nom": "Atlas",
+   "fichier": "styles/W-b.svg",
+   "icone": "atlas",
+   "statut": "exact"
+  },
+  "W.r": {
+   "style": "inspirer",
+   "nom": "le phare",
+   "fichier": "styles/W-r.svg",
+   "icone": "lighthouse",
+   "statut": "exact"
+  },
+  "W.g": {
+   "style": "constituer",
+   "nom": "les engrenages",
+   "fichier": "styles/W-g.svg",
+   "icone": "gears",
+   "statut": "exact"
+  },
+  "U.w": {
+   "style": "étudier",
+   "nom": "le livre ouvert",
+   "fichier": "styles/U-w.svg",
+   "icone": "open-book",
+   "statut": "exact"
+  },
+  "U.b": {
+   "style": "optimiser",
+   "nom": "le chronomètre",
+   "fichier": "styles/U-b.svg",
+   "icone": "stopwatch",
+   "statut": "exact"
+  },
+  "U.r": {
+   "style": "élaborer",
+   "nom": "le crayon et la règle",
+   "fichier": "styles/U-r.svg",
+   "icone": "pencil-ruler",
+   "statut": "exact"
+  },
+  "U.g": {
+   "style": "observer",
+   "nom": "les jumelles",
+   "fichier": "styles/U-g.svg",
+   "icone": "binoculars",
+   "statut": "exact"
+  },
+  "B.w": {
+   "style": "diriger",
+   "nom": "le sifflet",
+   "fichier": "styles/B-w.svg",
+   "icone": "whistle",
+   "statut": "exact"
+  },
+  "B.u": {
+   "style": "concrétiser",
+   "nom": "la coupe",
+   "fichier": "styles/B-u.svg",
+   "icone": "trophy-cup",
+   "statut": "exact"
+  },
+  "B.r": {
+   "style": "retenir",
+   "nom": "le coffre",
+   "fichier": "styles/B-r.svg",
+   "icone": "locked-chest",
+   "statut": "exact"
+  },
+  "B.g": {
+   "style": "engranger",
+   "nom": "le grenier",
+   "fichier": "styles/B-g.svg",
+   "icone": "granary",
+   "statut": "exact"
+  },
+  "R.w": {
+   "style": "exalter",
+   "nom": "la bannière",
+   "fichier": "styles/R-w.svg",
+   "icone": "tattered-banner",
+   "statut": "exact"
+  },
+  "R.u": {
+   "style": "expérimenter",
+   "nom": "les éprouvettes",
+   "fichier": "styles/R-u.svg",
+   "icone": "test-tubes",
+   "statut": "exact"
+  },
+  "R.b": {
+   "style": "attraper",
+   "nom": "le filet",
+   "fichier": "styles/R-b.svg",
+   "icone": "fishing-net",
+   "statut": "exact"
+  },
+  "R.g": {
+   "style": "répondre",
+   "nom": "la raquette",
+   "fichier": "styles/R-g.svg",
+   "icone": "tennis-racket",
+   "statut": "exact"
+  },
+  "G.w": {
+   "style": "communier",
+   "nom": "le feu de camp",
+   "fichier": "styles/G-w.svg",
+   "icone": "campfire",
+   "statut": "exact"
+  },
+  "G.u": {
+   "style": "s’ancrer",
+   "nom": "les racines",
+   "fichier": "styles/G-u.svg",
+   "icone": "tree-roots",
+   "statut": "exact"
+  },
+  "G.b": {
+   "style": "collecter",
+   "nom": "le panier",
+   "fichier": "styles/G-b.svg",
+   "icone": "basket",
+   "statut": "exact"
+  },
+  "G.r": {
+   "style": "s’animer",
+   "nom": "le jongleur",
+   "fichier": "styles/G-r.svg",
+   "icone": "juggler",
+   "statut": "exact"
+  }
  }
 }

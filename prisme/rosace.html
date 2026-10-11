@@ -65,9 +65,9 @@ aside .vous-badge{display:inline-block;font:600 12px var(--sans);color:#fff;back
 <p class="version"><span id="credit"></span><br><span id="version"></span></p>
 
 <script src="timeline.js?v=1.9"></script>
-<script src="totems.js?v=1"></script>
+<script src="totems.js?v=2"></script>
 <script>
-const VERSION = { numero:"3.0", date:"2026-10-11 01:30" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.1", date:"2026-10-11 18:10" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -162,7 +162,9 @@ function dessiner(){
       if (st){
         const sc = B.M[st.second];
         h += `<g data-code="${esc(st.code)}" data-niveau="style"><title>Style ${esc(st.nom)} (${esc(st.code)}) : ${esc(m.nom)} conduit par ${esc(sc.nom)}</title>
-          <path class="sect" d="${secteur(R2, R3, b1, b2)}" fill="${teinte(sc.couleur, .62)}"/>${radial(st.nom, b1 + 9, R2, R3, "t-sty")}</g>`;
+          <path class="sect" d="${secteur(R2, R3, b1, b2)}" fill="${teinte(sc.couleur, .62)}"/>
+          ${TOTEMS.emb[st.code] ? (() => { const [ex, ey] = pol(R3 - 24, b1 + 9); return `<g transform="translate(${(ex - 15).toFixed(1)} ${(ey - 15).toFixed(1)})">${emblemeSVG(st.code, fonce(sc.couleur, .35), { titre:"", attrs:'width="30" height="30"' })}</g>`; })() : ""}
+          ${radial(st.nom, b1 + 9, R2, R3 - (TOTEMS.emb[st.code] ? 44 : 0), "t-sty")}</g>`;
       }
     });
   });
@@ -225,10 +227,11 @@ function montrer(code){
       ${estVous ? '<p><a href="fiche.html">Voir ma fiche de joueur complète</a></p>' : ""}`;
   } else {
     const s = B.S[code], m = M[s.moteur], sc = M[s.second];
-    h = `<p class="niveau">Style : avec quoi je le vis</p><h1>${esc(s.nom)}${badge}</h1>
+    h = `${emblemeSVG(code, sc.couleur, { cls:"p-totem", titre: s.embleme ? maj(s.embleme) : undefined })}<p class="niveau">Style : avec quoi je le vis</p><h1>${esc(s.nom)}${badge}</h1>
       <p class="fil">${lien(m.code, m.nom)}, conduit par ${lien(sc.code, sc.nom.toLowerCase())}</p>
       ${s.devise ? `<p>${esc(maj(s.devise))}${s.titre ? ` · « ${esc(s.titre)} »` : ""}</p>` : ""}
       ${s.texte ? `<p>${esc(s.texte)}</p>` : ""}
+      ${s.embleme ? `<span class="lib">Son emblème</span><p>${esc(maj(s.embleme))}. ${esc(s.embleme_raison || "")}</p>` : ""}
       ${s.fb_verbe ? `<span class="lib">Dans Flamme Bleue</span><p>${esc(s.fb_verbe)} (« ${esc(s.fb_devise)} »)</p>` : ""}
       <span class="lib">Ses tempéraments possibles</span><ul>${B.temps.filter(t => t.moteur === s.moteur && t.fuit !== s.second).map(t => `<li>${lien(t.code, maj(t.nom))} (${esc(s.nom)}) : fuit ${esc(M[t.fuit].nom.toLowerCase())}</li>`).join("")}</ul>
       ${estVous ? '<p><a href="fiche.html">Voir ma fiche de joueur complète</a></p>' : ""}`;
@@ -249,7 +252,7 @@ async function afficherJeux(code, N){
 function montrerAccueil(connecte){
   $("#panneau").innerHTML = `<p class="niveau">La rosace des joueurs</p><h1>Cinq moteurs, vingt tempéraments, vingt styles</h1>
     <p>Au centre, le moteur : pourquoi l'on joue. Au milieu, le tempérament : ce que l'on cherche et ce que l'on fuit (le point coloré). Au bord, le style : le moteur qui conduit le premier (la couleur du secteur). Dans une même case, la même couleur : fuie au milieu, alliée au bord.</p>
-    <p>Cliquez sur un secteur pour le découvrir. Chaque tempérament a son totem : <a href="totems.html">les voir tous</a>.</p>
+    <p>Cliquez sur un secteur pour le découvrir. Chaque tempérament a son totem, chaque style son emblème : <a href="totems.html">les voir tous</a>.</p>
     <p>${connecte ? '<a href="questionnaire.html">Passez le questionnaire</a> pour voir votre place sur la rosace.'
                   : `<a href="${versForge()}">Connectez-vous</a> et passez le <a href="questionnaire.html">questionnaire du joueur</a> pour voir votre place sur la rosace.`}</p>`;
 }

@@ -107,6 +107,9 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(260px,330px) 
 .empty{padding:48px 32px;color:var(--muted);font:italic 17px/1.5 var(--serif);max-width:560px}
 .readonly-note{font-size:13px;color:var(--warn);margin:8px 0 0}
 .aide{color:var(--muted);font-size:14px;max-width:720px}
+.qm{display:inline-block;font:500 12.5px var(--sans);padding:1px 8px;border-radius:999px;border:1px solid var(--c);color:var(--c);background:color-mix(in srgb, var(--c) 10%, transparent);white-space:nowrap}
+.qeval{margin:2px 0 8px;font-size:14px;color:var(--muted)}
+.qgrille{border-collapse:collapse;margin:4px 0 10px;font-size:14px}.qgrille th,.qgrille td{border:1px solid var(--line);padding:4px 10px;text-align:center;min-width:44px}.qgrille a{text-decoration:none;font-weight:600;color:inherit}
 .ajout{display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin:6px 0 14px}
 .ajout .field{margin:0;min-width:180px}
 
@@ -221,7 +224,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 16px}
 
 <script>
 /* ================= configuration ================= */
-const VERSION = { numero:"3.0", date:"2026-10-11 01:30" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.1", date:"2026-10-11 18:00" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 
@@ -556,8 +559,22 @@ function ouvrirP(code, force){
           <div class="grid3">${champ("climax_phase", r.climax_phase)}${champ("climax_jalon", r.climax_jalon, { type:"number" })}${champ("duree_apogee", r.duree_apogee)}</div>
           <div class="grid2">${champ("couleur", r.couleur)}${champ("couleur_sombre", r.couleur_sombre)}</div>`)).join("");
   } else if (code === "questions"){
-    h = `<h2>Le questionnaire</h2><p class="aide">Les moteurs associés à chaque réponse et le caractère obligatoire ne se modifient pas ici : ils font l'équilibre du questionnaire (chaque moteur pèse 20 points au total).</p>` +
-      state.p_questions.map(q => `<h3>Question ${q.numero}${q.obligatoire ? ' <span class="badge" style="color:var(--warn)">obligatoire</span>' : ""}</h3>` +
+    // ce que chaque question évalue : les moteurs opposés (pastilles de couleur), le poids, et la grille des dix duels
+    const mo = c => state.p_moteurs.find(m => m.code === c) || { code:c, nom:c, couleur:"var(--muted)" };
+    const pastille = c => { const m = mo(c); return `<span class="qm" style="--c:${esc(m.couleur)}">${esc(m.code)} · ${esc(m.nom)}</span>`; };
+    const camp = codes => codes.split("").map(pastille).join(" + ");
+    const ordre = state.p_moteurs.map(m => m.code);
+    const duel = (x, y) => state.p_questions.find(q => q.obligatoire && ((q.code_a === x && q.code_b === y) || (q.code_a === y && q.code_b === x)));
+    const total = Object.fromEntries(ordre.map(c => [c, 0]));
+    state.p_questions.forEach(q => { const w = q.obligatoire ? 2 : 1; [...q.code_a, ...q.code_b].forEach(c => total[c] = (total[c] || 0) + w); });
+    const grille = `<table class="qgrille"><tr><th></th>${ordre.map(c => `<th style="color:${esc(mo(c).couleur)}">${esc(c)}</th>`).join("")}</tr>` +
+      ordre.map((x, i) => `<tr><th style="color:${esc(mo(x).couleur)}">${esc(x)}</th>${ordre.map((y, j) => { if (j <= i) return "<td></td>";
+        const q = duel(x, y); return `<td>${q ? `<a href="#q-${q.numero}">Q${q.numero}</a>` : '<span style="color:var(--warn)">manque</span>'}</td>`; }).join("")}</tr>`).join("") + `</table>`;
+    h = `<h2>Le questionnaire</h2><p class="aide">Chaque question oppose deux camps de moteurs. Les questions 1 à 10 sont les <b>duels</b> : un moteur contre un autre, poids 2 ; les dix paires de moteurs y figurent chacune une fois. Les questions 11 à 25 opposent deux moteurs à deux autres, poids 1. Chaque moteur pèse 20 points au total. Les moteurs associés aux réponses et le poids ne se modifient pas ici : ils font l'équilibre du questionnaire.</p>
+      <h3>Les dix duels</h3>${grille}
+      <p class="aide">Points par moteur : ${ordre.map(c => `${pastille(c)} ${total[c]}`).join(" · ")}</p>` +
+      state.p_questions.map(q => `<h3 id="q-${q.numero}">Question ${q.numero} <span class="badge" style="color:${q.obligatoire ? "var(--warn)" : "var(--muted)"}">${q.obligatoire ? "duel · poids 2" : "poids 1"}</span></h3>
+        <p class="qeval">Évalue : ${camp(q.code_a)} <b>contre</b> ${camp(q.code_b)}</p>` +
         bloc("prisme_player_questions", q, r => `
           ${champ("texte", r.texte, { type:"area", label:"Situation" })}
           <div class="grid2">${champ("texte_a", r.texte_a, { type:"area", label:"Réponse A : " + r.code_a.split("").map(nomMoteur).join(" + ") })}
@@ -569,6 +586,7 @@ function ouvrirP(code, force){
       <p class="aide">Un style = le moteur dominant conduit par le second (code A.b). Contenu provisoire : nom, devise et titre de Flamme Bleue, à réécrire pour PRISME.</p>` +
       state.p_styles.filter(x => x.moteur === m.code).map(x => `<h3 style="border-top-color:${esc(m.couleur)}">${esc(x.nom)} <span class="badge" style="color:var(--muted)">${esc(x.code)} · conduit par ${esc(nomMoteur(x.second))}</span></h3>` +
         bloc("prisme_player_styles", x, r => `<div class="grid2">${champ("nom", r.nom)}${champ("devise", r.devise)}</div>
+          <div class="grid2">${champ("embleme", r.embleme, { label:"Emblème (nom de l'image)" })}${champ("embleme_raison", r.embleme_raison, { label:"Raison de l'emblème" })}</div>
           ${champ("titre", r.titre, { label:"Titre (une phrase)" })}
           ${champ("texte", r.texte, { type:"area", label:"Texte du style" })}
           <div class="grid2">${champ("fb_verbe", r.fb_verbe)}${champ("fb_devise", r.fb_devise)}</div>`)).join("");
