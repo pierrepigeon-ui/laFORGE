@@ -52,6 +52,21 @@ h2{font:600 19px var(--serif);margin:22px 0 10px}
 .pips{display:inline-flex;gap:3px;align-items:center;vertical-align:1px}
 .pip{width:11px;height:11px;border-radius:50%;border:1px solid #8892A0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .pip.sec{width:7px;height:7px} .pip.abs{background:transparent!important;border:1.5px dashed var(--c)} .pip.sep{width:auto;height:auto;border:0;font-size:10px;color:#5B6573}
+/* aperçu de fiche au survol */
+[data-code]{cursor:help} .chip[data-code]:hover,.sect tr[data-code]:hover,.fam .c[data-code]:hover{background:var(--hover)}
+.apercu{position:fixed;z-index:50;width:min(420px,calc(100vw - 24px));max-height:min(70vh,560px);overflow:auto;background:var(--panel);border:1px solid var(--line);
+  border-radius:10px;box-shadow:0 10px 30px rgba(15,25,40,.18);padding:14px 16px 12px;font-size:13.5px;line-height:1.5}
+.apercu.epingle{border-color:#3B6FE0;box-shadow:0 10px 30px rgba(15,25,40,.25),0 0 0 1px #3B6FE0}
+.apercu .ap-tete{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:12px;margin-bottom:4px}
+.apercu .ap-tete .ap-code{font-weight:600;color:var(--ink)} .apercu .ap-tete .ap-x{margin-left:auto;border:0;background:none;cursor:pointer;font-size:16px;line-height:1;color:var(--muted);padding:2px 4px}
+.apercu h4{font:600 19px/1.25 var(--serif);margin:2px 0} .apercu .ap-devise{font:italic 15px/1.4 var(--serif);color:var(--muted);margin:0 0 8px}
+.apercu .ap-absence{background:#FDECEA;color:#8A1C12;border-radius:6px;padding:5px 8px;font-size:12.5px;margin:4px 0 8px}
+.apercu .ap-titre{font-weight:600;margin:6px 0 2px} .apercu p{margin:0 0 6px}
+.apercu .ap-bloc{border-top:1px solid var(--hover);padding-top:6px;margin-top:6px} .apercu .ap-bloc b{display:block;font-size:12px;color:var(--muted);font-weight:600}
+.apercu .ap-bloc.fort{background:#FFF8E6;border-radius:6px;padding:6px 8px;border-top:0}
+.apercu .ap-liens{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px} .apercu .ap-liens a{font-size:12.5px;color:var(--ink);border:1px solid var(--line);border-radius:5px;padding:3px 9px;text-decoration:none}
+.apercu .ap-liens a:hover{background:var(--hover)} .apercu .ap-aide{font-size:11.5px;color:var(--muted);margin-top:8px}
+@media print{ .apercu{display:none!important} }
 footer{border-top:1px solid var(--line);background:var(--panel);padding:4px 20px;text-align:right;font-size:12px;color:var(--muted)}
 dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);padding:24px;width:min(380px,92vw)} dialog::backdrop{background:rgba(10,15,25,.45)}
 .field{display:block;margin-bottom:12px} .field span{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
@@ -76,6 +91,7 @@ dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);c
   <a class="btn ghost" id="lien-fiche" href="#">Voir la fiche</a>
 </div>
 <main class="hidden" id="page"></main>
+<div class="apercu hidden" id="apercu" role="dialog" aria-label="Aperçu de la fiche"></div>
 <footer id="version"></footer>
 <dialog id="dlg-login"><form id="form-login"><h2 style="font:600 22px var(--serif);margin:0 0 14px">Se connecter</h2>
   <label class="field"><span>Adresse e-mail</span><input type="email" id="email" autocomplete="username" required></label>
@@ -83,7 +99,7 @@ dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);c
   <div style="display:flex;gap:10px"><button class="btn" type="submit">Se connecter</button><button class="btn ghost" type="button" id="login-fermer">Fermer</button></div>
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 <script>
-const VERSION = { numero:"1.9", date:"2026-10-11 00:57" };
+const VERSION = { numero:"1.10", date:"2026-10-11 21:54" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const ACCES = ["proprietaire"];
@@ -93,7 +109,7 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const pct = x => (x * 100).toFixed(1).replace(".", ",") + " %";
 const dateFr = d => new Date(d).toLocaleDateString("fr-FR", { day:"numeric", month:"long", year:"numeric" });
-let user = null, role = null, E = {}, C = {};
+let user = null, role = null, E = {}, C = {}, V = {};
 $("#version").textContent = `Détail ${VERSION.numero}, version du ${VERSION.date.replace(/(\d{4})-(\d\d)-(\d\d) (\d\d):(\d\d)/,"$3/$2/$1 à $4h$5")} — moteur ${M.VERSION.numero}`;
 
 function pips(code){
@@ -151,7 +167,7 @@ function rendre(src){
   const codesProfils = Object.values(E).filter(e => e.couche === "profil").sort((a, b) => (a.ordre ?? 0) - (b.ordre ?? 0)).map(e => e.code);
   const st = M.statistiques(s01, codesProfils, { classement: src.classement });
   const moi = new Set(st.profil.codes);
-  const fam = (titre, liste) => `<div class="fam"><div class="t">${titre}</div>${liste.map(x => `<div class="c">${pips(x.code)} ${esc(x.code)} ${esc(libelle(x.code))}</div>`).join("")}
+  const fam = (titre, liste) => `<div class="fam"><div class="t">${titre}</div>${liste.map(x => `<div class="c" data-code="${esc(x.code)}" tabindex="0">${pips(x.code)} ${esc(x.code)} ${esc(libelle(x.code))}</div>`).join("")}
     <div class="sc">${liste.length ? pct(liste[0].score) + " — " + liste[0].bande : ""}${liste.length > 1 ? " (égalité)" : ""}</div></div>`;
   $("#page").innerHTML = `
     <section class="carte-entete">
@@ -168,16 +184,85 @@ function rendre(src){
     <div class="bandes">${BANDES.map(([b, lim]) => {
       const l = st.sections.profils.filter(p => p.bande === b);
       return `<div class="bande b-${b}"><h3>${b[0].toUpperCase() + b.slice(1)} <span style="font:12px var(--sans);color:var(--muted)">(${l.length})</span></h3><div class="lim">${lim}</div>
-        ${l.map(p => `<div class="chip${moi.has(p.code) ? " moi" : ""}" title="${esc(libelle(p.code))}"><span class="cd">${esc(p.code)}</span><span class="nm">${esc(libelle(p.code))}</span><span class="sc">${pct(p.score)}</span></div>`).join("") || '<div class="lim">aucun</div>'}</div>`;
+        ${l.map(p => `<div class="chip${moi.has(p.code) ? " moi" : ""}" data-code="${esc(p.code)}" tabindex="0"><span class="cd">${esc(p.code)}</span><span class="nm">${esc(libelle(p.code))}</span><span class="sc">${pct(p.score)}</span></div>`).join("") || '<div class="lim">aucun</div>'}</div>`;
     }).join("")}</div>
     <h2>Classements</h2>
     <div class="sections">${SECTIONS.map(([k, titre, ex]) => `<section class="sect"><h3>${titre}</h3><p class="ex">${ex}</p><table>
-      ${st.sections[k].map(x => `<tr><td class="r">${x.rang}</td><td>${pips(x.code)} ${esc(x.code)}${x.tiers ? ` <span class="n">+ ${x.tiers}</span>` : ""}</td><td class="n">${esc(libelle(x.code))}</td><td class="s">${pct(x.score)}</td></tr>`).join("")}
+      ${st.sections[k].map(x => `<tr data-code="${esc(x.code)}" tabindex="0"><td class="r">${x.rang}</td><td>${pips(x.code)} ${esc(x.code)}${x.tiers ? ` <span class="n">+ ${x.tiers}</span>` : ""}</td><td class="n">${esc(libelle(x.code))}</td><td class="s">${pct(x.score)}</td></tr>`).join("")}
       </table></section>`).join("")}</div>
     ${NOTE_POLARISE}`;
   $("#lien-fiche").href = "fiche.html" + location.search;
   document.title = `Flamme Bleue — détail ${st.profil.codes.join(" / ")}`;
 }
+
+/* ---------- aperçu de fiche au survol ----------
+   Survol (ou focus clavier) : la fiche de l'élément s'affiche ; on peut entrer dans l'aperçu pour le lire.
+   Clic : l'aperçu reste épinglé (clic ailleurs, × ou Échap pour le fermer).
+   Absences composées (/wu, /wbg) : fiche de la motivation ou du projet, côté « peu présent ». */
+const LIB_PLUS_MOINS = { motivation: ["Impacts si dominante", "Impacts si peu présente"], projet: ["Rôles associés", "Rôles associés (suite)"] };
+const ap = $("#apercu"); let apCode = null, apEpingle = false, tMontre = null, tCache = null;
+const nl = t => esc(t).replace(/\n/g, "<br>");
+function couche(e){
+  const v = V.couche?.[e.couche]; let t = v ? v.singulier : e.couche;
+  if (e.couche === "profil" && e.famille) t += " " + (V.famille?.[e.famille]?.singulier || e.famille);
+  return t;
+}
+function contenuApercu(code){
+  let e = E[code], absence = false;
+  if (!e && code.startsWith("/") && code.length > 2){ e = E[code.slice(1).toUpperCase()]; absence = !!e; }
+  if (!e) return `<div class="ap-tete">${pips(code)} <span class="ap-code">${esc(code)}</span><button class="ap-x" type="button" aria-label="Fermer">×</button></div><h4>${esc(libelle(code))}</h4><p class="ap-aide">Pas de fiche pour ce code.</p>`;
+  const lb = LIB_PLUS_MOINS[e.couche];
+  const bloc = (titre, txt, fort) => txt ? `<div class="ap-bloc${fort ? " fort" : ""}"><b>${titre}</b>${nl(txt)}</div>` : "";
+  let h = `<div class="ap-tete">${pips(code)} <span class="ap-code">${esc(code)}</span> · ${esc(couche(e))}<button class="ap-x" type="button" aria-label="Fermer">×</button></div>
+    <h4>${esc(e.nom || "")}</h4>${e.devise ? `<p class="ap-devise">« ${esc(e.devise)} »</p>` : ""}`;
+  if (absence) h += `<div class="ap-absence">Lue en absence : ${esc(libelle(code))}. Fiche de ${esc(e.code)}, côté « peu présent ».</div>`;
+  if (e.titre) h += `<p class="ap-titre">${esc(e.titre)}</p>`;
+  ["texte1","texte2","texte3"].forEach(k => { if (e[k]) h += `<p>${nl(e[k])}</p>`; });
+  if (lb){ h += bloc(lb[0], e.texte_plus, false) + bloc(lb[1], e.texte_moins, absence); }
+  if (e.couche === "profil"){
+    if (e.devise_heraldique) h += bloc("Devise héraldique", e.devise_heraldique);
+    if (e.animal_totem) h += bloc("Animal-totem : " + e.animal_totem, e.animal_raison || " ");
+    const t = encodeURIComponent(e.code);
+    h += `<div class="ap-liens"><a href="fiche.html?type=${t}" target="_blank" rel="noopener">Fiche du profil type ↗</a><a href="ecusson.html?type=${t}" target="_blank" rel="noopener">Écusson ↗</a><a href="detail.html?type=${t}" target="_blank" rel="noopener">Détail du profil type ↗</a></div>`;
+  }
+  h += `<p class="ap-aide">${apEpingle ? "Épinglé — Échap ou × pour fermer." : "Clic pour épingler."}</p>`;
+  return h;
+}
+function placer(cible){
+  const r = cible.getBoundingClientRect(), w = ap.offsetWidth, hh = ap.offsetHeight, m = 10;
+  let x, y = r.top - 8;
+  if (r.right + m + w <= innerWidth - m) x = r.right + m;            // à droite
+  else if (r.left - m - w >= m) x = r.left - m - w;                  // à gauche
+  else { x = Math.max(m, Math.min(innerWidth - w - m, r.left)); y = r.bottom + 6; if (y + hh > innerHeight - m) y = r.top - hh - 6; }   // dessous ou dessus
+  y = Math.max(m, Math.min(y, innerHeight - hh - m));
+  ap.style.left = x + "px"; ap.style.top = y + "px";
+}
+function montrer(cible, epingler){
+  clearTimeout(tCache); clearTimeout(tMontre); apCode = cible.dataset.code; apEpingle = !!epingler;
+  ap.innerHTML = contenuApercu(apCode); ap.classList.toggle("epingle", apEpingle); ap.classList.remove("hidden"); ap.scrollTop = 0; placer(cible);
+}
+function cacher(){ clearTimeout(tMontre); ap.classList.add("hidden"); apCode = null; apEpingle = false; }
+document.addEventListener("mouseover", ev => {
+  const c = ev.target.closest("#page [data-code]");
+  if (ev.target.closest("#apercu")){ clearTimeout(tCache); return; }
+  if (apEpingle) return;
+  clearTimeout(tMontre);
+  if (c){ if (c.dataset.code !== apCode) tMontre = setTimeout(() => montrer(c), apCode ? 60 : 220); else clearTimeout(tCache); }
+  else if (apCode){ clearTimeout(tCache); tCache = setTimeout(cacher, 300); }
+});
+document.addEventListener("click", ev => {
+  if (ev.target.closest(".ap-x")) return cacher();
+  if (ev.target.closest("#apercu")) return;
+  const c = ev.target.closest("#page [data-code]");
+  if (c){ if (apEpingle && apCode === c.dataset.code) cacher(); else montrer(c, true); }
+  else if (apCode) cacher();
+});
+document.addEventListener("focusin", ev => { const c = ev.target.closest("#page [data-code]"); if (c && !apEpingle) montrer(c); });
+document.addEventListener("keydown", ev => {
+  if (ev.key === "Escape" && apCode) cacher();
+  const c = ev.target.closest?.("#page [data-code]"); if (c && (ev.key === "Enter" || ev.key === " ")){ ev.preventDefault(); montrer(c, true); }
+});
+addEventListener("scroll", () => { if (apCode && !apEpingle) cacher(); }, { passive: true });
 
 $("#btn-login").addEventListener("click", () => { location.href = "../?retour=" + encodeURIComponent(location.href); });   // connexion centralisée sur la Forge
 $("#login-fermer").addEventListener("click", () => $("#dlg-login").close());
@@ -196,9 +281,10 @@ sb.auth.onAuthStateChange(async (_e, session) => {
   const { data: r } = await sb.rpc("flamme_mon_role"); role = r || "";
   if (!ACCES.includes(role)){ $("#bloque").textContent = "Le détail des statistiques est réservé au propriétaire."; return; }
   try {
-    const [{ data: els, error }, { data: cols }] = await Promise.all([sb.from("flamme_elements").select("*"), sb.from("flamme_couleurs").select("*")]);
+    const [{ data: els, error }, { data: cols }, { data: voc }] = await Promise.all([sb.from("flamme_elements").select("*"), sb.from("flamme_couleurs").select("*"), sb.from("flamme_vocabulaire").select("*").eq("langue", "fr")]);
     if (error) throw new Error(error.message);
     E = Object.fromEntries(els.map(e => [e.code, e])); C = Object.fromEntries((cols || []).map(c => [c.code, c]));
+    (voc || []).forEach(v => ((V[v.domaine] ??= {})[v.cle] = v));
     rendre(await lireScores());
     $("#bloque").classList.add("hidden"); ["#page", "#outils"].forEach(s => $(s).classList.remove("hidden"));
   } catch (err){ $("#bloque").textContent = err.message; }
