@@ -9,10 +9,10 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <style>
-:root{--ink:#1B2430;--muted:#5B6573;--line:#DDE1E7;--paper:#F6F5F1;--panel:#FFFFFF;--accent:#3D2645;--ok:#1E7A46;--warn:#9A5B00;--err:#B42318;
+:root{--ocre:#B4532A;--ink:#1B2430;--muted:#5B6573;--line:#DDE1E7;--paper:#F6F5F1;--panel:#FFFFFF;--accent:#3D2645;--ok:#1E7A46;--warn:#9A5B00;--err:#B42318;
   --SYS:#4f6b8f;--EXP:#7a5c8f;--EDI:#6b8f5c;
   --serif:"Source Serif 4",Georgia,"Times New Roman",serif;--sans:"IBM Plex Sans","Segoe UI",Arial,sans-serif}
-@media (prefers-color-scheme: dark){:root{--ink:#E6E9EE;--muted:#9AA4B2;--line:#2C3542;--paper:#11161D;--panel:#171D25;--accent:#C9B4D2;--ok:#5CC98A;--warn:#E0A84A;--err:#F2837A;--SYS:#8aa6cc;--EXP:#b49ccc;--EDI:#9cc58c}}
+@media (prefers-color-scheme: dark){:root{--ocre:#E08A5F;--ink:#E6E9EE;--muted:#9AA4B2;--line:#2C3542;--paper:#11161D;--panel:#171D25;--accent:#C9B4D2;--ok:#5CC98A;--warn:#E0A84A;--err:#F2837A;--SYS:#8aa6cc;--EXP:#b49ccc;--EDI:#9cc58c}}
 *{box-sizing:border-box} html{scroll-padding-top:70px} html,body{margin:0} body{background:var(--paper);color:var(--ink);font:15px/1.5 var(--sans);padding-bottom:90px}
 button,input,select{font:inherit;color:inherit} :focus-visible{outline:2px solid #3B6FE0;outline-offset:2px} .hidden{display:none!important}
 a{color:inherit}
@@ -60,7 +60,7 @@ table.fiches td{border-bottom:1px solid var(--line);padding:9px 12px} table.fich
 .piste input.vierge{opacity:.4}
 .piste input::-webkit-slider-thumb{width:16px} .piste input::-moz-range-thumb{width:16px}
 .grad{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);padding:0 8px}
-.num{font-variant-numeric:tabular-nums;font-weight:600;min-width:2.6em;text-align:right;color:var(--accent)}
+.num{font-variant-numeric:tabular-nums;font-weight:700;font-size:17px;min-width:2.6em;text-align:right;color:var(--ocre,#B4532A)}
 .palier{font-size:13.5px;margin-top:5px;min-height:2.6em;line-height:1.4} .palier .vide{color:var(--muted);font-style:italic}
 .reperes{font-size:12.5px;color:var(--muted);font-style:italic;margin-top:3px}
 .res{margin-top:12px;padding-top:9px;border-top:1px dashed var(--line);font-size:14px;color:var(--muted)} .res b{color:var(--ink);font-size:16px}
@@ -121,7 +121,22 @@ table.sp-extremes{margin:0 0 10px} table.tl-table tr.choisi td{background:color-
 .carnet textarea{min-height:220px}
 .lecture{font-size:13px;color:var(--warn)}
 #filtre{display:flex;gap:14px;align-items:center;font-size:14px;margin:18px 0 8px} #filtre h2{font:600 20px var(--serif);margin:0;margin-right:auto}
-.jeu-tete{display:flex;gap:20px;align-items:center;margin:18px 0 6px}
+.jeu-tete{display:flex;gap:22px;align-items:flex-start;margin:18px 0 10px}
+.jeu-corps{flex:1;min-width:0}
+.jeu-titre{display:flex;gap:14px;align-items:baseline;flex-wrap:wrap;margin-bottom:6px}
+.jeu-tete .chiffres{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:6px 0 0}
+.ch-titre{font:600 15px var(--serif);margin-bottom:6px;display:flex;gap:8px;align-items:center}
+.aide-btn{border:1px solid var(--line);background:var(--paper);border-radius:50%;width:20px;height:20px;font-size:12px;line-height:1;cursor:pointer;color:var(--muted)}
+.ch-grille{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:flex-end}
+.ch{display:flex;flex-direction:column;gap:2px;font-size:12.5px;color:var(--muted)}
+.ch input{width:7ch;padding:5px 7px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);font:14px var(--sans)}
+.ch-prix_source input{width:22ch}
+.ch-paire .deux{display:flex;gap:6px;align-items:center}.ch-paire .deux em{font-style:normal;color:var(--muted)}
+.ch-paire .deux .ch span:empty{display:none}.ch-paire .deux .ch > span{display:none}
+details.assistant > summary{cursor:pointer;list-style:none}details.assistant > summary::-webkit-details-marker{display:none}
+details.assistant > summary h2::after{content:" ▾";color:var(--muted);font-size:14px}details.assistant:not([open]) > summary h2::after{content:" ▸"}
+details.assistant:not([open]){padding-bottom:8px}
+.chapitre h2[data-replier-chap]{cursor:pointer}.fleche-chap{font-size:14px;color:var(--muted)}
 .jeu-tete img{width:150px;max-height:170px;object-fit:contain;border-radius:8px;background:var(--panel);border:1px solid var(--line);flex:none}
 .jeu-tete h1{font:600 clamp(26px,4vw,38px)/1.15 var(--serif);margin:0 0 8px}
 .jeu-tete .bgg{display:inline-block;text-decoration:none;font-size:14px;padding:6px 12px}
@@ -149,7 +164,7 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
 .paire .mesure{font:italic 14px/1.45 var(--serif);color:var(--muted);margin:4px 0 2px;max-width:75ch}
 .paliers li.choisi{border-color:var(--chap);background:color-mix(in srgb, var(--chap) 13%, var(--panel))}
 .paliers li.proche{background:color-mix(in srgb, var(--chap) 6%, var(--panel))}
-.num{color:var(--chap)}
+.num{color:var(--ocre,#B4532A)}
 .piste input{accent-color:var(--chap)}
 .outils{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 8px}
 .outils button,.axe .titre button{font:500 12.5px var(--sans);padding:2px 9px;border:1px solid var(--line);background:var(--panel);border-radius:12px;cursor:pointer;color:var(--muted)}
@@ -168,7 +183,7 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
 .na-droite:has(input:checked){border-color:var(--warn);color:var(--warn)}
 .axe .titre button.calc{border-radius:12px;padding:0 9px;width:auto}
 .entete-axe{display:flow-root}
-.ecart-saisi{font:500 12.5px var(--sans);color:var(--muted);min-width:2.8em;text-align:left;opacity:.8}
+.ecart-saisi{font:700 16px var(--sans);color:var(--ocre,#B4532A);min-width:2.8em;text-align:left}
 .retenue{font:500 13.5px var(--sans);color:var(--chap);text-align:right;margin-top:2px;min-height:1.2em} .retenue b{font-size:16px}
 @media (max-width:760px){ .chiffres .grille{grid-template-columns:repeat(2,minmax(0,1fr))} }
 </style>
@@ -205,6 +220,7 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
     <span class="prog"><span id="prog"></span></span><span id="prog-txt" style="font-size:13px;color:var(--muted)"></span>
     <button class="btn ghost" id="suivante" type="button">Paire suivante à remplir</button>
     <select id="aller" aria-label="Aller à une paire"><option value="">Aller à…</option></select>
+    <button class="btn ghost" id="tout-enrouler" type="button">Tout enrouler</button>
     <button class="btn ghost" id="btn-recap" type="button">Récapitulatif</button>
     <button class="btn ghost" id="btn-export" type="button">Exporter</button>
     <label style="font-size:13px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="finale"> Fiche finale</label>
@@ -224,7 +240,7 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
 
 <script src="timeline.js?v=1.9"></script>
 <script>
-const VERSION = { numero:"3.18", date:"2026-10-11 21:40" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.19", date:"2026-10-11 22:45" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -476,24 +492,27 @@ function blocAxe(p, axe){
 }
 function construireGrille(){
   const d = fiche, jeu = M.jeux.find(j => j.code === d.jeu) || {};
-  let h = `<section class="jeu-tete">${jeu.image_url ? `<img src="${esc(jeu.image_url)}" alt="${esc(jeu.nom)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}
-    <div><h1>${esc(jeu.nom || d.jeu)}</h1>
-      <p class="aide">${jeu.bgg_id ? `<a class="btn ghost bgg" href="https://boardgamegeek.com/boardgame/${esc(jeu.bgg_id)}" target="_blank" rel="noopener">Voir sur BoardGameGeek ↗</a>` : "Pas encore de lien BoardGameGeek : il s'ajoute dans la console (onglet Jeux)."}
-      ${jeu.bgg_id && !jeu.image_url ? " L'image de la boîte s'ajoute aussi dans la console." : ""}</p></div></section>
-    <section class="assistant"><h2>Assistant de rédaction</h2>
+  const champ = (k, l, t) => `<label class="ch ch-${k}"><span>${l}</span><input id="d-${k}" data-donnee="${k}" ${t === "texte" ? 'type="text"' : `type="number" min="0" step="${k === "prix" ? "0.05" : k === "poids_bgg" ? "0.01" : "1"}"`} value="${esc(d[k] ?? "")}" ${lectureSeule ? "disabled" : ""}></label>`;
+  const paire = (a, b, l, u) => `<div class="ch ch-paire"><span>${l}</span><div class="deux">${champ(a, "de", "")}<em>à</em>${champ(b, "", "")}${u ? `<em>${u}</em>` : ""}</div></div>`;
+  let ouvert = true; try { ouvert = localStorage.getItem("prisme_assistant") !== "ferme"; } catch (e){}
+  let h = `<section class="jeu-tete${lectureSeule ? " ro" : ""}">${jeu.image_url ? `<img src="${esc(jeu.image_url)}" alt="${esc(jeu.nom)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}
+    <div class="jeu-corps"><div class="jeu-titre"><h1>${esc(jeu.nom || d.jeu)}</h1>${jeu.bgg_id ? `<a class="btn ghost bgg" href="https://boardgamegeek.com/boardgame/${esc(jeu.bgg_id)}" target="_blank" rel="noopener">BoardGameGeek ↗</a>` : ""}</div>
+      ${jeu.bgg_id ? "" : `<p class="aide">Pas encore de lien BoardGameGeek ni d'image : ils s'ajoutent dans la console (onglet Jeux).</p>`}
+      <div class="chiffres"><div class="ch-titre">Le jeu en chiffres <button type="button" class="aide-btn" data-panneau="aide-chiffres" aria-expanded="false" title="À quoi servent ces données">?</button></div>
+      <div class="panneau hidden" id="aide-chiffres"><p class="aide">Ces données proposent les notes factuelles (POIDS, VALEUR, SCALABILITÉ) et servent à la timeline. Prix : le prix public actuel, avec l'enseigne et la date.
+        Meilleur effectif : le nombre de joueurs auquel le jeu est le meilleur ; c'est l'effectif de référence (RYTHME se note à cet effectif). Parties pour tout exploiter : le nombre minimum de parties pour avoir fait le tour de ce que la boîte propose (circuits, scénarios, modules, factions…).</p></div>
+      <div class="ch-grille">${champ("pages", "Pages des règles")}${champ("poids_bgg", "Poids BGG")}${champ("prix", "Prix (€)")}${champ("prix_source", "Source du prix (enseigne, date)", "texte")}
+        ${paire("joueurs_min", "joueurs_max", "Joueurs")}${champ("effectif_reference", "Meilleur effectif")}${paire("duree_min", "duree_max", "Durée", "min")}${champ("contenu_parties", "Parties pour tout exploiter")}</div></div></div></section>
+    <details class="assistant" id="assistant"${ouvert ? " open" : ""}><summary><h2>Assistant de rédaction</h2></summary>
     <p class="aide">Les boutons préparent une demande complète pour Claude (le jeu, tes notes, tes textes, la charte de rédaction) et la copient dans le presse-papiers : colle-la dans une conversation sur claude.ai, puis recolle sa réponse ici. Rien n'est remplacé sans ton accord. Chaque paire a aussi son bouton « Demander à Claude ».
       La charte se règle dans la console (Textes généraux, section « Assistant de rédaction »).</p>
     <div class="ass-boutons"><button type="button" class="btn ghost" data-prompt="justifs">Demande : toutes les justifications</button>
       <button type="button" class="btn ghost" data-prompt="article">Demande : un article</button>
       ${lectureSeule ? "" : `<button type="button" class="btn" id="btn-coller">Coller la réponse de Claude</button>`}</div>
-    <p class="msg" id="ass-msg"></p></section>
-    <section class="chiffres ${lectureSeule ? "ro" : ""}"><h2>Le jeu en chiffres</h2>
-    <p class="aide">Ces données proposent les notes factuelles (POIDS, VALEUR, SCALABILITÉ) et serviront à la timeline. Prix : le prix public actuel, avec l'enseigne et la date.
-      Meilleur effectif : le nombre de joueurs auquel le jeu est le meilleur ; c'est l'effectif de référence (RYTHME se note à cet effectif). Parties pour tout exploiter : le nombre minimum de parties pour avoir fait le tour de ce que la boîte propose (circuits, scénarios, modules, factions…).</p>
-    <div class="grille">${DONNEES.map(([k, l, t]) => `<div><label for="d-${k}">${l}</label><input id="d-${k}" data-donnee="${k}" ${t === "texte" ? 'type="text"' : `type="number" min="0" step="${k === "prix" ? "0.05" : k === "poids_bgg" ? "0.01" : "1"}"`} value="${esc(d[k] ?? "")}" ${lectureSeule ? "disabled" : ""}></div>`).join("")}</div></section>`;
+    <p class="msg" id="ass-msg"></p></details>`;
   $("#aller").innerHTML = '<option value="">Aller à…</option>';
   M.chapitres.forEach(c => {
-    h += `<div class="chapitre" style="--chap:var(--${c.code})"><h2>${esc(c.nom)}<span class="moy" id="moy-${c.code}"></span></h2>`;
+    h += `<div class="chapitre" style="--chap:var(--${c.code})" data-chap="${esc(c.code)}"><h2 data-replier-chap="${esc(c.code)}" title="Enrouler ou dérouler toutes les paires du chapitre">${esc(c.nom)}<span class="fleche-chap">▾</span><span class="moy" id="moy-${c.code}"></span></h2>`;
     M.paires.filter(p => p.chapitre === c.code).forEach(p => {
       const ax = axesDe(p.code), a1 = ax.find(a => a.rang === "1"), so = ax.some(a => saisie[a.code]?.sans_objet);
       const corps = aDeuxNotes(p)
@@ -529,7 +548,7 @@ function construireGrille(){
   $("#grille").innerHTML = h;
   document.querySelectorAll(".axe").forEach(majPaliers);
   M.paires.forEach(p => { if (estComplete(p, saisie)) document.getElementById("p-" + p.code).classList.add("repliee"); });   // ce qui est fait se replie
-  aligner();
+  aligner(); majToutEnrouler();
 }
 // curseurs alignés : l'en-tête (titre + question) des deux colonnes prend la même hauteur
 function aligner(){
@@ -589,7 +608,7 @@ function calculer(s){
 function recalculer(){
   const c = calculer(saisie);
   Object.values(c.parChap).flat().forEach(({ p, note, so, na1, seuil, complete }) => {
-    $("#res-" + p.code).innerHTML = so ? "Sans objet pour ce jeu." : note != null ? `Note retenue : <b>${fmt(note, 2)}</b>` :
+    $("#res-" + p.code).innerHTML = so ? "Sans objet pour ce jeu." : note != null ? "" :
       na1 ? "Axe 2 sans objet : l'axe 1 vaut 0." :
       seuil ? `Axe 2 sans objet : l'axe 1 est sous ${fmt(p.seuil_axe1, 0)}. Si le manque est ressenti par la table, note l'axe 2 à 1 ou moins : il comptera.` : "En attente des notes.";
     $("#note-" + p.code).textContent = so || na1 || seuil ? "sans objet" : note != null ? fmt(note, 2) : "";
@@ -599,7 +618,7 @@ function recalculer(){
       if (n2) n2.textContent = so || na1 ? "—" : note != null ? fmt(note, 2) : "—";
     }
     const ret = document.getElementById("ret-" + p.code);
-    if (ret) ret.innerHTML = so || na1 || seuil ? "Note retenue : sans objet" : note != null ? `Note retenue${aDeuxNotes(p) ? " (" + esc(p.code) + "2)" : ""} : <b>${fmt(note, 2)}</b>` : "";
+    if (ret) ret.innerHTML = so || na1 || seuil ? "Sans objet" : "";
     document.getElementById("p-" + p.code).classList.toggle("faite", complete);
   });
   M.chapitres.forEach(ch => { const v = c.chap[ch.code]; $("#moy-" + ch.code).textContent = v == null ? "" : fmt(v, 2) + " / 5"; });
@@ -736,7 +755,7 @@ $("#grille").addEventListener("click", e => {
     box.classList.toggle("hidden", !ouvrir); pan.setAttribute("aria-expanded", String(ouvrir)); return;
   }
   const t = e.target.closest("[data-replier]");
-  if (t){ document.getElementById("p-" + t.dataset.replier).classList.toggle("repliee"); aligner(); }
+  if (t){ document.getElementById("p-" + t.dataset.replier).classList.toggle("repliee"); aligner(); majToutEnrouler(); }
 });
 $("#grille").addEventListener("change", e => {
   if (!e.target.dataset.na || lectureSeule) return;
@@ -789,6 +808,17 @@ async function enregistrer(){
   $("#etat").textContent = "Enregistré à " + new Date().toLocaleTimeString("fr-FR", { hour:"2-digit", minute:"2-digit" }).replace(":", "h") + ".";
 }
 window.addEventListener("beforeunload", e => { if (enAttente.size || ficheModifiee){ e.preventDefault(); e.returnValue = ""; } });
+
+/* ---------------- enrouler / dérouler : par chapitre, ou tout ---------------- */
+function enrouler(paires, fermer){ paires.forEach(el => el.classList.toggle("repliee", fermer)); aligner(); majToutEnrouler(); }
+function majToutEnrouler(){ const L = [...document.querySelectorAll(".paire")]; $("#tout-enrouler").textContent = L.length && L.every(el => el.classList.contains("repliee")) ? "Tout dérouler" : "Tout enrouler"; }
+$("#grille").addEventListener("click", e => {
+  const h = e.target.closest("[data-replier-chap]"); if (!h) return;
+  const L = [...document.querySelectorAll(`.chapitre[data-chap="${CSS.escape(h.dataset.replierChap)}"] .paire`)];
+  enrouler(L, L.some(el => !el.classList.contains("repliee")));
+});
+$("#tout-enrouler").addEventListener("click", () => { const L = [...document.querySelectorAll(".paire")]; enrouler(L, L.some(el => !el.classList.contains("repliee"))); });
+document.addEventListener("toggle", e => { if (e.target.id === "assistant") try { localStorage.setItem("prisme_assistant", e.target.open ? "ouvert" : "ferme"); } catch (x){} }, true);
 
 /* ---------------- assistant de rédaction : demandes pour Claude, et retour de ses réponses ---------------- */
 // la charte : textes de la section « Assistant de rédaction » (prisme_textes), modifiables dans la console
