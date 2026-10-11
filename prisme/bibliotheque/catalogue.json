@@ -21,10 +21,10 @@
    "statut": "exact"
   },
   "W/r": {
-   "temperament": "le Beau joueur",
-   "nom": "le podium",
+   "temperament": "le Liant",
+   "nom": "le puzzle",
    "fichier": "totems/W_r.svg",
-   "icone": "podium-second",
+   "icone": "puzzle",
    "statut": "exact"
   },
   "W/g": {
@@ -105,10 +105,10 @@
    "statut": "exact"
   },
   "R/b": {
-   "temperament": "le Boute-en-train",
-   "nom": "le cotillon",
+   "temperament": "l'Enthousiaste",
+   "nom": "la flamme",
    "fichier": "totems/R_b.svg",
-   "icone": "party-popper",
+   "icone": "fluffy-flame",
    "statut": "exact"
   },
   "R/g": {

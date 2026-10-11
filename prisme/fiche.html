@@ -32,11 +32,13 @@ main{max-width:860px;margin:0 auto;padding:10px 24px 40px}
 .niveaux .prof{font-size:clamp(38px,6.5vw,60px);line-height:1.05;color:var(--arch)}
 .niveaux .sous{font-size:.85em;color:color-mix(in srgb, var(--sous) 80%, var(--ink))}
 .niveaux .sep{color:var(--line);font-weight:400}
-.entete h1.titre-joueur{font:600 clamp(38px,6.5vw,60px)/1.08 var(--serif);color:var(--arch);margin:6px 0 2px}
-.titre-joueur .qualif{font-style:italic;font-weight:400;font-size:.58em;color:color-mix(in srgb, var(--sous) 75%, var(--ink));white-space:nowrap}
-.entete.avec-totem{display:grid;grid-template-columns:auto 1fr;gap:6px 26px;align-items:center}
-.entete .totem{width:132px;height:132px;display:block;background:color-mix(in srgb, var(--arch) 9%, var(--panel));border-radius:22px;padding:16px}
-@media (max-width:560px){ .entete.avec-totem{grid-template-columns:1fr} .entete .totem{width:96px;height:96px;padding:12px} }
+/* bandeau : totem | tempérament et (style), alignés à droite et serrés | emblème */
+.entete .bandeau{display:flex;align-items:center;gap:24px;margin:14px 0 16px}
+.entete h1.titre-joueur{display:inline-flex;flex-direction:column;align-items:flex-end;gap:0;margin:0;font:600 clamp(34px,6vw,58px)/1 var(--serif);color:var(--arch)}
+.titre-joueur .qualif{font-style:italic;font-weight:400;font-size:.58em;line-height:1.05;margin-top:.12em;color:color-mix(in srgb, var(--sous) 75%, var(--ink));white-space:nowrap}
+.entete .totem{flex:none;width:118px;height:118px;display:block;background:color-mix(in srgb, var(--arch) 9%, var(--panel));border-radius:22px;padding:15px}
+.entete .totem.embleme{background:color-mix(in srgb, var(--paper) 70%, var(--panel))}
+@media (max-width:560px){ .entete .bandeau{gap:10px} .entete .totem{width:52px;height:52px;padding:7px;border-radius:12px} .entete h1.titre-joueur{font-size:7vw;min-width:0} }
 .entete .sous-titre{font-size:12.5px;letter-spacing:.04em;color:var(--muted);margin:0}
 @media (max-width:520px){ .niveaux .sep{display:none} }
 .entete .date{font-size:13px;color:var(--muted);margin:10px 0 0}
@@ -89,9 +91,9 @@ details.repli > section{border:0;margin:0;padding-top:0}
 <main><p class="version"><span id="credit"></span><br><span id="version"></span></p></main>
 
 <script src="timeline.js?v=1.9"></script>
-<script src="totems.js?v=2"></script>
+<script src="totems.js?v=3"></script>
 <script>
-const VERSION = { numero:"3.1", date:"2026-10-11 18:10" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.2", date:"2026-10-11 19:30" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -159,11 +161,15 @@ async function afficher(user){
   }).join("");
 
   $("#contenu").innerHTML = `
-    <div class="entete${TOTEMS.svg[tem.code] ? " avec-totem" : ""}">
-      ${totemSVG(tem.code, dom.couleur, { cls:"totem", titre: tem.totem ? maj(tem.totem) : undefined })}
-      <div class="entete-texte">
+    <div class="entete">
       <p class="surtitre">${autre ? "Profil de joueur" : "Mon profil de joueur"}</p>
-      <h1 class="titre-joueur">${esc(maj(tem.nom))} <span class="qualif" style="--sous:${esc(M[sty.second]?.couleur || "var(--ink)")}" title="Votre style : ${esc(sty.nom)} (${esc(sty.code)})">(${esc(sty.nom)})</span></h1>
+      <div class="bandeau">
+        ${totemSVG(tem.code, dom.couleur, { cls:"totem", titre: tem.totem ? maj(tem.totem) : undefined })}
+        <h1 class="titre-joueur"><span class="t-tem">${esc(maj(tem.nom))}</span>
+          <span class="qualif" style="--sous:${esc(M[sty.second]?.couleur || "var(--ink)")}" title="Votre style : ${esc(sty.nom)} (${esc(sty.code)})">(${esc(sty.nom)})</span></h1>
+        ${emblemeSVG(sty.code, M[sty.second]?.couleur || dom.couleur, { cls:"totem embleme", titre: sty.embleme ? maj(sty.embleme) : undefined })}
+      </div>
+      <div class="entete-texte">
       <p class="sous-titre">Tempérament ${esc(tem.code)}, style ${esc(sty.code)}${complet ? "" : ` · profil provisoire : ${nbRep} réponse${nbRep > 1 ? "s" : ""} sur 25`}</p>
       <p class="date">Questionnaire du ${new Date(r.passe_le).toLocaleDateString("fr-FR")}.${autre ? "" : ' <a href="questionnaire.html">Le modifier ou le refaire</a>. <a href="rosace.html">Voir ma place sur la rosace</a>.'}</p>
       </div>

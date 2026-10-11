@@ -15,5 +15,5 @@ c'est une modification, que la licence autorise.
 
 ## Dessins originaux et compositions
 
-Aucun pour l'instant : les 20 totems (choisis par Pierre le 10/10/2026) et les 20 emblèmes des styles (choisis le 11/10/2026)
+Aucun pour l'instant : les 20 totems (choisis par Pierre le 10/10/2026 ; W/r le puzzle et R/b la flamme le 11/10/2026) et les 20 emblèmes des styles (choisis le 11/10/2026)
 sont des icônes game-icons, toutes au statut « exact ».

@@ -1,7 +1,7 @@
 /* PRISME — totems des tempéraments et emblèmes des styles : lecture de la bibliothèque (prisme/bibliotheque/) et affichage.
    Méthode commune avec Flamme Bleue : catalogue.json + un SVG par code, couleurs en currentColor.
    BIB_VERSION est ajouté à chaque appel : l'incrémenter à chaque changement d'images (sinon le cache ressort les anciennes). */
-const BIB_VERSION = 2;
+const BIB_VERSION = 3;
 const TOTEMS = { catalogue:null, svg:{}, emb:{} };
 const TOTEMS_CREDIT = `Totems : icônes de Lorc, Delapouite et contributeurs, <a href="https://game-icons.net" target="_blank" rel="noopener">game-icons.net</a>, licence <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0</a>.`;
 const interieurSVG = t => t.replace(/^[\s\S]*?<svg[^>]*>/, "").replace(/<\/svg>\s*$/, "");
