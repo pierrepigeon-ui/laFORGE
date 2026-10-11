@@ -81,7 +81,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px} .field{display:block;margi
   <div style="display:flex;gap:10px"><button class="btn" type="submit">Se connecter</button><button class="btn ghost" type="button" id="login-fermer">Fermer</button></div>
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 <script>
-const VERSION = { numero:"1.11", date:"2026-10-11 23:35" };
+const VERSION = { numero:"1.12", date:"2026-10-11 23:38" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const ACCES = ["proprietaire"];   // rôles autorisés (en attendant la table des droits d'accès)
@@ -127,10 +127,15 @@ function couleursDe(code){
   return { pres: new Set(av.replace(".", "").toUpperCase()), abs: new Set(ap.toUpperCase()) };
 }
 
-const FLAMME_CENTRE = `<g transform="translate(830 792) scale(1.4)"><defs><linearGradient id="rosace-flamme-g" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#0B2E8A"/><stop offset=".55" stop-color="#2F6BFF"/><stop offset="1" stop-color="#BFE0FF"/></linearGradient></defs><path fill="url(#rosace-flamme-g)" d="M50 4c4 16 22 24 22 48 0 12-6 22-14 26 4-8 2-18-6-24 2 10-4 16-8 18-2-10-10-12-10-22-8 8-10 20-4 30C18 76 14 64 16 52c3-16 18-22 22-36 4 8 4 16 2 22 8-6 12-18 10-34z"/></g>`;
-function construireSVG(profil){
-  let cible = null;
-  if (profil){ const a = M.analyser(profil); cible = { pres: new Set(a.principales + a.secondaires), abs: new Set(a.absentes) }; }
+const FLAMME_CENTRE = `<g transform="translate(830 825) scale(1.4)"><defs><linearGradient id="rosace-flamme-g" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#0B2E8A"/><stop offset=".55" stop-color="#2F6BFF"/><stop offset="1" stop-color="#BFE0FF"/></linearGradient></defs><path fill="url(#rosace-flamme-g)" d="M50 4c4 16 22 24 22 48 0 12-6 22-14 26 4-8 2-18-6-24 2 10-4 16-8 18-2-10-10-12-10-22-8 8-10 20-4 30C18 76 14 64 16 52c3-16 18-22 22-36 4 8 4 16 2 22 8-6 12-18 10-34z"/></g>`;
+/* a ⊆ b : toutes les couleurs présentes de a sont présentes dans b, toutes ses absentes sont absentes dans b */
+const inclus = (a, b) => [...a.pres].every(x => b.pres.has(x)) && [...a.abs].every(x => b.abs.has(x));
+/* profil : on allume ce que le profil contient.
+   élément cliqué (prioritaire) : on allume ce qu'il contient ET ce qui le contient (W → WU, WUB, W/r, WWu… ; WU → W, U, WUB, W.u…). */
+function construireSVG(profil, element){
+  let regle = null;
+  if (element){ const x = couleursDe(element); regle = c => inclus(c, x) || inclus(x, c); }
+  else if (profil){ const a = M.analyser(profil); const cible = { pres: new Set(a.principales + a.secondaires), abs: new Set(a.absentes) }; regle = c => inclus(c, cible); }
   const parts = GABARIT.parts.map(p => {
     let s = p.svg;
     if (p.code){
@@ -138,16 +143,12 @@ function construireSVG(profil){
       const [d1, d2] = scinder(e.devise);
       s = s.replace("{{nom}}", esc(e.nom ?? p.code)).replace("{{devise}}", esc(e.devise ?? ""))
            .replace("{{d1}}", esc(d1)).replace("{{d2}}", esc(d2));
-      let eteint = "";
-      if (cible){
-        const c = couleursDe(p.code);
-        const ok = [...c.pres].every(x => cible.pres.has(x)) && [...c.abs].every(x => cible.abs.has(x));
-        eteint = ok ? "" : " eteint";
-      }
+      let eteint = regle && !regle(couleursDe(p.code)) ? " eteint" : "";
+      if (element === p.code) eteint = " choisi";
       return `<g class="el${eteint}" data-code="${esc(p.code)}">${s}</g>`;
     }
     if (!p.code && s.includes("Disque central")){                // logo au centre, nom dessous ; clic = bascule de la surbrillance
-      s = s.replace(/(<circle[^>]*\/>)/, `$1\n${FLAMME_CENTRE}`).replace('y="907"', 'y="978"');
+      s = s.replace(/(<circle[^>]*\/>)/, `$1\n${FLAMME_CENTRE}`).replace('y="907"', 'y="962"');
       s = `<g class="centre">${s}</g>`;
     }
     return s;
@@ -156,7 +157,7 @@ function construireSVG(profil){
 <defs>
 <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#000" flood-opacity=".28"/></filter>
 <style>${GABARIT.css}
-.el.eteint{opacity:.16}</style>
+.el.eteint{opacity:.16} .el.choisi{filter:drop-shadow(0 0 7px #FFD400) drop-shadow(0 0 3px #FFD400)}</style>
 ${GABARIT.defs.join("\n")}
 </defs>
 ${parts}
@@ -167,19 +168,21 @@ function dessiner(){
   ["#lien-fiche", "#lien-ecusson", "#lien-detail"].forEach(s => $(s).classList.toggle("hidden", !p));
   if (p){ $("#lien-fiche").href = "fiche.html?type=" + encodeURIComponent(p); $("#lien-detail").href = "detail.html?type=" + encodeURIComponent(p); $("#lien-ecusson").href = "ecusson.html?type=" + encodeURIComponent(p); }
   const actif = !!p && surbrillance;
-  svgCourant = construireSVG(actif ? p : "");
+  svgCourant = construireSVG(actif ? p : "", focusEl);
   $("#scene").innerHTML = svgCourant;
   $("#bascule").hidden = !p;
   $("#bascule").setAttribute("aria-pressed", surbrillance);
   $("#bascule").textContent = "Surbrillance : " + (surbrillance ? "activée" : "désactivée");
-  const c = $("#scene .centre"); if (c) c.insertAdjacentHTML("afterbegin", `<title>${!p ? "Choisir d'abord un profil à mettre en lumière" : surbrillance ? "Éteindre la surbrillance" : "Rallumer la surbrillance"}</title>`);
+  const c = $("#scene .centre"); if (c) c.insertAdjacentHTML("afterbegin", `<title>${focusEl ? "Revenir à la rosace entière" : !p ? "Choisir d'abord un profil à mettre en lumière" : surbrillance ? "Éteindre la surbrillance" : "Rallumer la surbrillance"}</title>`);
   $("#msg").className = "msg";
+  if (focusEl){ $("#msg").textContent = `En lumière : ${focusEl} (${E[focusEl]?.nom || ""}) et tout ce qui s'y rattache — ce qu'il contient et ce qui le contient. Clic au centre, sur l'élément ou à côté pour revenir.`; return; }
   $("#msg").textContent = !p ? "" : actif ? `En lumière${p === monProfil ? ", ton profil" : ""} : les éléments compatibles avec ${p} (${E[p]?.nom || ""}) — couleurs présentes et absentes du profil.`
                                          : `Surbrillance désactivée — clique au centre de la rosace pour la rallumer.`;
 }
 /* une seule bascule : le bouton noir et le centre de la rosace font la même chose */
-let surbrillance = true, monProfil = null;   // monProfil : celui du dernier autotest de la personne connectée
+let surbrillance = true, monProfil = null, focusEl = null;   // focusEl : élément cliqué dans la rosace   // monProfil : celui du dernier autotest de la personne connectée
 function basculer(){
+  if (focusEl){ focusEl = null; dessiner(); return; }   // d'abord, sortir de la mise en lumière d'un élément
   if (!$("#profil").value){                     // rien à mettre en lumière : on le dit, et on désigne la liste
     $("#msg").className = "msg"; $("#msg").textContent = "Choisis d'abord un profil à mettre en lumière : le centre basculera ensuite sa surbrillance.";
     const sel = $("#profil"); sel.focus(); sel.classList.add("appel"); setTimeout(() => sel.classList.remove("appel"), 1200);
@@ -192,8 +195,11 @@ $("#scene").addEventListener("click", e => { if (e.target.closest(".centre")) ba
 
 /* ---------- fiche ---------- */
 $("#scene").addEventListener("click", e => {
-  const g = e.target.closest(".el"); if (!g) return;
+  const g = e.target.closest(".el");
+  if (!g){ if (focusEl && !e.target.closest(".centre")){ focusEl = null; dessiner(); } return; }   // clic à côté : on revient
   const code = g.dataset.code, f = E[code] || {};
+  focusEl = focusEl === code ? null : code;     // second clic sur le même élément : on revient
+  dessiner();
   const texte = [f.texte1, f.texte2, f.texte3].filter(Boolean).join("\n\n");
   $("#fiche").innerHTML = `<div class="code">${esc(code)} — ${esc(f.couche || "")}</div><h2>${esc(f.nom || code)}</h2>
     <div class="devise">${esc(f.devise || "")}</div>${f.titre && f.titre !== f.devise ? `<div class="titre">« ${esc(f.titre)} »</div>` : ""}
@@ -211,7 +217,7 @@ $("#dl-png").addEventListener("click", () => {
   img.onerror = () => { $("#msg").className = "msg err"; $("#msg").textContent = "Export PNG impossible dans ce navigateur."; };
   img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgCourant);
 });
-$("#profil").addEventListener("change", () => { surbrillance = true; dessiner(); history.replaceState(null, "", $("#profil").value ? "?profil=" + encodeURIComponent($("#profil").value) : location.pathname); });
+$("#profil").addEventListener("change", () => { surbrillance = true; focusEl = null; dessiner(); history.replaceState(null, "", $("#profil").value ? "?profil=" + encodeURIComponent($("#profil").value) : location.pathname); });
 
 /* ---------- accès ---------- */
 $("#btn-login").addEventListener("click", () => { location.href = "../?retour=" + encodeURIComponent(location.href); });   // connexion centralisée sur la Forge
