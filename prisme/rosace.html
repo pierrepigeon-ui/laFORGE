@@ -30,8 +30,9 @@ a{color:inherit}
 #rosace .t-tem{font:600 13.5px var(--sans);fill:#1B2430}
 #rosace .t-sty{font:400 12px var(--sans);fill:#1B2430}
 #rosace .t-sty.long{font-size:10.5px}
-#rosace .t-centre{font:600 22px var(--serif);fill:#1B2430;letter-spacing:.12em;text-anchor:middle}
-#rosace .t-centre2{font:12px var(--sans);fill:#5B6573;text-anchor:middle}
+#rosace .t-centre{font:600 22px var(--serif);fill:#1B2430;letter-spacing:.12em;text-anchor:end}
+#rosace .t-centre2{font:12px var(--sans);fill:#5B6573;text-anchor:end;letter-spacing:.04em}
+#rosace #centre{cursor:pointer}
 #rosace .fuit{stroke-width:2.2;stroke-dasharray:3 2.4}
 #rosace.chemin g[data-code]:not(.surligne){opacity:.25}
 #rosace g.choisi .sect{stroke:var(--sel);stroke-width:4}
@@ -68,7 +69,7 @@ aside .vous-badge{display:inline-block;font:600 12px var(--sans);color:#fff;back
 <script src="timeline.js?v=1.9"></script>
 <script src="totems.js?v=2"></script>
 <script>
-const VERSION = { numero:"3.4", date:"2026-10-11 19:00" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.5", date:"2026-10-11 19:15" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -175,10 +176,16 @@ function dessiner(){
         ${radial(st.nom, b1 + 9, R2, R3 - (TOTEMS.emb[st.code] ? 44 : 0), st.nom.length > 12 ? "t-sty long" : "t-sty")}</g>`;
     });
   });
-  h += `<circle r="${R0 - 2}" fill="#FFFFFF" stroke="#DDE1E7" stroke-width="2"/><text class="t-centre" y="2">PRISME</text><text class="t-centre2" y="24">joueurs</text>`;
+  h += `<g id="centre"><title>Surbrillance de mon profil</title><circle r="${R0 - 2}" fill="#FFFFFF" stroke="#DDE1E7" stroke-width="2"/>
+    <g id="centre-mots"><text class="t-centre" y="-1">PRISME</text><text class="t-centre2" y="14">player</text></g></g>`;
   svg.innerHTML = h;
+  // les deux mots alignés à droite, le bloc centré : on décale de la moitié du plus large
+  const mots = svg.querySelector("#centre-mots"), larg = Math.max(...[...mots.querySelectorAll("text")].map(t => t.getBBox().width));
+  mots.setAttribute("transform", `translate(${(larg / 2).toFixed(1)} 0)`);
   if (Object.keys(TOTEMS.svg).length) $("#credit").innerHTML = TOTEMS_CREDIT;
-  svg.addEventListener("click", e => { const el = e.target.closest("[data-code]"); if (el) montrer(el.dataset.code); });
+  svg.addEventListener("click", e => {
+    if (e.target.closest("#centre")){ if (!$("#bascule").hidden) $("#bascule").click(); return; }   // le centre bascule la surbrillance
+    const el = e.target.closest("[data-code]"); if (el) montrer(el.dataset.code); });
 }
 
 const niveauDe = code => code.includes(".") ? "style" : code.includes("/") ? "temperament" : "moteur";
