@@ -32,7 +32,7 @@ main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;padding:14p
 #scene .el:hover{filter:brightness(1.06)}
 #scene.focus .el.eteint{opacity:.16}
 #scene .el.choisi{outline:none}
-#scene .centre{cursor:pointer} #scene .centre:hover circle{filter:brightness(1.07)}
+#scene .centre{cursor:pointer} .outils select.appel{outline:3px solid #3B6FE0;outline-offset:2px;transition:outline .2s} #scene .centre:hover circle{filter:brightness(1.07)}
 .bascule{border:1px solid var(--ink);background:var(--ink);color:var(--panel);border-radius:999px;padding:6px 14px;font:500 13.5px var(--sans);cursor:pointer}
 .bascule[aria-pressed="false"]{background:transparent;color:var(--ink);border-color:var(--line)}
 aside{position:sticky;top:12px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
@@ -81,7 +81,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px} .field{display:block;margi
   <div style="display:flex;gap:10px"><button class="btn" type="submit">Se connecter</button><button class="btn ghost" type="button" id="login-fermer">Fermer</button></div>
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 <script>
-const VERSION = { numero:"1.9", date:"2026-10-11 21:57" };
+const VERSION = { numero:"1.11", date:"2026-10-11 23:35" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const ACCES = ["proprietaire"];   // rôles autorisés (en attendant la table des droits d'accès)
@@ -127,6 +127,7 @@ function couleursDe(code){
   return { pres: new Set(av.replace(".", "").toUpperCase()), abs: new Set(ap.toUpperCase()) };
 }
 
+const FLAMME_CENTRE = `<g transform="translate(830 792) scale(1.4)"><defs><linearGradient id="rosace-flamme-g" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#0B2E8A"/><stop offset=".55" stop-color="#2F6BFF"/><stop offset="1" stop-color="#BFE0FF"/></linearGradient></defs><path fill="url(#rosace-flamme-g)" d="M50 4c4 16 22 24 22 48 0 12-6 22-14 26 4-8 2-18-6-24 2 10-4 16-8 18-2-10-10-12-10-22-8 8-10 20-4 30C18 76 14 64 16 52c3-16 18-22 22-36 4 8 4 16 2 22 8-6 12-18 10-34z"/></g>`;
 function construireSVG(profil){
   let cible = null;
   if (profil){ const a = M.analyser(profil); cible = { pres: new Set(a.principales + a.secondaires), abs: new Set(a.absentes) }; }
@@ -145,7 +146,10 @@ function construireSVG(profil){
       }
       return `<g class="el${eteint}" data-code="${esc(p.code)}">${s}</g>`;
     }
-    if (!p.code && s.includes("Disque central")) s = `<g class="centre">${s}</g>`;   // clic au centre = bascule de la surbrillance
+    if (!p.code && s.includes("Disque central")){                // logo au centre, nom dessous ; clic = bascule de la surbrillance
+      s = s.replace(/(<circle[^>]*\/>)/, `$1\n${FLAMME_CENTRE}`).replace('y="907"', 'y="978"');
+      s = `<g class="centre">${s}</g>`;
+    }
     return s;
   }).join("\n");
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1800" viewBox="0 0 1800 1800">
@@ -168,13 +172,21 @@ function dessiner(){
   $("#bascule").hidden = !p;
   $("#bascule").setAttribute("aria-pressed", surbrillance);
   $("#bascule").textContent = "Surbrillance : " + (surbrillance ? "activée" : "désactivée");
-  const c = $("#scene .centre"); if (c && p) c.insertAdjacentHTML("afterbegin", `<title>${surbrillance ? "Éteindre" : "Rallumer"} la surbrillance</title>`);
-  $("#msg").textContent = !p ? "" : actif ? `En lumière : les éléments compatibles avec ${p} (${E[p]?.nom || ""}) — couleurs présentes et absentes du profil.`
+  const c = $("#scene .centre"); if (c) c.insertAdjacentHTML("afterbegin", `<title>${!p ? "Choisir d'abord un profil à mettre en lumière" : surbrillance ? "Éteindre la surbrillance" : "Rallumer la surbrillance"}</title>`);
+  $("#msg").className = "msg";
+  $("#msg").textContent = !p ? "" : actif ? `En lumière${p === monProfil ? ", ton profil" : ""} : les éléments compatibles avec ${p} (${E[p]?.nom || ""}) — couleurs présentes et absentes du profil.`
                                          : `Surbrillance désactivée — clique au centre de la rosace pour la rallumer.`;
 }
 /* une seule bascule : le bouton noir et le centre de la rosace font la même chose */
-let surbrillance = true;
-function basculer(){ if (!$("#profil").value) return; surbrillance = !surbrillance; dessiner(); }
+let surbrillance = true, monProfil = null;   // monProfil : celui du dernier autotest de la personne connectée
+function basculer(){
+  if (!$("#profil").value){                     // rien à mettre en lumière : on le dit, et on désigne la liste
+    $("#msg").className = "msg"; $("#msg").textContent = "Choisis d'abord un profil à mettre en lumière : le centre basculera ensuite sa surbrillance.";
+    const sel = $("#profil"); sel.focus(); sel.classList.add("appel"); setTimeout(() => sel.classList.remove("appel"), 1200);
+    return;
+  }
+  surbrillance = !surbrillance; dessiner();
+}
 $("#bascule").addEventListener("click", basculer);
 $("#scene").addEventListener("click", e => { if (e.target.closest(".centre")) basculer(); });
 
@@ -224,7 +236,12 @@ sb.auth.onAuthStateChange(async (_e, session) => {
   const profils = data.filter(e => e.couche === "profil").sort((a, b) => (a.ordre ?? 0) - (b.ordre ?? 0));
   $("#profil").innerHTML = '<option value="">aucun</option>' + profils.map(p => `<option value="${esc(p.code)}">${esc(p.code)} — ${esc(p.nom)}</option>`).join("");
   const demande = new URLSearchParams(location.search).get("profil");
+  // par défaut : mon profil (dernier autotest enregistré) ; « ?profil= » reste prioritaire
+  const { data: res } = await sb.from("flamme_resultats").select("codes").eq("user_id", user.id).order("passe_le", { ascending:false }).limit(1);
+  monProfil = res?.[0]?.codes?.find(c => E[c]) || null;
+  if (monProfil){ const o = [...$("#profil").options].find(x => x.value === monProfil); if (o) o.textContent += " (mon profil)"; }
   if (demande && E[demande]) $("#profil").value = demande;
+  else if (monProfil) $("#profil").value = monProfil;
   $("#bloque").classList.add("hidden"); $("#contenu").classList.remove("hidden");
   dessiner();
 });
