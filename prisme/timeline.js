@@ -1,6 +1,6 @@
 /* PRISME — timeline du jeu : jalons, durées, flow, α β γ, demi-vie.
    Module partagé par l'encyclopédie et l'outil d'évaluation. Méthode arrêtée le 08/10/2026 (jeu d'essai : Heat). */
-const TIMELINE_VERSION = { numero:"1.6", date:"2026-10-11 16:30" };   // à incrémenter à chaque livraison
+const TIMELINE_VERSION = { numero:"1.8", date:"2026-10-11 17:10" };   // à incrémenter à chaque livraison
 
 const JALONS = [
   { n:0, nom:"identifié", quoi:"Le jeu est connu de loin : critique, vitrine, recommandation." },
@@ -15,8 +15,8 @@ const JALONS = [
 const SOUSPHASES = [
   { nom:"Préparation", de:0, phase:"I", quoi:"La promesse du jeu : on se projette, on l'achète, on l'emprunte.", duree:"VAL1 / 4" },
   { nom:"Accès", de:1, phase:"I", quoi:"La porte d'entrée pratique : boîte, matériel, organisation des règles.", duree:"POID1 / 5 + MAN1 / 10" },
-  { nom:"Premiers pas", de:2, phase:"II", quoi:"La première mise en mouvement, avec des allers-retours au livret.", duree:"1 + (5 − TRAN2) / 10" },
-  { nom:"Expérimentations", de:3, phase:"II", quoi:"On rejoue, on apprend en jouant : le jeu devient intelligible.", duree:"2^(moy(POID1, EXIG1, VAR1, 5 − TRAN2, 5 − ART2b) − 1)" },
+  { nom:"Premiers pas", de:2, phase:"II", quoi:"La première mise en mouvement, avec des allers-retours au livret.", duree:"1 + T / 10, T = 2,5 − 1,25 × TRAN2" },
+  { nom:"Expérimentations", de:3, phase:"II", quoi:"On rejoue, on apprend en jouant : le jeu devient intelligible.", duree:"2^(moy(POID1, EXIG1, VAR1, T, 5 − ART2b) − 1)" },
   { nom:"Rôdage", de:4, phase:"III", quoi:"La pratique standard : on ne lutte plus contre les règles.", duree:"2^(moy(PROF, EXIG1, POID1) − 1)" },
   { nom:"Aguerrissement", de:5, phase:"III", quoi:"La mise à l'épreuve : plans avancés, contre-stratégies, finesses.", duree:"2^(moy(PROF, EXIG, VAR1) + 0,1 − 1) ; le 0,1 est un bonus de confrontation. Plancher : parties pour tout exploiter" },
   { nom:"Habitude", de:6, phase:"IV", quoi:"Le jeu est pleinement connu et tourne à vitesse de croisière.", duree:"2^(moy(VAR, SCAL, MAN2) − 1)" },
@@ -26,8 +26,8 @@ const PHASES = { I:"Entrée", II:"Apprentissage", III:"Maîtrise et profondeur",
 const R_REGIME = [0, .45, .6, .8, 1, 1, 1, 1];   // montée en régime, jalons 0 à 7
 const TERMES = {
   1:{ s:"MAT, ART2a, THEM1", f:"POID1, M, 5 − ART2b" },
-  2:{ s:"THEM, MAT, ART2a", f:"POID1, 5 − TRAN2, M, 5 − ART2b" },
-  3:{ s:"THEM, INT2, EXIG, ALEA2", f:"5 − TRAN2, 5 − ART2b, A, M, POID1" },
+  2:{ s:"THEM, MAT, ART2a", f:"POID1, T, M, 5 − ART2b" },
+  3:{ s:"THEM, INT2, EXIG, ALEA2", f:"T, 5 − ART2b, A, M, POID1" },
   4:{ s:"EXIG, PROF, INT2, LIEN2", f:"A, M, 5 − ART2b" },
   5:{ s:"(PROF, EXIG, POID, LIEN2) × plafond d'aléa", f:"A, 5 − ALEA2, 5 − LIEN2, 5 − INT2, 5 − PROF, M" },
   6:{ s:"(PROF, VAR, POID, LIEN2) × plafond d'aléa", f:"les termes du jalon 5, plus 5 − VAR" },
@@ -84,14 +84,16 @@ function flowJeu(n, pr){
   const moy = (...a) => { a = a.filter(ok); return a.length ? a.reduce((s, v) => s + v, 0) / a.length : null; };
   const quad = (...a) => { a = a.filter(ok); return a.length ? Math.sqrt(a.reduce((s, v) => s + v * v, 0) / a.length) : 0; };
   const inv = v => ok(v) ? 5 - v : null, fois = (v, k) => ok(v) ? v * k : null;
+  // TRAN2 est un écart (−2 à +2) depuis le 11/10/2026 : la gêne d'apprentissage T vaut 2,5 − 1,25 × écart (provisoire, à revoir avec la timeline)
+  const T = ok(n.TRAN2) ? 2.5 - 1.25 * n.TRAN2 : null;
   const k = poidsProfil(pr), kR = k.R || 0, kG = k.G || 0, kW = k.W || 0, kU = k.U || 0;
   const penteL = .1 - .03 * kG;                                   // Rayonner prolonge l'apogée
   const lassitude = N => 1 + penteL * Math.log2(1 + N);
   const exces = Math.max(0, (n.EXIG1 ?? 0) - 2);
   const fAttente = (1 + kR * exces / 5) * (1 + kG * exces / 10) * (1 - kW * (n.NEG2 ?? 0) / 10);   // paralysie subie ; la parole fait passer le temps
   const gene = geneRejet(n, pr) * 5, deRejet = pr ? MOTEURS_JEU[pr.rejet].rejet : 99;
-  const d = [ (n.VAL1 ?? 0) / 4, (n.POID1 ?? 0) / 5 + (n.MAN1 ?? 0) / 10, 1 + (inv(n.TRAN2) ?? 0) / 10,
-    2 ** ((moy(n.POID1, n.EXIG1, n.VAR1, inv(n.TRAN2), inv(n.ART2b)) ?? 0) - 1), 2 ** ((moy(n.PROF, n.EXIG1, n.POID1) ?? 0) - 1),
+  const d = [ (n.VAL1 ?? 0) / 4, (n.POID1 ?? 0) / 5 + (n.MAN1 ?? 0) / 10, 1 + (T ?? 0) / 10,
+    2 ** ((moy(n.POID1, n.EXIG1, n.VAR1, T, inv(n.ART2b)) ?? 0) - 1), 2 ** ((moy(n.PROF, n.EXIG1, n.POID1) ?? 0) - 1),
     2 ** ((moy(n.PROF, n.EXIG, n.VAR1) ?? 0) + .1 - 1), 2 ** ((moy(n.VAR, n.SCAL, n.MAN2) ?? 0) - 1) ];
   const N = [0];
   d.forEach((x, i) => { N.push(N[i] + x); if (i === 5 && n.contenu_parties > 0 && N[6] < n.contenu_parties){ d[5] += n.contenu_parties - N[6]; N[6] = n.contenu_parties; } });
@@ -109,7 +111,7 @@ function flowJeu(n, pr){
       5:[["PROF",n.PROF],["EXIG",n.EXIG],["POID",n.POID],["LIEN",n.LIEN2]], 6:[["PROF",n.PROF],["VAR",n.VAR],["POID",n.POID],["LIEN",n.LIEN2]],
       7:[["VAR",n.VAR],["SCAL",n.SCAL],["MAN",n.MAN2],["LIEN",n.LIEN2]] }[j];
     if (pr && kW && (j === 6 || j === 7) && ok(n.NEG2)) S.push(["NEG", n.NEG2]);        // vraie négociation, pour un Rassembleur
-    const F = { 1:[n.POID1, M, inv(n.ART2b)], 2:[n.POID1, inv(n.TRAN2), M, inv(n.ART2b)], 3:[inv(n.TRAN2), inv(n.ART2b), A, M, n.POID1], 4:[A, M, inv(n.ART2b)],
+    const F = { 1:[n.POID1, M, inv(n.ART2b)], 2:[n.POID1, T, M, inv(n.ART2b)], 3:[T, inv(n.ART2b), A, M, n.POID1], 4:[A, M, inv(n.ART2b)],
       5:f5, 6:[...f5, inv(n.VAR)], 7:[A, M, M2, inv(n.SCAL), inv(n.VAR)] }[j];
     let sw = 0, sv = 0; S.forEach(([c, v]) => { if (!ok(v)) return; const w = pr ? poidsPaire(c, pr, j) : 1; sw += w; sv += w * v; });
     let s0 = sw ? sv / sw : 0;
@@ -130,8 +132,9 @@ function flowJeu(n, pr){
   const purge = brut.findIndex((v, j) => j >= 1 && v < 0);
   if (purge > 0) for (let j = purge; j <= 7; j++) y[j] = 0;
   let alpha = 1; for (let j = 2; j <= 7; j++) if (y[j] > y[alpha]) alpha = j;
-  let beta = null, gamma = null;
-  if (purge > 0){ beta = purge - 1; gamma = purge; }
+  // β : début de la chute ; γ : palier où elle s'arrête ; ω : abandon (purge), à la place de γ
+  let beta = null, gamma = null, omega = null;
+  if (purge > 0){ beta = purge - 1; omega = purge; }
   else {
     for (let j = alpha; j < 7; j++) if (pente(j) <= -.5){ beta = j; break; }
     if (beta != null) for (let k = beta + 1; k <= 7; k++) if (k === 7 || y[k] < 1 || pente(k) > -.5){ gamma = k; break; }
@@ -146,7 +149,7 @@ function flowJeu(n, pr){
   }
   if (demivie == null && y[alpha] > 0 && yLoin(1e7) < cible){ let a = N[7], b = 1e7; for (let i = 0; i < 80; i++){ const m = Math.sqrt(a * b); yLoin(m) > cible ? a = m : b = m; } demivie = a; xDemi = xLoin(a); }
   const classe = (CLASSES_DEMIVIE.find(([s]) => (demivie ?? Infinity) < s) || CLASSES_DEMIVIE[3])[1];
-  return { d, N, x, y, det, alpha, beta, gamma, plafond, usure, perte, demivie, xDemi, classe, yLoin, xLoin, purge: purge > 0 ? purge : null, ambition: amb };
+  return { d, N, x, y, det, alpha, beta, gamma, plafond, usure, perte, demivie, xDemi, classe, yLoin, xLoin, purge: purge > 0 ? purge : null, omega, ambition: amb };
 }
 
 /* Graphique SVG : phases en bandes, jalons numérotés (nom au survol), α β γ, α / 2, demi-vie, pointillés. */
@@ -169,17 +172,17 @@ function courbeSVG(c, titre, ref){
   if (cible > 0) s += `<line x1="${g}" x2="${W - dr}" y1="${Y(cible)}" y2="${Y(cible)}" class="demi"/><text x="${W - dr - 4}" y="${Y(cible) - 5}" class="gl" style="text-anchor:end">α / 2</text>`;
   if (c.xDemi != null){ const xd = X(Math.min(c.xDemi, xFin)); s += `<line x1="${xd}" x2="${xd}" y1="${Y(cible)}" y2="${H - b}" class="demi"/><text x="${Math.min(xd, W - dr - 70)}" y="${H - b + 34}" class="gl">demi-vie ≈ ${arrondiDemiVie(c.demivie)} parties</text>`; }
   if (ref) s += `<polyline class="ref" points="${ref.x.map((v, j) => `${X(v)},${Y(ref.y[j])}`).join(" ")}"><title>Flow pour tous</title></polyline><text x="${X(ref.x[7]) + 6}" y="${Y(ref.y[7]) + 4}" class="gl" style="text-anchor:start">pour tous</text>`;
-  const fin = c.purge ? c.gamma : 7, pts = j => `${X(c.x[j])},${Y(c.y[j])}`;   // trait plein sur tous les jalons calculés (jusqu'à l'abandon s'il y a purge)
+  const fin = c.omega ?? 7, pts = j => `${X(c.x[j])},${Y(c.y[j])}`;   // trait plein sur tous les jalons calculés (jusqu'à l'abandon s'il y a purge)
   s += `<polyline class="trait" points="${[...Array(fin + 1).keys()].map(pts).join(" ")}"/>`;
   if (!c.purge){
     const loin = [...Array(8 - fin).keys()].map(k => pts(fin + k));
     for (let xv = c.x[7] + .25; xv <= xFin + 1e-9; xv += .25){ const Nk = (1 + c.N[7]) * 2 ** (xv - c.x[7]) - 1; loin.push(`${X(xv)},${Y(c.yLoin(Nk))}`); }
     s += `<polyline class="pointille" points="${loin.join(" ")}"/>`;
-  } else s += `<text x="${X(c.x[c.gamma]) + 8}" y="${Y(0) - 8}" class="gl" style="text-anchor:start">abandon</text>`;
+  } else s += `<text x="${X(c.x[c.omega]) + 10}" y="${Y(0) - 10}" class="gl fort" style="text-anchor:start">ω abandon</text>`;
   let dernierNum = 0;
   for (let j = 0; j <= 7; j++){
     const info = `Jalon ${j} : ${JALONS[j].nom} — ${f(c.N[j], 1)} parties, flow ${f(c.y[j])}`;
-    const point = c.purge && j > c.gamma ? "" : `<circle cx="${X(c.x[j])}" cy="${Y(c.y[j])}" r="${j === c.alpha ? 6 : 4}" class="${j === c.alpha ? "pt alpha" : "pt"}"/>`;
+    const point = c.omega != null && j > c.omega ? "" : `<circle cx="${X(c.x[j])}" cy="${Y(c.y[j])}" r="${j === c.alpha ? 6 : 4}" class="${j === c.alpha ? "pt alpha" : "pt"}"/>`;
     const lisible = j === 0 || X(c.x[j]) - X(c.x[dernierNum]) >= 14;   // numéros trop serrés (jalons très courts) : on saute
     if (lisible) dernierNum = j;
     s += `<g><title>${e(info)}</title>${point}${lisible ? `<text x="${X(c.x[j])}" y="${H - b + 16}" class="gx">${j}</text>` : ""}</g>`;
@@ -197,8 +200,8 @@ const arrondiDemiVie = v => v == null ? "∞" : v >= 100 ? Math.round(v / 10) * 
 /* Phrase de synthèse, en texte simple (bandeau, récapitulatif, export). */
 function syntheseTimeline(c){
   const f = (v, k = 2) => Number(v).toFixed(k).replace(".", ",").replace("-", "−");
-  const purge = c.gamma != null && c.det[c.gamma]?.brut < 0;
-  const chute = c.beta == null ? "pas de chute : un classique" : purge ? `purge au jalon ${c.gamma}` : `chute du jalon ${c.beta} (β) au jalon ${c.gamma} (γ)`;
+  const purge = c.omega != null;
+  const chute = c.beta == null ? "pas de chute : un classique" : purge ? `abandon au jalon ${c.omega} (ω)` : `chute du jalon ${c.beta} (β) au jalon ${c.gamma} (γ)`;
   const dv = c.demivie == null ? "demi-vie au-delà de 10 millions de parties (inusable)" : `demi-vie ≈ ${arrondiDemiVie(c.demivie)} partie${c.demivie >= 1.5 ? "s" : ""} (${c.classe})`;
   return `α ${f(c.y[c.alpha])} au jalon ${c.alpha} (${JALONS[c.alpha].nom}, vers ${Math.round(c.N[c.alpha])} partie${Math.round(c.N[c.alpha]) > 1 ? "s" : ""}) · ${chute}${purge ? "" : ` · perte ${f(c.perte)} par doublement`} · ${dv}`;
 }
@@ -295,22 +298,24 @@ function courbesParMoteur(r, pl, coul){
     svg += ligne(r.base.y, "ref");
     S.forEach(x => svg += ligne(x.y, "pm-c", `stroke:${coul(M[x.t.fuit])}`));
     svg += `</svg>`;
-    return `<figure class="pm-carte"><figcaption style="color:${e(coul(m))}">${e(m.nom)}</figcaption>${svg}
-      <ul class="pm-leg">${S.sort((a, b2) => b2.note - a.note).map(x => `<li><span class="pm-pastille" style="background:${coul(M[x.t.fuit])}"></span>${e(x.t.nom.charAt(0).toUpperCase() + x.t.nom.slice(1))} <small>note ${f(x.note)} · α ${f(x.alpha)}</small></li>`).join("")}</ul></figure>`;
+    const g2 = r.moteurs.find(x => x.m.code === m.code);
+    return `<figure class="pm-carte"><figcaption><span style="color:${e(coul(m))}">${e(m.nom)}</span><span class="pm-note">${g2 ? f(g2.note) : ""}</span></figcaption>${svg}
+      <p class="pm-leg">${S.map(x => `<span title="note ${f(x.note)} · α ${f(x.alpha)}"><span class="pm-pastille" style="background:${coul(M[x.t.fuit])}"></span>${e(x.t.nom.charAt(0).toUpperCase() + x.t.nom.slice(1))}</span>`).join("")}</p></figure>`;
   }).join("")}</div>`;
 }
 (function(){
   const st = document.createElement("style");
   st.textContent = `.pm-grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin:10px 0}
 .pm-carte{margin:0;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
-.pm-carte figcaption{font-weight:600;font-size:15px;margin:0 0 2px}
+.pm-carte figcaption{font-weight:600;font-size:15px;margin:0 0 2px;display:flex;justify-content:space-between;align-items:baseline}
+.pm-carte .pm-note{font-size:16px;color:var(--ink);font-variant-numeric:tabular-nums}
 svg.pm{width:100%;height:auto;display:block;font-family:inherit}
 svg.pm .bande0{fill:var(--paper)} svg.pm .bande1{fill:color-mix(in srgb, var(--accent) 7%, var(--panel))}
 svg.pm .grille{stroke:var(--line)} svg.pm .gy{font-size:10px;fill:var(--muted);text-anchor:end} svg.pm .gx{font-size:10.5px;fill:var(--ink);text-anchor:middle}
 svg.pm .ref{fill:none;stroke:var(--muted);stroke-width:1.5;stroke-dasharray:2 3}
 svg.pm .pm-c{fill:none;stroke-width:2.4;stroke-linejoin:round}
-.pm-leg{list-style:none;margin:4px 0 0;padding:0;font-size:13px;display:grid;gap:2px}
-.pm-leg small{color:var(--muted)} .pm-pastille{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:0}`;
+.pm-leg{margin:4px 0 0;font-size:12.5px;display:flex;flex-wrap:wrap;gap:2px 12px;color:var(--muted)}
+.pm-pastille{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:0}`;
   document.head.appendChild(st);
 })();
 

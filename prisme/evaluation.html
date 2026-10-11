@@ -104,6 +104,7 @@ table.tl-table th{text-align:left;font-weight:500;color:var(--muted);border-bott
 table.tl-table td{border-bottom:1px solid var(--line);padding:5px 8px} table.tl-table td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 table.tl-table tr.tl-phase td{font:600 12px var(--sans,inherit);text-transform:uppercase;letter-spacing:.04em;color:var(--muted);background:var(--paper);padding-top:8px}
 table.tl-table tr.alpha td{background:color-mix(in srgb, var(--accent) 9%, transparent)} table.tl-table tr.chute td:first-child{color:var(--err)}
+table.tl-table tr.jamais td{opacity:.42;font-style:italic}
 .sp-haut{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:18px;align-items:start;margin:8px 0 12px}
 .sp-haut figure{margin:0} .sp-haut figcaption{font-size:12.5px;color:var(--muted);text-align:center}
 @media (max-width:700px){.sp-haut{grid-template-columns:1fr}}
@@ -204,9 +205,9 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
 <dialog id="dlg-recap"><div id="recap"></div><p style="text-align:right;margin:12px 0 0"><button class="btn" id="fermer-recap" type="button">Fermer</button></p></dialog>
 <div class="wrap"><p class="version" id="version"></p></div>
 
-<script src="timeline.js?v=1.6"></script>
+<script src="timeline.js?v=1.8"></script>
 <script>
-const VERSION = { numero:"3.16", date:"2026-10-11 16:30" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.17", date:"2026-10-11 17:00" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -587,7 +588,7 @@ function recalculer(){
 function entreesTimeline(){ const e = entreesFiche(saisie, M.paires, M.axes, fiche.contenu_parties); return { n:e.n, manque:e.manque, absents:e.absents }; }
 // pied de page : α, puis β et γ s'il y a une chute (sinon « pas de chute »), puis la demi-vie
 function piedTimeline(c){
-  const chute = c.beta == null ? "pas de chute" : `β j${c.beta} · γ j${c.gamma}`;
+  const chute = c.beta == null ? "pas de chute" : c.omega != null ? `β j${c.beta} · ω j${c.omega}` : `β j${c.beta} · γ j${c.gamma}`;
   return `α ${fmt(c.y[c.alpha], 2)} <small>j${c.alpha}</small> · ${chute} · demi-vie ${arrondiDemiVie(c.demivie)} <small>parties</small>`;
 }
 function majTimeline(){
@@ -601,13 +602,13 @@ function majTimeline(){
   }
   const c = flowJeu(n);
   box.innerHTML = `<div class="tl-bandeau">${esc(syntheseTimeline(c))}</div>
-    <figure class="courbe-box">${courbeSVG(c, nomJeu(fiche.jeu))}<figcaption>Trait plein : les jalons calculés${c.purge ? " jusqu'à l'abandon (le flow passe sous 0 : le joueur lâche le jeu)" : ""}. Pointillés : la suite, où seule la lassitude progresse. Abscisse : les jalons, espacés selon le log2 des parties cumulées. Bandes : les phases. Survole un point pour son détail.</figcaption></figure>
+    <figure class="courbe-box">${courbeSVG(c, nomJeu(fiche.jeu))}<figcaption>Trait plein : les jalons calculés${c.omega != null ? " jusqu'à l'abandon ω (le flow passe sous 0 : le joueur lâche le jeu)" : ""}. Pointillés : la suite, où seule la lassitude progresse. Abscisse : les jalons, espacés selon le log2 des parties cumulées. Bandes : les phases. Survole un point pour son détail.</figcaption></figure>
     ${absents.length ? `<p class="aide">Sans objet pour ce jeu, donc retiré du calcul : ${absents.map(x => esc(nomP(x))).join(", ")}.</p>` : ""}
     ${fiche.contenu_parties ? "" : `<p class="aide">« Parties pour tout exploiter » est vide : pas de plancher pour le jalon 6 (jeu rejouable sans fin).</p>`}
     <div class="defile"><table class="tl-table"><thead><tr><th>Jalon</th><th title="Parties jouées pour atteindre ce jalon">Atteint après</th><th>Stimulation</th><th>Friction</th><th>Flow</th><th>Puis : sous-phase</th><th>Durée</th><th title="Parties jouées à la fin de la sous-phase">Durée cumulée</th></tr></thead><tbody>
     ${JALONS.map(j => { const sp = SOUSPHASES[j.n], prev = j.n === 0 || SOUSPHASES[j.n - 1].phase !== sp.phase;
       return `${prev ? `<tr class="tl-phase"><td colspan="8">Phase ${sp.phase} — ${esc(PHASES[sp.phase])}</td></tr>` : ""}
-      <tr class="${j.n === c.alpha ? "alpha" : ""}${j.n === c.beta || j.n === c.gamma ? " chute" : ""}"><td><b>${j.n}</b> ${esc(j.nom)}${j.n === c.alpha ? " · α" : ""}${j.n === c.beta ? " · β" : ""}${j.n === c.gamma ? " · γ" : ""}</td>
+      <tr class="${j.n === c.alpha ? "alpha" : ""}${j.n === c.beta || j.n === c.gamma || j.n === c.omega ? " chute" : ""}${c.omega != null && j.n > c.omega ? " jamais" : ""}"><td><b>${j.n}</b> ${esc(j.nom)}${j.n === c.alpha ? " · α" : ""}${j.n === c.beta ? " · β" : ""}${j.n === c.gamma ? " · γ" : ""}${j.n === c.omega ? " · ω" : ""}${c.omega != null && j.n > c.omega ? ' <small>jamais atteint</small>' : ""}</td>
         <td class="n">${fmt(c.N[j.n], 1)} p.</td><td class="n">${j.n ? fmt(c.det[j.n].s, 2) : "—"}</td><td class="n">${j.n ? fmt(c.det[j.n].f, 2) : "—"}</td><td class="n"><b>${fmt(c.y[j.n], 2)}</b></td>
         <td>${esc(sp.nom)}</td><td class="n">${j.n < 7 ? fmt(c.d[j.n], 2) + " partie" + (c.d[j.n] >= 2 ? "s" : "") : "∞"}</td><td class="n">${j.n < 7 ? fmt(c.N[j.n + 1], 1) + " partie" + (c.N[j.n + 1] >= 2 ? "s" : "") : "∞"}</td></tr>`; }).join("")}
     </tbody></table></div>
@@ -624,15 +625,16 @@ function majSpectro(n){
   const coul = m => (matchMedia("(prefers-color-scheme: dark)").matches ? m.couleur_sombre : m.couleur) || m.couleur || "var(--accent)";
   const ligne = l => `<tr class="${spChoisi === l.st.code ? "choisi" : ""}"><td><button type="button" class="lien" data-sp="${esc(l.st.code)}">${esc(maj(l.st.nom))}</button><br><small>${esc(l.st.code)} · conduit par ${esc(Mo[l.pr.second]?.nom || "")} · fuit ${esc(Mo[l.pr.rejet]?.nom || "")}</small></td>
     <td class="n"><b>${fmt(l.note, 2)}</b></td><td class="n">${fmt(l.c.y[l.c.alpha], 2)} <small>j${l.c.alpha}</small></td><td class="n">${l.c.demivie == null ? "∞" : arrondiDemiVie(l.c.demivie)}</td>
-    <td>${l.c.beta != null ? `chute au jalon ${l.c.beta}` : l.gene > 0 ? `gêné dès le jalon ${MOTEURS_JEU[l.pr.rejet].rejet} (${JALONS[MOTEURS_JEU[l.pr.rejet].rejet].nom})` : "—"}</td></tr>`;
+    <td>${l.c.omega != null ? `abandon au jalon ${l.c.omega} (ω)` : l.c.beta != null ? `chute au jalon ${l.c.beta}` : l.gene > 0 ? `gêné dès le jalon ${MOTEURS_JEU[l.pr.rejet].rejet} (${JALONS[MOTEURS_JEU[l.pr.rejet].rejet].nom})` : "—"}</td></tr>`;
   const det = spChoisi && r.lignes.find(l => l.st.code === spChoisi);
   const ouverts = new Set([...box.querySelectorAll("details[open]")].map(d => d.id));
   box.innerHTML = `<div class="sp-haut"><figure>${rosaceSVG(r.spectre, PL.moteurs.map(m => ({ code:m.code, nom:m.nom, couleur:coul(m) })))}
       <figcaption>Pointillés : ce que le jeu <b>offre</b> à chaque moteur (le trait, axes 1). Surface : ce qu'il <b>réussit</b> pour lui (les paires qu'il aime).</figcaption></figure>
     <div><p class="aide" style="margin-top:0">Note pour tous : <b>${fmt(r.noteBase, 2)}</b>. Du profil le mieux servi au moins bien servi : <b>${fmt(r.lignes[0].note, 2)}</b> (${esc(r.lignes[0].st.nom)}) à <b>${fmt(r.lignes.at(-1).note, 2)}</b> (${esc(r.lignes.at(-1).st.nom)}).</p>
-    ${[["Les mieux servis", r.lignes.slice(0, 5)], ["Les moins bien servis", r.lignes.slice(-5).reverse()]].map(([t, L]) => `<table class="tl-table sp-extremes"><thead><tr><th>${t}</th><th>Note</th><th>α</th></tr></thead><tbody>
-      ${L.map(l => `<tr class="${spChoisi === l.st.code ? "choisi" : ""}"><td><button type="button" class="lien" data-sp="${esc(l.st.code)}">${esc(maj(l.st.nom))}</button> <small>${esc(l.st.code)}</small></td><td class="n"><b>${fmt(l.note, 2)}</b></td><td class="n">${fmt(l.c.y[l.c.alpha], 2)}</td></tr>`).join("")}</tbody></table>`).join("")}
-    <p class="aide">Ci-dessous, les cinq moteurs dominants du mieux au moins bien servi ; dépliez-en un pour ses quatre tempéraments et leurs douze profils.</p></div></div>
+    ${(() => { const T = r.moteurs.flatMap(g => g.temperaments).sort((x, y) => y.note - x.note);
+      return [["Les tempéraments les mieux servis", T.slice(0, 5)], ["Les moins bien servis", T.slice(-5).reverse()]].map(([t, L]) => `<table class="tl-table sp-extremes"><thead><tr><th>${t}</th><th>Note</th><th>α</th></tr></thead><tbody>
+      ${L.map(x => `<tr><td><button type="button" class="lien" data-mo="${esc(x.t.moteur)}">${esc(maj(x.t.nom))}</button> <small>${esc(x.t.code)}</small></td><td class="n"><b>${fmt(x.note, 2)}</b></td><td class="n">${fmt(x.alpha, 2)}</td></tr>`).join("")}</tbody></table>`).join(""); })()}
+    <p class="aide">Note et α : moyenne des trois profils du tempérament. Un clic ouvre son moteur, plus bas, avec le détail de ses profils.</p></div></div>
     <h3 class="sp-titre">Les courbes par tempérament</h3>
     <p class="aide">Pour chaque moteur dominant, la courbe de chacun de ses quatre tempéraments (moyenne de ses trois profils), dans la couleur du moteur qu'il fuit. Pointillé gris : le flow pour tous.</p>
     ${courbesParMoteur(r, PL, coul)}
@@ -646,6 +648,8 @@ function majSpectro(n){
   return r;
 }
 document.addEventListener("click", e => {
+  const mo = e.target.closest("[data-mo]");
+  if (mo){ e.preventDefault(); const d = document.getElementById("mo-" + mo.dataset.mo); if (d){ d.open = true; d.scrollIntoView({ behavior:"smooth", block:"start" }); } return; }
   const b = e.target.closest("[data-sp]");
   if (b){ e.preventDefault(); spChoisi = b.dataset.sp || null; majTimeline(); if (spChoisi) document.querySelector("#sp-corps .sp-courbe")?.scrollIntoView({ behavior:"smooth", block:"start" }); return; }
   const o = e.target.closest("[data-ouvrir]");

@@ -131,10 +131,10 @@ mark{background:#FFE58A;color:#1B2430;border-radius:2px}
 </div>
 <div style="max-width:1240px;margin:0 auto;padding:0 20px 30px"><p class="version"><span id="credit"></span><br><span id="version"></span></p></div>
 
-<script src="timeline.js?v=1.6"></script>
+<script src="timeline.js?v=1.8"></script>
 <script src="totems.js?v=1"></script>
 <script>
-const VERSION = { numero:"3.1", date:"2026-10-11 16:30" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.3", date:"2026-10-11 17:10" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -347,12 +347,12 @@ function sectionJoueur(toc){
 // Jalons, durées, flow et graphique : module partagé timeline.js.
 // Heat (boîte de base, toutes options) : notes de la fiche validée le 08/10/2026 ; POID, PROF… = notes retenues des paires.
 const HEAT = { nom:"Heat: Pedal to the Metal", POID1:2.5, POID:3.49, PROF:3.49, VAR1:3, VAR:3.89, ALEA1:2, ALEA2:4, EXIG1:3.5, EXIG:4.23,
-  RYT1:3, RYT2:3, MAN1:2, MAN2:4, THEM1:3, THEM:3.9, LIEN1:3, LIEN2:4.5, INT1:4, NEG1:1, PROF1:2.5, INT2:4, SCAL:3.89, MAT:3.02, ART2a:4.5, ART2b:3, TRAN2:3.5, VAL1:2,
+  RYT1:3, RYT2:3, MAN1:2, MAN2:4, THEM1:3, THEM:3.9, LIEN1:3, LIEN2:4.5, INT1:4, NEG1:1, PROF1:2.5, INT2:4, SCAL:3.89, MAT:3.02, ART2a:4.5, ART2b:3, TRAN1:3, TRAN2:0.5, VAL1:2,
   contenu_parties:12, effectif_reference:6 };
 
 // notes retenues des 16 paires de Heat (fiche validée le 08/10/2026), pour la note vue par chaque style
 const HEAT_PAIRES = [["SYS","POID",3.49],["SYS","PROF",3.49],["SYS","VAR",3.89],["SYS","ALEA",4],["SYS","EXIG",4.23],["EXP","RYT",3],["EXP","MAN",4],["EXP","THEM",3.9],
-  ["EXP","LIEN",4.5],["EXP","INT",4],["EXP","NEG",null],["EXP","SCAL",3.89],["EDI","MAT",3.02],["EDI","ART",3.75],["EDI","TRAN",3.5],["EDI","VAL",4]].map(([chap, code, note]) => ({ chap, code, note }));
+  ["EXP","LIEN",4.5],["EXP","INT",4],["EXP","NEG",null],["EXP","SCAL",3.89],["EDI","MAT",3.02],["EDI","ART",3.75],["EDI","TRAN",3.49],["EDI","VAL",4]].map(([chap, code, note]) => ({ chap, code, note }));
 const EFFETS = {
   U:"EXIGENCE et PROFONDEUR pèsent encore plus aux jalons 3 et 4. Après le jalon 4, sa stimulation baisse : × (1 − 0,2 × poids × (1 − r)), r = (moy(EXIG1, PROF1) − 2,5) / 2, borné entre 0 et 1 ; aucune baisse si le jeu reste très réflexif (moyenne de 4,5 ou plus).",
   B:"LIEN et PROFONDEUR pèsent encore plus des jalons 4 à 6. L'adversaire peut être le jeu : un coopératif exigeant ou un solo le nourrit aussi.",
@@ -423,7 +423,7 @@ function sectionTemps(toc){
 
   const c = flowJeu(HEAT);
   n1.enfants.push({ id:"t-abscisse", titre:"La durée (abscisse)" }, { id:"t-flow", titre:"Le flow (ordonnée)" },
-    { id:"t-points", titre:"α, β, γ : les points remarquables" }, { id:"t-demivie", titre:"La suite et la demi-vie" }, { id:"t-heat", titre:"Exemple : Heat" });
+    { id:"t-points", titre:"α, β, γ, ω : les points remarquables" }, { id:"t-demivie", titre:"La suite et la demi-vie" }, { id:"t-heat", titre:"Exemple : Heat" });
   const lien = code => `<a href="#p-${code}">${code}</a>`;
   h += `<h3 class="section" id="t-abscisse">La durée (abscisse)</h3>
     <div class="texte"><p>Chaque sous-phase dure un certain nombre de parties, tiré des notes du jeu. Les fractions de partie comptent : la Préparation (lire une critique, acheter) ou l'Accès (dépiauter, lire les règles) représentent une part de soirée.</p>
@@ -448,16 +448,16 @@ function sectionTemps(toc){
     <div class="defile"><table class="jeu"><thead><tr><th>Jalon</th><th>Stimulation S</th><th>Friction F</th></tr></thead><tbody>
     ${[1,2,3,4,5,6,7].map(j => `<tr><td class="n"><b>${j}</b> ${esc(JALONS[j].nom)}</td><td>${esc(TERMES[j].s)}</td><td>${esc(TERMES[j].f)}</td></tr>`).join("")}</tbody></table></div>
 
-    <h3 class="section" id="t-points">α, β, γ : les points remarquables</h3>
+    <h3 class="section" id="t-points">α, β, γ, ω : les points remarquables</h3>
     <div class="texte"><ul>
       <li><b>α, l'apogée</b> : le premier jalon où le flow atteint son maximum.</li>
       <li><b>La chute</b> : le premier segment après α dont la pente descend à −0,5 ou moins par unité d'abscisse. <b>β</b> en marque le début.</li>
       <li><b>γ, le palier</b> : le premier jalon après β où la pente redevient douce, ou bien où le flow passe sous 1.</li>
       <li><b>Sans chute</b>, le jeu est un classique : ni β ni γ.</li>
-      <li><b>Un flow négatif</b> signale une purge : le jeu est abandonné sur-le-champ, γ tombe immédiatement.</li></ul></div>
+      <li><b>ω, l'abandon</b> : un flow négatif signale une purge, le jeu est lâché sur-le-champ. La courbe s'arrête à 0 : les sous-phases suivantes ne sont jamais vécues.</li></ul></div>
 
     <h3 class="section" id="t-demivie">La suite et la demi-vie</h3>
-    <div class="texte"><p>Après le jalon 7, ou dès γ pour un jeu qui chute, la courbe se poursuit <b>en pointillés</b>. On prolonge le dernier état connu : la stimulation reste figée, seule la lassitude continue de monter. Comme l'abscisse et la lassitude sont toutes deux logarithmiques, cette suite est une droite. Sa pente est la <b>perte par doublement</b> : ce que le jeu perd de flow chaque fois qu'on double le nombre de parties jouées.</p>
+    <div class="texte"><p>Après le jalon 7, la courbe se poursuit <b>en pointillés</b> (sauf abandon ω : elle s'arrête). On prolonge le dernier état connu : la stimulation reste figée, seule la lassitude continue de monter. Comme l'abscisse et la lassitude sont toutes deux logarithmiques, cette suite est une droite. Sa pente est la <b>perte par doublement</b> : ce que le jeu perd de flow chaque fois qu'on double le nombre de parties jouées.</p>
     <p>La <b>demi-vie</b> est le nombre de parties au bout duquel le flow passe pour la première fois sous la moitié de α, jalons et pointillés compris. Pour un jeu qui s'effondre, elle tombe pendant la chute ; pour un classique, loin dans les pointillés.</p></div>
     <div class="defile"><table class="ref"><tr><th>Demi-vie</th><th>moins de 10 parties</th><th>10 à 100</th><th>100 à 1 000</th><th>plus de 1 000</th></tr>
       <tr><th>Lecture</th><td>éphémère</td><td>durable</td><td>classique</td><td>inusable</td></tr></table></div>
@@ -489,7 +489,7 @@ const GLOSSAIRE = [
   ["Jalon", "Un repère de la vie du jeu, de 0 (identifié) à 7 (archivé)."],
   ["Flow", "Le plaisir net à un jalon : stimulation moins friction, sur 10."],
   ["Lassitude", "Le poids croissant de ce qui se répète (manipulation, attente) à mesure qu'on rejoue."],
-  ["α, β, γ", "L'apogée de la courbe, le début de sa chute, le palier où elle se stabilise."],
+  ["α, β, γ, ω", "L'apogée de la courbe, le début de sa chute, le palier où elle se stabilise, l'abandon (flow négatif)."],
   ["Demi-vie", "Le nombre de parties au bout duquel le flow tombe sous la moitié de son apogée."],
   ["Trait d'un moteur", "À quel point le jeu est tourné vers ce moteur, lu dans les axes 1 ; il devient une gêne pour qui rejette ce moteur."],
   ["Spectromètre", "Le jeu recalculé pour chacun des 60 profils : une note et une courbe par joueur type."],
