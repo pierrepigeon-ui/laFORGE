@@ -157,30 +157,30 @@
   },
   "W.b": {
    "style": "porter",
-   "nom": "Atlas",
+   "nom": "le temple",
    "fichier": "styles/W-b.svg",
-   "icone": "atlas",
+   "icone": "greek-temple",
    "statut": "exact"
   },
   "W.r": {
    "style": "inspirer",
-   "nom": "le phare",
+   "nom": "la torche",
    "fichier": "styles/W-r.svg",
-   "icone": "lighthouse",
+   "icone": "torch",
    "statut": "exact"
   },
   "W.g": {
    "style": "constituer",
-   "nom": "les engrenages",
+   "nom": "le cœur",
    "fichier": "styles/W-g.svg",
-   "icone": "gears",
+   "icone": "heart-inside",
    "statut": "exact"
   },
   "U.w": {
    "style": "étudier",
-   "nom": "le livre ouvert",
+   "nom": "le phare",
    "fichier": "styles/U-w.svg",
-   "icone": "open-book",
+   "icone": "lighthouse",
    "statut": "exact"
   },
   "U.b": {
@@ -213,23 +213,23 @@
   },
   "B.u": {
    "style": "concrétiser",
-   "nom": "la coupe",
+   "nom": "le sablier",
    "fichier": "styles/B-u.svg",
-   "icone": "trophy-cup",
+   "icone": "hourglass",
    "statut": "exact"
   },
   "B.r": {
    "style": "retenir",
-   "nom": "le coffre",
+   "nom": "le funambule",
    "fichier": "styles/B-r.svg",
-   "icone": "locked-chest",
+   "icone": "tightrope",
    "statut": "exact"
   },
   "B.g": {
    "style": "engranger",
-   "nom": "le grenier",
+   "nom": "le trône",
    "fichier": "styles/B-g.svg",
-   "icone": "granary",
+   "icone": "stone-throne",
    "statut": "exact"
   },
   "R.w": {
@@ -255,9 +255,9 @@
   },
   "R.g": {
    "style": "répondre",
-   "nom": "la raquette",
+   "nom": "le bonnet de bouffon",
    "fichier": "styles/R-g.svg",
-   "icone": "tennis-racket",
+   "icone": "jester-hat",
    "statut": "exact"
   },
   "G.w": {

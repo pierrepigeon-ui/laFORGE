@@ -135,7 +135,7 @@ mark{background:#FFE58A;color:#1B2430;border-radius:2px}
 <div style="max-width:1240px;margin:0 auto;padding:0 20px 30px"><p class="version"><span id="credit"></span><br><span id="version"></span></p></div>
 
 <script src="timeline.js?v=1.9"></script>
-<script src="totems.js?v=3"></script>
+<script src="totems.js?v=4"></script>
 <script>
 const VERSION = { numero:"3.5", date:"2026-10-11 19:20" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
@@ -342,7 +342,7 @@ function sectionJoueur(toc){
     ${M.moteurs.map(m => `<tr><td><b style="color:${esc(coul(m))}">${esc(m.nom)}</b></td><td>${M.styles.filter(x => x.moteur === m.code).map(x => `<div class="sp">${emblemeSVG(x.code, coul(Mo[x.second] || m), { cls:"sp-emb", titre: x.embleme ? majE(x.embleme) : undefined })}<b>${esc(x.nom)}</b> <span class="dom">${esc(x.code)} · conduit par ${esc(Mo[x.second]?.nom || "")}</span><br>${esc(majE(x.devise || ""))}${x.titre ? ` · « ${esc(x.titre)} »` : ""}${x.texte ? `<br>${esc(x.texte)}` : ""}${x.embleme ? `<br><i>Emblème : ${esc(x.embleme)}. ${esc(x.embleme_raison || "")}</i>` : ""}</div>`).join("")}</td></tr>`).join("")}
     </tbody></table></div>
     <h3 class="section" id="profils">Le profil : tempérament et style</h3>
-    <div class="texte"><p>Un joueur se lit par son tempérament et son style, qui partagent le même moteur dominant : l'Enthousiaste (R/b) expérimentateur (R.u), soit le profil R.u/b. Le code complet range trois moteurs : le dominant, celui qui le conduit, celui qu'il fuit ; il y a 60 profils. Les deux moteurs restants, trop proches pour être départagés de façon fiable, ne sont pas lus.</p>
+    <div class="texte"><p>Un joueur se lit par son tempérament et son style, qui partagent le même moteur dominant : l'Enthousiaste (R/b) expérimenteur (R.u), soit le profil R.u/b. Le code complet range trois moteurs : le dominant, celui qui le conduit, celui qu'il fuit ; il y a 60 profils. Les deux moteurs restants, trop proches pour être départagés de façon fiable, ne sont pas lus.</p>
     <p>Un profil a aussi ses <b>facettes</b> : les autres tempéraments presque aussi marqués que le sien. L'affinité d'un tempérament X/y vaut (score de X − moyenne des cinq) × (moyenne − score de Y), les deux écarts devant être positifs ; on montre ceux qui atteignent le tiers du premier, quatre au plus. Et un <b>rival</b> : le tempérament inverse (X/y ↔ Y/x), dont les jeux préférés font décrocher, et inversement.</p></div>`;
   return h;
 }
