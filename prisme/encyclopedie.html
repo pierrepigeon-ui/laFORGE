@@ -134,10 +134,10 @@ mark{background:#FFE58A;color:#1B2430;border-radius:2px}
 </div>
 <div style="max-width:1240px;margin:0 auto;padding:0 20px 30px"><p class="version"><span id="credit"></span><br><span id="version"></span></p></div>
 
-<script src="timeline.js?v=1.9"></script>
+<script src="timeline.js?v=2.0"></script>
 <script src="totems.js?v=4"></script>
 <script>
-const VERSION = { numero:"3.6", date:"2026-10-11 21:45" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.7", date:"2026-10-11 23:55" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -188,7 +188,9 @@ const MECA = {
   independante:"Deux notes indépendantes : la note de la paire est celle de l'axe 2, de 0 à 5 ; l'axe 1 décrit le jeu.",
   crans5:"Axe 2 en cinq crans (−− = 0 ; − = 1,25 ; = = 2,5 ; + = 3,75 ; ++ = 5).",
   composite:"Note composite : les deux notes de l'axe 2 sont pesées selon la position de l'axe 1 sur le curseur.",
-  moyenne:"L'axe 2 est la moyenne de deux notes toujours demandées."
+  moyenne:"L'axe 2 est la moyenne de deux notes toujours demandées.",
+  theme:"Le thème est une nature : l'incarnation (axe 2b) pèse selon la présence du thème (axe 1), le reste va à une valeur neutre de 2,5 ; un jeu abstrait obtient 2,5.",
+  lien:"Quatre axes descriptifs et deux notes : la justesse du rapport et la parole vécue, mêlées selon la place de la parole, puis accentuées par l'étendue des effectifs servis."
 };
 const RELATION = { liee:"liée", neutre:"neutre", penalite_asymetrique:"pénalité asymétrique (en prose)", ponderation_inverse:"pondération inverse (en prose)", promesse:"promesse tenue", composite:"composite" };
 const STATUT = { stabilisee:"stabilisée", provisoire:"provisoire", ballotage:"en ballotage", en_attente:"en attente" };
@@ -349,19 +351,20 @@ function sectionJoueur(toc){
 
 /* ---------------- le temps : timeline et flow ---------------- */
 // Jalons, durées, flow et graphique : module partagé timeline.js.
-// Heat (boîte de base, toutes options) : notes de la fiche validée le 08/10/2026 ; POID, PROF… = notes retenues des paires.
-const HEAT = { nom:"Heat: Pedal to the Metal", POID1:2.5, POID:3.49, PROF:3.49, VAR1:3, VAR:3.89, ALEA1:2, ALEA2:4, EXIG1:3.5, EXIG:4.23,
-  RYT1:3, RYT2:3, MAN1:2, MAN2:4, THEM1:3, THEM:3.9, LIEN1:3, LIEN2:4.5, INT1:4, NEG1:1, PROF1:2.5, INT2:4, SCAL:3.89, MAT:3.02, ART2a:4.5, ART2b:3, TRAN1:3, TRAN2:0.5, VAL1:2,
+// Heat (boîte de base, toutes options) : notes de Pierre du 11/10/2026, passées au modèle à 12 paires (MECA2 et LIEN2a pré-remplis) ;
+// POID, PROF… = notes des paires ; VAL1 = palier de prix (55 €).
+const HEAT = { nom:"Heat: Pedal to the Metal", POID1:2.5, POID:3.49, PROF1:2.5, PROF:3.49, VAR1:3, VAR:3.89, MECA1a:2, MECA2:3.5, EXIG1:3.5, EXIG:4.23,
+  RYT1:3, RYT2:3, MAN1:2, MAN2:4, THEM1:3, THEM:3.7, LIEN1:3, LIEN1b:4, LIEN1c:1, LIEN2a:4.3, LIEN2b:2, LIEN:4.45, MAT:1.98, ART2a:5, ART2b:3, DOC2:0, VAL1:2,
   contenu_parties:12, effectif_reference:6 };
 
-// notes retenues des 16 paires de Heat (fiche validée le 08/10/2026), pour la note vue par chaque style
-const HEAT_PAIRES = [["SYS","POID",3.49],["SYS","PROF",3.49],["SYS","VAR",3.89],["SYS","ALEA",4],["SYS","EXIG",4.23],["EXP","RYT",3],["EXP","MAN",4],["EXP","THEM",3.9],
-  ["EXP","LIEN",4.5],["EXP","INT",4],["EXP","NEG",null],["EXP","SCAL",3.89],["EDI","MAT",3.02],["EDI","ART",3.75],["EDI","TRAN",3.49],["EDI","VAL",4]].map(([chap, code, note]) => ({ chap, code, note }));
+// notes des 12 paires de Heat, pour la note vue par chaque style
+const HEAT_PAIRES = [["SYS","POID",3.49],["SYS","PROF",3.49],["SYS","MECA",3.5],["SYS","VAR",3.89],["SYS","EXIG",4.23],["EXP","RYT",3],["EXP","MAN",4],["EXP","THEM",3.7],
+  ["EXP","LIEN",4.45],["EDI","MAT",1.98],["EDI","ART",4],["EDI","DOC",3.02]].map(([chap, code, note]) => ({ chap, code, note }));
 const EFFETS = {
   U:"EXIGENCE et PROFONDEUR pèsent encore plus aux jalons 3 et 4. Après le jalon 4, sa stimulation baisse : × (1 − 0,2 × poids × (1 − r)), r = (moy(EXIG1, PROF1) − 2,5) / 2, borné entre 0 et 1 ; aucune baisse si le jeu reste très réflexif (moyenne de 4,5 ou plus).",
   B:"LIEN et PROFONDEUR pèsent encore plus des jalons 4 à 6. L'adversaire peut être le jeu : un coopératif exigeant ou un solo le nourrit aussi.",
   R:"MATÉRIEL, ART et THÈME pèsent encore plus des jalons 1 à 3. Paralysie d'analyse subie : l'attente est multipliée par 1 + (EXIG1 − 2) / 5.",
-  W:"LIEN et SCALABILITÉ pèsent encore plus des jalons 5 à 7. Vraie négociation seulement : NEG2 entre dans la stimulation des jalons 6 et 7, et l'attente est multipliée par 1 − NEG2 / 10.",
+  W:"LIEN pèse encore plus des jalons 5 à 7. Vraie parole seulement (LIEN1c ≥ 2, ou un manque ressenti) : LIEN2b entre dans la stimulation des jalons 6 et 7, et l'attente est multipliée par 1 − LIEN2b / 10.",
   G:"Phase clé transversale : la lassitude monte moins vite (pente 0,07 s'il est dominant, 0,085 s'il est second, 0,095 en troisième ou quatrième position, au lieu de 0,1). Il n'aime pas attendre non plus : paralysie subie à moitié."
 };
 function sectionCroisement(toc){
@@ -376,7 +379,7 @@ function sectionCroisement(toc){
     <p class="chapo">Un même jeu n'est pas vécu pareil selon qui joue. Le spectromètre recalcule la note et la courbe du jeu pour chacun des 60 profils de PRISMEplayer (tempérament et style).</p>
     <h3 class="section" id="x-principe">Le principe</h3>
     <div class="texte"><ul>
-      <li><b>Ce qui nourrit un moteur</b> : les paires dont la réussite compte davantage pour lui (« ++ » ou « + »).</li>
+      <li><b>Ce qui nourrit un moteur</b> : les paires dont la réussite compte davantage pour lui (« + » à « +++ » : poids 1 à 3).</li>
       <li><b>Son trait</b> : à quel point le jeu est tourné vers lui, lu dans les axes 1 (ce que le jeu est). Quand le moteur est rejeté, ce trait devient une gêne.</li>
       <li><b>Sa phase clé</b> : le moment de la timeline où il culmine.</li>
       <li><b>Un profil</b> range les cinq moteurs : le dominant pèse 3, le second 1,5, les deux suivants 0,5 chacun ; le cinquième, celui qu'il fuit, ne nourrit pas : il gêne.</li>
@@ -387,10 +390,10 @@ function sectionCroisement(toc){
     <div class="defile"><table class="jeu"><thead><tr><th>Moteur</th><th>Ce qui le nourrit</th><th>Son trait</th><th>Phase clé</th><th>Rejeté : gêne dès</th><th>Dans la courbe</th></tr></thead><tbody>
     ${M.moteurs.map(m => { const d = MOTEURS_JEU[m.code]; if (!d) return "";
       return `<tr><td><b style="color:${esc(coul(m))}">${esc(m.nom)}</b><br><small class="vide">${esc(Mo[m.code].fragilite || "")}</small></td>
-        <td>${Object.entries(d.nourrit).sort((a, b) => b[1] - a[1]).map(([c, l]) => `<a href="#p-${esc(c)}">${esc(nomP(c))}</a> ${l === 2 ? "++" : "+"}`).join(", ")}</td>
+        <td>${Object.entries(d.nourrit).sort((a, b) => b[1] - a[1]).map(([c, l]) => `<a href="#p-${esc(c)}">${esc(nomP(c))}</a> ${"+".repeat(l)}`).join(", ")}</td>
         <td>${esc(d.traitTxt)}</td><td>${m.climax_phase ? esc(m.climax_phase) + (m.climax_jalon != null ? ` (${fmt(m.climax_jalon, 1)})` : "") : "transversale"}</td>
         <td class="n">jalon ${d.rejet} (${esc(JALONS[d.rejet].nom)})</td><td>${esc(EFFETS[m.code] || "")}</td></tr>`; }).join("")}</tbody></table></div>
-    <p class="vide">Points ouverts : aucun axe ne mesure la tension (lue dans ALÉATOIRE, INTERACTION et LIEN), la difficulté (EXIG1 en tient lieu pour les coopératifs), ni la performance devant les autres.</p>
+    <p class="vide">Points ouverts : aucun axe ne mesure la tension (lue dans MÉCANIQUE et LIEN), la difficulté (EXIG1 en tient lieu pour les coopératifs), ni la performance devant les autres.</p>
     <h3 class="section" id="x-heat">Exemple : Heat</h3>
     <div class="texte"><p>Note pour tous : <b>${fmt(r.noteBase, 2)}</b>. Du profil le mieux servi au moins bien servi : <b>${fmt(r.lignes[0].note, 2)}</b> (${esc(r.lignes[0].st.nom)}) à <b>${fmt(r.lignes.at(-1).note, 2)}</b> (${esc(r.lignes.at(-1).st.nom)}).</p></div>
     <figure class="courbe-box">${rosaceSVG(r.spectre, M.moteurs.map(m => ({ code:m.code, nom:m.nom, couleur:coul(m) })))}<figcaption>Pointillés : ce que Heat offre à chaque moteur (le trait). Surface : ce qu'il réussit pour lui.</figcaption></figure>
@@ -436,7 +439,8 @@ function sectionTemps(toc){
     <div class="defile"><table class="jeu"><thead><tr><th>Sous-phase</th><th>Durée, en parties</th><th>Heat</th></tr></thead><tbody>
     ${SOUSPHASES.slice(0, 7).map((sp, i) => `<tr><td>${esc(sp.nom)}</td><td>${esc(sp.duree)}</td><td class="n">${fmt(c.d[i], 2)}</td></tr>`).join("")}</tbody></table></div>
     <div class="texte"><p><b>Plancher du jalon 6.</b> On ne peut pas avoir tout vu avant d'avoir joué le nombre minimum de parties que demande le contenu (« Parties pour tout exploiter », dans le jeu en chiffres). Si le calcul place le jalon 6 plus tôt, l'Aguerrissement s'allonge d'autant. Champ vide : jeu rejouable sans fin, pas de plancher.</p>
-    <p>Le prix (${lien("VAL")}) ne joue que sur la durée de la Préparation, pas sur le plaisir de jeu.</p></div>
+    <p>Le prix, donnée de la fiche, ne joue que sur la durée de la Préparation (par paliers : 0 sous 20 €, puis 20, 40, 70, 120, 200 €), pas sur le plaisir de jeu ni sur la note.</p>
+    <p><b>Coût par partie</b> (indicatif, provisoire) : prix ÷ parties de vie. Les parties de vie sont la demi-vie, plafonnée à ${PLAFOND_PARTIES_VIE} parties (au-delà, le coût est négligeable) ; pas de coût pour un jeu abandonné avant sa première partie. Avec la durée de la fiche, on en tire un coût de l'heure.${(() => { const k = coutParPartie(55, c); return k ? ` Heat, à 55 € : ${esc(texteCout(k))}.` : ""; })()}</p></div>
 
     <h3 class="section" id="t-flow">Le flow (ordonnée)</h3>
     <div class="texte"><p>À chaque jalon, on met en balance ce qui stimule le joueur et ce qui le freine. Le flow vaut zéro au jalon 0 : rien n'est encore joué.</p></div>
@@ -446,7 +450,7 @@ function sectionTemps(toc){
       <li><b>F, la friction</b>, est leur <b>moyenne quadratique</b> (racine de la moyenne des carrés) : un gros défaut n'est pas noyé dans la moyenne. L'asymétrie est voulue : un défaut gâche plus de plaisir qu'une qualité n'en ajoute.</li>
       <li><b>r, la montée en régime</b> : ${R_REGIME.slice(1).map(v => fmt(v, 2)).join(" / ")} pour les jalons 1 à 7. Au début, tout se ressent moins fort, le plaisir comme la gêne.</li>
       <li><b>La lassitude</b> L = 1 + 0,1 × log2(1 + parties jouées) alourdit ce qui se répète : la manipulation M = MAN1 × L à tous les jalons ; l'attente A = moyenne(5 − RYT1, 5 − RYT2) × L, des jalons 3 à 7 ; la corvée M2 = (5 − MAN2) × L, au jalon 7.</li>
-      <li><b>Le plafond d'aléa</b> = 1 − (ALEA1 / 5) × ((5 − ALEA2) / 5) réduit la stimulation aux jalons 5 et 6 : quand le hasard décide, la maîtrise pèse moins sur l'issue. Un aléa bien géré (ALEA2 haut) lève le plafond.</li>
+      <li><b>Le plafond d'aléa</b> = 1 − (MECA1a / 5) × ((5 − MECA2) / 5) réduit la stimulation aux jalons 5 et 6 : quand le hasard décide, la maîtrise pèse moins sur l'issue. Des mécaniques qui donnent prise sur l'incertain (MECA2 haut) lèvent le plafond.</li>
       <li><b>L'usure</b> = 0,5 + VAR / 10 réduit la stimulation au jalon 7 : seul le renouvellement entretient l'envie.</li>
       <li>Un code sans chiffre (POID, PROF, EXIG…) désigne la note retenue de la paire ; avec un chiffre (POID1, EXIG1…), la note de l'axe.</li></ul></div>
     <div class="defile"><table class="jeu"><thead><tr><th>Jalon</th><th>Stimulation S</th><th>Friction F</th></tr></thead><tbody>
@@ -485,10 +489,11 @@ const GLOSSAIRE = [
   ["Axe 1", "L'axe descriptif d'une paire : ce que le jeu est. Il croît avec ce que dit son nom et ne se juge pas."],
   ["Axe 2", "L'axe évaluatif : ce que le jeu réussit. C'est lui qui fait la note de la paire."],
   ["Écart", "Dans une paire liée, la note 2 se donne en écart (−− à ++) par rapport à ce que la note 1 laissait attendre."],
-  ["Note retenue", "La note de la paire, après calcul (courbe en S, composite, moyenne)."],
+  ["Note de la paire", "La note de la paire, après calcul (courbe en S, moyenne, THÈME, LIEN). La note d'un chapitre est la moyenne de ses paires, l'évaluation finale celle des trois chapitres."],
   ["Courbe en S", "La fonction qui transforme l'axe 1 et l'écart en note de paire liée ; voir l'annexe."],
-  ["Sans objet", "Une paire ne compte pas quand son axe 1 vaut 0 (rien à juger), ou sous un seuil quand aucun manque n'est ressenti."],
-  ["Meilleur effectif", "Le nombre de joueurs auquel le jeu est le meilleur ; c'est à cet effectif qu'on juge le rythme et qu'on trace la timeline."],
+  ["Sans objet", "Une paire que l'évaluateur déclare sans objet pour un jeu sort de la moyenne. Aucune ne sort d'elle-même : une absence est un manque (VAR1 = 0 donne une note basse) ; seules les natures sont neutres (thème, posture, hasard, lois du monde, parole)."],
+  ["Coût par partie", "Le prix divisé par les parties de vie du jeu (sa demi-vie, plafonnée à 200 parties). Un indicateur, hors de la note."],
+  ["Meilleur effectif", "Le nombre de joueurs auquel le jeu est le meilleur ; c'est à cet effectif qu'on note la cadence (RYT1) et qu'on trace la timeline. RYT2 et LIEN2a jugent toute la plage."],
   ["Faux solo", "Une partie seul contre des automates : elle compte dans la plage de joueurs, contrairement au vrai solo."],
   ["Jalon", "Un repère de la vie du jeu, de 0 (identifié) à 7 (archivé)."],
   ["Flow", "Le plaisir net à un jalon : stimulation moins friction, sur 10."],

@@ -116,6 +116,7 @@ button.lien,a.lien{border:0;background:none;padding:0;font:inherit;color:inherit
 table.sp-extremes{margin:0 0 10px} table.tl-table tr.choisi td{background:color-mix(in srgb, var(--accent) 9%, transparent)} table.tl-table small{color:var(--muted)}
 .sp-courbe{border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:10px 0;background:var(--paper)} .sp-courbe h3{font:600 17px var(--serif);margin:0 0 4px}
 #pied .tl-pied{cursor:pointer} #pied .tl-pied b{font-size:16px;font-weight:600} #pied .tl-pied b small{display:inline;font-size:12px;color:var(--muted);font-weight:400}
+#pied .cout-pied b{font-size:16px;font-weight:600}
 .carnet{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:26px 0 10px}
 .carnet h2{font:600 20px var(--serif);margin:0 0 4px}
 .carnet textarea{min-height:220px}
@@ -238,9 +239,9 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
 <dialog id="dlg-recap"><div id="recap"></div><p style="text-align:right;margin:12px 0 0"><button class="btn" id="fermer-recap" type="button">Fermer</button></p></dialog>
 <div class="wrap"><p class="version" id="version"></p></div>
 
-<script src="timeline.js?v=1.9"></script>
+<script src="timeline.js?v=2.0"></script>
 <script>
-const VERSION = { numero:"3.19", date:"2026-10-11 22:45" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.20", date:"2026-10-11 23:55" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -390,10 +391,14 @@ $("#retour").addEventListener("click", async () => {
 const axesDe = code => M.axes.filter(a => a.paire === code).sort((a, b) => a.ordre - b.ordre);
 const paliersDe = code => M.paliers.filter(p => p.axe === code).sort((a, b) => a.valeur - b.valeur);
 const MECA = { liee:"paire liée : l'axe 2 juge l'écart à l'attente", independante:"deux notes indépendantes", crans5:"axe 2 en cinq crans",
-  composite:"note composite", moyenne:"axe 2 : moyenne de deux notes" };
+  composite:"note composite", moyenne:"axe 2 : moyenne de deux notes", theme:"le thème est une nature : l'abstrait vaut 2,5",
+  lien:"justesse et parole, prime à l'étendue" };
 const estEcart = (p, a) => a.rang === "2" && (p.mecanisme === "liee" || p.mecanisme === "crans5");
 const ecartTexte = v => (v > 0 ? "+" : v < 0 ? "−" : "±") + fmt(Math.abs(v));
-const aDeuxNotes = p => p.mecanisme === "composite" || p.mecanisme === "moyenne";   // axe 2 calculé à partir de 2a et 2b
+const aDeuxNotes = p => axesDe(p.code).some(a => a.echelle === "calcule");   // note de la paire calculée à partir de plusieurs axes
+// les deux colonnes d'une paire : à gauche les axes descriptifs (1, 1b, 1c…), à droite les axes évaluatifs saisis (2, 2a, 2b)
+const colGauche = code => axesDe(code).filter(a => a.rang[0] === "1");
+const colDroite = code => axesDe(code).filter(a => a.rang[0] === "2" && a.echelle !== "calcule");
 
 /* ---- aides : ce que mesure la paire, « ? » sur la paire et sur chaque axe, méthode de calcul ---- */
 const NOM_TYPE = { regle:"Règle", consigne:"Consigne de rédaction", solo:"Volet solo", note:"À savoir", absorption:"Ce qu'elle a absorbé", reserve:"En réserve", statut:"Statut", historique:"Historique" };
@@ -443,10 +448,24 @@ function methodeCalcul(p){
     h = `<p>L'axe 2 est la moyenne de deux notes toujours demandées. L'axe 1 décrit, il n'entre pas dans le calcul.</p>
       <div class="formule">${esc(p.code)}2 = (${esc(p.code)}2a + ${esc(p.code)}2b) / 2</div>
       ${a != null && b != null ? `<p>Avec tes notes : (${fmt(a)} + ${fmt(b)}) / 2 = <b>${fmt((a + b) / 2, 2)}</b>.</p>` : ""}`;
+  } else if (p.mecanisme === "theme"){
+    const t1 = v("1"), b = v("2b");
+    h = `<p>Le thème est une nature, pas une richesse : un jeu abstrait n'est ni puni ni récompensé pour son choix. L'incarnation du thème (${esc(p.code)}2b) pèse selon sa présence (${esc(c1)}) ; le reste du poids va à une valeur neutre de 2,5.</p>
+      <div class="formule">${esc(p.code)}2 = [${esc(p.code)}2b × ${esc(c1)} + 2,5 × (5 − ${esc(c1)})] / 5</div>
+      ${t1 != null && b != null ? `<p>Avec tes notes : [${fmt(b)} × ${fmt(t1)} + 2,5 × ${fmt(5 - t1)}] / 5 = <b>${fmt(noteTheme(t1, b), 2)}</b>.</p>` : ""}
+      <p>Un jeu abstrait (${esc(c1)} = 0) obtient 2,5 ; un jeu pleinement thématique (${esc(c1)} = 5) est jugé sur sa seule incarnation.</p>`;
+  } else if (p.mecanisme === "lien"){
+    const a = v("2a"), b = v("2b"), pl = v("1c"), et = v("1d");
+    const base = a != null && b != null && pl != null ? a * (1 - pl / 10) + b * pl / 10 : null;
+    h = `<p>Deux notes, la justesse du rapport (LIEN2a) et la parole vécue (LIEN2b), mêlées selon la place que le jeu laisse à la parole (LIEN1c) :
+      la parole pèse au plus la moitié de la note, presque rien dans un jeu silencieux. Puis l'étendue (LIEN1d) accentue l'écart à 2,5, d'au plus 40 % :
+      une large plage bien tenue monte, mal tenue descend ; un jeu à un seul effectif est neutre. LIEN1 et LIEN1b décrivent le rapport : ils n'entrent pas dans la note.</p>
+      <div class="formule">base = LIEN2a × (1 − LIEN1c / 10) + LIEN2b × LIEN1c / 10<br>note = base + (LIEN1d / 5) × (base − 2,5) × 0,4, bornée entre 0 et 5</div>
+      ${base != null ? `<p>Avec tes notes : base = ${fmt(a)} × ${fmt(1 - pl / 10, 2)} + ${fmt(b)} × ${fmt(pl / 10, 2)} = ${fmt(base, 2)}${et != null ? ` ; note = ${fmt(base, 2)} + ${fmt(et / 5, 1)} × (${fmt(base - 2.5, 2)}) × 0,4 = <b>${fmt(noteLien(a, b, pl, et), 2)}</b>` : ""}.</p>` : ""}`;
   } else if (p.mecanisme === "crans5"){
     h = `<p>Axe 2 en cinq crans : −− = 0 ; − = 1,25 ; = = 2,5 ; + = 3,75 ; ++ = 5.</p>`;
   } else {
-    h = `<p>Deux notes indépendantes : la note de la paire est celle de l'axe 2, de 0 à 5. L'axe 1 décrit le jeu ; il n'entre pas dans la moyenne.</p>`;
+    h = `<p>Notes indépendantes : la note de la paire est celle de l'axe 2, de 0 à 5. ${colGauche(p.code).length > 1 ? "Les axes 1 décrivent" : "L'axe 1 décrit"} le jeu ; ${colGauche(p.code).length > 1 ? "ils n'entrent" : "il n'entre"} pas dans la moyenne.</p>`;
   }
   if (p.na_si_axe1_nul) h += `<p>Si ${esc(c1)} vaut 0, l'axe 2 est sans objet et la paire sort de la moyenne du chapitre.</p>`;
   if (p.seuil_axe1 != null) h += `<p>Si ${esc(c1)} est sous ${fmt(p.seuil_axe1, 0)}, l'axe 2 ne compte que s'il vaut 1 ou moins (le manque est ressenti) ; sinon, la paire sort de la moyenne : un manque ne pénalise que s'il est vécu.</p>`;
@@ -457,18 +476,17 @@ function methodeCalcul(p){
 function suggestion(axe){
   const d = fiche, palier = (x, seuils) => { let i = 0; while (i < seuils.length && x > seuils[i]) i++; return i; };
   if ((axe === "POID1" || axe === "POI1") && d.pages) return { v: palier(d.pages, [2, 8, 16, 32, 64]), source: d.pages + " pages" + (d.poids_bgg ? ", poids BGG " + fmt(d.poids_bgg, 2) : "") + " ; le nombre de pages n'est qu'un guide" };
-  if (axe === "VAL1" && d.prix != null && d.prix !== "") return { v: palier(Number(d.prix), [19.99, 40, 70, 120, 200]), source: fmt(d.prix, 0) + " €" };
-  if (axe === "SCAL1" && d.joueurs_max){ const j = d.joueurs_max; return { v: j <= 1 ? 0 : palier(j, [2, 4, 6, 9]) + 1, source: (d.joueurs_min ? d.joueurs_min + " à " : "jusqu'à ") + j + " joueurs" }; }
+  if (axe === "LIEN1d" && d.joueurs_max){ const n = Math.max(1, d.joueurs_max - (d.joueurs_min || d.joueurs_max) + 1);
+    return { v: palier(n, [1, 2, 4, 6, 9]), source: (d.joueurs_min ? d.joueurs_min + " à " : "jusqu'à ") + d.joueurs_max + " joueurs, soit " + n + " effectif" + (n > 1 ? "s" : "") }; }
   return null;
 }
 function reperes(axe){
-  const ex = M.exemples.filter(x => x.axe === axe && x.valeur_texte).map(x => `${esc(nomJeu(x.jeu))} ${esc(x.valeur_texte)}`);
   const ids = id => toutes.find(e => e.id === id);
   const miens = valeurs.filter(v => v.axe === axe && v.valeur != null && !v.sans_objet && ids(v.evaluation)?.evaluateur === user.id && ids(v.evaluation)?.jeu !== fiche.jeu)
     .map(v => `${esc(nomJeu(ids(v.evaluation).jeu))} ${fmt(v.valeur)}`);
   const autres = valeurs.filter(v => v.axe === axe && v.valeur != null && !v.sans_objet && ids(v.evaluation)?.jeu === fiche.jeu && ids(v.evaluation)?.id !== fiche.id)
     .map(v => `${esc(nomDe(ids(v.evaluation).evaluateur))} ${fmt(v.valeur)}`);
-  return [ex.length ? `Modop : ${ex.join(", ")}` : "", miens.length ? `Mes autres jeux : ${miens.join(", ")}` : "", autres.length ? `Autres fiches sur ce jeu : ${autres.join(", ")}` : ""]
+  return [miens.length ? `Mes autres jeux : ${miens.join(", ")}` : "", autres.length ? `Autres fiches sur ce jeu : ${autres.join(", ")}` : ""]
     .filter(Boolean).map(t => `<div class="reperes">${t}</div>`).join("");
 }
 function blocAxe(p, axe){
@@ -477,9 +495,9 @@ function blocAxe(p, axe){
   const grad = ecart ? ["−−","−","=","+","++"] : ["0","1","2","3","4","5"];
   const pal = paliersDe(axe.code);
   const sug = !lectureSeule && suggestion(axe.code);
-  const calcule = p.mecanisme !== "independante";                                       // la note retenue diffère de la saisie
-  const porteCalc = axe.rang === "2" || (aDeuxNotes(p) && axe.rang === "2a");           // le bouton « méthode de calcul » va sur la note 2
-  const porteRetenue = aDeuxNotes(p) && axe.rang === "2b";                              // note composée : sous la dernière note intermédiaire
+  const D = colDroite(p.code);
+  const porteCalc = D[0]?.code === axe.code;                                            // le bouton « méthode de calcul » va sur la première note évaluative
+  const porteRetenue = aDeuxNotes(p) && D.at(-1)?.code === axe.code;                    // note composée : sous la dernière note saisie
   return `<div class="axe" data-axe="${esc(axe.code)}">
     <div class="entete-axe"><div class="titre">${esc(axe.code)} — ${esc(axe.nom)}<button type="button" data-aide-axe="${esc(axe.code)}" aria-expanded="false" title="Ce que mesure cet axe, et comment le noter">?</button>${porteCalc ? `<button type="button" class="calc" data-panneau="calc-${esc(p.code)}" aria-expanded="false" title="Comment la note de la paire est calculée">Méthode de calcul</button>` : ""}</div>${axe.question ? `<div class="q">${esc(axe.question)}</div>` : ""}</div>
     <div class="panneau hidden" id="aide-${esc(axe.code)}">${aideAxe(axe)}</div>${porteCalc ? `<div class="panneau hidden" id="calc-${esc(p.code)}"></div>` : ""}
@@ -499,8 +517,8 @@ function construireGrille(){
     <div class="jeu-corps"><div class="jeu-titre"><h1>${esc(jeu.nom || d.jeu)}</h1>${jeu.bgg_id ? `<a class="btn ghost bgg" href="https://boardgamegeek.com/boardgame/${esc(jeu.bgg_id)}" target="_blank" rel="noopener">BoardGameGeek ↗</a>` : ""}</div>
       ${jeu.bgg_id ? "" : `<p class="aide">Pas encore de lien BoardGameGeek ni d'image : ils s'ajoutent dans la console (onglet Jeux).</p>`}
       <div class="chiffres"><div class="ch-titre">Le jeu en chiffres <button type="button" class="aide-btn" data-panneau="aide-chiffres" aria-expanded="false" title="À quoi servent ces données">?</button></div>
-      <div class="panneau hidden" id="aide-chiffres"><p class="aide">Ces données proposent les notes factuelles (POIDS, VALEUR, SCALABILITÉ) et servent à la timeline. Prix : le prix public actuel, avec l'enseigne et la date.
-        Meilleur effectif : le nombre de joueurs auquel le jeu est le meilleur ; c'est l'effectif de référence (RYTHME se note à cet effectif). Parties pour tout exploiter : le nombre minimum de parties pour avoir fait le tour de ce que la boîte propose (circuits, scénarios, modules, factions…).</p></div>
+      <div class="panneau hidden" id="aide-chiffres"><p class="aide">Ces données proposent les notes factuelles (POIDS, étendue de LIEN) et servent à la timeline. Prix : le prix public actuel, avec l'enseigne et la date ; il n'entre pas dans la note, il donne le coût par partie.
+        Meilleur effectif : le nombre de joueurs auquel le jeu est le meilleur ; c'est l'effectif de référence (RYT1 et la timeline se notent à cet effectif). Parties pour tout exploiter : le nombre minimum de parties pour avoir fait le tour de ce que la boîte propose (circuits, scénarios, modules, factions…).</p></div>
       <div class="ch-grille">${champ("pages", "Pages des règles")}${champ("poids_bgg", "Poids BGG")}${champ("prix", "Prix (€)")}${champ("prix_source", "Source du prix (enseigne, date)", "texte")}
         ${paire("joueurs_min", "joueurs_max", "Joueurs")}${champ("effectif_reference", "Meilleur effectif")}${paire("duree_min", "duree_max", "Durée", "min")}${champ("contenu_parties", "Parties pour tout exploiter")}</div></div></div></section>
     <details class="assistant" id="assistant"${ouvert ? " open" : ""}><summary><h2>Assistant de rédaction</h2></summary>
@@ -515,9 +533,8 @@ function construireGrille(){
     h += `<div class="chapitre" style="--chap:var(--${c.code})" data-chap="${esc(c.code)}"><h2 data-replier-chap="${esc(c.code)}" title="Enrouler ou dérouler toutes les paires du chapitre">${esc(c.nom)}<span class="fleche-chap">▾</span><span class="moy" id="moy-${c.code}"></span></h2>`;
     M.paires.filter(p => p.chapitre === c.code).forEach(p => {
       const ax = axesDe(p.code), a1 = ax.find(a => a.rang === "1"), so = ax.some(a => saisie[a.code]?.sans_objet);
-      const corps = aDeuxNotes(p)
-        ? blocAxe(p, a1) + `<div class="pile">${ax.filter(a => a.rang === "2a" || a.rang === "2b").map(a => blocAxe(p, a)).join("")}</div>`
-        : blocAxe(p, a1) + blocAxe(p, ax.find(a => a.rang === "2"));
+      const colonne = L => L.length === 1 ? blocAxe(p, L[0]) : `<div class="pile">${L.map(a => blocAxe(p, a)).join("")}</div>`;
+      const corps = colonne(colGauche(p.code)) + colonne(colDroite(p.code));
       h += `<div class="paire${so ? " sans-objet" : ""}${lectureSeule ? " ro" : ""}" id="p-${esc(p.code)}" data-paire="${esc(p.code)}">
         <div class="tete" data-replier="${esc(p.code)}"><h3>${esc(p.nom)}</h3><span class="meca">${MECA[p.mecanisme] || ""}</span><span class="note" id="note-${esc(p.code)}"></span><span class="fleche">▾</span></div>
         <div class="corps"><p class="mesure">${esc(premierePhrase(p.definition))}</p>
@@ -553,7 +570,8 @@ function construireGrille(){
 // curseurs alignés : l'en-tête (titre + question) des deux colonnes prend la même hauteur
 function aligner(){
   document.querySelectorAll(".paire:not(.repliee) .axes").forEach(g => {
-    const gauche = g.querySelector(":scope > .axe .entete-axe"), droite = g.querySelector(":scope > .axe + .axe .entete-axe, :scope > .pile > .axe:first-child .entete-axe");
+    const [cg, cd] = g.children, premier = c => c && (c.matches(".axe") ? c : c.querySelector(".axe"))?.querySelector(".entete-axe");
+    const gauche = premier(cg), droite = premier(cd);
     if (!gauche || !droite) return;
     gauche.style.minHeight = droite.style.minHeight = "";
     if (window.innerWidth <= 640) return;
@@ -628,12 +646,16 @@ function recalculer(){
     `<div class="final"><small>Évaluation finale</small><b>${c.finale == null ? "—" : fmt(c.finale, 2)}</b></div>`;
   const tl = majTimeline();
   $("#pied").insertAdjacentHTML("beforeend", `<div class="tl-pied" data-tl title="${tl.c ? esc(syntheseTimeline(tl.c)) : "Timeline incomplète"}"><small>Timeline</small><b>${tl.c ? piedTimeline(tl.c) : "—"}</b></div>`);
+  const k = tl.c ? coutFiche(tl.c) : null;
+  $("#pied").insertAdjacentHTML("beforeend", `<div class="cout-pied" title="${esc(k ? texteCout(k) + " (provisoire : prix ÷ demi-vie, plafonnée à 200 parties)" : "Coût par partie : il faut le prix et une timeline complète")}"><small>Coût par partie</small><b>${k ? texteCout(k).replace(/ par partie.*/, "") : "—"}</b></div>`);
   return c;
 }
 
 /* ---------------- timeline ---------------- */
 // rassemble les notes utiles à la timeline (calcul partagé : timeline.js)
-function entreesTimeline(){ const e = entreesFiche(saisie, M.paires, M.axes, fiche.contenu_parties); return { n:e.n, manque:e.manque, absents:e.absents }; }
+function entreesTimeline(){ const e = entreesFiche(saisie, M.paires, M.axes, { contenu_parties:fiche.contenu_parties, prix:fiche.prix }); return { n:e.n, manque:e.manque, absents:e.absents }; }
+// coût par partie (provisoire) : prix ÷ parties de vie d'après la timeline
+const coutFiche = c => coutParPartie(fiche.prix, c, fiche.duree_min, fiche.duree_max);
 // pied de page : α, puis β et γ s'il y a une chute (sinon « pas de chute »), puis la demi-vie
 function piedTimeline(c){
   const chute = c.beta == null ? "pas de chute" : c.omega != null ? `β j${c.beta} · ω j${c.omega}` : `β j${c.beta} · γ j${c.gamma}`;
@@ -723,11 +745,11 @@ $("#grille").addEventListener("input", e => {
   else if (e.target.dataset.justif){ const c = e.target.dataset.justif, s = saisie[c] || { valeur:null, sans_objet:false };
     saisie[c] = { ...s, commentaire: e.target.value.trim() || null }; e.target.rows = Math.min(5, 1 + Math.floor(e.target.value.length / 90)); planifier(c); }
   else if (e.target.dataset.donnee){ const k = e.target.dataset.donnee; fiche[k] = e.target.value.trim() === "" ? null : (e.target.type === "text" ? e.target.value.trim() : Number(e.target.value)); ficheModifiee = true; planifier();
-    rafraichirSuggestions(); if (k === "contenu_parties") recalculer(); }
+    rafraichirSuggestions(); if (["contenu_parties", "prix", "duree_min", "duree_max"].includes(k)) recalculer(); }
   else if (e.target.id === "carnet"){ fiche.notes_article = e.target.value; ficheModifiee = true; planifier(); }
 });
 function rafraichirSuggestions(){
-  ["POID1","POI1","VAL1","SCAL1"].forEach(code => {
+  ["POID1","LIEN1d"].forEach(code => {
     const div = document.querySelector(`.axe[data-axe="${code}"]`); if (!div) return;
     div.querySelector(".suggestion")?.remove();
     const sug = suggestion(code), v = saisie[code]?.valeur; if (!sug) return;
@@ -837,6 +859,7 @@ function contexteJeu(){
   let t = `## Le jeu\n${jeu.nom || d.jeu}${jeu.bgg_id ? ` (BoardGameGeek n° ${jeu.bgg_id})` : ""}${chiffres ? "\n" + chiffres : ""}\n`;
   t += `Note finale PRISME : ${c.finale == null ? "incomplète" : fmt(c.finale, 2) + " / 5"} (${M.chapitres.map(ch => `${ch.nom} ${c.chap[ch.code] == null ? "—" : fmt(c.chap[ch.code], 2)}`).join(", ")}).\n`;
   if (tl.c) t += `Timeline (la vie du jeu, partie après partie) : ${syntheseTimeline(tl.c)}.\n`;
+  if (tl.c && coutFiche(tl.c)) t += `Coût par partie (prix ÷ parties de vie, indicatif) : ${texteCout(coutFiche(tl.c))}.\n`;
   if (tl.sp){ const T = tl.sp.moteurs.flatMap(g => g.temperaments).sort((x, y) => y.note - x.note);
     t += `Spectromètre (la note vue par chaque type de joueur) : ${tl.sp.moteurs.map(g => `${g.m.nom} ${fmt(g.note, 2)}`).join(", ")}. Les mieux servis : ${T.slice(0, 3).map(x => `${x.t.nom} (${fmt(x.note, 2)})`).join(", ")} ; les moins bien servis : ${T.slice(-3).reverse().map(x => `${x.t.nom} (${fmt(x.note, 2)})`).join(", ")}.\n`; }
   return t;
@@ -852,7 +875,7 @@ function textePaire(p, avecJustif = true){
 }
 const carnetTexte = () => fiche.notes_article?.trim() ? `## Le carnet de l'évaluateur (notes brutes, anecdotes, idées)\n${fiche.notes_article.trim()}\n` : "";
 function demande(type, code){
-  const tete = `Tu aides un évaluateur à rédiger pour PRISME, une méthode d'évaluation des jeux de société par paires d'axes (16 paires, notes de 0 à 5).\n\n## Charte commune\n${regle("commun")}\n\n`;
+  const tete = `Tu aides un évaluateur à rédiger pour PRISME, une méthode d'évaluation des jeux de société par paires d'axes (${M.paires.length} paires, notes de 0 à 5).\n\n## Charte commune\n${regle("commun")}\n\n`;
   if (type === "paire"){
     const p = M.paires.find(x => x.code === code), j = justifDe(p);
     const autres = M.paires.filter(x => x !== p && justifDe(x)).map(x => `- ${x.nom} : ${justifDe(x)}`).join("\n");
@@ -939,9 +962,9 @@ $("#btn-recap").addEventListener("click", () => {
   $("#recap").innerHTML = `<h2>${esc(nomJeu(fiche.jeu))} : récapitulatif</h2>
     <p class="aide">${manque.length ? `Il manque ${manque.length} paire${manque.length > 1 ? "s" : ""} : ${manque.map(l => esc(l.p.nom)).join(", ")}.` : `Les ${M.paires.length} paires sont remplies.`}
       Note finale : <b>${c.finale == null ? "—" : fmt(c.finale, 2)}</b> (${M.chapitres.map(ch => `${esc(ch.nom)} ${c.chap[ch.code] == null ? "—" : fmt(c.chap[ch.code], 2)}`).join(", ")}).</p>
-    ${(() => { const t = majTimeline(); return `<p class="aide">Timeline : ${t.c ? esc(syntheseTimeline(t.c)) : "incomplète"}.</p>` +
+    ${(() => { const t = majTimeline(), k = t.c && coutFiche(t.c); return `<p class="aide">Timeline : ${t.c ? esc(syntheseTimeline(t.c)) : "incomplète"}.${k ? ` Coût par partie : ${esc(texteCout(k))}.` : ""}</p>` +
       (t.sp ? `<p class="aide">Spectromètre (note vue par chaque moteur dominant) : ${t.sp.moteurs.map(g => `${esc(g.m.nom)} ${fmt(g.note, 2)}`).join(" · ")}.</p>` : ""); })()}
-    <table class="recap"><thead><tr><th>Paire</th><th>Saisie</th><th>Note retenue</th><th>Justification</th></tr></thead><tbody>
+    <table class="recap"><thead><tr><th>Paire</th><th>Saisie</th><th>Note</th><th>Justification</th></tr></thead><tbody>
     ${L.map(l => `<tr class="${l.n.complete ? "" : "manque"}"><td><span class="aller" data-aller="${esc(l.p.code)}">${esc(l.p.nom)}</span></td><td>${l.notes}</td>
       <td>${l.n.so ? "sans objet" : l.n.note == null ? (l.n.na1 || l.n.seuil ? "axe 2 sans objet" : "—") : fmt(l.n.note, 2)}</td><td>${esc(l.justif)}</td></tr>`).join("")}</tbody></table>`;
   $("#recap").querySelectorAll("[data-aller]").forEach(x => x.addEventListener("click", () => {
@@ -959,6 +982,7 @@ $("#btn-export").addEventListener("click", () => {
   md += `**Note finale : ${c.finale == null ? "—" : fmt(c.finale, 2)}** (${M.chapitres.map(ch => `${ch.nom} ${c.chap[ch.code] == null ? "—" : fmt(c.chap[ch.code], 2)}`).join(", ")})\n`;
   const tl = majTimeline();
   if (tl.c) md += `\n**Timeline** : ${syntheseTimeline(tl.c)}.\n\nFlow par jalon : ${tl.c.y.map((v, j) => `${j} ${fmt(v, 2)}`).join(" · ")}\n`;
+  if (tl.c && coutFiche(tl.c)) md += `\n**Coût par partie** (indicatif) : ${texteCout(coutFiche(tl.c))}.\n`;
   if (tl.sp) md += `\n**Spectromètre** (note vue par chaque moteur dominant) : ${tl.sp.moteurs.map(g => `${g.m.nom} ${fmt(g.note, 2)}`).join(" · ")}. Le profil le mieux servi : ${tl.sp.lignes[0].st.nom} (${fmt(tl.sp.lignes[0].note, 2)}) ; le moins bien : ${tl.sp.lignes.at(-1).st.nom} (${fmt(tl.sp.lignes.at(-1).note, 2)}).\n`;
   M.chapitres.forEach(ch => {
     md += `\n## ${ch.nom}\n`;

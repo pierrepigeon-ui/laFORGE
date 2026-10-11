@@ -224,7 +224,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 16px}
 
 <script>
 /* ================= configuration ================= */
-const VERSION = { numero:"3.2", date:"2026-10-11 21:45" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.3", date:"2026-10-11 23:55" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 
@@ -240,7 +240,7 @@ const ROLES = { proprietaire:"propriétaire", editeur:"éditeur", evaluateur:"é
 const OPTIONS = {
   statut:   { stabilisee:"stabilisée", provisoire:"provisoire", ballotage:"en ballotage", en_attente:"en attente" },
   relation: { liee:"liée", neutre:"neutre", penalite_asymetrique:"pénalité asymétrique", ponderation_inverse:"pondération inverse", promesse:"promesse tenue", composite:"composite" },
-  mecanisme:{ liee:"liée (courbe en S)", independante:"indépendante", crans5:"indépendante, 5 crans", composite:"composite (THÈME)", moyenne:"moyenne de 2a et 2b (ART)" },
+  mecanisme:{ liee:"liée (courbe en S)", independante:"indépendante", crans5:"indépendante, 5 crans", composite:"composite (ancien THÈME)", moyenne:"moyenne de 2a et 2b (ART)", theme:"thème : incarnation pesée, l'abstrait vaut 2,5 (THÈME)", lien:"lien : justesse et parole, prime à l'étendue (LIEN)" },
   nature:   { descriptif:"descriptif", evaluatif:"évaluatif" },
   echelle:  { "0-5":"0 à 5", ecart:"écart −− à ++", crans5:"5 crans −− à ++", calcule:"calculée" },
   type:     { statut:"statut", solo:"volet solo", absorption:"absorption", consigne:"consigne de rédaction", historique:"historique", reserve:"en réserve", regle:"règle", note:"note" }
