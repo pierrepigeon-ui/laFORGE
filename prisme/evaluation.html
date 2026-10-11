@@ -109,6 +109,7 @@ table.tl-table tr.alpha td{background:color-mix(in srgb, var(--accent) 9%, trans
 @media (max-width:700px){.sp-haut{grid-template-columns:1fr}}
 .sp-arc{border-top:1px solid var(--line);padding:6px 0} .sp-arc summary{cursor:pointer;display:flex;gap:10px;align-items:baseline} .sp-arc summary .n{margin-left:auto;font-variant-numeric:tabular-nums}
 .sp-arc summary .aide{font-size:13px;margin:0}
+.sp-titre{font:600 18px var(--serif);margin:18px 0 2px}
 .tl-table tr.grp td{background:var(--paper);font-size:13.5px;padding-top:8px}
 button.lien,a.lien{border:0;background:none;padding:0;font:inherit;color:inherit;text-decoration:underline;text-decoration-color:var(--line);cursor:pointer}
 table.sp-extremes{margin:0 0 10px} table.tl-table tr.choisi td{background:color-mix(in srgb, var(--accent) 9%, transparent)} table.tl-table small{color:var(--muted)}
@@ -203,9 +204,9 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
 <dialog id="dlg-recap"><div id="recap"></div><p style="text-align:right;margin:12px 0 0"><button class="btn" id="fermer-recap" type="button">Fermer</button></p></dialog>
 <div class="wrap"><p class="version" id="version"></p></div>
 
-<script src="timeline.js?v=1.5"></script>
+<script src="timeline.js?v=1.6"></script>
 <script>
-const VERSION = { numero:"3.15", date:"2026-10-11 01:30" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.16", date:"2026-10-11 16:30" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -600,7 +601,7 @@ function majTimeline(){
   }
   const c = flowJeu(n);
   box.innerHTML = `<div class="tl-bandeau">${esc(syntheseTimeline(c))}</div>
-    <figure class="courbe-box">${courbeSVG(c, nomJeu(fiche.jeu))}<figcaption>Trait plein : les jalons calculés${c.gamma != null ? " jusqu'à γ" : ""}. Pointillés : la suite, où seule la lassitude progresse. Abscisse : les jalons, espacés selon le log2 des parties cumulées. Bandes : les phases. Survole un point pour son détail.</figcaption></figure>
+    <figure class="courbe-box">${courbeSVG(c, nomJeu(fiche.jeu))}<figcaption>Trait plein : les jalons calculés${c.purge ? " jusqu'à l'abandon (le flow passe sous 0 : le joueur lâche le jeu)" : ""}. Pointillés : la suite, où seule la lassitude progresse. Abscisse : les jalons, espacés selon le log2 des parties cumulées. Bandes : les phases. Survole un point pour son détail.</figcaption></figure>
     ${absents.length ? `<p class="aide">Sans objet pour ce jeu, donc retiré du calcul : ${absents.map(x => esc(nomP(x))).join(", ")}.</p>` : ""}
     ${fiche.contenu_parties ? "" : `<p class="aide">« Parties pour tout exploiter » est vide : pas de plancher pour le jalon 6 (jeu rejouable sans fin).</p>`}
     <div class="defile"><table class="tl-table"><thead><tr><th>Jalon</th><th title="Parties jouées pour atteindre ce jalon">Atteint après</th><th>Stimulation</th><th>Friction</th><th>Flow</th><th>Puis : sous-phase</th><th>Durée</th><th title="Parties jouées à la fin de la sous-phase">Durée cumulée</th></tr></thead><tbody>
@@ -632,6 +633,9 @@ function majSpectro(n){
     ${[["Les mieux servis", r.lignes.slice(0, 5)], ["Les moins bien servis", r.lignes.slice(-5).reverse()]].map(([t, L]) => `<table class="tl-table sp-extremes"><thead><tr><th>${t}</th><th>Note</th><th>α</th></tr></thead><tbody>
       ${L.map(l => `<tr class="${spChoisi === l.st.code ? "choisi" : ""}"><td><button type="button" class="lien" data-sp="${esc(l.st.code)}">${esc(maj(l.st.nom))}</button> <small>${esc(l.st.code)}</small></td><td class="n"><b>${fmt(l.note, 2)}</b></td><td class="n">${fmt(l.c.y[l.c.alpha], 2)}</td></tr>`).join("")}</tbody></table>`).join("")}
     <p class="aide">Ci-dessous, les cinq moteurs dominants du mieux au moins bien servi ; dépliez-en un pour ses quatre tempéraments et leurs douze profils.</p></div></div>
+    <h3 class="sp-titre">Les courbes par tempérament</h3>
+    <p class="aide">Pour chaque moteur dominant, la courbe de chacun de ses quatre tempéraments (moyenne de ses trois profils), dans la couleur du moteur qu'il fuit. Pointillé gris : le flow pour tous.</p>
+    ${courbesParMoteur(r, PL, coul)}
     ${det ? `<div class="sp-courbe"><h3>${esc(maj(det.st.nom))} <small>(${esc(det.st.code)} : ${esc(det.temperament.nom)}, moteur ${esc(det.moteur.nom)})</small> <button type="button" class="lien" data-sp="">fermer</button></h3>
       <p class="aide">Style : ${esc(det.st.style?.nom || "")} (${esc(det.moteur.nom)} conduit par ${esc(Mo[det.pr.second].nom)}) ; moteur fui : ${esc(Mo[det.pr.rejet].nom)}.</p>
       <div class="tl-bandeau">${esc(syntheseTimeline(det.c))}</div>

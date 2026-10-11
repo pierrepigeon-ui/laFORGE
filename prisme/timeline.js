@@ -1,6 +1,6 @@
 /* PRISME — timeline du jeu : jalons, durées, flow, α β γ, demi-vie.
    Module partagé par l'encyclopédie et l'outil d'évaluation. Méthode arrêtée le 08/10/2026 (jeu d'essai : Heat). */
-const TIMELINE_VERSION = { numero:"1.5", date:"2026-10-11 01:30" };   // à incrémenter à chaque livraison
+const TIMELINE_VERSION = { numero:"1.6", date:"2026-10-11 16:30" };   // à incrémenter à chaque livraison
 
 const JALONS = [
   { n:0, nom:"identifié", quoi:"Le jeu est connu de loin : critique, vitrine, recommandation." },
@@ -98,9 +98,12 @@ function flowJeu(n, pr){
   const x = [0]; d.forEach((v, i) => x.push(x[i] + Math.log2(1 + v)));
   const plafond = ok(n.ALEA1) && ok(n.ALEA2) ? 1 - (n.ALEA1 / 5) * ((5 - n.ALEA2) / 5) : 1;
   const usure = .5 + (ok(n.VAR) ? n.VAR : (n.VAR1 ?? 0)) / 10;
+  // ambition du jeu : ce qu'il propose à maîtriser (moy(POID1, EXIG1) / 2,5, borné à 1). Un jeu léger ne se rejoue pas pour la maîtrise
+  // mais pour le moment : aux jalons 5 et 6, sa stimulation mêle profondeur (part = ambition) et moment (aléa vécu, rythme, lien, thème).
+  const amb = Math.min(1, Math.max(0, (moy(n.POID1, n.EXIG1) ?? 2.5) / 2.5));
   const termes = (j, Nj) => {
     const L = lassitude(Nj), M = fois(n.MAN1, L), M2 = fois(inv(n.MAN2), L), A = fois(moy(inv(n.RYT1), inv(n.RYT2)), L * fAttente);
-    const f5 = [A, inv(n.ALEA2), inv(n.LIEN2), inv(n.INT2), inv(n.PROF), M];
+    const f5 = [A, inv(n.ALEA2), inv(n.LIEN2), inv(n.INT2), fois(inv(n.PROF), amb), M];   // l'absence de profondeur ne pèse qu'à proportion de l'ambition
     const S = { 1:[["MAT",n.MAT],["ART",n.ART2a],["THEM",n.THEM1]], 2:[["THEM",n.THEM],["MAT",n.MAT],["ART",n.ART2a]],
       3:[["THEM",n.THEM],["INT",n.INT2],["EXIG",n.EXIG],["ALEA",n.ALEA2]], 4:[["EXIG",n.EXIG],["PROF",n.PROF],["INT",n.INT2],["LIEN",n.LIEN2]],
       5:[["PROF",n.PROF],["EXIG",n.EXIG],["POID",n.POID],["LIEN",n.LIEN2]], 6:[["PROF",n.PROF],["VAR",n.VAR],["POID",n.POID],["LIEN",n.LIEN2]],
@@ -109,7 +112,13 @@ function flowJeu(n, pr){
     const F = { 1:[n.POID1, M, inv(n.ART2b)], 2:[n.POID1, inv(n.TRAN2), M, inv(n.ART2b)], 3:[inv(n.TRAN2), inv(n.ART2b), A, M, n.POID1], 4:[A, M, inv(n.ART2b)],
       5:f5, 6:[...f5, inv(n.VAR)], 7:[A, M, M2, inv(n.SCAL), inv(n.VAR)] }[j];
     let sw = 0, sv = 0; S.forEach(([c, v]) => { if (!ok(v)) return; const w = pr ? poidsPaire(c, pr, j) : 1; sw += w; sv += w * v; });
-    const s = (sw ? sv / sw : 0) * (j === 5 || j === 6 ? plafond : j === 7 ? usure : 1) * (j >= 5 ? declinDecrypter(n, kU) : 1);
+    let s0 = sw ? sv / sw : 0;
+    if ((j === 5 || j === 6) && amb < 1){
+      let mw = 0, mv = 0;
+      [["ALEA",n.ALEA2],["RYT",n.RYT2],["LIEN",n.LIEN2],["THEM",n.THEM]].forEach(([c, v]) => { if (!ok(v)) return; const w = pr ? poidsPaire(c, pr, j) : 1; mw += w; mv += w * v; });
+      if (mw) s0 = amb * s0 + (1 - amb) * mv / mw;
+    }
+    const s = s0 * (j === 5 || j === 6 ? plafond : j === 7 ? usure : 1) * (j >= 5 ? declinDecrypter(n, kU) : 1);
     let f = quad(...F); const nf = F.filter(ok).length || 1;
     if (gene > 0 && j >= deRejet) f = Math.sqrt(f * f + gene * gene / nf);            // ce que le joueur rejette devient friction
     return { s, f, brut: 2 * R_REGIME[j] * (s - f), L };
@@ -117,15 +126,17 @@ function flowJeu(n, pr){
   const det = [null], y = [0], brut = [0];
   for (let j = 1; j <= 7; j++){ const t = termes(j, N[j]); det.push(t); brut.push(t.brut); y.push(Math.min(10, Math.max(0, t.brut))); }
   const pente = j => (y[j + 1] - y[j]) / (x[j + 1] - x[j]);
+  // purge : le flow passe sous 0, le joueur lâche le jeu ; il n'atteint pas les jalons suivants : la courbe s'arrête à 0
+  const purge = brut.findIndex((v, j) => j >= 1 && v < 0);
+  if (purge > 0) for (let j = purge; j <= 7; j++) y[j] = 0;
   let alpha = 1; for (let j = 2; j <= 7; j++) if (y[j] > y[alpha]) alpha = j;
   let beta = null, gamma = null;
-  const purge = brut.findIndex((v, j) => j >= 1 && v < 0);
   if (purge > 0){ beta = purge - 1; gamma = purge; }
   else {
     for (let j = alpha; j < 7; j++) if (pente(j) <= -.5){ beta = j; break; }
     if (beta != null) for (let k = beta + 1; k <= 7; k++) if (k === 7 || y[k] < 1 || pente(k) > -.5){ gamma = k; break; }
   }
-  const yLoin = Nk => { const t = termes(7, Nk); return Math.min(10, Math.max(0, 2 * (t.s - t.f))); };
+  const yLoin = Nk => { if (purge > 0) return 0; const t = termes(7, Nk); return Math.min(10, Math.max(0, 2 * (t.s - t.f))); };
   const xLoin = Nk => x[7] + Math.log2((1 + Nk) / (1 + N[7]));
   const perte = (yLoin(N[7] * 4 + 3) - yLoin(N[7])) / (xLoin(N[7] * 4 + 3) - x[7]);
   const cible = y[alpha] / 2; let demivie = null, xDemi = null;
@@ -135,41 +146,47 @@ function flowJeu(n, pr){
   }
   if (demivie == null && y[alpha] > 0 && yLoin(1e7) < cible){ let a = N[7], b = 1e7; for (let i = 0; i < 80; i++){ const m = Math.sqrt(a * b); yLoin(m) > cible ? a = m : b = m; } demivie = a; xDemi = xLoin(a); }
   const classe = (CLASSES_DEMIVIE.find(([s]) => (demivie ?? Infinity) < s) || CLASSES_DEMIVIE[3])[1];
-  return { d, N, x, y, det, alpha, beta, gamma, plafond, usure, perte, demivie, xDemi, classe, yLoin, xLoin };
+  return { d, N, x, y, det, alpha, beta, gamma, plafond, usure, perte, demivie, xDemi, classe, yLoin, xLoin, purge: purge > 0 ? purge : null, ambition: amb };
 }
 
 /* Graphique SVG : phases en bandes, jalons numérotés (nom au survol), α β γ, α / 2, demi-vie, pointillés. */
 function courbeSVG(c, titre, ref){
   const e = s => String(s ?? "").replace(/[&<>"']/g, k => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[k]));
   const f = (v, k = 2) => Number(v).toFixed(k).replace(".", ",");
-  const W = 760, H = 330, g = 46, dr = 16, h0 = 26, b = 42;
+  const W = 760, H = 352, g = 46, dr = 16, h0 = 26, b = 64;
   const xFin = Math.max(c.x[7] + 4, Math.min(c.x[7] + 9, c.xDemi ? c.xDemi + 1.5 : 0));
   const yMax = Math.max(5, Math.ceil(c.y[c.alpha] + 1));
   const X = v => g + v / xFin * (W - g - dr), Y = v => H - b - v / yMax * (H - b - h0);
   let s = `<svg class="courbe" viewBox="0 0 ${W} ${H}" role="img" aria-label="Courbe du flow${titre ? " de " + e(titre) : ""}">`;
   [["I", 0, 2], ["II", 2, 4], ["III", 4, 6], ["IV", 6, null]].forEach(([p, a, z], i) => {
-    const x1 = X(c.x[a]), x2 = z == null ? X(xFin) : X(c.x[z]), long = `${p} ${PHASES[p]}`;
-    const lib = (x2 - x1) > long.length * 6.6 + 8 ? long : (x2 - x1) > PHASES[p].length * 6.6 ? PHASES[p] : p;
-    s += `<rect x="${x1}" y="${h0}" width="${x2 - x1}" height="${H - b - h0}" class="bande${i % 2}"><title>Phase ${p} : ${e(PHASES[p])}</title></rect><text x="${(x1 + x2) / 2}" y="${h0 - 8}" class="phase">${e(lib)}</text>`;
+    const x1 = X(c.x[a]), x2 = z == null ? X(xFin) : X(c.x[z]);
+    s += `<rect x="${x1}" y="${h0}" width="${x2 - x1}" height="${H - b - h0}" class="bande${i % 2}"><title>Phase ${p} : ${e(PHASES[p])}</title></rect><text x="${(x1 + x2) / 2}" y="${h0 - 8}" class="phase">${p}</text>`;
   });
+  s += `<text x="${W / 2}" y="${H - 6}" class="gl" style="text-anchor:middle">Phases : ${Object.entries(PHASES).map(([k, v]) => k + " " + e(v)).join(" · ")}</text>`;
   for (let v = 0; v <= yMax; v++) s += `<line x1="${g}" x2="${W - dr}" y1="${Y(v)}" y2="${Y(v)}" class="grille"/><text x="${g - 8}" y="${Y(v) + 4}" class="gy">${v}</text>`;
   s += `<text x="4" y="${h0 - 8}" class="gy" style="text-anchor:start">flow</text>`;
   const cible = c.y[c.alpha] / 2;
   if (cible > 0) s += `<line x1="${g}" x2="${W - dr}" y1="${Y(cible)}" y2="${Y(cible)}" class="demi"/><text x="${W - dr - 4}" y="${Y(cible) - 5}" class="gl" style="text-anchor:end">α / 2</text>`;
   if (c.xDemi != null){ const xd = X(Math.min(c.xDemi, xFin)); s += `<line x1="${xd}" x2="${xd}" y1="${Y(cible)}" y2="${H - b}" class="demi"/><text x="${Math.min(xd, W - dr - 70)}" y="${H - b + 34}" class="gl">demi-vie ≈ ${arrondiDemiVie(c.demivie)} parties</text>`; }
   if (ref) s += `<polyline class="ref" points="${ref.x.map((v, j) => `${X(v)},${Y(ref.y[j])}`).join(" ")}"><title>Flow pour tous</title></polyline><text x="${X(ref.x[7]) + 6}" y="${Y(ref.y[7]) + 4}" class="gl" style="text-anchor:start">pour tous</text>`;
-  const fin = c.gamma ?? 7, pts = j => `${X(c.x[j])},${Y(c.y[j])}`;
+  const fin = c.purge ? c.gamma : 7, pts = j => `${X(c.x[j])},${Y(c.y[j])}`;   // trait plein sur tous les jalons calculés (jusqu'à l'abandon s'il y a purge)
   s += `<polyline class="trait" points="${[...Array(fin + 1).keys()].map(pts).join(" ")}"/>`;
-  const loin = [...Array(8 - fin).keys()].map(k => pts(fin + k));
-  for (let xv = c.x[7] + .25; xv <= xFin + 1e-9; xv += .25){ const Nk = (1 + c.N[7]) * 2 ** (xv - c.x[7]) - 1; loin.push(`${X(xv)},${Y(c.yLoin(Nk))}`); }
-  s += `<polyline class="pointille" points="${loin.join(" ")}"/>`;
+  if (!c.purge){
+    const loin = [...Array(8 - fin).keys()].map(k => pts(fin + k));
+    for (let xv = c.x[7] + .25; xv <= xFin + 1e-9; xv += .25){ const Nk = (1 + c.N[7]) * 2 ** (xv - c.x[7]) - 1; loin.push(`${X(xv)},${Y(c.yLoin(Nk))}`); }
+    s += `<polyline class="pointille" points="${loin.join(" ")}"/>`;
+  } else s += `<text x="${X(c.x[c.gamma]) + 8}" y="${Y(0) - 8}" class="gl" style="text-anchor:start">abandon</text>`;
+  let dernierNum = 0;
   for (let j = 0; j <= 7; j++){
     const info = `Jalon ${j} : ${JALONS[j].nom} — ${f(c.N[j], 1)} parties, flow ${f(c.y[j])}`;
-    s += `<g><title>${e(info)}</title><circle cx="${X(c.x[j])}" cy="${Y(c.y[j])}" r="${j === c.alpha ? 6 : 4}" class="${j === c.alpha ? "pt alpha" : "pt"}"/>
-      <text x="${X(c.x[j])}" y="${H - b + 16}" class="gx">${j}</text></g>`;
+    const point = c.purge && j > c.gamma ? "" : `<circle cx="${X(c.x[j])}" cy="${Y(c.y[j])}" r="${j === c.alpha ? 6 : 4}" class="${j === c.alpha ? "pt alpha" : "pt"}"/>`;
+    const lisible = j === 0 || X(c.x[j]) - X(c.x[dernierNum]) >= 14;   // numéros trop serrés (jalons très courts) : on saute
+    if (lisible) dernierNum = j;
+    s += `<g><title>${e(info)}</title>${point}${lisible ? `<text x="${X(c.x[j])}" y="${H - b + 16}" class="gx">${j}</text>` : ""}</g>`;
   }
   s += `<text x="${X(c.x[c.alpha])}" y="${Y(c.y[c.alpha]) - 12}" class="gl fort">α ${f(c.y[c.alpha])}</text>`;
-  if (c.beta != null) s += `<text x="${X(c.x[c.beta]) + 10}" y="${Y(c.y[c.beta]) - 12}" class="gl fort">β</text>`;
+  if (c.beta != null) s += c.beta === c.alpha ? `<text x="${X(c.x[c.beta]) + 12}" y="${Y(c.y[c.beta]) + 16}" class="gl fort" style="text-anchor:start">β</text>`
+    : `<text x="${X(c.x[c.beta]) + 10}" y="${Y(c.y[c.beta]) - 12}" class="gl fort">β</text>`;
   if (c.gamma != null) s += `<text x="${X(c.x[c.gamma])}" y="${Y(c.y[c.gamma]) - 12}" class="gl fort">γ</text>`;
   s += `<line x1="${g}" x2="${W - dr}" y1="${H - b}" y2="${H - b}" class="axe-l"/>`;
   return s + `</svg>`;
@@ -255,6 +272,47 @@ function spectrometre(n, paires, pl){
     .sort((x, y) => y.note - x.note);
   return { base, noteBase, lignes, moteurs, spectre: spectreMoteurs(paires, n) };
 }
+
+/* Petits graphes du spectromètre : un par moteur dominant, une courbe par tempérament (moyenne de ses trois profils),
+   dans la couleur du moteur qu'il fuit ; la courbe pour tous en pointillé gris. r : résultat de spectrometre ; coul(m) : couleur d'un moteur. */
+function courbesParMoteur(r, pl, coul){
+  const e = s => String(s ?? "").replace(/[&<>"']/g, k => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[k]));
+  const f = v => Number(v).toFixed(2).replace(".", ",");
+  const M = Object.fromEntries(pl.moteurs.map(m => [m.code, m])), xs = r.base.x;
+  const series = pl.temperaments.map(t => { const L = r.lignes.filter(l => l.temperament?.code === t.code);
+    const y = xs.map((_, j) => L.reduce((s, l) => s + l.c.y[j], 0) / (L.length || 1));
+    return { t, y, alpha: Math.max(...y), note: L.reduce((s, l) => s + (l.note ?? 0), 0) / (L.length || 1) }; });
+  const yMax = Math.max(5, Math.ceil(Math.max(...series.map(x => x.alpha), ...r.base.y)));
+  const W = 360, H = 200, g = 30, dr = 10, h0 = 14, b = 24, xFin = xs[7] + 1;
+  const X = v => g + v / xFin * (W - g - dr), Y = v => H - b - v / yMax * (H - b - h0);
+  const ligne = (y, cls, style) => `<polyline class="${cls}" style="${style || ""}" points="${xs.map((v, j) => `${X(v).toFixed(1)},${Y(y[j]).toFixed(1)}`).join(" ")}"/>`;
+  return `<div class="pm-grille">${pl.moteurs.map(m => {
+    const S = series.filter(x => x.t.moteur === m.code);
+    let svg = `<svg class="pm" viewBox="0 0 ${W} ${H}" role="img" aria-label="Courbes des tempéraments de ${e(m.nom)}">`;
+    [[0, 2], [2, 4], [4, 6], [6, null]].forEach(([a, z], i) => { const x1 = X(xs[a]), x2 = z == null ? X(xFin) : X(xs[z]); svg += `<rect x="${x1}" y="${h0}" width="${x2 - x1}" height="${H - b - h0}" class="bande${i % 2}"/>`; });
+    for (let v = 0; v <= yMax; v++) svg += `<line x1="${g}" x2="${W - dr}" y1="${Y(v)}" y2="${Y(v)}" class="grille"/><text x="${g - 5}" y="${Y(v) + 4}" class="gy">${v}</text>`;
+    let dn = 0; xs.forEach((v, j) => { if (j === 0 || X(v) - X(xs[dn]) >= 12){ dn = j; svg += `<text x="${X(v)}" y="${H - b + 15}" class="gx">${j}</text>`; } });
+    svg += ligne(r.base.y, "ref");
+    S.forEach(x => svg += ligne(x.y, "pm-c", `stroke:${coul(M[x.t.fuit])}`));
+    svg += `</svg>`;
+    return `<figure class="pm-carte"><figcaption style="color:${e(coul(m))}">${e(m.nom)}</figcaption>${svg}
+      <ul class="pm-leg">${S.sort((a, b2) => b2.note - a.note).map(x => `<li><span class="pm-pastille" style="background:${coul(M[x.t.fuit])}"></span>${e(x.t.nom.charAt(0).toUpperCase() + x.t.nom.slice(1))} <small>note ${f(x.note)} · α ${f(x.alpha)}</small></li>`).join("")}</ul></figure>`;
+  }).join("")}</div>`;
+}
+(function(){
+  const st = document.createElement("style");
+  st.textContent = `.pm-grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin:10px 0}
+.pm-carte{margin:0;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
+.pm-carte figcaption{font-weight:600;font-size:15px;margin:0 0 2px}
+svg.pm{width:100%;height:auto;display:block;font-family:inherit}
+svg.pm .bande0{fill:var(--paper)} svg.pm .bande1{fill:color-mix(in srgb, var(--accent) 7%, var(--panel))}
+svg.pm .grille{stroke:var(--line)} svg.pm .gy{font-size:10px;fill:var(--muted);text-anchor:end} svg.pm .gx{font-size:10.5px;fill:var(--ink);text-anchor:middle}
+svg.pm .ref{fill:none;stroke:var(--muted);stroke-width:1.5;stroke-dasharray:2 3}
+svg.pm .pm-c{fill:none;stroke-width:2.4;stroke-linejoin:round}
+.pm-leg{list-style:none;margin:4px 0 0;padding:0;font-size:13px;display:grid;gap:2px}
+.pm-leg small{color:var(--muted)} .pm-pastille{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:0}`;
+  document.head.appendChild(st);
+})();
 
 /* Rosace : 5 moteurs, l'offre (trait) en contour, la réussite en surface. couleurs : { code: couleur } */
 function rosaceSVG(spectre, moteurs){
