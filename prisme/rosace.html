@@ -29,6 +29,7 @@ a{color:inherit}
 #rosace .t-mot{font:600 21px var(--serif);fill:#FFFFFF;letter-spacing:.02em}
 #rosace .t-tem{font:600 13.5px var(--sans);fill:#1B2430}
 #rosace .t-sty{font:400 12px var(--sans);fill:#1B2430}
+#rosace .t-sty.long{font-size:10.5px}
 #rosace .t-centre{font:600 22px var(--serif);fill:#1B2430;letter-spacing:.12em;text-anchor:middle}
 #rosace .t-centre2{font:12px var(--sans);fill:#5B6573;text-anchor:middle}
 #rosace .fuit{stroke-width:2.2;stroke-dasharray:3 2.4}
@@ -67,7 +68,7 @@ aside .vous-badge{display:inline-block;font:600 12px var(--sans);color:#fff;back
 <script src="timeline.js?v=1.9"></script>
 <script src="totems.js?v=2"></script>
 <script>
-const VERSION = { numero:"3.3", date:"2026-10-11 18:40" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.4", date:"2026-10-11 19:00" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -171,7 +172,7 @@ function dessiner(){
       h += `<g data-code="${esc(st.code)}" data-niveau="style"><title>Style ${esc(st.nom)} (${esc(st.code)}) : ${esc(m.nom)} conduit par ${esc(sc.nom)}</title>
         <path class="sect" d="${secteur(R2, R3, b1, b2)}" fill="${teinte(sc.couleur, .62)}"/>
         ${TOTEMS.emb[st.code] ? (() => { const [ex, ey] = pol(R3 - 24, b1 + 9); return `<g transform="translate(${(ex - 15).toFixed(1)} ${(ey - 15).toFixed(1)})">${emblemeSVG(st.code, fonce(sc.couleur, .35), { titre:"", attrs:'width="30" height="30"' })}</g>`; })() : ""}
-        ${radial(st.nom, b1 + 9, R2, R3 - (TOTEMS.emb[st.code] ? 44 : 0), "t-sty")}</g>`;
+        ${radial(st.nom, b1 + 9, R2, R3 - (TOTEMS.emb[st.code] ? 44 : 0), st.nom.length > 12 ? "t-sty long" : "t-sty")}</g>`;
     });
   });
   h += `<circle r="${R0 - 2}" fill="#FFFFFF" stroke="#DDE1E7" stroke-width="2"/><text class="t-centre" y="2">PRISME</text><text class="t-centre2" y="24">joueurs</text>`;
