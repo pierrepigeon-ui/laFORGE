@@ -1,6 +1,6 @@
 /* PRISME — timeline du jeu : jalons, durées, flow, α β γ, demi-vie.
    Module partagé par l'encyclopédie et l'outil d'évaluation. Méthode arrêtée le 08/10/2026 (jeu d'essai : Heat). */
-const TIMELINE_VERSION = { numero:"1.8", date:"2026-10-11 17:10" };   // à incrémenter à chaque livraison
+const TIMELINE_VERSION = { numero:"1.9", date:"2026-10-11 17:25" };   // à incrémenter à chaque livraison
 
 const JALONS = [
   { n:0, nom:"identifié", quoi:"Le jeu est connu de loin : critique, vitrine, recommandation." },
@@ -15,7 +15,7 @@ const JALONS = [
 const SOUSPHASES = [
   { nom:"Préparation", de:0, phase:"I", quoi:"La promesse du jeu : on se projette, on l'achète, on l'emprunte.", duree:"VAL1 / 4" },
   { nom:"Accès", de:1, phase:"I", quoi:"La porte d'entrée pratique : boîte, matériel, organisation des règles.", duree:"POID1 / 5 + MAN1 / 10" },
-  { nom:"Premiers pas", de:2, phase:"II", quoi:"La première mise en mouvement, avec des allers-retours au livret.", duree:"1 + T / 10, T = 2,5 − 1,25 × TRAN2" },
+  { nom:"Premiers pas", de:2, phase:"II", quoi:"La première mise en mouvement, avec des allers-retours au livret.", duree:"1 + T / 10, T = 0,6 × POID1 × (1 − TRAN2 / 4)" },
   { nom:"Expérimentations", de:3, phase:"II", quoi:"On rejoue, on apprend en jouant : le jeu devient intelligible.", duree:"2^(moy(POID1, EXIG1, VAR1, T, 5 − ART2b) − 1)" },
   { nom:"Rôdage", de:4, phase:"III", quoi:"La pratique standard : on ne lutte plus contre les règles.", duree:"2^(moy(PROF, EXIG1, POID1) − 1)" },
   { nom:"Aguerrissement", de:5, phase:"III", quoi:"La mise à l'épreuve : plans avancés, contre-stratégies, finesses.", duree:"2^(moy(PROF, EXIG, VAR1) + 0,1 − 1) ; le 0,1 est un bonus de confrontation. Plancher : parties pour tout exploiter" },
@@ -84,8 +84,9 @@ function flowJeu(n, pr){
   const moy = (...a) => { a = a.filter(ok); return a.length ? a.reduce((s, v) => s + v, 0) / a.length : null; };
   const quad = (...a) => { a = a.filter(ok); return a.length ? Math.sqrt(a.reduce((s, v) => s + v * v, 0) / a.length) : 0; };
   const inv = v => ok(v) ? 5 - v : null, fois = (v, k) => ok(v) ? v * k : null;
-  // TRAN2 est un écart (−2 à +2) depuis le 11/10/2026 : la gêne d'apprentissage T vaut 2,5 − 1,25 × écart (provisoire, à revoir avec la timeline)
-  const T = ok(n.TRAN2) ? 2.5 - 1.25 * n.TRAN2 : null;
+  // TRAN2 est un écart (−2 à +2) depuis le 11/10/2026 : la gêne d'apprentissage dépend de ce qu'il y a à apprendre (POID1) et de la qualité
+  // de la transmission ; T = 0,6 × POID1 × (1 − écart / 4) redonne les valeurs d'avant (Flip 7 0,3 · Heat 1,5 · Gloomhaven 2,6). Provisoire.
+  const T = ok(n.TRAN2) && ok(n.POID1) ? .6 * n.POID1 * (1 - n.TRAN2 / 4) : null;
   const k = poidsProfil(pr), kR = k.R || 0, kG = k.G || 0, kW = k.W || 0, kU = k.U || 0;
   const penteL = .1 - .03 * kG;                                   // Rayonner prolonge l'apogée
   const lassitude = N => 1 + penteL * Math.log2(1 + N);
