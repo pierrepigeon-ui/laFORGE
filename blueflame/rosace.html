@@ -32,6 +32,9 @@ main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;padding:14p
 #scene .el:hover{filter:brightness(1.06)}
 #scene.focus .el.eteint{opacity:.16}
 #scene .el.choisi{outline:none}
+#scene .centre{cursor:pointer} #scene .centre:hover circle{filter:brightness(1.07)}
+.bascule{border:1px solid var(--ink);background:var(--ink);color:var(--panel);border-radius:999px;padding:6px 14px;font:500 13.5px var(--sans);cursor:pointer}
+.bascule[aria-pressed="false"]{background:transparent;color:var(--ink);border-color:var(--line)}
 aside{position:sticky;top:12px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
 aside h2{font:600 22px/1.2 var(--serif);margin:4px 0 2px} aside .code{font:600 13px var(--sans);color:var(--muted)}
 aside .devise{font:italic 15px/1.35 var(--serif);color:var(--muted)} aside .titre{font:italic 15px/1.45 var(--serif);margin-top:8px}
@@ -58,6 +61,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px} .field{display:block;margi
   <div class="outils">
     <label for="profil">Mettre en lumière un profil :</label>
     <select id="profil"><option value="">aucun</option></select>
+    <button type="button" id="bascule" class="bascule" aria-pressed="true" hidden>Surbrillance : activée</button>
     <a class="btn ghost hidden" id="lien-fiche" href="#" target="_blank">Voir sa fiche</a>
     <a class="btn ghost hidden" id="lien-ecusson" href="#" target="_blank">Voir son écusson</a>
     <a class="btn ghost hidden" id="lien-detail" href="#" target="_blank">Voir le détail</a>
@@ -77,7 +81,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px} .field{display:block;margi
   <div style="display:flex;gap:10px"><button class="btn" type="submit">Se connecter</button><button class="btn ghost" type="button" id="login-fermer">Fermer</button></div>
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 <script>
-const VERSION = { numero:"1.8", date:"2026-10-10 19:32" };
+const VERSION = { numero:"1.9", date:"2026-10-11 21:57" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const ACCES = ["proprietaire"];   // rôles autorisés (en attendant la table des droits d'accès)
@@ -141,6 +145,7 @@ function construireSVG(profil){
       }
       return `<g class="el${eteint}" data-code="${esc(p.code)}">${s}</g>`;
     }
+    if (!p.code && s.includes("Disque central")) s = `<g class="centre">${s}</g>`;   // clic au centre = bascule de la surbrillance
     return s;
   }).join("\n");
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1800" viewBox="0 0 1800 1800">
@@ -157,10 +162,21 @@ function dessiner(){
   const p = $("#profil").value;
   ["#lien-fiche", "#lien-ecusson", "#lien-detail"].forEach(s => $(s).classList.toggle("hidden", !p));
   if (p){ $("#lien-fiche").href = "fiche.html?type=" + encodeURIComponent(p); $("#lien-detail").href = "detail.html?type=" + encodeURIComponent(p); $("#lien-ecusson").href = "ecusson.html?type=" + encodeURIComponent(p); }
-  svgCourant = construireSVG(p);
+  const actif = !!p && surbrillance;
+  svgCourant = construireSVG(actif ? p : "");
   $("#scene").innerHTML = svgCourant;
-  $("#msg").textContent = p ? `En lumière : les éléments compatibles avec ${p} (${E[p]?.nom || ""}) — couleurs présentes et absentes du profil.` : "";
+  $("#bascule").hidden = !p;
+  $("#bascule").setAttribute("aria-pressed", surbrillance);
+  $("#bascule").textContent = "Surbrillance : " + (surbrillance ? "activée" : "désactivée");
+  const c = $("#scene .centre"); if (c && p) c.insertAdjacentHTML("afterbegin", `<title>${surbrillance ? "Éteindre" : "Rallumer"} la surbrillance</title>`);
+  $("#msg").textContent = !p ? "" : actif ? `En lumière : les éléments compatibles avec ${p} (${E[p]?.nom || ""}) — couleurs présentes et absentes du profil.`
+                                         : `Surbrillance désactivée — clique au centre de la rosace pour la rallumer.`;
 }
+/* une seule bascule : le bouton noir et le centre de la rosace font la même chose */
+let surbrillance = true;
+function basculer(){ if (!$("#profil").value) return; surbrillance = !surbrillance; dessiner(); }
+$("#bascule").addEventListener("click", basculer);
+$("#scene").addEventListener("click", e => { if (e.target.closest(".centre")) basculer(); });
 
 /* ---------- fiche ---------- */
 $("#scene").addEventListener("click", e => {
@@ -183,7 +199,7 @@ $("#dl-png").addEventListener("click", () => {
   img.onerror = () => { $("#msg").className = "msg err"; $("#msg").textContent = "Export PNG impossible dans ce navigateur."; };
   img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgCourant);
 });
-$("#profil").addEventListener("change", () => { dessiner(); history.replaceState(null, "", $("#profil").value ? "?profil=" + encodeURIComponent($("#profil").value) : location.pathname); });
+$("#profil").addEventListener("change", () => { surbrillance = true; dessiner(); history.replaceState(null, "", $("#profil").value ? "?profil=" + encodeURIComponent($("#profil").value) : location.pathname); });
 
 /* ---------- accès ---------- */
 $("#btn-login").addEventListener("click", () => { location.href = "../?retour=" + encodeURIComponent(location.href); });   // connexion centralisée sur la Forge
