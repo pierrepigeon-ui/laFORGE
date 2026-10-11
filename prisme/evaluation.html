@@ -121,6 +121,17 @@ table.sp-extremes{margin:0 0 10px} table.tl-table tr.choisi td{background:color-
 .carnet textarea{min-height:220px}
 .lecture{font-size:13px;color:var(--warn)}
 #filtre{display:flex;gap:14px;align-items:center;font-size:14px;margin:18px 0 8px} #filtre h2{font:600 20px var(--serif);margin:0;margin-right:auto}
+.jeu-tete{display:flex;gap:20px;align-items:center;margin:18px 0 6px}
+.jeu-tete img{width:150px;max-height:170px;object-fit:contain;border-radius:8px;background:var(--panel);border:1px solid var(--line);flex:none}
+.jeu-tete h1{font:600 clamp(26px,4vw,38px)/1.15 var(--serif);margin:0 0 8px}
+.jeu-tete .bgg{display:inline-block;text-decoration:none;font-size:14px;padding:6px 12px}
+@media (max-width:560px){ .jeu-tete img{width:96px} }
+.assistant{border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:12px 18px;margin:14px 0;background:var(--panel)}
+.assistant h2{font:600 19px var(--serif);margin:0 0 4px}
+.ass-boutons{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+#coller-texte{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--paper);font:14px/1.5 var(--sans);color:var(--ink)}
+.apercu{width:100%;border-collapse:collapse;font-size:14px}.apercu td,.apercu th{border-top:1px solid var(--line);padding:6px 8px;vertical-align:top;text-align:left}
+.apercu .avant{color:var(--muted);font-style:italic}.apercu .apres{font-family:var(--serif)}
 dialog{border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--ink);padding:20px 24px;width:min(900px,94vw);max-height:88vh}
 dialog::backdrop{background:rgba(10,15,25,.45)}
 dialog h2{font:600 22px var(--serif);margin:0 0 10px}
@@ -202,12 +213,18 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
   <div class="wrap" id="grille"></div>
 </section>
 <div id="pied" class="hidden"></div>
+<dialog id="dlg-coller"><h2>Coller la réponse de Claude</h2>
+  <p class="aide" id="coller-aide">Colle ici toute la réponse, puis « Lire la réponse » : chaque texte reconnu est proposé à la case qui lui correspond.</p>
+  <textarea id="coller-texte" rows="10" placeholder="La réponse de Claude…"></textarea>
+  <p style="margin:8px 0"><button class="btn ghost" type="button" id="coller-lire">Lire la réponse</button></p>
+  <div id="coller-apercu"></div>
+  <p style="text-align:right;margin:12px 0 0;display:flex;gap:10px;justify-content:flex-end"><button class="btn ghost" type="button" id="coller-fermer">Fermer</button><button class="btn" type="button" id="coller-appliquer" disabled>Appliquer la sélection</button></p></dialog>
 <dialog id="dlg-recap"><div id="recap"></div><p style="text-align:right;margin:12px 0 0"><button class="btn" id="fermer-recap" type="button">Fermer</button></p></dialog>
 <div class="wrap"><p class="version" id="version"></p></div>
 
 <script src="timeline.js?v=1.9"></script>
 <script>
-const VERSION = { numero:"3.17", date:"2026-10-11 17:00" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.18", date:"2026-10-11 21:40" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -263,6 +280,7 @@ async function demarrer(){
     const lire = (t, o) => lireTout(t, q => q.order(o));
     [M.chapitres, M.paires, M.axes, M.paliers, M.exemples, M.jeux, M.notes] = await Promise.all([lire("prisme_chapitres","ordre"), lire("prisme_paires","ordre"),
       lire("prisme_axes","ordre"), lire("prisme_paliers","valeur"), lire("prisme_exemples","ordre"), lire("prisme_jeux","nom"), lire("prisme_notes","ordre")]);
+    try { M.textes = await lire("prisme_textes","ordre"); } catch (e){ M.textes = []; }   // la charte de l'assistant de rédaction
     const { data: n } = await sb.rpc("prisme_noms"); (n || []).forEach(x => noms[x.user_id] = x.nom);
     try { [PL.moteurs, PL.temperaments, PL.styles] = await Promise.all([lire("prisme_player_moteurs","ordre"), lire("prisme_player_temperaments","ordre"),
       lire("prisme_player_styles","ordre")]); } catch (e){ PL.erreur = e.message; }
@@ -457,8 +475,19 @@ function blocAxe(p, axe){
     ${reperes(axe.code)}</div>`;
 }
 function construireGrille(){
-  const d = fiche;
-  let h = `<section class="chiffres ${lectureSeule ? "ro" : ""}"><h2>Le jeu en chiffres</h2>
+  const d = fiche, jeu = M.jeux.find(j => j.code === d.jeu) || {};
+  let h = `<section class="jeu-tete">${jeu.image_url ? `<img src="${esc(jeu.image_url)}" alt="${esc(jeu.nom)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}
+    <div><h1>${esc(jeu.nom || d.jeu)}</h1>
+      <p class="aide">${jeu.bgg_id ? `<a class="btn ghost bgg" href="https://boardgamegeek.com/boardgame/${esc(jeu.bgg_id)}" target="_blank" rel="noopener">Voir sur BoardGameGeek ↗</a>` : "Pas encore de lien BoardGameGeek : il s'ajoute dans la console (onglet Jeux)."}
+      ${jeu.bgg_id && !jeu.image_url ? " L'image de la boîte s'ajoute aussi dans la console." : ""}</p></div></section>
+    <section class="assistant"><h2>Assistant de rédaction</h2>
+    <p class="aide">Les boutons préparent une demande complète pour Claude (le jeu, tes notes, tes textes, la charte de rédaction) et la copient dans le presse-papiers : colle-la dans une conversation sur claude.ai, puis recolle sa réponse ici. Rien n'est remplacé sans ton accord. Chaque paire a aussi son bouton « Demander à Claude ».
+      La charte se règle dans la console (Textes généraux, section « Assistant de rédaction »).</p>
+    <div class="ass-boutons"><button type="button" class="btn ghost" data-prompt="justifs">Demande : toutes les justifications</button>
+      <button type="button" class="btn ghost" data-prompt="article">Demande : un article</button>
+      ${lectureSeule ? "" : `<button type="button" class="btn" id="btn-coller">Coller la réponse de Claude</button>`}</div>
+    <p class="msg" id="ass-msg"></p></section>
+    <section class="chiffres ${lectureSeule ? "ro" : ""}"><h2>Le jeu en chiffres</h2>
     <p class="aide">Ces données proposent les notes factuelles (POIDS, VALEUR, SCALABILITÉ) et serviront à la timeline. Prix : le prix public actuel, avec l'enseigne et la date.
       Meilleur effectif : le nombre de joueurs auquel le jeu est le meilleur ; c'est l'effectif de référence (RYTHME se note à cet effectif). Parties pour tout exploiter : le nombre minimum de parties pour avoir fait le tour de ce que la boîte propose (circuits, scénarios, modules, factions…).</p>
     <div class="grille">${DONNEES.map(([k, l, t]) => `<div><label for="d-${k}">${l}</label><input id="d-${k}" data-donnee="${k}" ${t === "texte" ? 'type="text"' : `type="number" min="0" step="${k === "prix" ? "0.05" : k === "poids_bgg" ? "0.01" : "1"}"`} value="${esc(d[k] ?? "")}" ${lectureSeule ? "disabled" : ""}></div>`).join("")}</div></section>`;
@@ -477,7 +506,7 @@ function construireGrille(){
           <label class="na-droite"><input type="checkbox" data-na="${esc(p.code)}" ${so ? "checked" : ""} ${lectureSeule ? "disabled" : ""}> Sans objet pour ce jeu</label></div>
         <div class="panneau hidden" id="aidep-${esc(p.code)}">${aidePaire(p)}</div>
         <div class="axes">${corps}</div><div class="res" id="res-${esc(p.code)}"></div>
-        <div class="justif"><label for="j-${esc(p.code)}">Justification (facultative)</label>${boutonModeles(p, ax)}
+        <div class="justif"><label for="j-${esc(p.code)}">Justification (facultative)</label>${boutonModeles(p, ax)}<button type="button" class="btn-modeles" data-prompt="paire" data-paire="${esc(p.code)}" title="Copie une demande à Claude pour rédiger ou améliorer cette justification">Demander à Claude</button>
           <textarea id="j-${esc(p.code)}" rows="1" data-justif="${esc(a1.code)}" ${lectureSeule ? "disabled" : ""} placeholder="Pourquoi ces notes ?">${esc(saisie[a1.code]?.commentaire || "")}</textarea>
           <div class="modeles hidden" id="m-${esc(p.code)}"></div></div></div></div>`;
       $("#aller").insertAdjacentHTML("beforeend", `<option value="p-${esc(p.code)}">${esc(c.nom)} — ${esc(p.nom)}</option>`);
@@ -760,6 +789,112 @@ async function enregistrer(){
   $("#etat").textContent = "Enregistré à " + new Date().toLocaleTimeString("fr-FR", { hour:"2-digit", minute:"2-digit" }).replace(":", "h") + ".";
 }
 window.addEventListener("beforeunload", e => { if (enAttente.size || ficheModifiee){ e.preventDefault(); e.returnValue = ""; } });
+
+/* ---------------- assistant de rédaction : demandes pour Claude, et retour de ses réponses ---------------- */
+// la charte : textes de la section « Assistant de rédaction » (prisme_textes), modifiables dans la console
+const charte = code => (M.textes || []).find(t => t.code === "assistant/" + code)?.contenu || "";
+const CHARTE_DEFAUT = {
+  commun: "- Écris en français, dans une langue claire et vivante.\n- L'axe 1 d'une paire décrit ce que le jeu est ; l'axe 2 juge ce qu'il réussit, pour la table à laquelle il est destiné, pas selon le goût de l'évaluateur.\n- Ne contredis jamais les notes : explique-les.\n- N'invente aucun fait sur le jeu ; ce que tu supposes, marque-le [à vérifier].\n- Les mots de l'évaluateur sont la matière première : garde ses idées et ses exemples.\n- Nomme les moteurs (Rassembler, Décrypter, Triompher, S'enflammer, Rayonner), jamais leurs lettres.",
+  justification: "- Deux à quatre phrases, 60 mots au plus.\n- D'abord le constat concret à la table, puis ce qu'il vaut.\n- Pas de formule creuse, pas de liste, pas de note chiffrée répétée.",
+  article: "- Environ 600 mots, en prose, avec des intertitres courts.\n- Plan : une accroche ; ce qu'est le jeu ; ce qu'il réussit ; ce qu'il rate ; pour qui ; combien de temps il tiendra ; un verdict en une phrase.\n- Les notes servent d'appui ; l'article ne récite pas la grille.\n- Le ton d'un ami qui connaît bien les jeux et le dit franchement." };
+const regle = code => charte(code) || CHARTE_DEFAUT[code];
+const palierTexte = (a, v) => { const L = paliersDe(a.code); if (!L.length || v == null) return ""; const x = L.reduce((b, y) => Math.abs(y.valeur - v) < Math.abs(b.valeur - v) ? y : b); return x.libelle; };
+const justifDe = p => saisie[axesDe(p.code).find(a => a.rang === "1").code]?.commentaire || "";
+function contexteJeu(){
+  const d = fiche, jeu = M.jeux.find(j => j.code === d.jeu) || {}, c = calculer(saisie), tl = majTimeline();
+  const chiffres = [d.pages && `${d.pages} pages de règles`, d.prix != null && d.prix !== "" && `${fmt(d.prix, 0)} €`, d.joueurs_max && `${d.joueurs_min || "?"} à ${d.joueurs_max} joueurs`,
+    d.effectif_reference && `meilleur à ${d.effectif_reference}`, d.duree_max && `${d.duree_min || "?"} à ${d.duree_max} minutes`, d.contenu_parties && `${d.contenu_parties} parties pour tout exploiter`].filter(Boolean).join(", ");
+  let t = `## Le jeu\n${jeu.nom || d.jeu}${jeu.bgg_id ? ` (BoardGameGeek n° ${jeu.bgg_id})` : ""}${chiffres ? "\n" + chiffres : ""}\n`;
+  t += `Note finale PRISME : ${c.finale == null ? "incomplète" : fmt(c.finale, 2) + " / 5"} (${M.chapitres.map(ch => `${ch.nom} ${c.chap[ch.code] == null ? "—" : fmt(c.chap[ch.code], 2)}`).join(", ")}).\n`;
+  if (tl.c) t += `Timeline (la vie du jeu, partie après partie) : ${syntheseTimeline(tl.c)}.\n`;
+  if (tl.sp){ const T = tl.sp.moteurs.flatMap(g => g.temperaments).sort((x, y) => y.note - x.note);
+    t += `Spectromètre (la note vue par chaque type de joueur) : ${tl.sp.moteurs.map(g => `${g.m.nom} ${fmt(g.note, 2)}`).join(", ")}. Les mieux servis : ${T.slice(0, 3).map(x => `${x.t.nom} (${fmt(x.note, 2)})`).join(", ")} ; les moins bien servis : ${T.slice(-3).reverse().map(x => `${x.t.nom} (${fmt(x.note, 2)})`).join(", ")}.\n`; }
+  return t;
+}
+function textePaire(p, avecJustif = true){
+  const n = noteDe(p, saisie), ax = axesDe(p.code).filter(a => a.echelle !== "calcule");
+  let t = `### ${p.code} — ${p.nom} : ${n.so ? "sans objet pour ce jeu" : n.note == null ? (n.na1 || n.seuil ? "axe 2 sans objet" : "pas encore notée") : "note retenue " + fmt(n.note, 2) + " / 5"}\n`;
+  t += `Ce que mesure la paire : ${premierePhrase(p.definition)}\n`;
+  ax.forEach(a => { const v = saisie[a.code]?.valeur; if (v == null) return;
+    t += `- ${a.code} ${a.nom} (${a.question || ""}) : ${estEcart(p, a) ? "écart " + ecartTexte(v) : fmt(v)}${palierTexte(a, v) ? " — « " + palierTexte(a, v) + " »" : ""}\n`; });
+  if (avecJustif && justifDe(p)) t += `Justification actuelle de l'évaluateur : « ${justifDe(p)} »\n`;
+  return t;
+}
+const carnetTexte = () => fiche.notes_article?.trim() ? `## Le carnet de l'évaluateur (notes brutes, anecdotes, idées)\n${fiche.notes_article.trim()}\n` : "";
+function demande(type, code){
+  const tete = `Tu aides un évaluateur à rédiger pour PRISME, une méthode d'évaluation des jeux de société par paires d'axes (16 paires, notes de 0 à 5).\n\n## Charte commune\n${regle("commun")}\n\n`;
+  if (type === "paire"){
+    const p = M.paires.find(x => x.code === code), j = justifDe(p);
+    const autres = M.paires.filter(x => x !== p && justifDe(x)).map(x => `- ${x.nom} : ${justifDe(x)}`).join("\n");
+    return tete + `## Charte des justifications\n${regle("justification")}\n\n` + contexteJeu() + "\n## La paire à justifier\n" + textePaire(p, false) +
+      (autres ? `\n## Les autres justifications de la fiche (pour rester cohérent, ne pas les répéter)\n${autres}\n` : "") + (carnetTexte() ? "\n" + carnetTexte() : "") +
+      `\n## Ta tâche\n${j ? `Améliore ce brouillon de l'évaluateur sans changer ce qu'il dit : « ${j} »` : "Rédige la justification de cette paire à partir des notes et du contexte."}\nRéponds uniquement par le texte de la justification, sans titre ni commentaire.`;
+  }
+  if (type === "justifs"){
+    const L = M.paires.filter(p => !noteDe(p, saisie).so);
+    return tete + `## Charte des justifications\n${regle("justification")}\n\n` + contexteJeu() + "\n## Les paires\n" + L.map(p => textePaire(p)).join("\n") + (carnetTexte() ? "\n" + carnetTexte() : "") +
+      `\n## Ta tâche\nPour chacune des ${L.length} paires ci-dessus, rédige la justification (ou améliore celle de l'évaluateur sans changer ce qu'il dit). Ne traite pas une paire qui n'est pas encore notée.\n` +
+      `Réponds exactement dans ce format, une section par paire, sans rien d'autre avant ni après :\n### CODE\ntexte de la justification\n\n(CODE est le code de la paire, par exemple ${L.slice(0, 2).map(p => p.code).join(" ou ")}.)`;
+  }
+  // article
+  return tete + `## Charte de l'article\n${regle("article")}\n\n` + contexteJeu() + "\n## La fiche complète\n" + M.paires.map(p => textePaire(p)).join("\n") + (carnetTexte() ? "\n" + carnetTexte() : "") +
+    `\n## Ta tâche\nÉcris un premier jet d'article sur ce jeu, en suivant la charte.\nCommence ta réponse par la ligne « ### ARTICLE », puis l'article (intertitres en « #### »). Ajoute ensuite, si besoin, une section « ### QUESTIONS » : ce qu'il faudrait demander à l'évaluateur pour compléter.`;
+}
+let derniere = null;   // la dernière demande copiée : { type, code }
+async function copier(texte){
+  try { await navigator.clipboard.writeText(texte); return true; }
+  catch (e){ const t = Object.assign(document.createElement("textarea"), { value:texte }); document.body.appendChild(t); t.select(); const ok = document.execCommand("copy"); t.remove(); return ok; }
+}
+document.addEventListener("click", async e => {
+  const b = e.target.closest("[data-prompt]"); if (!b) return;
+  e.preventDefault();
+  const type = b.dataset.prompt, code = b.dataset.paire, texte = demande(type, code), ok = await copier(texte);
+  derniere = { type, code };
+  const quoi = type === "paire" ? `la justification de ${M.paires.find(p => p.code === code).nom}` : type === "justifs" ? "toutes les justifications" : "un article";
+  const m = $("#ass-msg"); m.className = ok ? "msg ok" : "msg err";
+  m.textContent = ok ? `Demande pour ${quoi} copiée (${texte.length.toLocaleString("fr-FR")} caractères). Colle-la dans claude.ai, puis « Coller la réponse de Claude ».` : "Copie impossible dans ce navigateur.";
+  if (type === "paire"){ const old = b.textContent; b.textContent = ok ? "Demande copiée ✓" : "Copie impossible"; setTimeout(() => b.textContent = old, 2500); }
+});
+// lecture d'une réponse : sections « ### CODE » (justifications), « ### ARTICLE » et « ### QUESTIONS » (article)
+function lireReponse(t){
+  const sections = [], re = /^#{2,3}\s*([A-ZÉÈ]{2,12})\b[^\n]*\n/gm; let m, prec = null;
+  while ((m = re.exec(t))){ if (prec) prec.texte = t.slice(prec.fin, m.index).trim(); prec = { cle:m[1].toUpperCase(), fin:re.lastIndex }; sections.push(prec); }
+  if (prec) prec.texte = t.slice(prec.fin).trim();
+  const parCode = c => M.paires.find(p => p.code === c || norm(p.nom).toUpperCase() === norm(c).toUpperCase());
+  const justifs = sections.filter(x => parCode(x.cle) && x.texte).map(x => ({ p:parCode(x.cle), texte:x.texte }));
+  const article = sections.find(x => x.cle === "ARTICLE")?.texte, questions = sections.find(x => x.cle === "QUESTIONS")?.texte;
+  if (!justifs.length && !article && derniere?.type === "paire" && t.trim()) justifs.push({ p:M.paires.find(p => p.code === derniere.code), texte:t.trim() });
+  if (!justifs.length && !article && derniere?.type === "article" && t.trim()) return { justifs, article:t.trim(), questions };
+  return { justifs, article, questions };
+}
+let lecture = null;
+$("#grille").addEventListener("click", e => { if (e.target.id === "btn-coller"){ $("#coller-texte").value = ""; $("#coller-apercu").innerHTML = ""; $("#coller-appliquer").disabled = true; $("#dlg-coller").showModal(); $("#coller-texte").focus(); } });
+$("#coller-fermer").addEventListener("click", () => $("#dlg-coller").close());
+$("#coller-lire").addEventListener("click", () => {
+  lecture = lireReponse($("#coller-texte").value);
+  const { justifs, article, questions } = lecture, box = $("#coller-apercu");
+  if (!justifs.length && !article){ box.innerHTML = `<p class="msg err">Je ne reconnais rien dans cette réponse. Elle doit contenir des sections « ### CODE » (par exemple « ### POID »), ou « ### ARTICLE ».</p>`; $("#coller-appliquer").disabled = true; return; }
+  box.innerHTML = (justifs.length ? `<table class="apercu"><thead><tr><th></th><th>Paire</th><th>Avant</th><th>Après</th></tr></thead><tbody>${justifs.map((x, i) => `<tr><td><input type="checkbox" data-j="${i}" checked></td><td><b>${esc(x.p.nom)}</b></td>
+      <td class="avant">${esc(justifDe(x.p)) || "<small>vide</small>"}</td><td class="apres">${esc(x.texte)}</td></tr>`).join("")}</tbody></table>` : "") +
+    (article ? `<p style="margin-top:12px"><b>Article</b> (${article.split(/\s+/).length} mots) : <label><input type="radio" name="art" value="suite" checked> ajouter à la suite du carnet</label> <label><input type="radio" name="art" value="remplacer"> remplacer le carnet</label> <label><input type="radio" name="art" value="non"> ne pas l'insérer</label></p>
+      <div class="apres" style="max-height:220px;overflow:auto;border:1px solid var(--line);border-radius:6px;padding:8px 10px;white-space:pre-wrap;font-family:var(--serif)">${esc(article)}</div>` : "") +
+    (questions ? `<p class="aide" style="margin-top:10px"><b>Les questions de Claude</b> (elles iront aussi au carnet) :<br>${esc(questions).replace(/\n/g, "<br>")}</p>` : "");
+  $("#coller-appliquer").disabled = false;
+});
+$("#coller-appliquer").addEventListener("click", () => {
+  if (!lecture || lectureSeule) return;
+  let n = 0;
+  document.querySelectorAll("#coller-apercu [data-j]").forEach(c => { if (!c.checked) return; const x = lecture.justifs[+c.dataset.j], ta = document.getElementById("j-" + x.p.code); if (!ta) return;
+    ta.value = x.texte; ta.dispatchEvent(new Event("input", { bubbles:true })); n++; });
+  const mode = document.querySelector('#coller-apercu input[name="art"]:checked')?.value;
+  if (lecture.article && mode && mode !== "non"){
+    const ca = $("#carnet"), date = new Date().toLocaleDateString("fr-FR");
+    const bloc = `— Premier jet d'article (Claude, ${date}) —\n${lecture.article}${lecture.questions ? `\n\n— Questions de Claude —\n${lecture.questions}` : ""}`;
+    ca.value = mode === "remplacer" || !ca.value.trim() ? bloc : ca.value.trimEnd() + "\n\n" + bloc; ca.dispatchEvent(new Event("input", { bubbles:true })); n++;
+  }
+  $("#dlg-coller").close();
+  const m = $("#ass-msg"); m.className = "msg ok"; m.textContent = n ? `${n} texte${n > 1 ? "s" : ""} inséré${n > 1 ? "s" : ""} : la fiche s'enregistre comme d'habitude.` : "Rien n'a été inséré.";
+});
 
 /* ---------------- récapitulatif et export ---------------- */
 function lignesRecap(){

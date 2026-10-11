@@ -224,7 +224,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 16px}
 
 <script>
 /* ================= configuration ================= */
-const VERSION = { numero:"3.1", date:"2026-10-11 18:00" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.2", date:"2026-10-11 21:45" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 
@@ -257,7 +257,7 @@ const LIBELLES = { devise:"Devise", a_la_table:"À la table, il peut (un comport
   ancien_nom:"Ancien nom", definition:"Définition", nature:"Nature", nature_detail:"Nature (précision)", echelle:"Échelle",
   question:"Question centrale", methode:"Méthode de notation", libelle:"Libellé", type:"Type", texte:"Texte", axe:"Rattaché à",
   jeu:"Jeu", valeur:"Valeur chiffrée", symbole:"Symbole", valeur_texte:"Valeur affichée", remarque:"Remarque",
-  justification:"Justification", amorce:"Amorce littéraire", titre:"Titre", contenu:"Contenu", bgg_id:"Identifiant BGG", notes:"Notes", role:"Rôle" };
+  justification:"Justification", amorce:"Amorce littéraire", titre:"Titre", contenu:"Contenu", bgg_id:"Identifiant BGG", image_url:"Image de la boîte", notes:"Notes", role:"Rôle" };
 
 let state = { user:null, role:null, noms:{}, chapitres:[], paires:[], axes:[], paliers:[], notes:[], jeux:[], exemples:[], textes:[], current:null };
 const peutEcrire = () => state.role === "proprietaire" || state.role === "editeur";
@@ -648,6 +648,8 @@ function afficherJeux(){
     const n = state.exemples.filter(x => x.jeu === j.code).length;
     h += `<h3>${esc(j.nom)} <span class="badge" style="color:var(--muted)">${n} exemple${n > 1 ? "s" : ""}</span></h3>` +
       bloc("prisme_jeux", j, r => `<div class="grid2">${champ("nom", r.nom)}${champ("bgg_id", r.bgg_id, { label:"Lien ou numéro BoardGameGeek" })}</div>
+        ${champ("image_url", r.image_url, { label:"Image de la boîte (adresse de l'image) — sur la page BoardGameGeek du jeu : clic droit sur l'image, « Copier l'adresse de l'image »" })}
+        ${r.image_url ? `<p><img src="${esc(r.image_url)}" alt="" referrerpolicy="no-referrer" style="max-width:140px;max-height:160px;border-radius:6px;border:1px solid var(--line)" onerror="this.replaceWith('Image introuvable à cette adresse.')"></p>` : ""}
         ${r.bgg_id ? `<p class="aide"><a href="https://boardgamegeek.com/boardgame/${esc(r.bgg_id)}" target="_blank" rel="noopener">Voir sur BoardGameGeek</a></p>` : ""}
         ${champ("notes", r.notes, { type:"area", rows:2 })}`, { supprimable: n === 0 });
   });

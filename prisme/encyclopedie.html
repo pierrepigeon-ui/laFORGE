@@ -137,7 +137,7 @@ mark{background:#FFE58A;color:#1B2430;border-radius:2px}
 <script src="timeline.js?v=1.9"></script>
 <script src="totems.js?v=4"></script>
 <script>
-const VERSION = { numero:"3.5", date:"2026-10-11 19:20" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.6", date:"2026-10-11 21:45" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -246,7 +246,7 @@ function sectionJeu(toc){
   [...M.textes].sort((a, b) => a.ordre - b.ordre || a.code.localeCompare(b.code)).forEach(t => {
     let s = sections.find(x => x.nom === t.section); if (!s) sections.push(s = { nom:t.section, textes:[] }); s.textes.push(t);
   });
-  const generaux = sections.filter(s => !/^Annexe/.test(s.nom) && s.nom !== "Présentation");
+  const generaux = sections.filter(s => !/^Annexe/.test(s.nom) && s.nom !== "Présentation" && !/^Assistant/.test(s.nom));   // la charte de l'assistant reste dans l'outil
   generaux.forEach((s, i) => {
     const id = "mode-" + i; n1.enfants.push({ id, titre:s.nom });
     h += `<h3 class="section" id="${id}">${esc(s.nom)}</h3><div class="texte">${s.textes.map(t => (t.titre ? `<h4>${esc(t.titre)}</h4>` : "") + riche(t.contenu)).join("")}</div>`;
