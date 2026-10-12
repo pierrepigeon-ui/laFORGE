@@ -239,9 +239,9 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
 <dialog id="dlg-recap"><div id="recap"></div><p style="text-align:right;margin:12px 0 0"><button class="btn" id="fermer-recap" type="button">Fermer</button></p></dialog>
 <div class="wrap"><p class="version" id="version"></p></div>
 
-<script src="timeline.js?v=2.0"></script>
+<script src="timeline.js?v=3.0"></script>
 <script>
-const VERSION = { numero:"3.20", date:"2026-10-11 23:55" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.21", date:"2026-10-12 22:05" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -517,8 +517,8 @@ function construireGrille(){
     <div class="jeu-corps"><div class="jeu-titre"><h1>${esc(jeu.nom || d.jeu)}</h1>${jeu.bgg_id ? `<a class="btn ghost bgg" href="https://boardgamegeek.com/boardgame/${esc(jeu.bgg_id)}" target="_blank" rel="noopener">BoardGameGeek ↗</a>` : ""}</div>
       ${jeu.bgg_id ? "" : `<p class="aide">Pas encore de lien BoardGameGeek ni d'image : ils s'ajoutent dans la console (onglet Jeux).</p>`}
       <div class="chiffres"><div class="ch-titre">Le jeu en chiffres <button type="button" class="aide-btn" data-panneau="aide-chiffres" aria-expanded="false" title="À quoi servent ces données">?</button></div>
-      <div class="panneau hidden" id="aide-chiffres"><p class="aide">Ces données proposent les notes factuelles (POIDS, étendue de LIEN) et servent à la timeline. Prix : le prix public actuel, avec l'enseigne et la date ; il n'entre pas dans la note, il donne le coût par partie.
-        Meilleur effectif : le nombre de joueurs auquel le jeu est le meilleur ; c'est l'effectif de référence (RYT1 et la timeline se notent à cet effectif). Parties pour tout exploiter : le nombre minimum de parties pour avoir fait le tour de ce que la boîte propose (circuits, scénarios, modules, factions…).</p></div>
+      <div class="panneau hidden" id="aide-chiffres"><p class="aide">Ces données proposent les notes factuelles (POIDS, étendue de LIEN) et servent à la timeline. Prix : le prix public actuel, avec l'enseigne et la date ; il n'entre pas dans la note ; il donne l'élan d'achat de la timeline et le coût par session.
+        Meilleur effectif : le nombre de joueurs auquel le jeu est le meilleur ; c'est l'effectif de référence (RYT1 et la timeline se notent à cet effectif). Parties pour tout exploiter : le nombre minimum de parties pour avoir fait le tour de ce que la boîte propose (circuits, scénarios, modules, factions…) ; pour mémoire, la timeline ne s'en sert plus.</p></div>
       <div class="ch-grille">${champ("pages", "Pages des règles")}${champ("poids_bgg", "Poids BGG")}${champ("prix", "Prix (€)")}${champ("prix_source", "Source du prix (enseigne, date)", "texte")}
         ${paire("joueurs_min", "joueurs_max", "Joueurs")}${champ("effectif_reference", "Meilleur effectif")}${paire("duree_min", "duree_max", "Durée", "min")}${champ("contenu_parties", "Parties pour tout exploiter")}</div></div></div></section>
     <details class="assistant" id="assistant"${ouvert ? " open" : ""}><summary><h2>Assistant de rédaction</h2></summary>
@@ -647,19 +647,19 @@ function recalculer(){
   const tl = majTimeline();
   $("#pied").insertAdjacentHTML("beforeend", `<div class="tl-pied" data-tl title="${tl.c ? esc(syntheseTimeline(tl.c)) : "Timeline incomplète"}"><small>Timeline</small><b>${tl.c ? piedTimeline(tl.c) : "—"}</b></div>`);
   const k = tl.c ? coutFiche(tl.c) : null;
-  $("#pied").insertAdjacentHTML("beforeend", `<div class="cout-pied" title="${esc(k ? texteCout(k) + " (provisoire : prix ÷ demi-vie, plafonnée à 200 parties)" : "Coût par partie : il faut le prix et une timeline complète")}"><small>Coût par partie</small><b>${k ? texteCout(k).replace(/ par partie.*/, "") : "—"}</b></div>`);
+  $("#pied").insertAdjacentHTML("beforeend", `<div class="cout-pied" title="${esc(k ? texteCout(k) + " (prix ÷ durée de vie, plafonnée à " + PLAFOND_PARTIES_VIE + " sessions)" : "Coût par session : il faut le prix et une timeline complète")}"><small>Coût par session</small><b>${k ? texteCout(k).replace(/ par session.*/, "") : "—"}</b></div>`);
   return c;
 }
 
 /* ---------------- timeline ---------------- */
 // rassemble les notes utiles à la timeline (calcul partagé : timeline.js)
 function entreesTimeline(){ const e = entreesFiche(saisie, M.paires, M.axes, { contenu_parties:fiche.contenu_parties, prix:fiche.prix }); return { n:e.n, manque:e.manque, absents:e.absents }; }
-// coût par partie (provisoire) : prix ÷ parties de vie d'après la timeline
+// coût par session : prix ÷ durée de vie d'après la timeline (plafonnée à 50 sessions)
 const coutFiche = c => coutParPartie(fiche.prix, c, fiche.duree_min, fiche.duree_max);
-// pied de page : α, puis β et γ s'il y a une chute (sinon « pas de chute »), puis la demi-vie
+// pied de page : α, puis β et γ s'il y a une chute (sinon « pas de chute »), puis la durée de vie
 function piedTimeline(c){
   const chute = c.beta == null ? "pas de chute" : c.omega != null ? `β j${c.beta} · ω j${c.omega}` : `β j${c.beta} · γ j${c.gamma}`;
-  return `α ${fmt(c.y[c.alpha], 2)} <small>j${c.alpha}</small> · ${chute} · demi-vie ${arrondiDemiVie(c.demivie)} <small>parties</small>`;
+  return `α ${fmt(c.y[c.alpha], 2)} <small>j${c.alpha}</small> · ${chute} · vie ${c.vie == null ? "∞" : Math.round(c.vie)} <small>sessions</small>`;
 }
 function majTimeline(){
   const box = document.getElementById("tl-corps"); if (!box) return {};
@@ -672,17 +672,16 @@ function majTimeline(){
   }
   const c = flowJeu(n);
   box.innerHTML = `<div class="tl-bandeau">${esc(syntheseTimeline(c))}</div>
-    <figure class="courbe-box">${courbeSVG(c, nomJeu(fiche.jeu))}<figcaption>Trait plein : les jalons calculés${c.omega != null ? " jusqu'à l'abandon ω (le flow passe sous 0 : le joueur lâche le jeu)" : ""}. Pointillés : la suite, où seule la lassitude progresse. Abscisse : les jalons, espacés selon le log2 des parties cumulées. Bandes : les phases. Survole un point pour son détail.</figcaption></figure>
+    <figure class="courbe-box">${courbeSVG(c, nomJeu(fiche.jeu))}<figcaption>Trait plein : les jalons calculés${c.omega != null ? " jusqu'à l'abandon ω (le flow passe sous 0 : le joueur lâche le jeu)" : ""}. Pointillés : la suite (Souvenir), qui descend jusqu'au plancher de nostalgie. Abscisse : les jalons, espacés selon le log2 des sessions cumulées. Bandes : les phases. Survole un point pour son détail.</figcaption></figure>
     ${absents.length ? `<p class="aide">Sans objet pour ce jeu, donc retiré du calcul : ${absents.map(x => esc(nomP(x))).join(", ")}.</p>` : ""}
-    ${fiche.contenu_parties ? "" : `<p class="aide">« Parties pour tout exploiter » est vide : pas de plancher pour le jalon 6 (jeu rejouable sans fin).</p>`}
-    <div class="defile"><table class="tl-table"><thead><tr><th>Jalon</th><th title="Parties jouées pour atteindre ce jalon">Atteint après</th><th>Stimulation</th><th>Friction</th><th>Flow</th><th>Puis : sous-phase</th><th>Durée</th><th title="Parties jouées à la fin de la sous-phase">Durée cumulée</th></tr></thead><tbody>
+    <div class="defile"><table class="tl-table"><thead><tr><th>Jalon</th><th title="Sessions cumulées pour atteindre ce jalon">Atteint après</th><th>Stimulation</th><th>Friction</th><th title="L'élan d'achat : ce que le prix payé pousse encore à jouer">Élan</th><th>Flow</th><th>Puis : sous-phase</th><th>Durée</th><th title="Sessions cumulées à la fin de la sous-phase">Durée cumulée</th></tr></thead><tbody>
     ${JALONS.map(j => { const sp = SOUSPHASES[j.n], prev = j.n === 0 || SOUSPHASES[j.n - 1].phase !== sp.phase;
-      return `${prev ? `<tr class="tl-phase"><td colspan="8">Phase ${sp.phase} — ${esc(PHASES[sp.phase])}</td></tr>` : ""}
+      return `${prev ? `<tr class="tl-phase"><td colspan="9">Phase ${sp.phase} — ${esc(PHASES[sp.phase])}</td></tr>` : ""}
       <tr class="${j.n === c.alpha ? "alpha" : ""}${j.n === c.beta || j.n === c.gamma || j.n === c.omega ? " chute" : ""}${c.omega != null && j.n > c.omega ? " jamais" : ""}"><td><b>${j.n}</b> ${esc(j.nom)}${j.n === c.alpha ? " · α" : ""}${j.n === c.beta ? " · β" : ""}${j.n === c.gamma ? " · γ" : ""}${j.n === c.omega ? " · ω" : ""}${c.omega != null && j.n > c.omega ? ' <small>jamais atteint</small>' : ""}</td>
-        <td class="n">${fmt(c.N[j.n], 1)} p.</td><td class="n">${j.n ? fmt(c.det[j.n].s, 2) : "—"}</td><td class="n">${j.n ? fmt(c.det[j.n].f, 2) : "—"}</td><td class="n"><b>${fmt(c.y[j.n], 2)}</b></td>
-        <td>${esc(sp.nom)}</td><td class="n">${j.n < 7 ? fmt(c.d[j.n], 2) + " partie" + (c.d[j.n] >= 2 ? "s" : "") : "∞"}</td><td class="n">${j.n < 7 ? fmt(c.N[j.n + 1], 1) + " partie" + (c.N[j.n + 1] >= 2 ? "s" : "") : "∞"}</td></tr>`; }).join("")}
+        <td class="n">${fmt(c.N[j.n], 2)} s.</td><td class="n">${j.n ? fmt(c.det[j.n].s, 2) : "—"}</td><td class="n">${j.n ? fmt(c.det[j.n].f, 2) : "—"}</td><td class="n">${j.n ? fmt(c.det[j.n].el, 2) : "—"}</td><td class="n"${j.n && c.det[j.n].retenu ? ' title="Le flow ne remonte plus une fois le jeu maîtrisé : retenu à la valeur du jalon précédent"' : ""}><b>${fmt(c.y[j.n], 2)}</b>${j.n && c.det[j.n].retenu ? "*" : ""}</td>
+        <td>${esc(sp.nom)}</td><td class="n">${j.n < 7 ? texteSessions(c.d[j.n]) : "∞"}</td><td class="n">${j.n < 7 ? texteSessions(c.N[j.n + 1]) : "∞"}</td></tr>`; }).join("")}
     </tbody></table></div>
-    <p class="aide">Plafond d'aléa ${fmt(c.plafond, 2)} (jalons 5 et 6) · usure ${fmt(c.usure, 2)} (jalon 7) · lassitude au jalon 7 : ×${fmt(c.det[7].L, 2)}.</p>`;
+    <p class="aide">Élan d'achat au départ ${fmt(c.E0, 2)} · au jalon 7, VAR garde ${fmt(100 * c.det[7].estompe, 0)} % de sa valeur et la charge (POID1, MAN1) pèse ${fmt(100 * c.det[7].g, 0)} % · marque laissée ${fmt(c.marque, 2)}${c.plancher != null ? ` · plancher de nostalgie ${fmt(c.plancher, 2)}` : ""}${c.det.some(t => t?.retenu) ? " · * flow retenu : il ne remonte plus une fois le jeu maîtrisé" : ""}.</p>`;
   return { c, sp: majSpectro(n) };
 }
 let spChoisi = null;   // profil dont la courbe est affichée
@@ -694,7 +693,7 @@ function majSpectro(n){
   const maj = t => { t = String(t ?? ""); return t.charAt(0).toUpperCase() + t.slice(1); };
   const coul = m => (matchMedia("(prefers-color-scheme: dark)").matches ? m.couleur_sombre : m.couleur) || m.couleur || "var(--accent)";
   const ligne = l => `<tr class="${spChoisi === l.st.code ? "choisi" : ""}"><td><button type="button" class="lien" data-sp="${esc(l.st.code)}">${esc(maj(l.st.nom))}</button><br><small>${esc(l.st.code)} · conduit par ${esc(Mo[l.pr.second]?.nom || "")} · fuit ${esc(Mo[l.pr.rejet]?.nom || "")}</small></td>
-    <td class="n"><b>${fmt(l.note, 2)}</b></td><td class="n">${fmt(l.c.y[l.c.alpha], 2)} <small>j${l.c.alpha}</small></td><td class="n">${l.c.demivie == null ? "∞" : arrondiDemiVie(l.c.demivie)}</td>
+    <td class="n"><b>${fmt(l.note, 2)}</b></td><td class="n">${fmt(l.c.y[l.c.alpha], 2)} <small>j${l.c.alpha}</small></td><td class="n">${l.c.vie == null ? "∞" : Math.round(l.c.vie)}</td>
     <td>${l.c.omega != null ? `abandon au jalon ${l.c.omega} (ω)` : l.c.beta != null ? `chute au jalon ${l.c.beta}` : l.gene > 0 ? `gêné dès le jalon ${MOTEURS_JEU[l.pr.rejet].rejet} (${JALONS[MOTEURS_JEU[l.pr.rejet].rejet].nom})` : "—"}</td></tr>`;
   const det = spChoisi && r.lignes.find(l => l.st.code === spChoisi);
   const ouverts = new Set([...box.querySelectorAll("details[open]")].map(d => d.id));
@@ -713,7 +712,7 @@ function majSpectro(n){
       <div class="tl-bandeau">${esc(syntheseTimeline(det.c))}</div>
       <figure class="courbe-box">${courbeSVG(det.c, det.st.nom, r.base)}<figcaption>Trait noir : la courbe vue par ce profil. Pointillé gris : le flow pour tous (${r.base.y.map((v, j) => `${j} ${fmt(v, 1)}`).join(" · ")}).</figcaption></figure></div>` : ""}
     ${r.moteurs.map(g => `<details class="sp-arc" id="mo-${esc(g.m.code)}"${(det && det.moteur.code === g.m.code) || ouverts.has("mo-" + g.m.code) ? " open" : ""}><summary><b style="color:${esc(coul(g.m))}">${esc(g.m.nom)}</b> <span class="aide">${esc(g.m.devise || "")}</span> <span class="n">${fmt(g.note, 2)}</span></summary>
-      <div class="defile"><table class="tl-table"><thead><tr><th>Profil</th><th>Note</th><th>α</th><th>Demi-vie</th><th>Décrochage</th></tr></thead><tbody>${g.temperaments.map(t =>
+      <div class="defile"><table class="tl-table"><thead><tr><th>Profil</th><th>Note</th><th>α</th><th title="en sessions ; ∞ : un classique">Durée de vie</th><th>Décrochage</th></tr></thead><tbody>${g.temperaments.map(t =>
         `<tr class="grp"><td colspan="5"><b>${esc(maj(t.t.nom))}</b> (${esc(t.t.code)}, fuit ${esc(Mo[t.t.fuit].nom.toLowerCase())}) · ${fmt(t.note, 2)}</td></tr>` + t.lignes.map(ligne).join("")).join("")}</tbody></table></div></details>`).join("")}`;
   return r;
 }
@@ -859,7 +858,7 @@ function contexteJeu(){
   let t = `## Le jeu\n${jeu.nom || d.jeu}${jeu.bgg_id ? ` (BoardGameGeek n° ${jeu.bgg_id})` : ""}${chiffres ? "\n" + chiffres : ""}\n`;
   t += `Note finale PRISME : ${c.finale == null ? "incomplète" : fmt(c.finale, 2) + " / 5"} (${M.chapitres.map(ch => `${ch.nom} ${c.chap[ch.code] == null ? "—" : fmt(c.chap[ch.code], 2)}`).join(", ")}).\n`;
   if (tl.c) t += `Timeline (la vie du jeu, partie après partie) : ${syntheseTimeline(tl.c)}.\n`;
-  if (tl.c && coutFiche(tl.c)) t += `Coût par partie (prix ÷ parties de vie, indicatif) : ${texteCout(coutFiche(tl.c))}.\n`;
+  if (tl.c && coutFiche(tl.c)) t += `Coût par session (prix ÷ durée de vie, indicatif) : ${texteCout(coutFiche(tl.c))}.\n`;
   if (tl.sp){ const T = tl.sp.moteurs.flatMap(g => g.temperaments).sort((x, y) => y.note - x.note);
     t += `Spectromètre (la note vue par chaque type de joueur) : ${tl.sp.moteurs.map(g => `${g.m.nom} ${fmt(g.note, 2)}`).join(", ")}. Les mieux servis : ${T.slice(0, 3).map(x => `${x.t.nom} (${fmt(x.note, 2)})`).join(", ")} ; les moins bien servis : ${T.slice(-3).reverse().map(x => `${x.t.nom} (${fmt(x.note, 2)})`).join(", ")}.\n`; }
   return t;
@@ -962,7 +961,7 @@ $("#btn-recap").addEventListener("click", () => {
   $("#recap").innerHTML = `<h2>${esc(nomJeu(fiche.jeu))} : récapitulatif</h2>
     <p class="aide">${manque.length ? `Il manque ${manque.length} paire${manque.length > 1 ? "s" : ""} : ${manque.map(l => esc(l.p.nom)).join(", ")}.` : `Les ${M.paires.length} paires sont remplies.`}
       Note finale : <b>${c.finale == null ? "—" : fmt(c.finale, 2)}</b> (${M.chapitres.map(ch => `${esc(ch.nom)} ${c.chap[ch.code] == null ? "—" : fmt(c.chap[ch.code], 2)}`).join(", ")}).</p>
-    ${(() => { const t = majTimeline(), k = t.c && coutFiche(t.c); return `<p class="aide">Timeline : ${t.c ? esc(syntheseTimeline(t.c)) : "incomplète"}.${k ? ` Coût par partie : ${esc(texteCout(k))}.` : ""}</p>` +
+    ${(() => { const t = majTimeline(), k = t.c && coutFiche(t.c); return `<p class="aide">Timeline : ${t.c ? esc(syntheseTimeline(t.c)) : "incomplète"}.${k ? ` Coût par session : ${esc(texteCout(k))}.` : ""}</p>` +
       (t.sp ? `<p class="aide">Spectromètre (note vue par chaque moteur dominant) : ${t.sp.moteurs.map(g => `${esc(g.m.nom)} ${fmt(g.note, 2)}`).join(" · ")}.</p>` : ""); })()}
     <table class="recap"><thead><tr><th>Paire</th><th>Saisie</th><th>Note</th><th>Justification</th></tr></thead><tbody>
     ${L.map(l => `<tr class="${l.n.complete ? "" : "manque"}"><td><span class="aller" data-aller="${esc(l.p.code)}">${esc(l.p.nom)}</span></td><td>${l.notes}</td>
@@ -982,7 +981,7 @@ $("#btn-export").addEventListener("click", () => {
   md += `**Note finale : ${c.finale == null ? "—" : fmt(c.finale, 2)}** (${M.chapitres.map(ch => `${ch.nom} ${c.chap[ch.code] == null ? "—" : fmt(c.chap[ch.code], 2)}`).join(", ")})\n`;
   const tl = majTimeline();
   if (tl.c) md += `\n**Timeline** : ${syntheseTimeline(tl.c)}.\n\nFlow par jalon : ${tl.c.y.map((v, j) => `${j} ${fmt(v, 2)}`).join(" · ")}\n`;
-  if (tl.c && coutFiche(tl.c)) md += `\n**Coût par partie** (indicatif) : ${texteCout(coutFiche(tl.c))}.\n`;
+  if (tl.c && coutFiche(tl.c)) md += `\n**Coût par session** (indicatif) : ${texteCout(coutFiche(tl.c))}.\n`;
   if (tl.sp) md += `\n**Spectromètre** (note vue par chaque moteur dominant) : ${tl.sp.moteurs.map(g => `${g.m.nom} ${fmt(g.note, 2)}`).join(" · ")}. Le profil le mieux servi : ${tl.sp.lignes[0].st.nom} (${fmt(tl.sp.lignes[0].note, 2)}) ; le moins bien : ${tl.sp.lignes.at(-1).st.nom} (${fmt(tl.sp.lignes.at(-1).note, 2)}).\n`;
   M.chapitres.forEach(ch => {
     md += `\n## ${ch.nom}\n`;

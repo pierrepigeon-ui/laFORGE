@@ -134,10 +134,10 @@ mark{background:#FFE58A;color:#1B2430;border-radius:2px}
 </div>
 <div style="max-width:1240px;margin:0 auto;padding:0 20px 30px"><p class="version"><span id="credit"></span><br><span id="version"></span></p></div>
 
-<script src="timeline.js?v=2.0"></script>
+<script src="timeline.js?v=3.0"></script>
 <script src="totems.js?v=4"></script>
 <script>
-const VERSION = { numero:"3.7", date:"2026-10-11 23:55" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.8", date:"2026-10-12 22:05" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -354,8 +354,8 @@ function sectionJoueur(toc){
 // Heat (boîte de base, toutes options) : notes de Pierre du 11/10/2026, passées au modèle à 12 paires (MECA2 et LIEN2a pré-remplis) ;
 // POID, PROF… = notes des paires ; VAL1 = palier de prix (55 €).
 const HEAT = { nom:"Heat: Pedal to the Metal", POID1:2.5, POID:3.49, PROF1:2.5, PROF:3.49, VAR1:3, VAR:3.89, MECA1a:2, MECA2:3.5, EXIG1:3.5, EXIG:4.23,
-  RYT1:3, RYT2:3, MAN1:2, MAN2:4, THEM1:3, THEM:3.7, LIEN1:3, LIEN1b:4, LIEN1c:1, LIEN2a:4.3, LIEN2b:2, LIEN:4.45, MAT:1.98, ART2a:5, ART2b:3, DOC2:0, VAL1:2,
-  contenu_parties:12, effectif_reference:6 };
+  RYT1:3, RYT2:3, RYT:3, MAN1:2, MAN2:4, MAN:4, THEM1:3, THEM:3.7, LIEN1:3, LIEN1b:4, LIEN1c:1, LIEN2a:4.3, LIEN2b:2, LIEN:4.45, MAT:1.98, ART2a:5, ART2b:3, ART:4,
+  DOC2:0, DOC:3.02, VAL1:2, effectif_reference:6 };
 
 // notes des 12 paires de Heat, pour la note vue par chaque style
 const HEAT_PAIRES = [["SYS","POID",3.49],["SYS","PROF",3.49],["SYS","MECA",3.5],["SYS","VAR",3.89],["SYS","EXIG",4.23],["EXP","RYT",3],["EXP","MAN",4],["EXP","THEM",3.7],
@@ -363,9 +363,9 @@ const HEAT_PAIRES = [["SYS","POID",3.49],["SYS","PROF",3.49],["SYS","MECA",3.5],
 const EFFETS = {
   U:"EXIGENCE et PROFONDEUR pèsent encore plus aux jalons 3 et 4. Après le jalon 4, sa stimulation baisse : × (1 − 0,2 × poids × (1 − r)), r = (moy(EXIG1, PROF1) − 2,5) / 2, borné entre 0 et 1 ; aucune baisse si le jeu reste très réflexif (moyenne de 4,5 ou plus).",
   B:"LIEN et PROFONDEUR pèsent encore plus des jalons 4 à 6. L'adversaire peut être le jeu : un coopératif exigeant ou un solo le nourrit aussi.",
-  R:"MATÉRIEL, ART et THÈME pèsent encore plus des jalons 1 à 3. Paralysie d'analyse subie : l'attente est multipliée par 1 + (EXIG1 − 2) / 5.",
-  W:"LIEN pèse encore plus des jalons 5 à 7. Vraie parole seulement (LIEN1c ≥ 2, ou un manque ressenti) : LIEN2b entre dans la stimulation des jalons 6 et 7, et l'attente est multipliée par 1 − LIEN2b / 10.",
-  G:"Phase clé transversale : la lassitude monte moins vite (pente 0,07 s'il est dominant, 0,085 s'il est second, 0,095 en troisième ou quatrième position, au lieu de 0,1). Il n'aime pas attendre non plus : paralysie subie à moitié."
+  R:"MATÉRIEL, ART et THÈME pèsent encore plus des jalons 1 à 3. (La paralysie d'analyse subie est à reprendre : chantier des timelines par moteur.)",
+  W:"LIEN pèse encore plus des jalons 5 à 7. (La place de la vraie parole, LIEN2b, est à reprendre : chantier des timelines par moteur.)",
+  G:"Phase clé transversale : il prolonge l'apogée des autres. (Son effet sur l'estompement de VAR est à définir : chantier des timelines par moteur.)"
 };
 function sectionCroisement(toc){
   if (!M.paires.length || !M.styles.length) return "";
@@ -374,7 +374,7 @@ function sectionCroisement(toc){
   const Mo = Object.fromEntries(M.moteurs.map(m => [m.code, m])), nomP = c => M.paires.find(p => p.code === c)?.nom || c;
   const sombre = matchMedia("(prefers-color-scheme: dark)").matches, coul = m => (sombre ? m.couleur_sombre : m.couleur) || m.couleur || "var(--PLA)";
   const r = spectrometre({ ...HEAT }, HEAT_PAIRES, { moteurs:M.moteurs, temperaments:M.temperaments, styles:M.styles });
-  const sp = l => `<tr><td>${esc(majE(l.st.nom))} <small class="vide">${esc(l.st.code)}</small></td><td class="n"><b>${fmt(l.note, 2)}</b></td><td class="n">${fmt(l.c.y[l.c.alpha], 2)}</td><td class="n">${l.c.demivie == null ? "∞" : arrondiDemiVie(l.c.demivie)}</td></tr>`;
+  const sp = l => `<tr><td>${esc(majE(l.st.nom))} <small class="vide">${esc(l.st.code)}</small></td><td class="n"><b>${fmt(l.note, 2)}</b></td><td class="n">${fmt(l.c.y[l.c.alpha], 2)}</td><td class="n">${l.c.vie == null ? "∞" : Math.round(l.c.vie)}</td></tr>`;
   return `<h2 id="croisement" style="--c:var(--PLA)">Le croisement (spectromètre)</h2>
     <p class="chapo">Un même jeu n'est pas vécu pareil selon qui joue. Le spectromètre recalcule la note et la courbe du jeu pour chacun des 60 profils de PRISMEplayer (tempérament et style).</p>
     <h3 class="section" id="x-principe">Le principe</h3>
@@ -402,8 +402,8 @@ function sectionCroisement(toc){
         <td>${g.temperaments.map(t => `<a href="#${idTem(t.t.code)}">${esc(majE(t.t.nom))}</a> ${fmt(t.note, 2)}`).join(" · ")}</td></tr>`).join("")}</tbody></table></div>
     <h4>Les courbes par tempérament</h4><p class="vide">Pour chaque moteur dominant, une courbe par tempérament (moyenne de ses trois profils), dans la couleur du moteur qu'il fuit ; pointillé gris : le flow pour tous.</p>
     ${courbesParMoteur(r, { moteurs:M.moteurs, temperaments:M.temperaments }, coul)}
-    <div class="defile"><table class="jeu"><thead><tr><th>Les cinq mieux servis</th><th>Note</th><th>α</th><th>Demi-vie</th></tr></thead><tbody>${r.lignes.slice(0, 5).map(sp).join("")}</tbody></table></div>
-    <div class="defile"><table class="jeu"><thead><tr><th>Les cinq moins bien servis</th><th>Note</th><th>α</th><th>Demi-vie</th></tr></thead><tbody>${r.lignes.slice(-5).map(sp).join("")}</tbody></table></div>
+    <div class="defile"><table class="jeu"><thead><tr><th>Les cinq mieux servis</th><th>Note</th><th>α</th><th title="en sessions ; ∞ : un classique">Durée de vie</th></tr></thead><tbody>${r.lignes.slice(0, 5).map(sp).join("")}</tbody></table></div>
+    <div class="defile"><table class="jeu"><thead><tr><th>Les cinq moins bien servis</th><th>Note</th><th>α</th><th title="en sessions ; ∞ : un classique">Durée de vie</th></tr></thead><tbody>${r.lignes.slice(-5).map(sp).join("")}</tbody></table></div>
     ${(() => { const b = r.lignes.slice(-5), f = b[0].pr.rejet; return b.every(l => l.pr.rejet === f)
       ? `<p class="vide">Les cinq moins bien servis fuient tous ${esc(Mo[f].nom)} : la gêne commence au jalon ${MOTEURS_JEU[f].rejet} (${esc(JALONS[MOTEURS_JEU[f].rejet].nom)}).</p>` : ""; })()}`;
 }
@@ -429,57 +429,63 @@ function sectionTemps(toc){
   if (!ouvert) return h + `<p class="vide">Le calcul du flow utilise les axes de PRISMEgame : cette partie est réservée aux membres de PRISME.</p>`;
 
   const c = flowJeu(HEAT);
-  n1.enfants.push({ id:"t-abscisse", titre:"La durée (abscisse)" }, { id:"t-flow", titre:"Le flow (ordonnée)" },
-    { id:"t-points", titre:"α, β, γ, ω : les points remarquables" }, { id:"t-demivie", titre:"La suite et la demi-vie" }, { id:"t-heat", titre:"Exemple : Heat" });
-  const lien = code => `<a href="#p-${code}">${code}</a>`;
+  n1.enfants.push({ id:"t-abscisse", titre:"La durée (abscisse)" }, { id:"t-flow", titre:"Le flow (ordonnée)" }, { id:"t-termes", titre:"Les termes, jalon par jalon" },
+    { id:"t-points", titre:"α, β, γ, ω : les points remarquables" }, { id:"t-vie", titre:"Le Souvenir et la durée de vie" }, { id:"t-heat", titre:"Exemple : Heat" });
   h += `<h3 class="section" id="t-abscisse">La durée (abscisse)</h3>
-    <div class="texte"><p>Chaque sous-phase dure un certain nombre de parties, tiré des notes du jeu. Les fractions de partie comptent : la Préparation (lire une critique, acheter) ou l'Accès (dépiauter, lire les règles) représentent une part de soirée.</p>
-    <p>On place les jalons en cumulant le logarithme de ces durées. Ainsi, la première partie et la centième ne pèsent pas pareil : doubler son expérience d'un jeu fait avancer d'une unité, quel que soit le point de départ.</p></div>
+    <div class="texte"><p>L'unité de la timeline est la <b>session</b> : une soirée avec le jeu (un scénario de Gloomhaven, une course de Heat, une soirée de manches de Flip 7). Chaque sous-phase dure un certain nombre de sessions, tiré des notes du jeu et arrondi au quart. Les fractions comptent : la Préparation (lire une critique, acheter) ou l'Accès (dépiauter, lire les règles) représentent une part de soirée.</p>
+    <p>On place les jalons en cumulant le logarithme de ces durées. Ainsi, la première session et la centième ne pèsent pas pareil : doubler son expérience d'un jeu fait avancer d'une unité, quel que soit le point de départ.</p></div>
     <div class="formule">x(0) = 0 ; x(j) = x(j − 1) + log2(1 + durée de la sous-phase)</div>
-    <div class="defile"><table class="jeu"><thead><tr><th>Sous-phase</th><th>Durée, en parties</th><th>Heat</th></tr></thead><tbody>
+    <div class="defile"><table class="jeu"><thead><tr><th>Sous-phase</th><th>Durée, en sessions</th><th>Heat</th></tr></thead><tbody>
     ${SOUSPHASES.slice(0, 7).map((sp, i) => `<tr><td>${esc(sp.nom)}</td><td>${esc(sp.duree)}</td><td class="n">${fmt(c.d[i], 2)}</td></tr>`).join("")}</tbody></table></div>
-    <div class="texte"><p><b>Plancher du jalon 6.</b> On ne peut pas avoir tout vu avant d'avoir joué le nombre minimum de parties que demande le contenu (« Parties pour tout exploiter », dans le jeu en chiffres). Si le calcul place le jalon 6 plus tôt, l'Aguerrissement s'allonge d'autant. Champ vide : jeu rejouable sans fin, pas de plancher.</p>
-    <p>Le prix, donnée de la fiche, ne joue que sur la durée de la Préparation (par paliers : 0 sous 20 €, puis 20, 40, 70, 120, 200 €), pas sur le plaisir de jeu ni sur la note.</p>
-    <p><b>Coût par partie</b> (indicatif, provisoire) : prix ÷ parties de vie. Les parties de vie sont la demi-vie, plafonnée à ${PLAFOND_PARTIES_VIE} parties (au-delà, le coût est négligeable) ; pas de coût pour un jeu abandonné avant sa première partie. Avec la durée de la fiche, on en tire un coût de l'heure.${(() => { const k = coutParPartie(55, c); return k ? ` Heat, à 55 € : ${esc(texteCout(k))}.` : ""; })()}</p></div>
+    <div class="texte"><p>Le prix, donnée de la fiche, ne joue que sur la durée de la Préparation et sur l'élan d'achat (par paliers : 0 sous 20 €, puis 20, 40, 70, 120, 200 €), pas sur la note.</p></div>
 
     <h3 class="section" id="t-flow">Le flow (ordonnée)</h3>
     <div class="texte"><p>À chaque jalon, on met en balance ce qui stimule le joueur et ce qui le freine. Le flow vaut zéro au jalon 0 : rien n'est encore joué.</p></div>
-    <div class="formule">flow = 2 × r × (S − F), borné entre 0 et 10</div>
+    <div class="formule">flow = élan + 2 × r × (S − F), borné entre 0 et 10</div>
     <div class="texte"><ul>
-      <li><b>S, la stimulation</b>, est la <b>moyenne simple</b> de ses termes.</li>
-      <li><b>F, la friction</b>, est leur <b>moyenne quadratique</b> (racine de la moyenne des carrés) : un gros défaut n'est pas noyé dans la moyenne. L'asymétrie est voulue : un défaut gâche plus de plaisir qu'une qualité n'en ajoute.</li>
-      <li><b>r, la montée en régime</b> : ${R_REGIME.slice(1).map(v => fmt(v, 2)).join(" / ")} pour les jalons 1 à 7. Au début, tout se ressent moins fort, le plaisir comme la gêne.</li>
-      <li><b>La lassitude</b> L = 1 + 0,1 × log2(1 + parties jouées) alourdit ce qui se répète : la manipulation M = MAN1 × L à tous les jalons ; l'attente A = moyenne(5 − RYT1, 5 − RYT2) × L, des jalons 3 à 7 ; la corvée M2 = (5 − MAN2) × L, au jalon 7.</li>
-      <li><b>Le plafond d'aléa</b> = 1 − (MECA1a / 5) × ((5 − MECA2) / 5) réduit la stimulation aux jalons 5 et 6 : quand le hasard décide, la maîtrise pèse moins sur l'issue. Des mécaniques qui donnent prise sur l'incertain (MECA2 haut) lèvent le plafond.</li>
-      <li><b>L'usure</b> = 0,5 + VAR / 10 réduit la stimulation au jalon 7 : seul le renouvellement entretient l'envie.</li>
-      <li>Un code sans chiffre (POID, PROF, EXIG…) désigne la note retenue de la paire ; avec un chiffre (POID1, EXIG1…), la note de l'axe.</li></ul></div>
+      <li><b>S, la stimulation</b>, est la <b>moyenne</b> de ses termes (certains comptent double).</li>
+      <li><b>F, la friction</b>, est leur <b>somme quadratique</b> : F = √(somme des carrés / 3). Chaque gêne ajoutée fait monter F, même petite, et un gros défaut n'est pas noyé. L'asymétrie est voulue : un défaut gâche plus de plaisir qu'une qualité n'en ajoute.</li>
+      <li><b>L'élan d'achat</b> = E₀ / (1 + n), E₀ = 0,5 + 0,25 × palier de prix, n = sessions jouées depuis le jalon 2. Le prix payé pousse à passer les premières sessions ; cet élan s'éteint de lui-même. La timeline suppose que celui qui ouvre la boîte l'a payée : un jeu prêté ou offert a un élan plus faible.</li>
+      <li><b>r, le coefficient de projection</b> : ${fmt(R_REGIME[1], 1)} au jalon 1, ${fmt(R_REGIME[2], 1)} au jalon 2, 1 ensuite. Avant la première session, le joueur se projette dans le jeu au lieu de le vivre : attrait et barrière ne comptent qu'en partie. L'élan n'est pas multiplié par r.</li>
+      <li><b>Une charge attendue ne coûte rien</b> tant que le jeu n'est pas compris : au jalon 3, seule la manipulation au-delà de l'attendu gêne, (3 − MAN2) × 5/3 si MAN2 est sous 3. Une fois le jeu compris, la charge normale recommence à coûter.</li>
+      <li><b>À partir du jalon 4, le flow ne remonte plus</b> : une fois le jeu maîtrisé, une déception ne se rattrape pas. Avant, la courbe d'apprentissage peut creuser puis rebondir.</li>
+      <li>Un code sans chiffre (POID, PROF, EXIG…) désigne la note de la paire ; avec un chiffre (POID1, EXIG1…), l'axe. SYS, EXP et EDI sont les notes des trois chapitres.</li></ul></div>
+
+    <h3 class="section" id="t-termes">Les termes, jalon par jalon</h3>
     <div class="defile"><table class="jeu"><thead><tr><th>Jalon</th><th>Stimulation S</th><th>Friction F</th></tr></thead><tbody>
     ${[1,2,3,4,5,6,7].map(j => `<tr><td class="n"><b>${j}</b> ${esc(JALONS[j].nom)}</td><td>${esc(TERMES[j].s)}</td><td>${esc(TERMES[j].f)}</td></tr>`).join("")}</tbody></table></div>
+    <div class="texte"><ul>
+      <li><b>Phase I, l'entrée.</b> À l'ouverture, ce qui attire est la boîte et sa promesse (la meilleure de THEM1, RYT1, MAN2) ; ce qui freine, le poids des règles et une direction artistique qui gêne la lecture (5 − ART2b). À la lecture des règles, le système se révèle (SYS) ; la mise en place commence à peser (M = MAN1 × L, L = 1 + 0,1 × log2(1 + sessions), compté à moitié).</li>
+      <li><b>Phase II, l'apprentissage.</b> Au jalon 3, le système, la profondeur, les mécaniques, l'expérience sans la parole, l'édition sans la documentation ; VAR compte double : c'est ce que le jeu promet encore (un championnat, une campagne). L'<b>apprentissage</b> = POID1 × (1 − écart DOC / 4) / (1 + n) : ce qui reste à apprendre, tempéré par la qualité des manuels ; il s'éteint de lui-même. Au jalon 4, tout entre, et ce que la maîtrise débloque compte double (PROFONDEUR, EXIGENCE).</li>
+      <li><b>Phase III, la maîtrise.</b> Ne restent que les éléments persistants : MÉCANIQUE, EXIGENCE, THÈME, LIEN, MATÉRIEL, et VAR, qui <b>s'estompe de 5 % par session</b> depuis le jalon 4 (× 0,95^m). La charge (POID1, MAN1) <b>monte sur la même courbe</b> : g = 1 − 0,95^m. Le manque de variété use tout de suite (5 − VAR), et l'art garde un socle de gêne ((5 − ART2b) / 2). Les jalons 6 et 7 gardent la même formule : seule l'horloge avance.</li></ul></div>
 
     <h3 class="section" id="t-points">α, β, γ, ω : les points remarquables</h3>
     <div class="texte"><ul>
       <li><b>α, l'apogée</b> : le premier jalon où le flow atteint son maximum.</li>
       <li><b>La chute</b> : le premier segment après α dont la pente descend à −0,5 ou moins par unité d'abscisse. <b>β</b> en marque le début.</li>
       <li><b>γ, le palier</b> : le premier jalon après β où la pente redevient douce, ou bien où le flow passe sous 1.</li>
-      <li><b>Sans chute</b>, le jeu est un classique : ni β ni γ.</li>
       <li><b>ω, l'abandon</b> : un flow négatif signale une purge, le jeu est lâché sur-le-champ. La courbe s'arrête à 0 : les sous-phases suivantes ne sont jamais vécues.</li></ul></div>
 
-    <h3 class="section" id="t-demivie">La suite et la demi-vie</h3>
-    <div class="texte"><p>Après le jalon 7, la courbe se poursuit <b>en pointillés</b> (sauf abandon ω : elle s'arrête). On prolonge le dernier état connu : la stimulation reste figée, seule la lassitude continue de monter. Comme l'abscisse et la lassitude sont toutes deux logarithmiques, cette suite est une droite. Sa pente est la <b>perte par doublement</b> : ce que le jeu perd de flow chaque fois qu'on double le nombre de parties jouées.</p>
-    <p>La <b>demi-vie</b> est le nombre de parties au bout duquel le flow passe pour la première fois sous la moitié de α, jalons et pointillés compris. Pour un jeu qui s'effondre, elle tombe pendant la chute ; pour un classique, loin dans les pointillés.</p></div>
-    <div class="defile"><table class="ref"><tr><th>Demi-vie</th><th>moins de 10 parties</th><th>10 à 100</th><th>100 à 1 000</th><th>plus de 1 000</th></tr>
-      <tr><th>Lecture</th><td>éphémère</td><td>durable</td><td>classique</td><td>inusable</td></tr></table></div>
-    <p class="vide">Les seuils seront étalonnés sur d'autres jeux d'essai.</p>
+    <h3 class="section" id="t-vie">Le Souvenir et la durée de vie</h3>
+    <div class="texte"><p>Après le jalon 7, la courbe se poursuit <b>en pointillés</b> avec la formule de la phase III (sauf abandon ω : elle s'arrête). Elle descend jusqu'au <b>plancher de nostalgie</b> : un très bon jeu qu'on a fini, on le ressort une fois par an, parce qu'il a marqué par son thème ou ses mécaniques.</p></div>
+    <div class="formule">marque = max(0, max(THEM, MECA) − ${PLANCHER_SEUIL}) ; plancher = min(marque, flow au jalon 7)</div>
+    <div class="texte"><p>Le seuil de ${PLANCHER_SEUIL} trie les vraies marques : un thème moyen ne laisse aucune nostalgie. Le plancher arrête la chute, il ne relève jamais la courbe.</p>
+    <p>La <b>durée de vie</b> est le nombre de sessions jusqu'à ce que le jeu sorte de la vie active du joueur : par <b>abandon</b> (le flow passe sous 0) ou par <b>arrivée au plancher</b> (fini, rangé, ressorti par nostalgie). Un jeu qui n'atteint jamais son plancher est un <b>classique</b>. Moins de 10 sessions : un jeu éphémère ; au-delà, durable.</p>
+    <p><b>Coût par session</b> (indicatif) : prix ÷ durée de vie, plafonnée à ${PLAFOND_PARTIES_VIE} sessions (il est rarissime de dépasser 50 sessions d'un même jeu, hors campagnes longues). Pas de coût pour un jeu abandonné avant sa première session. Avec la durée de la fiche, on en tire un coût de l'heure.${(() => { const k = coutParPartie(55, c); return k ? ` Heat, à 55 € : ${esc(texteCout(k))}.` : ""; })()}</p></div>
+    <div class="defile"><table class="ref"><tr><th>Jeu de référence</th><th>Gloomhaven</th><th>Heat</th><th>Flip 7</th></tr>
+      <tr><th>Durée de vie</th><td>≈ 40 sessions, puis rangé</td><td>jamais : un classique</td><td>≈ 2 sessions, abandon</td></tr></table></div>
 
     <h3 class="section" id="t-heat">Exemple : Heat</h3>
-    <div class="texte"><p>${esc(HEAT.nom)}, boîte de base, toutes options. Meilleur effectif : ${HEAT.effectif_reference} joueurs ; parties pour tout exploiter : ${HEAT.contenu_parties}. Plafond d'aléa ${fmt(c.plafond, 2)} ; usure ${fmt(c.usure, 2)}.</p></div>
-    <figure class="courbe-box">${courbeSVG(c, HEAT.nom)}<figcaption>Trait plein : les jalons calculés. Pointillés : la suite, où seule la lassitude progresse. Abscisse : les jalons, espacés selon le log2 des parties cumulées. Bandes : les phases I à IV.</figcaption></figure>
+    <div class="texte"><p>${esc(HEAT.nom)}, boîte de base, toutes options. Meilleur effectif : ${HEAT.effectif_reference} joueurs ; 55 €, palier de prix ${HEAT.VAL1}. Marque laissée ${fmt(c.marque, 2)}.</p></div>
+    <figure class="courbe-box">${courbeSVG(c, HEAT.nom)}<figcaption>Trait plein : les jalons calculés. Pointillés : le Souvenir, qui descend vers le plancher de nostalgie. Abscisse : les jalons, espacés selon le log2 des sessions cumulées. Bandes : les phases I à IV.</figcaption></figure>
     <div class="defile"><table class="ref"><tr><th>Jalon</th>${[0,1,2,3,4,5,6,7].map(j => `<th>${j}</th>`).join("")}</tr>
-      <tr><th>Parties cumulées</th>${c.N.map(v => `<td>${fmt(v, 1)}</td>`).join("")}</tr>
+      <tr><th>Sessions cumulées</th>${c.N.map(v => `<td>${fmt(v, 2)}</td>`).join("")}</tr>
       <tr><th>Abscisse</th>${c.x.map(v => `<td>${fmt(v, 2)}</td>`).join("")}</tr>
       <tr><th>Stimulation S</th><td>—</td>${c.det.slice(1).map(t => `<td>${fmt(t.s, 2)}</td>`).join("")}</tr>
       <tr><th>Friction F</th><td>—</td>${c.det.slice(1).map(t => `<td>${fmt(t.f, 2)}</td>`).join("")}</tr>
-      <tr><th>Flow</th>${c.y.map((v, j) => `<td class="${j === c.alpha ? "eq" : ""}"><b>${fmt(v, 2)}</b></td>`).join("")}</tr></table></div>
+      <tr><th>Élan</th><td>—</td>${c.det.slice(1).map(t => `<td>${fmt(t.el, 2)}</td>`).join("")}</tr>
+      <tr><th>Flow</th>${c.y.map((v, j) => `<td class="${j === c.alpha ? "eq" : ""}"><b>${fmt(v, 2)}</b>${j && c.det[j].retenu ? "*" : ""}</td>`).join("")}</tr></table></div>
+    ${c.det.some(t => t?.retenu) ? `<p class="vide">* Flow retenu : il ne remonte plus une fois le jeu maîtrisé.</p>` : ""}
     <div class="encadre"><b>${esc(syntheseTimeline(c))}</b></div>`;
   return h;
 }
@@ -492,14 +498,17 @@ const GLOSSAIRE = [
   ["Note de la paire", "La note de la paire, après calcul (courbe en S, moyenne, THÈME, LIEN). La note d'un chapitre est la moyenne de ses paires, l'évaluation finale celle des trois chapitres."],
   ["Courbe en S", "La fonction qui transforme l'axe 1 et l'écart en note de paire liée ; voir l'annexe."],
   ["Sans objet", "Une paire que l'évaluateur déclare sans objet pour un jeu sort de la moyenne. Aucune ne sort d'elle-même : une absence est un manque (VAR1 = 0 donne une note basse) ; seules les natures sont neutres (thème, posture, hasard, lois du monde, parole)."],
-  ["Coût par partie", "Le prix divisé par les parties de vie du jeu (sa demi-vie, plafonnée à 200 parties). Un indicateur, hors de la note."],
+  ["Coût par session", "Le prix divisé par la durée de vie du jeu, plafonnée à 50 sessions. Un indicateur, hors de la note."],
+  ["Session", "L'unité de la timeline : une soirée avec le jeu (un scénario, une course, une soirée de manches)."],
   ["Meilleur effectif", "Le nombre de joueurs auquel le jeu est le meilleur ; c'est à cet effectif qu'on note la cadence (RYT1) et qu'on trace la timeline. RYT2 et LIEN2a jugent toute la plage."],
   ["Faux solo", "Une partie seul contre des automates : elle compte dans la plage de joueurs, contrairement au vrai solo."],
   ["Jalon", "Un repère de la vie du jeu, de 0 (identifié) à 7 (archivé)."],
   ["Flow", "Le plaisir net à un jalon : stimulation moins friction, sur 10."],
-  ["Lassitude", "Le poids croissant de ce qui se répète (manipulation, attente) à mesure qu'on rejoue."],
+  ["Élan d'achat", "Ce que le prix payé pousse encore à jouer ; il s'éteint à mesure des sessions."],
+  ["Estompement", "À partir du jalon 4, VAR perd 5 % par session, et la charge (POID1, MAN1) monte d'autant."],
   ["α, β, γ, ω", "L'apogée de la courbe, le début de sa chute, le palier où elle se stabilise, l'abandon (flow négatif)."],
-  ["Demi-vie", "Le nombre de parties au bout duquel le flow tombe sous la moitié de son apogée."],
+  ["Durée de vie", "Le nombre de sessions jusqu'à l'abandon ou jusqu'au plancher de nostalgie ; infinie pour un classique."],
+  ["Plancher de nostalgie", "Le flow sous lequel un jeu fini ne descend plus : on le ressort une fois par an, s'il a marqué par son thème ou ses mécaniques."],
   ["Trait d'un moteur", "À quel point le jeu est tourné vers ce moteur, lu dans les axes 1 ; il devient une gêne pour qui rejette ce moteur."],
   ["Spectromètre", "Le jeu recalculé pour chacun des 60 profils : une note et une courbe par joueur type."],
   ["Moteur", "L'une des cinq motivations de PRISMEplayer ; chaque joueur les porte toutes, à des degrés divers. Le plus fort est son moteur dominant."],
