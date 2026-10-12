@@ -239,9 +239,9 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
 <dialog id="dlg-recap"><div id="recap"></div><p style="text-align:right;margin:12px 0 0"><button class="btn" id="fermer-recap" type="button">Fermer</button></p></dialog>
 <div class="wrap"><p class="version" id="version"></p></div>
 
-<script src="timeline.js?v=3.0"></script>
+<script src="timeline.js?v=3.1"></script>
 <script>
-const VERSION = { numero:"3.21", date:"2026-10-12 22:05" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.22", date:"2026-10-12 22:28" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -658,8 +658,8 @@ function entreesTimeline(){ const e = entreesFiche(saisie, M.paires, M.axes, { c
 const coutFiche = c => coutParPartie(fiche.prix, c, fiche.duree_min, fiche.duree_max);
 // pied de page : α, puis β et γ s'il y a une chute (sinon « pas de chute »), puis la durée de vie
 function piedTimeline(c){
-  const chute = c.beta == null ? "pas de chute" : c.omega != null ? `β j${c.beta} · ω j${c.omega}` : `β j${c.beta} · γ j${c.gamma}`;
-  return `α ${fmt(c.y[c.alpha], 2)} <small>j${c.alpha}</small> · ${chute} · vie ${c.vie == null ? "∞" : Math.round(c.vie)} <small>sessions</small>`;
+  const chute = c.omega != null ? `β j${c.beta ?? c.alpha} · ω j${c.omega}` : `${c.beta == null ? "pas de déclin" : `β j${c.beta}`} · γ ${c.gamma == null ? "∞" : Math.round(c.gamma) + " <small>s.</small>"}`;
+  return `α ${fmt(c.y[c.alpha], 2)} <small>j${c.alpha}</small> · ${chute}${c.omega != null ? ` · vie ${Math.round(c.vie)} <small>s.</small>` : ""}`;
 }
 function majTimeline(){
   const box = document.getElementById("tl-corps"); if (!box) return {};
@@ -672,12 +672,12 @@ function majTimeline(){
   }
   const c = flowJeu(n);
   box.innerHTML = `<div class="tl-bandeau">${esc(syntheseTimeline(c))}</div>
-    <figure class="courbe-box">${courbeSVG(c, nomJeu(fiche.jeu))}<figcaption>Trait plein : les jalons calculés${c.omega != null ? " jusqu'à l'abandon ω (le flow passe sous 0 : le joueur lâche le jeu)" : ""}. Pointillés : la suite (Souvenir), qui descend jusqu'au plancher de nostalgie. Abscisse : les jalons, espacés selon le log2 des sessions cumulées. Bandes : les phases. Survole un point pour son détail.</figcaption></figure>
+    <figure class="courbe-box">${courbeSVG(c, nomJeu(fiche.jeu))}<figcaption>Trait plein : les jalons calculés${c.omega != null ? " jusqu'à l'abandon ω (le flow passe sous 0 : le joueur lâche le jeu)" : ""}. Pointillés : la suite (Souvenir), qui descend jusqu'au plancher de nostalgie. En haut, les jalons ; en bas, les sessions cumulées (chaque sous-phase occupe le log2 de sa durée). Bandes : les phases. Survole un point pour son détail.</figcaption></figure>
     ${absents.length ? `<p class="aide">Sans objet pour ce jeu, donc retiré du calcul : ${absents.map(x => esc(nomP(x))).join(", ")}.</p>` : ""}
     <div class="defile"><table class="tl-table"><thead><tr><th>Jalon</th><th title="Sessions cumulées pour atteindre ce jalon">Atteint après</th><th>Stimulation</th><th>Friction</th><th title="L'élan d'achat : ce que le prix payé pousse encore à jouer">Élan</th><th>Flow</th><th>Puis : sous-phase</th><th>Durée</th><th title="Sessions cumulées à la fin de la sous-phase">Durée cumulée</th></tr></thead><tbody>
     ${JALONS.map(j => { const sp = SOUSPHASES[j.n], prev = j.n === 0 || SOUSPHASES[j.n - 1].phase !== sp.phase;
       return `${prev ? `<tr class="tl-phase"><td colspan="9">Phase ${sp.phase} — ${esc(PHASES[sp.phase])}</td></tr>` : ""}
-      <tr class="${j.n === c.alpha ? "alpha" : ""}${j.n === c.beta || j.n === c.gamma || j.n === c.omega ? " chute" : ""}${c.omega != null && j.n > c.omega ? " jamais" : ""}"><td><b>${j.n}</b> ${esc(j.nom)}${j.n === c.alpha ? " · α" : ""}${j.n === c.beta ? " · β" : ""}${j.n === c.gamma ? " · γ" : ""}${j.n === c.omega ? " · ω" : ""}${c.omega != null && j.n > c.omega ? ' <small>jamais atteint</small>' : ""}</td>
+      <tr class="${j.n === c.alpha ? "alpha" : ""}${j.n === c.beta || j.n === c.sousPhaseGamma || j.n === c.omega ? " chute" : ""}${c.omega != null && j.n > c.omega ? " jamais" : ""}"><td><b>${j.n}</b> ${esc(j.nom)}${j.n === c.alpha ? " · α" : ""}${j.n === c.beta ? " · β" : ""}${j.n === c.sousPhaseGamma ? ` · γ <small>(${esc(texteSessions(c.gamma))})</small>` : ""}${j.n === c.omega ? " · ω" : ""}${c.omega != null && j.n > c.omega ? ' <small>jamais atteint</small>' : ""}</td>
         <td class="n">${fmt(c.N[j.n], 2)} s.</td><td class="n">${j.n ? fmt(c.det[j.n].s, 2) : "—"}</td><td class="n">${j.n ? fmt(c.det[j.n].f, 2) : "—"}</td><td class="n">${j.n ? fmt(c.det[j.n].el, 2) : "—"}</td><td class="n"${j.n && c.det[j.n].retenu ? ' title="Le flow ne remonte plus une fois le jeu maîtrisé : retenu à la valeur du jalon précédent"' : ""}><b>${fmt(c.y[j.n], 2)}</b>${j.n && c.det[j.n].retenu ? "*" : ""}</td>
         <td>${esc(sp.nom)}</td><td class="n">${j.n < 7 ? texteSessions(c.d[j.n]) : "∞"}</td><td class="n">${j.n < 7 ? texteSessions(c.N[j.n + 1]) : "∞"}</td></tr>`; }).join("")}
     </tbody></table></div>
@@ -694,7 +694,7 @@ function majSpectro(n){
   const coul = m => (matchMedia("(prefers-color-scheme: dark)").matches ? m.couleur_sombre : m.couleur) || m.couleur || "var(--accent)";
   const ligne = l => `<tr class="${spChoisi === l.st.code ? "choisi" : ""}"><td><button type="button" class="lien" data-sp="${esc(l.st.code)}">${esc(maj(l.st.nom))}</button><br><small>${esc(l.st.code)} · conduit par ${esc(Mo[l.pr.second]?.nom || "")} · fuit ${esc(Mo[l.pr.rejet]?.nom || "")}</small></td>
     <td class="n"><b>${fmt(l.note, 2)}</b></td><td class="n">${fmt(l.c.y[l.c.alpha], 2)} <small>j${l.c.alpha}</small></td><td class="n">${l.c.vie == null ? "∞" : Math.round(l.c.vie)}</td>
-    <td>${l.c.omega != null ? `abandon au jalon ${l.c.omega} (ω)` : l.c.beta != null ? `chute au jalon ${l.c.beta}` : l.gene > 0 ? `gêné dès le jalon ${MOTEURS_JEU[l.pr.rejet].rejet} (${JALONS[MOTEURS_JEU[l.pr.rejet].rejet].nom})` : "—"}</td></tr>`;
+    <td>${l.c.omega != null ? `abandon au jalon ${l.c.omega} (ω)` : l.c.beta != null ? `déclin dès le jalon ${l.c.beta}` : l.gene > 0 ? `gêné dès le jalon ${MOTEURS_JEU[l.pr.rejet].rejet} (${JALONS[MOTEURS_JEU[l.pr.rejet].rejet].nom})` : "—"}</td></tr>`;
   const det = spChoisi && r.lignes.find(l => l.st.code === spChoisi);
   const ouverts = new Set([...box.querySelectorAll("details[open]")].map(d => d.id));
   box.innerHTML = `<div class="sp-haut"><figure>${rosaceSVG(r.spectre, PL.moteurs.map(m => ({ code:m.code, nom:m.nom, couleur:coul(m) })))}

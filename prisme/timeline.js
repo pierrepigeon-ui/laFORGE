@@ -1,7 +1,7 @@
 /* PRISME — timeline du jeu : jalons, durées, flow, α β γ ω, durée de vie.
    Module partagé par l'encyclopédie et l'outil d'évaluation. Méthode arrêtée le 08/10/2026 (jeu d'essai : Heat) ; modèle à 12 paires le 11/10/2026 ;
    formules refaites phase par phase le 12/10/2026 avec trois jeux de référence (Gloomhaven, Heat, Flip 7). L'unité est la session. */
-const TIMELINE_VERSION = { numero:"3.0", date:"2026-10-12 22:05" };   // à incrémenter à chaque livraison
+const TIMELINE_VERSION = { numero:"3.1", date:"2026-10-12 22:28" };   // à incrémenter à chaque livraison
 
 const JALONS = [
   { n:0, nom:"identifié", quoi:"Le jeu est connu de loin : critique, vitrine, recommandation." },
@@ -137,15 +137,15 @@ function flowJeu(n, pr){
   }
   const purge = brut.findIndex((v, j) => j >= 1 && v < 0);
   const y = brut.map((v, j) => purge > 0 && j >= purge ? 0 : Math.min(10, Math.max(0, v)));
-  const pente = j => (y[j + 1] - y[j]) / (x[j + 1] - x[j]);
   let alpha = 1; for (let j = 2; j <= 7; j++) if (y[j] > y[alpha]) alpha = j;
-  // β : début de la chute ; γ : palier où elle s'arrête ; ω : abandon (purge), à la place de γ
-  let beta = null, gamma = null, omega = null;
-  if (purge > 0){ beta = purge - 1; omega = purge; }
-  else {
-    for (let j = alpha; j < 7; j++) if (pente(j) <= -.5){ beta = j; break; }
-    if (beta != null) for (let k2 = beta + 1; k2 <= 7; k2++) if (k2 === 7 || y[k2] < 1 || pente(k2) > -.5){ gamma = k2; break; }
-  }
+  // β : début du déclin final, le jalon d'où le flow ne fait plus que baisser (une variation de moins de 0,05 est un plateau) ;
+  // γ : l'arrivée au plancher de nostalgie, en sessions (null : jamais, un classique) ; ω : abandon (purge), à la place de γ
+  const fin = purge > 0 ? purge : 7, PLATEAU = .05;
+  let beta = null, omega = purge > 0 ? purge : null;
+  const baisse = j => y[j] < y[j - 1] - PLATEAU;
+  let jb = fin; while (jb >= 1 && !baisse(jb)) jb--;                    // un plateau final ne compte pas
+  for (; jb >= 1 && baisse(jb); jb--) beta = jb - 1;
+  if (beta === 0) beta = null;
   // Souvenir : la marque laissée (thème ou mécaniques) ; le plancher de nostalgie arrête la chute sans jamais relever la courbe
   const marque = Math.max(0, Math.max(n.THEM ?? 0, MECA ?? 0) - PLANCHER_SEUIL);
   const plancher = purge > 0 ? null : Math.min(marque, brut[7]);
@@ -165,8 +165,9 @@ function flowJeu(n, pr){
       vie = b; xVie = xLoin(b);
     }
   }
+  const gamma = purge > 0 ? null : vie, sousPhaseGamma = gamma == null ? null : gamma > N[7] ? 7 : Math.max(0, N.findIndex(v => v >= gamma - 1e-9) - 1);
   const classe = vie == null ? "classique" : CLASSES_VIE.find(([s]) => vie < s)[1];
-  return { d, N, x, y, brut, det, alpha, beta, gamma, omega, purge: purge > 0 ? purge : null, perte, vie, xVie, classe, marque, plancher,
+  return { d, N, x, y, brut, det, alpha, beta, gamma, sousPhaseGamma, omega, purge: purge > 0 ? purge : null, perte, vie, xVie, classe, marque, plancher,
     yLoin, xLoin, SYS, EXP, EDI, E0, T };
 }
 
@@ -174,18 +175,19 @@ function flowJeu(n, pr){
 function courbeSVG(c, titre, ref){
   const e = s => String(s ?? "").replace(/[&<>"']/g, k => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[k]));
   const f = (v, k = 2) => Number(v).toFixed(k).replace(".", ",");
-  const W = 760, H = 352, g = 46, dr = 16, h0 = 26, b = 64;
+  const W = 760, H = 372, g = 46, dr = 16, h0 = 46, b = 64;
   const xFin = Math.max(c.x[7] + 4, Math.min(c.x[7] + 9, c.xVie ? c.xVie + 1.5 : 0));
   const yMax = Math.max(5, Math.ceil(c.y[c.alpha] + 1));
   const X = v => g + v / xFin * (W - g - dr), Y = v => H - b - v / yMax * (H - b - h0);
   let s = `<svg class="courbe" viewBox="0 0 ${W} ${H}" role="img" aria-label="Courbe du flow${titre ? " de " + e(titre) : ""}">`;
   [["I", 0, 2], ["II", 2, 4], ["III", 4, 6], ["IV", 6, null]].forEach(([p, a, z], i) => {
     const x1 = X(c.x[a]), x2 = z == null ? X(xFin) : X(c.x[z]);
-    s += `<rect x="${x1}" y="${h0}" width="${x2 - x1}" height="${H - b - h0}" class="bande${i % 2}"><title>Phase ${p} : ${e(PHASES[p])}</title></rect><text x="${(x1 + x2) / 2}" y="${h0 - 8}" class="phase">${p}</text>`;
+    s += `<rect x="${x1}" y="${h0}" width="${x2 - x1}" height="${H - b - h0}" class="bande${i % 2}"><title>Phase ${p} : ${e(PHASES[p])}</title></rect><text x="${(x1 + x2) / 2}" y="${h0 - 28}" class="phase">${p}</text>`;
   });
   s += `<text x="${W / 2}" y="${H - 6}" class="gl" style="text-anchor:middle">Phases : ${Object.entries(PHASES).map(([k, v]) => k + " " + e(v)).join(" · ")}</text>`;
   for (let v = 0; v <= yMax; v++) s += `<line x1="${g}" x2="${W - dr}" y1="${Y(v)}" y2="${Y(v)}" class="grille"/><text x="${g - 8}" y="${Y(v) + 4}" class="gy">${v}</text>`;
-  s += `<text x="4" y="${h0 - 8}" class="gy" style="text-anchor:start">flow</text>`;
+  s += `<text x="4" y="${h0 - 8}" class="gy" style="text-anchor:start">jalon</text><text x="12" y="${Y(yMax / 2)}" class="gy" style="text-anchor:middle" transform="rotate(-90 12 ${Y(yMax / 2)})">flow</text>`;
+  s += `<text x="4" y="${H - b + 30}" class="gy" style="text-anchor:start">sessions</text>`;
   if (c.plancher != null && c.plancher > 0) s += `<line x1="${X(c.x[7])}" x2="${W - dr}" y1="${Y(c.plancher)}" y2="${Y(c.plancher)}" class="demi"/><text x="${W - dr - 4}" y="${Y(c.plancher) - 5}" class="gl" style="text-anchor:end">plancher de nostalgie</text>`;
   if (c.xVie != null){ const xd = X(Math.min(c.xVie, xFin)), yv = c.purge ? 0 : c.plancher ?? 0;
     s += `<line x1="${xd}" x2="${xd}" y1="${Y(yv)}" y2="${H - b}" class="demi"/><text x="${Math.min(Math.max(xd, g + 60), W - dr - 80)}" y="${H - b + 34}" class="gl">durée de vie ≈ ${texteSessions(c.vie)}</text>`; }
@@ -197,22 +199,33 @@ function courbeSVG(c, titre, ref){
     for (let xv = c.x[7] + .05; xv <= xFin + 1e-9; xv += .05){ const Nk = (1 + c.N[7]) * 2 ** (xv - c.x[7]) - 1; loin.push(`${X(xv)},${Y(c.yLoin(Nk))}`); }
     s += `<polyline class="pointille" points="${loin.join(" ")}"/>`;
   } else s += `<text x="${X(c.x[c.omega]) + 10}" y="${Y(0) - 10}" class="gl fort" style="text-anchor:start">ω abandon</text>`;
-  let dernierNum = 0;
+  let dernierNum = 0, dernierS = -1;
   for (let j = 0; j <= 7; j++){
     const info = `Jalon ${j} : ${JALONS[j].nom} — ${texteSessions(c.N[j])}, flow ${f(c.y[j])}`;
     const point = c.omega != null && j > c.omega ? "" : `<circle cx="${X(c.x[j])}" cy="${Y(c.y[j])}" r="${j === c.alpha ? 6 : 4}" class="${j === c.alpha ? "pt alpha" : "pt"}"/>`;
     const lisible = j === 0 || X(c.x[j]) - X(c.x[dernierNum]) >= 14;   // numéros trop serrés (jalons très courts) : on saute
     if (lisible) dernierNum = j;
-    s += `<g><title>${e(info)}</title>${point}${lisible ? `<text x="${X(c.x[j])}" y="${H - b + 16}" class="gx">${j}</text>` : ""}</g>`;
+    const lisibleS = dernierS < 0 || X(c.x[j]) - X(c.x[dernierS]) >= 26;  // sessions cumulées sous le jalon
+    if (lisibleS) dernierS = j;
+    s += `<g><title>${e(info)}</title>${point}${lisible ? `<text x="${X(c.x[j])}" y="${h0 - 8}" class="gx">${j}</text>` : ""}${lisibleS ? `<line x1="${X(c.x[j])}" x2="${X(c.x[j])}" y1="${H - b}" y2="${H - b + 4}" class="axe-l"/><text x="${X(c.x[j])}" y="${H - b + 16}" class="gs">${courtSessions(c.N[j])}</text>` : ""}</g>`;
   }
+  if (!c.purge){ let der = X(c.x[dernierS]);                            // repères ronds dans le Souvenir
+    [50, 100, 200, 500, 1000, 2000, 5000].forEach(v => { if (v <= c.N[7]) return; const xv = X(c.xLoin(v)); if (xv > W - dr || xv - der < 30) return; der = xv;
+      s += `<line x1="${xv}" x2="${xv}" y1="${H - b}" y2="${H - b + 4}" class="axe-l"/><text x="${xv}" y="${H - b + 16}" class="gs">${v}</text>`; }); }
   s += `<text x="${X(c.x[c.alpha])}" y="${Y(c.y[c.alpha]) - 12}" class="gl fort">α ${f(c.y[c.alpha])}</text>`;
   if (c.beta != null) s += c.beta === c.alpha ? `<text x="${X(c.x[c.beta]) + 12}" y="${Y(c.y[c.beta]) + 16}" class="gl fort" style="text-anchor:start">β</text>`
     : `<text x="${X(c.x[c.beta]) + 10}" y="${Y(c.y[c.beta]) - 12}" class="gl fort">β</text>`;
-  if (c.gamma != null) s += `<text x="${X(c.x[c.gamma])}" y="${Y(c.y[c.gamma]) - 12}" class="gl fort">γ</text>`;
+  if (c.gamma != null && c.xVie <= xFin) s += `<text x="${X(c.xVie)}" y="${Y(c.plancher ?? 0) - 12}" class="gl fort">γ</text>`;
   s += `<line x1="${g}" x2="${W - dr}" y1="${H - b}" y2="${H - b}" class="axe-l"/>`;
   return s + `</svg>`;
 }
 
+// sessions cumulées, en court, pour l'axe : « ¼ », « 4¼ », « 30 »
+function courtSessions(v){
+  if (v >= 20) return String(Math.round(v));
+  const qv = Math.round(v * 4) / 4, e = Math.floor(qv), fr = ["", "¼", "½", "¾"][Math.round((qv - e) * 4)];
+  return (e || !fr ? String(e) : "") + fr;
+}
 // sessions au quart près : « ¼ de session », « 2 sessions ¾ » ; au-delà de 20, à l'unité ; au-delà de 100, à la dizaine
 function texteSessions(v){
   if (v == null) return "∞";
@@ -227,10 +240,10 @@ function texteSessions(v){
 function syntheseTimeline(c){
   const f = (v, k = 2) => Number(v).toFixed(k).replace(".", ",").replace("-", "−");
   const purge = c.omega != null;
-  const chute = c.beta == null ? "pas de chute" : purge ? `abandon au jalon ${c.omega} (ω)` : `chute du jalon ${c.beta} (β) au jalon ${c.gamma} (γ)`;
-  const vie = c.vie == null ? `ne descend jamais jusqu'à son plancher de nostalgie (${f(c.marque)}) : un classique`
+  const chute = purge ? `déclin dès le jalon ${c.beta ?? c.alpha} (β), abandon au jalon ${c.omega} (ω)` : c.beta == null ? "pas de déclin" : `déclin dès le jalon ${c.beta} (β)`;
+  const vie = c.vie == null ? `pas de γ : ne descend jamais jusqu'à son plancher de nostalgie (${f(c.marque)}), un classique`
     : purge ? `durée de vie ≈ ${texteSessions(c.vie)}, jusqu'à l'abandon (${c.classe})`
-    : `durée de vie ≈ ${texteSessions(c.vie)}, puis rangé et ressorti par nostalgie (plancher ${f(c.plancher)} ; ${c.classe})`;
+    : `γ : au plancher de nostalgie (${f(c.plancher)}) après ≈ ${texteSessions(c.vie)}, puis rangé et ressorti par nostalgie (${c.classe})`;
   return `α ${f(c.y[c.alpha])} au jalon ${c.alpha} (${JALONS[c.alpha].nom}, après ${texteSessions(c.N[c.alpha])}) · ${chute} · ${vie}`;
 }
 
@@ -243,6 +256,7 @@ svg.courbe .bande0{fill:var(--paper)} svg.courbe .bande1{fill:color-mix(in srgb,
 svg.courbe .phase{font-size:12px;fill:var(--muted);text-anchor:middle;font-weight:600}
 svg.courbe .grille{stroke:var(--line);stroke-width:1} svg.courbe .axe-l{stroke:var(--ink);stroke-width:1.2}
 svg.courbe .gy{font-size:12px;fill:var(--muted);text-anchor:end} svg.courbe .gx{font-size:12.5px;fill:var(--ink);text-anchor:middle;font-weight:600}
+svg.courbe .gs{font-size:11.5px;fill:var(--muted);text-anchor:middle;font-variant-numeric:tabular-nums}
 svg.courbe .gl{font-size:12px;fill:var(--muted);text-anchor:middle} svg.courbe .gl.fort{fill:var(--ink);font-weight:600;font-size:13px}
 svg.courbe .trait{fill:none;stroke:var(--ink);stroke-width:2.5;stroke-linejoin:round}
 svg.courbe .pointille{fill:none;stroke:var(--ink);stroke-width:2;stroke-dasharray:5 5}

@@ -134,10 +134,10 @@ mark{background:#FFE58A;color:#1B2430;border-radius:2px}
 </div>
 <div style="max-width:1240px;margin:0 auto;padding:0 20px 30px"><p class="version"><span id="credit"></span><br><span id="version"></span></p></div>
 
-<script src="timeline.js?v=3.0"></script>
+<script src="timeline.js?v=3.1"></script>
 <script src="totems.js?v=4"></script>
 <script>
-const VERSION = { numero:"3.8", date:"2026-10-12 22:05" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.9", date:"2026-10-12 22:28" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -462,8 +462,8 @@ function sectionTemps(toc){
     <h3 class="section" id="t-points">α, β, γ, ω : les points remarquables</h3>
     <div class="texte"><ul>
       <li><b>α, l'apogée</b> : le premier jalon où le flow atteint son maximum.</li>
-      <li><b>La chute</b> : le premier segment après α dont la pente descend à −0,5 ou moins par unité d'abscisse. <b>β</b> en marque le début.</li>
-      <li><b>γ, le palier</b> : le premier jalon après β où la pente redevient douce, ou bien où le flow passe sous 1.</li>
+      <li><b>β, le début du déclin</b> : le jalon d'où le flow ne fait plus que baisser jusqu'au bout (une variation de moins de 0,05 compte comme un plateau). Un jeu peut creuser puis rebondir pendant l'apprentissage : β marque la dernière descente.</li>
+      <li><b>γ, le rangement</b> : l'arrivée au plancher de nostalgie, en sessions ; c'est la fin de la durée de vie. Un classique n'a pas de γ : il n'atteint jamais son plancher.</li>
       <li><b>ω, l'abandon</b> : un flow négatif signale une purge, le jeu est lâché sur-le-champ. La courbe s'arrête à 0 : les sous-phases suivantes ne sont jamais vécues.</li></ul></div>
 
     <h3 class="section" id="t-vie">Le Souvenir et la durée de vie</h3>
@@ -477,7 +477,7 @@ function sectionTemps(toc){
 
     <h3 class="section" id="t-heat">Exemple : Heat</h3>
     <div class="texte"><p>${esc(HEAT.nom)}, boîte de base, toutes options. Meilleur effectif : ${HEAT.effectif_reference} joueurs ; 55 €, palier de prix ${HEAT.VAL1}. Marque laissée ${fmt(c.marque, 2)}.</p></div>
-    <figure class="courbe-box">${courbeSVG(c, HEAT.nom)}<figcaption>Trait plein : les jalons calculés. Pointillés : le Souvenir, qui descend vers le plancher de nostalgie. Abscisse : les jalons, espacés selon le log2 des sessions cumulées. Bandes : les phases I à IV.</figcaption></figure>
+    <figure class="courbe-box">${courbeSVG(c, HEAT.nom)}<figcaption>Trait plein : les jalons calculés. Pointillés : le Souvenir, qui descend vers le plancher de nostalgie. En haut, les jalons ; en bas, les sessions cumulées (chaque sous-phase occupe le log2 de sa durée). Bandes : les phases I à IV.</figcaption></figure>
     <div class="defile"><table class="ref"><tr><th>Jalon</th>${[0,1,2,3,4,5,6,7].map(j => `<th>${j}</th>`).join("")}</tr>
       <tr><th>Sessions cumulées</th>${c.N.map(v => `<td>${fmt(v, 2)}</td>`).join("")}</tr>
       <tr><th>Abscisse</th>${c.x.map(v => `<td>${fmt(v, 2)}</td>`).join("")}</tr>
