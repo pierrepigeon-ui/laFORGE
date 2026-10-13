@@ -8,6 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
+<script src="flamme_moteur.js?v=1.3"></script>
+<script src="flamme_blason.js?v=1.9"></script>
 <style>
 :root{--ink:#1B2430;--muted:#5B6573;--line:#DDE1E7;--paper:#F4F6F8;--panel:#FFFFFF;--hover:#EEF1F5;--bleu:#1F4FD1;--err:#B42318;
   --serif:"Source Serif 4",Georgia,"Times New Roman",serif;--sans:"IBM Plex Sans","Segoe UI",Arial,sans-serif}
@@ -33,6 +35,11 @@ button,input{font:inherit;color:inherit} :focus-visible{outline:2px solid #3B6FE
 #espace{max-width:1000px;margin:34px auto 0;padding:0 24px}
 #espace .cadre{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px 22px}
 #espace h2{font:600 22px var(--serif);margin:0 0 4px}
+#espace .moi{display:flex;gap:16px;align-items:center;margin-bottom:14px}
+#espace .moi .ecu{flex:none;width:64px;display:block;line-height:0;border-radius:6px} #espace .moi .ecu:hover{opacity:.85}
+#espace .moi .ecu svg{width:64px;height:auto;display:block}
+#espace .moi .sous{margin:0} #espace .profil{font:italic 17px/1.4 var(--serif);color:var(--ink);margin:2px 0 0}
+#espace .profil a{color:inherit;text-decoration:none;border-bottom:1px solid var(--line)} #espace .profil a:hover{border-color:var(--bleu)}
 #espace .sous{color:var(--muted);font-size:14px;margin:0 0 14px}
 .tuiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
 .tuile{display:block;border:1px solid var(--line);border-radius:10px;padding:14px 16px;text-decoration:none;color:var(--ink);background:var(--paper)}
@@ -61,7 +68,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px} .field{display:block;margi
   <p class="signature">Cartographiez votre énergie</p>
   <p class="auteur">par l'Arpenteur</p>
   <div class="actions">
-    <a class="btn" href="autotest.html">Passer l'autotest</a>
+    <a class="btn" id="btn-autotest" href="autotest.html">Passer l'autotest</a>
     <button class="btn ghost" id="btn-login-2" type="button">Se connecter</button>
   </div>
   <div class="couleurs" aria-hidden="true">
@@ -71,8 +78,8 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px} .field{display:block;margi
 
 <section id="espace" class="hidden">
   <div class="cadre">
-    <h2 id="bonjour"></h2>
-    <p class="sous" id="espace-sous"></p>
+    <div class="moi"><a class="ecu hidden" id="mon-ecu" href="#" title="Voir mes armes"></a>
+      <div><h2 id="bonjour"></h2><p class="profil hidden" id="mon-profil"></p><p class="sous" id="espace-sous"></p></div></div>
     <div class="tuiles" id="tuiles"></div>
   </div>
 </section>
@@ -98,7 +105,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px} .field{display:block;margi
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 
 <script>
-const VERSION = { numero:"1.8", date:"2026-10-10 19:32" };
+const VERSION = { numero:"1.9", date:"2026-10-13 22:26" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -116,12 +123,45 @@ $("#form-login").addEventListener("submit", async e => { e.preventDefault(); con
 
 const tuile = (href, titre, texte) => `<a class="tuile" href="${href}"><b>${esc(titre)}</b><span>${esc(texte)}</span></a>`;
 let user = null;
+
+/* mon profil en cours : son nom, et son écusson en petit (même calcul que la page Écusson) */
+const interieur = t => t.replace(/^[\s\S]*?<svg[^>]*>/, "").replace(/<\/svg>\s*$/, "");
+async function monProfil(r){
+  const M = window.FLAMME_MOTEUR, B = window.FLAMME_BLASON;
+  const [{ data: d }, { data: cols }] = await Promise.all([
+    sb.from("flamme_resultats").select("scores,classement").eq("id", r.id).maybeSingle(),
+    sb.from("flamme_couleurs").select("*")]);
+  const codes = r.codes;
+  const { data: els } = await sb.from("flamme_elements").select("code,couche,nom,devise,devise_heraldique,animal_totem,ordre").in("couche", ["profil", "temperament"]);
+  const E = Object.fromEntries((els || []).map(e => [e.code, e])), C = Object.fromEntries((cols || []).map(c => [c.code, c]));
+  $("#mon-profil").innerHTML = codes.map(c => `<a href="fiche.html?resultat=${r.id}" title="Voir ma fiche">${esc(c)} — ${esc(E[c]?.nom || "")}</a>`).join(" / ")
+    + (codes.length > 1 ? ` <span style="font-size:13px;color:var(--muted);font-style:normal">(profil frontière)</span>` : "");
+  $("#mon-profil").classList.remove("hidden");
+  if (!M || !B || !d) return;
+  // tempéraments : le classement de l'autotest, sinon le calcul
+  let temps = d.classement?.length === 20 ? d.classement : null;
+  if (!temps){ const s01 = Object.fromEntries(M.ORDRE.map(c => [c, d.scores[c] / 100]));
+    temps = M.statistiques(s01, Object.values(E).filter(e => e.couche === "profil").map(e => e.code)).sections.temperaments.map(x => x.code); }
+  const images = { meubles: {}, animal: null };
+  try {
+    const cat = await (await fetch("bibliotheque/catalogue.json?v=3")).json();
+    await Promise.all(Object.entries(cat.meubles).map(async ([k, v]) => { if (v.fichier) images.meubles[k] = interieur(await (await fetch("bibliotheque/" + v.fichier + "?v=3")).text()); }));
+    const a = cat.animaux?.[codes[0]]; if (a?.fichier) images.animal = interieur(await (await fetch("bibliotheque/" + a.fichier + "?v=3")).text());
+  } catch { /* dessins internes en secours */ }
+  const c = codes[0];
+  const e = B.ecusson({ images, code: c, scores: d.scores, temperaments: temps, couleurs: C, id: "accueil",
+    devise: E[c]?.devise_heraldique || E[c]?.devise || "", animal: E[c]?.animal_totem || "",
+    noms: Object.fromEntries(Object.values(E).filter(x => x.couche === "temperament").map(x => [x.code, x.nom])) });
+  $("#mon-ecu").innerHTML = e.svg; $("#mon-ecu").href = `ecusson.html?resultat=${r.id}`;
+  $("#mon-ecu").setAttribute("aria-label", "Mes armes : " + (E[c]?.nom || c));
+  $("#mon-ecu").classList.remove("hidden");
+}
 sb.auth.onAuthStateChange(async (_e, session) => {
   const u = session?.user || null; if (u?.id === user?.id) return; user = u;
   $("#btn-login").classList.toggle("hidden", !!user); $("#btn-logout").classList.toggle("hidden", !user);
   $("#btn-login-2").classList.toggle("hidden", !!user);
   $("#who").textContent = user ? user.email : "";
-  if (!user){ $("#espace").classList.add("hidden"); return; }
+  if (!user){ $("#espace").classList.add("hidden"); $("#btn-autotest").classList.remove("hidden"); return; }
   const [{ data: role }, { data: moi }, { data: res }, { data: rolePrisme }] = await Promise.all([
     sb.rpc("flamme_mon_role"),
     sb.from("forge_utilisateurs").select("nom").eq("user_id", user.id).maybeSingle(),
@@ -134,10 +174,12 @@ sb.auth.onAuthStateChange(async (_e, session) => {
     $("#espace-sous").textContent = rolePrisme ? "Votre compte donne accès à PRISME." : "Votre compte n'a pas encore accès à Flamme Bleue. L'Arpenteur doit vous l'ouvrir.";
     $("#tuiles").innerHTML = ""; return;   // le lien « La Forge », en haut à gauche, mène à PRISME
   }
+  $("#btn-autotest").classList.add("hidden");   // la tuile « Autotest » suffit
   const dernier = res?.[0];
   $("#espace-sous").textContent = dernier
-    ? `Votre dernier résultat : ${dernier.codes[0]}, le ${new Date(dernier.passe_le).toLocaleDateString("fr-FR")}.`
+    ? `Votre profil en cours, d'après votre autotest du ${new Date(dernier.passe_le).toLocaleDateString("fr-FR", { day:"numeric", month:"long", year:"numeric" })}.`
     : "Vous n'avez pas encore enregistré de résultat : commencez par l'autotest.";
+  if (dernier) monProfil(dernier).catch(e => console.warn("Profil ou écusson indisponible :", e));
   let t = tuile("autotest.html", "Autotest", dernier ? "Reprendre ou refaire votre classement" : "Classer les vingt tempéraments");
   if (dernier){
     t += tuile(`fiche.html?resultat=${dernier.id}`, "Ma fiche", "Votre portrait, vos valeurs, vos motivations");
