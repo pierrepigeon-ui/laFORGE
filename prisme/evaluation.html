@@ -241,7 +241,7 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
 
 <script src="timeline.js?v=3.4"></script>
 <script>
-const VERSION = { numero:"3.26", date:"2026-10-13 21:43" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.27", date:"2026-10-13 21:59" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -288,8 +288,12 @@ async function lireTout(table, filtre){
     if (error) throw error; tout.push(...data); if (data.length < 1000) return tout;
   }
 }
+// arrivée depuis la liste des jeux ou la fiche d'un jeu (?jeu=) : la liste des fiches ne s'affiche pas, et « ← Retour » ramène d'où l'on vient
+const ARRIVEE = new URLSearchParams(location.search).get("jeu");
+if (ARRIVEE){ document.getElementById("accueil").classList.add("hidden"); document.getElementById("retour").textContent = "← Retour"; }
 async function demarrer(){
   const { data: r } = await sb.rpc("prisme_mon_role"); role = r;
+  if (!["proprietaire","editeur","evaluateur","lecteur"].includes(role)) $("#accueil").classList.remove("hidden");
   if (!["proprietaire","editeur","evaluateur","lecteur"].includes(role)){
     $("#accueil").innerHTML = '<h1>Évaluer un jeu</h1><p class="aide">Les fiches d\'évaluation sont réservées aux lecteurs et aux évaluateurs de PRISME : le propriétaire peut t\'attribuer un de ces rôles. Les résultats des jeux sont dans <a href="jeux.html">la liste des jeux</a>.</p>'; return;
   }
@@ -306,7 +310,7 @@ async function demarrer(){
     const { data: n } = await sb.rpc("prisme_noms"); (n || []).forEach(x => noms[x.user_id] = x.nom);
     try { [PL.moteurs, PL.temperaments, PL.styles] = await Promise.all([lire("prisme_player_moteurs","ordre"), lire("prisme_player_temperaments","ordre"),
       lire("prisme_player_styles","ordre")]); } catch (e){ PL.erreur = e.message; }
-  } catch (e){ $("#msg-accueil").className = "msg err"; $("#msg-accueil").textContent = "Lecture du modèle impossible : " + e.message; return; }
+  } catch (e){ $("#accueil").classList.remove("hidden"); $("#msg-accueil").className = "msg err"; $("#msg-accueil").textContent = "Lecture du modèle impossible : " + e.message; return; }
   M.paires.sort((a, b) => M.chapitres.find(c => c.code === a.chapitre).ordre - M.chapitres.find(c => c.code === b.chapitre).ordre || a.ordre - b.ordre);
   remplirJeux(); await chargerFiches(); afficherFiches();
   const P = new URLSearchParams(location.search), q = P.get("jeu");
@@ -314,7 +318,9 @@ async function demarrer(){
     if (P.has("evaluer") && role !== "lecteur") ouvrirJeu(q);   // « Évaluer » depuis la fiche du jeu : sa propre fiche, nouvelle au besoin
     else { const f = toutes.find(e => e.jeu === q && e.evaluateur === user.id) || toutes.find(e => e.jeu === q && e.statut === "finale") || toutes.find(e => e.jeu === q);
       f ? ouvrirFiche(f) : ouvrirJeu(q); }
-  } else if (P.has("ajout") && role !== "lecteur") $("#btn-ajout").click();
+    if ($("#fiche").classList.contains("hidden")) $("#accueil").classList.remove("hidden");   // pas de fiche à ouvrir (lecteur) : la liste
+  } else { $("#accueil").classList.remove("hidden"); }
+  if (P.has("ajout") && role !== "lecteur") $("#btn-ajout").click();
 }
 async function chargerFiches(){
   [toutes, valeurs] = await Promise.all([lireTout("prisme_evaluations", q => q.order("modifie_le", { ascending:false })), lireTout("prisme_evaluation_valeurs")]);
@@ -390,6 +396,12 @@ function ouvrirFiche(f){
 }
 $("#retour").addEventListener("click", async () => {
   if (enAttente.size || ficheModifiee){ clearTimeout(minuteur); await enregistrer(); }
+  if (ARRIVEE){   // retour à la page d'origine (liste des jeux ou fiche du jeu)
+    const ref = document.referrer && new URL(document.referrer, location.href);
+    if (ref && ref.origin === location.origin && /\/jeux?\.html/.test(ref.pathname)) history.back();
+    else location.href = "jeu.html?jeu=" + encodeURIComponent(fiche.jeu);
+    return;
+  }
   $("#fiche").classList.add("hidden"); $("#pied").classList.add("hidden"); $("#accueil").classList.remove("hidden");
   await chargerFiches(); afficherFiches();
 });
