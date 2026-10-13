@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PRISME — Les jeux</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
+<style>
+:root{--ink:#1B2430;--muted:#5B6573;--line:#DDE1E7;--paper:#F6F5F1;--panel:#FFFFFF;--accent:#3D2645;--plus:#1E7A46;--moins:#B42318;
+  --serif:"Source Serif 4",Georgia,"Times New Roman",serif;--sans:"IBM Plex Sans","Segoe UI",Arial,sans-serif}
+@media (prefers-color-scheme: dark){:root{--ink:#E6E9EE;--muted:#9AA4B2;--line:#2C3542;--paper:#11161D;--panel:#171D25;--accent:#C9B4D2;--plus:#5CC98A;--moins:#F2837A}}
+*{box-sizing:border-box} html,body{margin:0} body{background:var(--paper);color:var(--ink);font:16px/1.6 var(--sans)}
+a{color:inherit}
+.marque{font:600 19px/1 "Source Serif 4",Georgia,serif;letter-spacing:.08em;color:inherit!important;text-decoration:none}
+.barre{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:12px 20px;font-size:13px;color:var(--muted)}
+.barre a{text-decoration:none} #qui a{margin-left:10px}
+main{max-width:1060px;margin:0 auto;padding:10px 24px 40px}
+h1{font:600 clamp(30px,5vw,44px)/1.1 var(--serif);margin:10px 0 4px}
+.chapo{font:italic 17px/1.5 var(--serif);color:var(--muted);margin:0 0 18px}
+.outils{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.outils input{font:15px var(--sans);padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);min-width:240px}
+.outils .compte{font-size:13.5px;color:var(--muted)}
+.cadre{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow-x:auto}
+table.jeux{width:100%;border-collapse:collapse;font-size:15px}
+table.jeux th{font-weight:500;font-size:12.5px;color:var(--muted);text-align:left;border-bottom:1px solid var(--line);padding:10px 12px;white-space:nowrap}
+table.jeux td{border-bottom:1px solid var(--line);padding:9px 12px;vertical-align:middle}
+table.jeux tr:last-child td{border-bottom:0}
+table.jeux .n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.jeu{display:flex;align-items:center;gap:12px;text-decoration:none}
+.jeu img,.jeu .sans-image{width:44px;height:44px;border-radius:8px;object-fit:cover;flex:none;background:var(--paper);border:1px solid var(--line)}
+.jeu b{font-weight:600} .jeu small{display:block;font-size:12.5px;color:var(--muted);font-weight:400}
+a.jeu:hover b{text-decoration:underline}
+tr.attente td{color:var(--muted)}
+.ecart{font-size:12px;color:var(--muted);margin-left:4px} .ecart.plus{color:var(--plus)} .ecart.moins{color:var(--moins)}
+.btn{display:inline-block;font:500 13px var(--sans);padding:5px 10px;border-radius:8px;border:1px solid var(--line);background:var(--paper);color:var(--ink);text-decoration:none;white-space:nowrap}
+.btn:hover{border-color:var(--ink)}
+.discret{color:var(--muted);font-size:13.5px}
+.vide{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:30px 26px;font:italic 18px/1.5 var(--serif);color:var(--muted)}
+.vide a{color:var(--ink)}
+.version{font-size:12px;color:var(--muted);text-align:right;margin-top:24px}
+@media (max-width:700px){ main{padding:8px 12px 30px} table.jeux th,table.jeux td{padding:8px} .col-sec{display:none} }
+</style>
+</head>
+<body>
+<div class="barre"><a href="index.html" class="marque" title="Accueil de PRISME">PRISME</a><span id="qui"></span></div>
+<main>
+  <h1>Les jeux</h1>
+  <p class="chapo" id="chapo">Les jeux évalués dans PRISME, et ce qu'ils promettent.</p>
+  <div class="outils"><input type="search" id="cherche" placeholder="Chercher un jeu…" aria-label="Chercher un jeu"><span class="compte" id="compte"></span></div>
+  <div id="contenu"><p class="vide">Chargement…</p></div>
+  <p class="version" id="version"></p>
+</main>
+
+<script src="timeline.js?v=3.4"></script>
+<script>
+const VERSION = { numero:"1.0", date:"2026-10-13 21:29" };   // à incrémenter à chaque livraison
+const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
+const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = (v, k = 2) => v == null || Number.isNaN(v) ? "—" : Number(v).toFixed(k).replace(".", ",");
+$("#version").textContent = `Les jeux ${VERSION.numero}, version du ${VERSION.date.replace(/(\d{4})-(\d\d)-(\d\d) (\d\d):(\d\d)/,"$3/$2/$1 à $4h$5")} · timeline ${TIMELINE_VERSION.numero}`;
+
+/* ---- connexion : tout passe par la Forge ---- */
+const versForge = () => "../?retour=" + encodeURIComponent(location.href);
+function afficherCompte(u){
+  $("#qui").innerHTML = u ? `<span>${esc(u.email)}</span> <a href="#" id="deconnexion">Se déconnecter</a>` : `<a href="${versForge()}">Se connecter</a>`;
+  const d = $("#deconnexion"); if (d) d.addEventListener("click", e => { e.preventDefault(); sb.auth.signOut().then(() => location.href = "../"); });
+}
+let demarre = false;
+sb.auth.onAuthStateChange((_e, session) => {
+  if (!session?.user){ location.replace(versForge()); return; }   // réservé aux comptes : tout compte connecté est joueur
+  afficherCompte(session.user);
+  if (!demarre){ demarre = true; setTimeout(() => demarrer(session.user), 0); }
+});
+
+/* ---- les rôles en échelle : joueur (tout compte) < lecteur < évaluateur < éditeur < propriétaire ---- */
+const NIVEAUX = { joueur:0, lecteur:1, evaluateur:2, editeur:3, proprietaire:4 };
+let role = "joueur", lignes = [], profil = null;
+
+async function demarrer(user){
+  const [{ data: r }, { data: res }, d] = await Promise.all([
+    sb.rpc("prisme_mon_role"),
+    sb.from("prisme_player_resultats").select("style,classement").eq("user_id", user.id).order("passe_le", { ascending:false }).limit(1),
+    lireJeuxEvalues(sb)]);
+  role = r || "joueur";
+  if (d.refus){ $("#contenu").innerHTML = `<p class="vide">La liste des jeux n'est pas encore ouverte aux joueurs : le script 25 doit être passé dans la base.</p>`; return; }
+  const code = codeDeResultat(res?.[0]);
+  if (code) profil = code;
+  // pour les lecteurs et au-delà : toutes les fiches (brouillons compris) et la sienne
+  let toutes = [];
+  if (NIVEAUX[role] >= NIVEAUX.lecteur){ const { data } = await sb.from("prisme_evaluations").select("id,jeu,evaluateur,statut"); toutes = data || []; }
+  const parJeu = {}; d.fiches.forEach(f => (parJeu[f.jeu] ??= []).push(f));
+  lignes = d.jeux.map(j => {
+    const F = parJeu[j.code] || [], r2 = resumeJeu(F, d.paires, d.axes, profil);
+    const T = toutes.filter(f => f.jeu === j.code);
+    return { j, n:F.length, r:r2, toutes:T.length, mienne:T.find(f => f.evaluateur === user.id) };
+  }).sort((a, b) => a.j.nom.localeCompare(b.j.nom, "fr", { sensitivity:"base" }));
+  $("#chapo").innerHTML = profil
+    ? `Les jeux évalués dans PRISME, et ce qu'ils promettent — pour tous, et pour <a href="fiche.html">votre profil de joueur</a>.`
+    : `Les jeux évalués dans PRISME, et ce qu'ils promettent. <a href="questionnaire.html">Passez le questionnaire</a> pour voir la note qu'ils obtiennent pour vous.`;
+  afficher();
+}
+
+$("#cherche").addEventListener("input", afficher);
+const sansAccent = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+function afficher(){
+  const q = sansAccent($("#cherche").value.trim());
+  const L = lignes.filter(l => !q || sansAccent(l.j.nom).includes(q));
+  const evalues = lignes.filter(l => l.n).length;
+  $("#compte").textContent = `${evalues} jeu${evalues > 1 ? "x" : ""} évalué${evalues > 1 ? "s" : ""} sur ${lignes.length}`;
+  if (!L.length){ $("#contenu").innerHTML = `<p class="vide">Aucun jeu ne correspond à « ${esc($("#cherche").value)} ».</p>`; return; }
+  const lecteur = NIVEAUX[role] >= NIVEAUX.lecteur, evaluateur = NIVEAUX[role] >= NIVEAUX.evaluateur;
+  const ecart = (a, b) => { if (a == null || b == null) return ""; const v = a - b;
+    return `<span class="ecart ${v >= .005 ? "plus" : v <= -.005 ? "moins" : ""}">${Math.abs(v) < .005 ? "±" : v > 0 ? "+" : "−"}${fmt(Math.abs(v))}</span>`; };
+  const vie = c => !c ? "—" : c.vie == null ? "∞" : Math.round(c.vie);
+  const cout = k => !k ? "—" : texteCout(k).replace(/ par session.*/, "");
+  $("#contenu").innerHTML = `<div class="cadre"><table class="jeux"><thead><tr><th>Jeu</th><th class="n">Note PRISME</th>${profil ? '<th class="n">Pour vous</th>' : ""}
+    <th class="n col-sec" title="Le flow le plus haut de la courbe (sur 10)">Apogée</th><th class="n col-sec" title="En sessions ; ∞ : un classique">Durée de vie</th><th class="n col-sec">Coût par session</th>${lecteur ? "<th>Évaluation</th>" : ""}</tr></thead><tbody>
+    ${L.map(l => {
+      const img = l.j.image_url ? `<img src="${esc(l.j.image_url)}" alt="" loading="lazy">` : `<span class="sans-image"></span>`;
+      const nom = `<a class="jeu" href="jeu.html?jeu=${encodeURIComponent(l.j.code)}">${img}<span><b>${esc(l.j.nom)}</b><small>${l.n ? `${l.n} fiche${l.n > 1 ? "s" : ""} finale${l.n > 1 ? "s" : ""}` : "pas encore évalué"}</small></span></a>`;
+      const ev = !lecteur ? "" : `<td>${l.mienne ? `<a class="btn" href="evaluation.html?jeu=${encodeURIComponent(l.j.code)}">Ma fiche</a>`
+        : evaluateur ? `<a class="btn" href="evaluation.html?jeu=${encodeURIComponent(l.j.code)}">${l.toutes ? "Voir / évaluer" : "Évaluer"}</a>`
+        : l.toutes ? `<a class="btn" href="evaluation.html?jeu=${encodeURIComponent(l.j.code)}">Voir les fiches</a>` : ""}
+        ${l.toutes > l.n ? ` <span class="discret">${l.toutes} fiche${l.toutes > 1 ? "s" : ""} en tout</span>` : ""}</td>`;
+      if (!l.r || !l.r.complet) return `<tr class="${l.n ? "" : "attente"}"><td>${nom}</td><td class="n">${l.r?.finale != null ? fmt(l.r.finale) : "—"}</td>${profil ? '<td class="n">—</td>' : ""}<td class="n col-sec">—</td><td class="n col-sec">—</td><td class="n col-sec">—</td>${ev}</tr>`;
+      return `<tr><td>${nom}</td><td class="n"><b>${fmt(l.r.finale)}</b></td>${profil ? `<td class="n"><b>${fmt(l.r.notePour)}</b>${ecart(l.r.notePour, l.r.finale)}</td>` : ""}
+        <td class="n col-sec">${fmt(l.r.c.y[l.r.c.alpha])}</td><td class="n col-sec">${vie(l.r.c)}</td><td class="n col-sec">${cout(l.r.cout)}</td>${ev}</tr>`;
+    }).join("")}</tbody></table></div>
+    <p class="discret">Notes sur 5, moyenne des fiches finales. Apogée : le flow le plus haut de la timeline, sur 10. Durée de vie : en sessions, jusqu'à l'abandon ou jusqu'au jeu rangé ; ∞ pour un classique.</p>`;
+}
+</script>
+<script src="entete.js?v=1.3"></script>
+</body>
+</html>

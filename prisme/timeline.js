@@ -1,7 +1,7 @@
 /* PRISME — timeline du jeu : jalons, durées, flow, α β γ ω, durée de vie.
    Module partagé par l'encyclopédie et l'outil d'évaluation. Méthode arrêtée le 08/10/2026 (jeu d'essai : Heat) ; modèle à 12 paires le 11/10/2026 ;
    formules refaites phase par phase le 12/10/2026 avec trois jeux de référence (Gloomhaven, Heat, Flip 7). L'unité est la session. */
-const TIMELINE_VERSION = { numero:"3.3", date:"2026-10-13 17:00" };   // à incrémenter à chaque livraison
+const TIMELINE_VERSION = { numero:"3.4", date:"2026-10-13 21:29" };   // à incrémenter à chaque livraison
 
 const JALONS = [
   { n:0, nom:"identifié", quoi:"Le jeu est connu de loin : critique, vitrine, recommandation." },
@@ -536,16 +536,46 @@ function jeuxPourJoueurs(fiches, paires, axes, pl, codes){
 }
 
 /* ---------------- lecture des jeux évalués et tableau « ses jeux » (partagé : rosace, fiche du joueur) ---------------- */
+// les résultats publiés (fiches finales, sans justification) : les vues du script 25, lisibles par tout compte connecté (rôle joueur) ;
+// à défaut (script 25 pas encore passé), les tables, avec les droits d'avant
 async function lireJeuxEvalues(sb){
   const lire = async (t, o) => { const tout = []; for (let d = 0; ; d += 1000){ let q = sb.from(t).select("*"); if (o) q = q.order(o); const { data, error } = await q.range(d, d + 999);
     if (error) throw error; tout.push(...data); if (data.length < 1000) return tout; } };
   try {
-    const [paires, axes, jeux, evals, vals] = await Promise.all([lire("prisme_paires","ordre"), lire("prisme_axes","ordre"), lire("prisme_jeux","nom"), lire("prisme_evaluations"), lire("prisme_evaluation_valeurs")]);
+    const [paires, axes, jeux] = await Promise.all([lire("prisme_paires","ordre"), lire("prisme_axes","ordre"), lire("prisme_jeux","nom")]);
     if (!paires.length) return { refus:true };
+    let evals, vals;
+    try { [evals, vals] = await Promise.all([lire("prisme_resultats_fiches"), lire("prisme_resultats_valeurs")]); evals.forEach(e => e.statut = "finale"); }
+    catch (e){ [evals, vals] = await Promise.all([lire("prisme_evaluations"), lire("prisme_evaluation_valeurs")]); }
     const saisies = {}; vals.forEach(v => (saisies[v.evaluation] ??= {})[v.axe] = { valeur: v.valeur == null ? null : Number(v.valeur), sans_objet: v.sans_objet });
-    return { paires, axes, jeux, fiches: evals.map(e => ({ jeu:e.jeu, statut:e.statut, contenu_parties:e.contenu_parties, prix:e.prix, saisie: saisies[e.id] || {} })) };
+    return { paires, axes, jeux, fiches: evals.map(e => ({ ...e, saisie: saisies[e.id] || {} })) };
   } catch (e){ return { refus:true }; }
 }
+// la moyenne de plusieurs fiches d'un même jeu : axe par axe (une valeur sans objet dans toutes les fiches reste sans objet) ; données du jeu moyennées
+const DONNEES_JEU = ["pages","prix","joueurs_min","joueurs_max","duree_min","duree_max","effectif_reference","contenu_parties","poids_bgg"];
+function ficheMoyenne(fiches){
+  const s = {}, axes = new Set(fiches.flatMap(f => Object.keys(f.saisie || {})));
+  axes.forEach(a => { const L = fiches.map(f => f.saisie?.[a]).filter(Boolean), v = L.filter(x => !x.sans_objet && x.valeur != null).map(x => x.valeur);
+    s[a] = v.length ? { valeur: v.reduce((t, x) => t + x, 0) / v.length, sans_objet:false } : { valeur:null, sans_objet: L.length > 0 && L.every(x => x.sans_objet) }; });
+  const d = {}; DONNEES_JEU.forEach(k => { const v = fiches.map(f => f[k]).filter(x => x != null && x !== "").map(Number);
+    d[k] = v.length ? (k === "joueurs_min" ? Math.min(...v) : k === "joueurs_max" ? Math.max(...v) : v.reduce((t, x) => t + x, 0) / v.length) : null; });
+  return { saisie:s, ...d, nb:fiches.length };
+}
+// le résumé d'un jeu (fiches finales moyennées) : notes, courbe, coûts ; code : le profil du joueur (A.b/e), facultatif
+function resumeJeu(fiches, paires, axes, code){
+  if (!fiches.length) return null;
+  const m = ficheMoyenne(fiches), e = entreesFiche(m.saisie, paires, axes, { contenu_parties:m.contenu_parties, prix:m.prix });
+  const parChap = {}; e.paires.forEach(p => { if (p.note != null) (parChap[p.chap] ??= []).push(p.note); });
+  const chap = Object.fromEntries(Object.entries(parChap).map(([k, L]) => [k, L.reduce((t, x) => t + x, 0) / L.length]));
+  const finale = Object.keys(chap).length ? Object.values(chap).reduce((t, x) => t + x, 0) / Object.keys(chap).length : null;
+  const complet = !e.manque.length, c = complet ? flowJeu(e.n) : null;
+  const r = { m, e, chap, finale, complet, c, cout: c ? coutParPartie(m.prix, c, m.duree_min, m.duree_max) : null, effort: coutEffort(e.n) };
+  if (code && complet){ const pr = prDeStyle(code); r.cPour = flowJeu(e.n, pr); r.notePour = noteProfil(e.paires, e.n, pr); }
+  return r;
+}
+// le code de profil (A.b/e) d'un résultat du questionnaire
+const codeDeResultat = r => r ? (r.style || (r.classement ? r.classement[0] + "." + r.classement[1].toLowerCase() + "/" + r.classement[4].toLowerCase() : null)) : null;
+
 // L : résultat de jeuxPourJoueurs ; d : résultat de lireJeuxEvalues ; qui : « lui », « vous »…
 function tableJeuxHTML(L, d, qui, moyenne){
   const e = s => String(s ?? "").replace(/[&<>"']/g, k => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[k]));

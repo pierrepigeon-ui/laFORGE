@@ -224,7 +224,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 16px}
 
 <script>
 /* ================= configuration ================= */
-const VERSION = { numero:"3.3", date:"2026-10-11 23:55" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.4", date:"2026-10-13 21:29" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 
@@ -301,8 +301,8 @@ async function demarrer(){
   ["#tab-journal","#tab-personnes","#backup"].forEach(s => $(s).classList.toggle("hidden", !proprio));
   $("#tab-resultats").classList.toggle("hidden", !peutEcrire());   // propriétaire et éditeurs voient tous les résultats
   if (proprio) infoSauvegarde();
-  if (!role){
-    $("#editor-host").innerHTML = `<p class="empty">Ton compte est connecté, mais il n'a pas de rôle dans PRISME. Le propriétaire doit t'en attribuer un dans l'onglet Personnes.</p>`;
+  if (!["proprietaire","editeur"].includes(role)){   // la console est réservée aux éditeurs et au propriétaire (13/10/2026)
+    $("#editor-host").innerHTML = `<p class="empty">La console est réservée aux éditeurs de PRISME. Les jeux et leurs résultats sont dans <a href="jeux.html">la liste des jeux</a>${["evaluateur","lecteur"].includes(role) ? ', les fiches dans <a href="evaluation.html">l\'outil d\'évaluation</a>' : ""}.</p>`;
     $("#list").innerHTML = ""; return;
   }
   try { await Promise.all([chargerModele(), chargerPlayer()]); }

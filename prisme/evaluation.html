@@ -239,9 +239,9 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
 <dialog id="dlg-recap"><div id="recap"></div><p style="text-align:right;margin:12px 0 0"><button class="btn" id="fermer-recap" type="button">Fermer</button></p></dialog>
 <div class="wrap"><p class="version" id="version"></p></div>
 
-<script src="timeline.js?v=3.3"></script>
+<script src="timeline.js?v=3.4"></script>
 <script>
-const VERSION = { numero:"3.24", date:"2026-10-13 17:00" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.25", date:"2026-10-13 21:29" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -290,8 +290,13 @@ async function lireTout(table, filtre){
 }
 async function demarrer(){
   const { data: r } = await sb.rpc("prisme_mon_role"); role = r;
-  if (!["proprietaire","editeur","evaluateur"].includes(role)){
-    $("#accueil").innerHTML = '<h1>Évaluer un jeu</h1><p class="aide">Ton compte n\'a pas le rôle d\'évaluateur dans PRISME. Le propriétaire peut te l\'attribuer.</p>'; return;
+  if (!["proprietaire","editeur","evaluateur","lecteur"].includes(role)){
+    $("#accueil").innerHTML = '<h1>Évaluer un jeu</h1><p class="aide">Les fiches d\'évaluation sont réservées aux lecteurs et aux évaluateurs de PRISME : le propriétaire peut t\'attribuer un de ces rôles. Les résultats des jeux sont dans <a href="jeux.html">la liste des jeux</a>.</p>'; return;
+  }
+  if (role === "lecteur"){   // le lecteur lit toutes les fiches, sans en créer ni en modifier
+    $("#accueil h1").textContent = "Les fiches d'évaluation";
+    $("#accueil > .aide").textContent = "Toutes les fiches d'évaluation, brouillons compris, en lecture seule. Choisis une fiche dans la liste.";
+    $("#accueil > .choix").classList.add("hidden");
   }
   try {
     const lire = (t, o) => lireTout(t, q => q.order(o));
@@ -366,13 +371,14 @@ $("#creer").addEventListener("click", async () => {
 $("#ouvrir").addEventListener("click", () => { const c = $("#sel-jeu").value; if (!c){ $("#msg-accueil").className = "msg err"; $("#msg-accueil").textContent = "Choisis un jeu, ou ajoute-le."; return; } ouvrirJeu(c); });
 function ouvrirJeu(code){
   $("#msg-accueil").textContent = "";
+  if (role === "lecteur"){ $("#accueil > .aide").textContent = `« ${nomJeu(code)} » n'a pas encore de fiche d'évaluation. Les autres fiches sont dans la liste ci-dessous.`; return; }
   ouvrirFiche(toutes.find(e => e.jeu === code && e.evaluateur === user.id) || { id:null, jeu:code, statut:"brouillon", evaluateur:user.id });
 }
 
 /* ---------------- ouvrir une fiche ---------------- */
 function ouvrirFiche(f){
   fiche = { ...f }; saisie = f.id ? saisieDe(f.id) : {}; enAttente = new Set(); ficheModifiee = false;
-  lectureSeule = f.evaluateur !== user.id;
+  lectureSeule = f.evaluateur !== user.id || role === "lecteur";
   $("#accueil").classList.add("hidden"); $("#fiche").classList.remove("hidden"); $("#pied").classList.remove("hidden");
   $("#titre-jeu").textContent = nomJeu(f.jeu);
   $("#lecture").textContent = lectureSeule ? `Fiche de ${nomDe(f.evaluateur)}, en lecture seule` : "";
