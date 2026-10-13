@@ -1,8 +1,8 @@
 /* =====================================================================
-   Flamme Bleue — glyphes des codes (1.1, 13/10/2026)
+   Flamme Bleue — glyphes des codes (1.2, 13/10/2026)
    Un petit dessin par type de code, à côté du code en lettres :
    - projet (3 valeurs) en arc : éclat (trois voisines), la valeur du milieu en haut de l'arc ;
-     coin (deux alliées et leur ennemie commune), les alliées aux bouts, l'ennemie sous le sommet ;
+     coin (deux alliées et leur ennemie commune), les alliées aux bouts, l'ennemie sous l'arc, bien détachée ;
    - radical (X.yz) : X en secteur de 72° orienté comme W sur la rosace, y et z en petits disques de part et d'autre ;
    - spécialiste (XY.z) : X et Y en secteurs de 60° posés à plat, pointe contre pointe, z en petit disque entre eux ;
    - généraliste (XY/z) : X et Y en secteurs de 60° pointés à gauche et à droite (nœud papillon couché),
@@ -39,7 +39,7 @@
       const centre = L.find(x => autres(x).every(y => allie(x, y))), ennemi = L.find(x => autres(x).every(y => !allie(x, y)));
       const arc = `<path d="M2 15 Q17 -2 32 15" fill="none" stroke="currentColor" stroke-width="1.4" opacity=".3"/>`;
       if (centre) { const [g, d] = autres(centre); return svg(34, 20, arc + rond(g, 6, 11.1) + rond(centre, 17, 6.5) + rond(d, 28, 11.1)); }
-      if (ennemi) { const [g, d] = autres(ennemi); return svg(34, 20, arc + rond(g, 6, 11.1) + rond(d, 28, 11.1) + rond(ennemi, 17, 12.4)); }
+      if (ennemi) { const [g, d] = autres(ennemi); return svg(34, 20, arc + rond(g, 6, 11.1) + rond(d, 28, 11.1) + rond(ennemi, 17, 14.8)); }
       return null;
     }
     if ((m = code.match(/^([WUBRG])\.([wubrg])([wubrg])$/))) {          // radical
@@ -62,6 +62,6 @@
     }
     return null;
   }
-  const api = { VERSION: { numero: "1.1", date: "2026-10-13 23:22" }, glyphe };
+  const api = { VERSION: { numero: "1.2", date: "2026-10-13 23:30" }, glyphe };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else racine.FLAMME_GLYPHES = api;
 })(typeof window !== "undefined" ? window : globalThis);
