@@ -134,10 +134,10 @@ mark{background:#FFE58A;color:#1B2430;border-radius:2px}
 </div>
 <div style="max-width:1240px;margin:0 auto;padding:0 20px 30px"><p class="version"><span id="credit"></span><br><span id="version"></span></p></div>
 
-<script src="timeline.js?v=3.4"></script>
+<script src="timeline.js?v=3.5"></script>
 <script src="totems.js?v=4"></script>
 <script>
-const VERSION = { numero:"3.12", date:"2026-10-13 21:29" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.13", date:"2026-10-13 22:07" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -396,13 +396,13 @@ function sectionCroisement(toc){
     <h3 class="section" id="x-heat">Exemple : Heat</h3>
     <div class="texte"><p>Note pour tous : <b>${fmt(r.noteBase, 2)}</b>. Du profil le mieux servi au moins bien servi : <b>${fmt(r.lignes[0].note, 2)}</b> (${esc(r.lignes[0].st.nom)}) à <b>${fmt(r.lignes.at(-1).note, 2)}</b> (${esc(r.lignes.at(-1).st.nom)}).</p></div>
     <figure class="courbe-box">${rosaceSVG(r.spectre, M.moteurs.map(m => ({ code:m.code, nom:m.nom, couleur:coul(m) })))}<figcaption>Pointillés : ce que Heat offre à chaque moteur (le trait). Surface : ce qu'il réussit pour lui.</figcaption></figure>
-    <div class="defile"><table class="jeu"><thead><tr><th>Moteur dominant</th><th>Note</th><th>α moyen</th><th>Ses tempéraments, du mieux au moins bien servi</th></tr></thead><tbody>
+    <div class="defile"><table class="jeu"><thead><tr><th>Moteur dominant</th><th>Note /5</th><th>Apogée moyenne /10</th><th>Ses tempéraments, du mieux au moins bien servi</th></tr></thead><tbody>
       ${r.moteurs.map(g => `<tr><td><a href="#moteurs">${esc(g.m.nom)}</a></td><td class="n"><b>${fmt(g.note, 2)}</b></td><td class="n">${fmt(g.alpha, 2)}</td>
         <td>${g.temperaments.map(t => `<a href="#${idTem(t.t.code)}">${esc(majE(t.t.nom))}</a> ${fmt(t.note, 2)}`).join(" · ")}</td></tr>`).join("")}</tbody></table></div>
     <h4>Les courbes par tempérament</h4><p class="vide">Pour chaque moteur dominant, une courbe par tempérament (moyenne de ses trois profils), dans la couleur du moteur qu'il fuit ; pointillé gris : le flow pour tous.</p>
     ${courbesParMoteur(r, { moteurs:M.moteurs, temperaments:M.temperaments }, coul)}
-    <div class="defile"><table class="jeu"><thead><tr><th>Les cinq mieux servis</th><th>Note</th><th>α</th><th title="en sessions ; ∞ : un classique">Durée de vie</th></tr></thead><tbody>${r.lignes.slice(0, 5).map(sp).join("")}</tbody></table></div>
-    <div class="defile"><table class="jeu"><thead><tr><th>Les cinq moins bien servis</th><th>Note</th><th>α</th><th title="en sessions ; ∞ : un classique">Durée de vie</th></tr></thead><tbody>${r.lignes.slice(-5).map(sp).join("")}</tbody></table></div>
+    <div class="defile"><table class="jeu"><thead><tr><th>Les cinq mieux servis</th><th>Note /5</th><th>Apogée /10</th><th title="∞ : un classique">Durée de vie (sessions)</th></tr></thead><tbody>${r.lignes.slice(0, 5).map(sp).join("")}</tbody></table></div>
+    <div class="defile"><table class="jeu"><thead><tr><th>Les cinq moins bien servis</th><th>Note /5</th><th>Apogée /10</th><th title="∞ : un classique">Durée de vie (sessions)</th></tr></thead><tbody>${r.lignes.slice(-5).map(sp).join("")}</tbody></table></div>
     ${(() => { const b = r.lignes.slice(-5), f = b[0].pr.rejet; return b.every(l => l.pr.rejet === f)
       ? `<p class="vide">Les cinq moins bien servis fuient tous ${esc(Mo[f].nom)} : la gêne commence au jalon ${MOTEURS_JEU[f].rejet} (${esc(JALONS[MOTEURS_JEU[f].rejet].nom)}).</p>` : ""; })()}`;
 }

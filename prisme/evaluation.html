@@ -115,7 +115,7 @@ table.tl-table tr.jamais td{opacity:.42;font-style:italic}
 button.lien,a.lien{border:0;background:none;padding:0;font:inherit;color:inherit;text-decoration:underline;text-decoration-color:var(--line);cursor:pointer}
 table.sp-extremes{margin:0 0 10px} table.tl-table tr.choisi td{background:color-mix(in srgb, var(--accent) 9%, transparent)} table.tl-table small{color:var(--muted)}
 .sp-courbe{border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:10px 0;background:var(--paper)} .sp-courbe h3{font:600 17px var(--serif);margin:0 0 4px}
-#pied .tl-pied{cursor:pointer} #pied .tl-pied b{font-size:16px;font-weight:600} #pied .tl-pied b small{display:inline;font-size:12px;color:var(--muted);font-weight:400}
+#pied b small{display:inline!important;font-size:12px;color:var(--muted)!important;font-weight:400;margin-left:1px} #pied .tl-pied{cursor:pointer} #pied .tl-pied b{font-size:16px;font-weight:600} #pied .tl-pied b small{display:inline;font-size:12px;color:var(--muted);font-weight:400}
 #pied .cout-pied b{font-size:16px;font-weight:600} #pied .proto{font-size:10px;text-transform:uppercase;letter-spacing:.04em;border:1px solid var(--line);border-radius:4px;padding:0 3px;color:var(--muted)}
 .carnet{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:26px 0 10px}
 .carnet h2{font:600 20px var(--serif);margin:0 0 4px}
@@ -239,9 +239,9 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
 <dialog id="dlg-recap"><div id="recap"></div><p style="text-align:right;margin:12px 0 0"><button class="btn" id="fermer-recap" type="button">Fermer</button></p></dialog>
 <div class="wrap"><p class="version" id="version"></p></div>
 
-<script src="timeline.js?v=3.4"></script>
+<script src="timeline.js?v=3.5"></script>
 <script>
-const VERSION = { numero:"3.27", date:"2026-10-13 21:59" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.28", date:"2026-10-13 22:07" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -661,15 +661,15 @@ function recalculer(){
   M.chapitres.forEach(ch => { const v = c.chap[ch.code]; $("#moy-" + ch.code).textContent = v == null ? "" : fmt(v, 2) + " / 5"; });
   $("#prog").style.width = (c.faites / M.paires.length * 100) + "%";
   $("#prog-txt").textContent = `${c.faites} / ${M.paires.length}`;
-  $("#pied").innerHTML = M.chapitres.map(ch => `<div style="--c:var(--${esc(ch.code)})"><small>${esc(ch.nom)}</small><b>${c.chap[ch.code] == null ? "—" : fmt(c.chap[ch.code], 2)}</b></div>`).join("") +
-    `<div class="final"><small>Évaluation finale</small><b>${c.finale == null ? "—" : fmt(c.finale, 2)}</b></div>`;
+  $("#pied").innerHTML = M.chapitres.map(ch => `<div style="--c:var(--${esc(ch.code)})"><small>${esc(ch.nom)}</small><b>${c.chap[ch.code] == null ? "—" : fmt(c.chap[ch.code], 2) + "<small>/5</small>"}</b></div>`).join("") +
+    `<div class="final"><small>Évaluation finale</small><b>${c.finale == null ? "—" : fmt(c.finale, 2) + "<small>/5</small>"}</b></div>`;
   const tl = majTimeline();
   $("#pied").insertAdjacentHTML("beforeend", `<div class="tl-pied" data-tl title="${tl.c ? esc(syntheseTimeline(tl.c)) : "Timeline incomplète"}"><small>Timeline</small><b>${tl.c ? piedTimeline(tl.c) : "—"}</b></div>`);
   const k = tl.c ? coutFiche(tl.c) : null;
   $("#pied").insertAdjacentHTML("beforeend", `<div class="cout-pied" title="${esc(k ? texteCout(k) + " (prix ÷ durée de vie, plafonnée à " + PLAFOND_PARTIES_VIE + " sessions)" : "Coût par session : il faut le prix et une timeline complète")}"><small>Coût par session</small><b>${k ? texteCout(k).replace(/ par session.*/, "") : "—"}</b></div>`);
   // coût d'effort (prototype, 13/10/2026) : règles, manuels, logistique, hasard toléré, renouvellement, attente ; moyenne quadratique sur 5
   const ce = coutEffort(entreesTimeline().n);
-  $("#pied").insertAdjacentHTML("beforeend", `<div class="cout-pied" title="Coût d'effort (prototype) : ce qu'il faut investir pour jouer — règles (POID1), manuels (DOC1), logistique (MAN1), hasard (MECA1a, à moitié), renouvellement (VAR1), attente (RYT1). Sur 5 ; c'est la gêne du Triomphant."><small>Coût d'effort <span class="proto">proto</span></small><b>${ce == null ? "—" : fmt(ce, 2)}</b></div>`);
+  $("#pied").insertAdjacentHTML("beforeend", `<div class="cout-pied" title="Coût d'effort (prototype) : ce qu'il faut investir pour jouer — règles (POID1), manuels (DOC1), logistique (MAN1), hasard (MECA1a, à moitié), renouvellement (VAR1), attente (RYT1). Sur 5 ; c'est la gêne du Triomphant."><small>Coût d'effort <span class="proto">proto</span></small><b>${ce == null ? "—" : fmt(ce, 2) + "<small>/5</small>"}</b></div>`);
   return c;
 }
 
@@ -680,8 +680,9 @@ function entreesTimeline(){ const e = entreesFiche(saisie, M.paires, M.axes, { c
 const coutFiche = c => coutParPartie(fiche.prix, c, fiche.duree_min, fiche.duree_max);
 // pied de page : α, puis β et γ s'il y a une chute (sinon « pas de chute »), puis la durée de vie
 function piedTimeline(c){
-  const chute = c.omega != null ? `β j${c.beta ?? c.alpha} · ω j${c.omega}` : `${c.beta == null ? "pas de déclin" : `β j${c.beta}`} · γ ${c.gamma == null ? "∞" : Math.round(c.gamma) + " <small>s.</small>"}`;
-  return `α ${fmt(c.y[c.alpha], 2)} <small>j${c.alpha}</small> · ${chute}${c.omega != null ? ` · vie ${Math.round(c.vie)} <small>s.</small>` : ""}`;
+  // pied : la hauteur de l'apogée et la durée de vie, sans les coordonnées des jalons (13/10/2026)
+  const vie = c.omega != null ? `abandon après ${Math.round(c.vie)} <small>sessions</small>` : c.vie == null ? "un classique" : `vie ${Math.round(c.vie)} <small>sessions</small>`;
+  return `apogée ${fmt(c.y[c.alpha], 2)}<small>/10</small> · ${vie}`;
 }
 function majTimeline(){
   const box = document.getElementById("tl-corps"); if (!box) return {};
@@ -696,7 +697,7 @@ function majTimeline(){
   box.innerHTML = `<div class="tl-bandeau">${esc(syntheseTimeline(c))}</div>
     <figure class="courbe-box">${courbeSVG(c, nomJeu(fiche.jeu))}<figcaption>Trait plein : les jalons calculés${c.omega != null ? " jusqu'à l'abandon ω (le flow passe sous 0 : le joueur lâche le jeu)" : ""}. Pointillés : la suite (Souvenir), qui descend jusqu'au plancher de nostalgie. En haut, les jalons ; en bas, les sessions cumulées (chaque sous-phase occupe le log2 de sa durée). Bandes : les phases. Survole un point pour son détail.</figcaption></figure>
     ${absents.length ? `<p class="aide">Sans objet pour ce jeu, donc retiré du calcul : ${absents.map(x => esc(nomP(x))).join(", ")}.</p>` : ""}
-    <div class="defile"><table class="tl-table"><thead><tr><th>Jalon</th><th title="Sessions cumulées pour atteindre ce jalon">Atteint après</th><th>Stimulation</th><th>Friction</th><th title="L'élan d'achat : ce que le prix payé pousse encore à jouer">Élan</th><th>Flow</th><th>Puis : sous-phase</th><th>Durée</th><th title="Sessions cumulées à la fin de la sous-phase">Durée cumulée</th></tr></thead><tbody>
+    <div class="defile"><table class="tl-table"><thead><tr><th>Jalon</th><th title="Sessions cumulées pour atteindre ce jalon">Atteint après (sessions)</th><th>Stimulation /5</th><th>Friction /5</th><th title="L'élan d'achat : ce que le prix payé pousse encore à jouer">Élan</th><th>Flow /10</th><th>Puis : sous-phase</th><th>Durée</th><th title="Sessions cumulées à la fin de la sous-phase">Durée cumulée</th></tr></thead><tbody>
     ${JALONS.map(j => { const sp = SOUSPHASES[j.n], prev = j.n === 0 || SOUSPHASES[j.n - 1].phase !== sp.phase;
       return `${prev ? `<tr class="tl-phase"><td colspan="9">Phase ${sp.phase} — ${esc(PHASES[sp.phase])}</td></tr>` : ""}
       <tr class="${j.n === c.alpha ? "alpha" : ""}${j.n === c.beta || j.n === c.sousPhaseGamma || j.n === c.omega ? " chute" : ""}${c.omega != null && j.n > c.omega ? " jamais" : ""}"><td><b>${j.n}</b> ${esc(j.nom)}${j.n === c.alpha ? " · α" : ""}${j.n === c.beta ? " · β" : ""}${j.n === c.sousPhaseGamma ? ` · γ <small>(${esc(texteSessions(c.gamma))})</small>` : ""}${j.n === c.omega ? " · ω" : ""}${c.omega != null && j.n > c.omega ? ' <small>jamais atteint</small>' : ""}</td>
@@ -715,7 +716,7 @@ function majSpectro(n){
   const maj = t => { t = String(t ?? ""); return t.charAt(0).toUpperCase() + t.slice(1); };
   const coul = m => (matchMedia("(prefers-color-scheme: dark)").matches ? m.couleur_sombre : m.couleur) || m.couleur || "var(--accent)";
   const ligne = l => `<tr class="${spChoisi === l.st.code ? "choisi" : ""}"><td><button type="button" class="lien" data-sp="${esc(l.st.code)}">${esc(maj(l.st.nom))}</button><br><small>${esc(l.st.code)} · conduit par ${esc(Mo[l.pr.second]?.nom || "")} · fuit ${esc(Mo[l.pr.rejet]?.nom || "")}</small></td>
-    <td class="n"><b>${fmt(l.note, 2)}</b></td><td class="n">${fmt(l.c.y[l.c.alpha], 2)} <small>j${l.c.alpha}</small></td><td class="n">${l.c.vie == null ? "∞" : Math.round(l.c.vie)}</td>
+    <td class="n"><b>${fmt(l.note, 2)}</b></td><td class="n">${fmt(l.c.y[l.c.alpha], 2)} <small>jalon ${l.c.alpha}</small></td><td class="n">${l.c.vie == null ? "∞" : Math.round(l.c.vie)}</td>
     <td>${l.c.omega != null ? `abandon au jalon ${l.c.omega} (ω)` : l.c.beta != null ? `déclin dès le jalon ${l.c.beta}` : "pas de déclin"}</td></tr>`;
   const det = spChoisi && r.lignes.find(l => l.st.code === spChoisi);
   const ouverts = new Set([...box.querySelectorAll("details[open]")].map(d => d.id));
@@ -723,7 +724,7 @@ function majSpectro(n){
       <figcaption>Pointillés : ce que le jeu <b>offre</b> à chaque moteur (le trait, axes 1). Surface : ce qu'il <b>réussit</b> pour lui (les paires qu'il aime).</figcaption></figure>
     <div><p class="aide" style="margin-top:0">Note pour tous : <b>${fmt(r.noteBase, 2)}</b>. Du profil le mieux servi au moins bien servi : <b>${fmt(r.lignes[0].note, 2)}</b> (${esc(r.lignes[0].st.nom)}) à <b>${fmt(r.lignes.at(-1).note, 2)}</b> (${esc(r.lignes.at(-1).st.nom)}).</p>
     ${(() => { const T = r.moteurs.flatMap(g => g.temperaments).sort((x, y) => y.note - x.note);
-      return [["Les tempéraments les mieux servis", T.slice(0, 5)], ["Les moins bien servis", T.slice(-5).reverse()]].map(([t, L]) => `<table class="tl-table sp-extremes"><thead><tr><th>${t}</th><th>Note</th><th>α</th></tr></thead><tbody>
+      return [["Les tempéraments les mieux servis", T.slice(0, 5)], ["Les moins bien servis", T.slice(-5).reverse()]].map(([t, L]) => `<table class="tl-table sp-extremes"><thead><tr><th>${t}</th><th>Note /5</th><th title="Le flow le plus haut de la timeline">Apogée /10</th></tr></thead><tbody>
       ${L.map(x => `<tr><td><button type="button" class="lien" data-mo="${esc(x.t.moteur)}">${esc(maj(x.t.nom))}</button> <small>${esc(x.t.code)}</small></td><td class="n"><b>${fmt(x.note, 2)}</b></td><td class="n">${fmt(x.alpha, 2)}</td></tr>`).join("")}</tbody></table>`).join(""); })()}
     <p class="aide">Note et α : moyenne des trois profils du tempérament. Un clic ouvre son moteur, plus bas, avec le détail de ses profils.</p></div></div>
     <h3 class="sp-titre">Les courbes par tempérament</h3>
@@ -734,7 +735,7 @@ function majSpectro(n){
       <div class="tl-bandeau">${esc(syntheseTimeline(det.c))}</div>
       <figure class="courbe-box">${courbeSVG(det.c, det.st.nom, r.base)}<figcaption>Trait noir : la courbe vue par ce profil. Pointillé gris : le flow pour tous (${r.base.y.map((v, j) => `${j} ${fmt(v, 1)}`).join(" · ")}).</figcaption></figure></div>` : ""}
     ${r.moteurs.map(g => `<details class="sp-arc" id="mo-${esc(g.m.code)}"${(det && det.moteur.code === g.m.code) || ouverts.has("mo-" + g.m.code) ? " open" : ""}><summary><b style="color:${esc(coul(g.m))}">${esc(g.m.nom)}</b> <span class="aide">${esc(g.m.devise || "")}</span> <span class="n">${fmt(g.note, 2)}</span></summary>
-      <div class="defile"><table class="tl-table"><thead><tr><th>Profil</th><th>Note</th><th>α</th><th title="en sessions ; ∞ : un classique">Durée de vie</th><th>Décrochage</th></tr></thead><tbody>${g.temperaments.map(t =>
+      <div class="defile"><table class="tl-table"><thead><tr><th>Profil</th><th>Note /5</th><th title="Le flow le plus haut de la timeline, et son jalon">Apogée /10</th><th title="∞ : un classique">Durée de vie (sessions)</th><th>Décrochage</th></tr></thead><tbody>${g.temperaments.map(t =>
         `<tr class="grp"><td colspan="5"><b>${esc(maj(t.t.nom))}</b> (${esc(t.t.code)}, fuit ${esc(Mo[t.t.fuit].nom.toLowerCase())}) · ${fmt(t.note, 2)}</td></tr>` + t.lignes.map(ligne).join("")).join("")}</tbody></table></div></details>`).join("")}`;
   return r;
 }

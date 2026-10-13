@@ -33,7 +33,7 @@ section .question{font:italic 15px var(--serif);color:var(--muted);margin:0 0 14
 .notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
 .notes div{border:1px solid var(--line);border-radius:10px;padding:10px 14px;border-top:4px solid var(--c, var(--ink))}
 .notes small{display:block;font-size:12.5px;color:var(--muted)} .notes b{font:600 26px/1.2 var(--serif);font-variant-numeric:tabular-nums}
-.notes .finale b{font-size:32px}
+.notes .finale b{font-size:32px} .notes .sur{font-size:13px;color:var(--muted);margin-left:2px}
 .ecart{font-size:13px;color:var(--muted);margin-left:6px} .ecart.plus{color:var(--plus)} .ecart.moins{color:var(--moins)}
 table.paires{width:100%;border-collapse:collapse;font-size:14.5px;margin:4px 0 14px}
 table.paires th{font-weight:500;font-size:12.5px;color:var(--muted);text-align:left;border-bottom:1px solid var(--line);padding:6px 8px}
@@ -61,9 +61,9 @@ h3.chap{font:600 17px var(--serif);margin:14px 0 2px;color:var(--c)}
   <p class="version" id="version"></p>
 </main>
 
-<script src="timeline.js?v=3.4"></script>
+<script src="timeline.js?v=3.5"></script>
 <script>
-const VERSION = { numero:"1.1", date:"2026-10-13 21:43" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.2", date:"2026-10-13 22:07" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -133,9 +133,9 @@ async function afficher(user){
   const nomCh = c => chapitres?.find(x => x.code === c)?.nom || c;
   let h = `<div class="entete">${img}<div><h1>${esc(jeu.nom)}</h1><p class="sous">${F.length} fiche${F.length > 1 ? "s" : ""} finale${F.length > 1 ? "s" : ""}${F.length > 1 ? " (moyenne)" : ""}${bgg}</p><p class="chiffres">${ch.join("")}</p>${actions}</div></div>
   <section><h2>Les notes</h2><p class="question">Sur 5 : chaque chapitre est la moyenne de ses paires, la note finale la moyenne des trois chapitres.</p>
-    <div class="notes"><div class="finale"><small>Note PRISME</small><b>${fmt(R.finale)}</b></div>
-    ${(chapitres || []).filter(c => R.chap[c.code] != null).map(c => `<div style="--c:var(--${esc(c.code)})"><small>${esc(c.nom)}</small><b>${fmt(R.chap[c.code])}</b></div>`).join("")}
-    ${R.notePour != null ? `<div style="--c:var(--accent)"><small>Pour vous</small><b>${fmt(R.notePour)}</b>${ecart(R.notePour, R.finale)}</div>` : ""}</div>
+    <div class="notes"><div class="finale"><small>Note PRISME</small><b>${fmt(R.finale)}</b><span class="sur">/5</span></div>
+    ${(chapitres || []).filter(c => R.chap[c.code] != null).map(c => `<div style="--c:var(--${esc(c.code)})"><small>${esc(c.nom)}</small><b>${fmt(R.chap[c.code])}</b><span class="sur">/5</span></div>`).join("")}
+    ${R.notePour != null ? `<div style="--c:var(--accent)"><small>Pour vous</small><b>${fmt(R.notePour)}</b><span class="sur">/5</span>${ecart(R.notePour, R.finale)}</div>` : ""}</div>
     ${!profil ? `<p class="discret" style="margin-top:10px"><a href="questionnaire.html">Passez le questionnaire du joueur</a> pour voir la note et la courbe de ce jeu pour vous.</p>` : ""}
   </section>`;
 
@@ -147,7 +147,7 @@ async function afficher(user){
       <figure class="courbe-box" style="margin:10px 0">${courbeSVG(c, jeu.nom)}<figcaption>En haut, les jalons ; en bas, les sessions cumulées. Pointillés : le Souvenir, qui descend jusqu'au plancher de nostalgie.</figcaption></figure>
       ${R.cPour ? `<h3 style="font:600 18px var(--serif);margin:16px 0 4px">Pour vous</h3><div class="bandeau">${esc(syntheseTimeline(R.cPour))}</div>
         <figure class="courbe-box" style="margin:10px 0">${courbeSVG(R.cPour, jeu.nom, c)}<figcaption>Votre courbe, d'après votre profil de joueur ; en pointillé gris, la courbe pour tous.</figcaption></figure>` : ""}
-      <p class="discret">Coût par session : <b>${esc(texteCout(R.cout))}</b> · Coût d'effort <span class="proto">proto</span> : <b>${fmt(R.effort)}</b> / 5 (règles, manuels, logistique, hasard, renouvellement, attente).</p>
+      <p class="discret">Coût par session : <b>${esc(texteCout(R.cout))}</b> · Coût d'effort <span class="proto">proto</span> : <b>${fmt(R.effort)}/5</b> (règles, manuels, logistique, hasard, renouvellement, attente).</p>
     </section>`;
   } else {
     h += `<section><h2>Sa vie dans le temps</h2><p class="discret">La timeline paraîtra quand toutes les paires utiles seront notées.</p></section>`;
@@ -160,7 +160,7 @@ async function afficher(user){
   h += `<section><h2>Les paires</h2><p class="question">Pour chaque paire, sa note et les axes qui la composent. Les écarts (+ / −) disent ce que le jeu réussit au-delà ou en deçà de ce qu'on attendait.</p>`;
   (chapitres || []).forEach(c => {
     const P = R.e.paires.filter(p => p.chap === c.code); if (!P.length) return;
-    h += `<h3 class="chap" style="--c:var(--${esc(c.code)})">${esc(c.nom)}</h3><table class="paires"><thead><tr><th>Paire</th><th class="n">Note</th><th>Axes</th></tr></thead><tbody>
+    h += `<h3 class="chap" style="--c:var(--${esc(c.code)})">${esc(c.nom)}</h3><table class="paires"><thead><tr><th>Paire</th><th class="n">Note /5</th><th>Axes (sur 5 ; écarts de −2 à +2)</th></tr></thead><tbody>
       ${P.map(p => { const pn = d.paires.find(x => x.code === p.code), A = d.axes.filter(a => a.paire === p.code && a.echelle !== "calcule");
         return `<tr><td>${esc(pn?.nom || p.code)}</td><td class="n"><b>${p.note == null ? (R.e.absents.includes(p.code) ? "s. o." : "—") : fmt(p.note)}</b></td>
           <td class="axes">${A.map(a => { const v = val(a); return v == null ? "" : `<span>${esc(a.nom)} : <b>${esc(v)}</b></span>`; }).join(" ")}</td></tr>`; }).join("")}

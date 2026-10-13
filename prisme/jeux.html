@@ -54,9 +54,9 @@ tr.attente td{color:var(--muted)}
   <p class="version" id="version"></p>
 </main>
 
-<script src="timeline.js?v=3.4"></script>
+<script src="timeline.js?v=3.5"></script>
 <script>
-const VERSION = { numero:"1.1", date:"2026-10-13 21:43" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.2", date:"2026-10-13 22:07" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -121,8 +121,8 @@ function afficher(){
     return `<span class="ecart ${v >= .005 ? "plus" : v <= -.005 ? "moins" : ""}">${Math.abs(v) < .005 ? "±" : v > 0 ? "+" : "−"}${fmt(Math.abs(v))}</span>`; };
   const vie = c => !c ? "—" : c.vie == null ? "∞" : Math.round(c.vie);
   const cout = k => !k ? "—" : texteCout(k).replace(/ par session.*/, "");
-  $("#contenu").innerHTML = `<div class="cadre"><table class="jeux"><thead><tr><th>Jeu</th><th class="n">Note PRISME</th>${profil ? '<th class="n">Pour vous</th>' : ""}
-    <th class="n col-sec" title="Le flow le plus haut de la courbe (sur 10)">Apogée</th><th class="n col-sec" title="En sessions ; ∞ : un classique">Durée de vie</th><th class="n col-sec">Coût par session</th>${lecteur ? "<th>Évaluation</th>" : ""}</tr></thead><tbody>
+  $("#contenu").innerHTML = `<div class="cadre"><table class="jeux"><thead><tr><th>Jeu</th><th class="n">Note PRISME /5</th>${profil ? '<th class="n">Pour vous /5</th>' : ""}
+    <th class="n col-sec" title="Le flow le plus haut de la timeline">Apogée /10</th><th class="n col-sec" title="∞ : un classique">Durée de vie (sessions)</th><th class="n col-sec">Coût (€/session)</th>${lecteur ? "<th>Évaluation</th>" : ""}</tr></thead><tbody>
     ${L.map(l => {
       const img = l.j.image_url ? `<img src="${esc(l.j.image_url)}" alt="" loading="lazy">` : `<span class="sans-image"></span>`;
       const nom = `<a class="jeu" href="jeu.html?jeu=${encodeURIComponent(l.j.code)}">${img}<span><b>${esc(l.j.nom)}</b><small>${l.n ? `${l.n} fiche${l.n > 1 ? "s" : ""} finale${l.n > 1 ? "s" : ""}` : "pas encore évalué"}</small></span></a>`;
@@ -131,7 +131,7 @@ function afficher(){
       return `<tr><td>${nom}</td><td class="n"><b>${fmt(l.r.finale)}</b></td>${profil ? `<td class="n"><b>${fmt(l.r.notePour)}</b>${ecart(l.r.notePour, l.r.finale)}</td>` : ""}
         <td class="n col-sec">${fmt(l.r.c.y[l.r.c.alpha])}</td><td class="n col-sec">${vie(l.r.c)}</td><td class="n col-sec">${cout(l.r.cout)}</td>${ev}</tr>`;
     }).join("")}</tbody></table></div>
-    <p class="discret">Notes sur 5, moyenne des fiches finales. Apogée : le flow le plus haut de la timeline, sur 10. Durée de vie : en sessions, jusqu'à l'abandon ou jusqu'au jeu rangé ; ∞ pour un classique.</p>`;
+    <p class="discret">Notes sur 5, moyenne des fiches finales. Apogée : le flow le plus haut de la timeline, sur 10 (le flow n'est pas une note : il mesure le plaisir net à un moment de la vie du jeu). Durée de vie : en sessions, jusqu'à l'abandon ou jusqu'au jeu rangé ; ∞ pour un classique.</p>`;
 }
 </script>
 <script src="entete.js?v=1.3"></script>

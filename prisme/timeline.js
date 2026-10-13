@@ -1,7 +1,7 @@
 /* PRISME — timeline du jeu : jalons, durées, flow, α β γ ω, durée de vie.
    Module partagé par l'encyclopédie et l'outil d'évaluation. Méthode arrêtée le 08/10/2026 (jeu d'essai : Heat) ; modèle à 12 paires le 11/10/2026 ;
    formules refaites phase par phase le 12/10/2026 avec trois jeux de référence (Gloomhaven, Heat, Flip 7). L'unité est la session. */
-const TIMELINE_VERSION = { numero:"3.4", date:"2026-10-13 21:29" };   // à incrémenter à chaque livraison
+const TIMELINE_VERSION = { numero:"3.5", date:"2026-10-13 22:07" };   // à incrémenter à chaque livraison
 
 const JALONS = [
   { n:0, nom:"identifié", quoi:"Le jeu est connu de loin : critique, vitrine, recommandation." },
@@ -243,7 +243,7 @@ function courbeSVG(c, titre, ref){
   });
   s += `<text x="${W / 2}" y="${H - 6}" class="gl" style="text-anchor:middle">Phases : ${Object.entries(PHASES).map(([k, v]) => k + " " + e(v)).join(" · ")}</text>`;
   for (let v = 0; v <= yMax; v++) s += `<line x1="${g}" x2="${W - dr}" y1="${Y(v)}" y2="${Y(v)}" class="grille"/><text x="${g - 8}" y="${Y(v) + 4}" class="gy">${v}</text>`;
-  s += `<text x="4" y="${h0 - 8}" class="gy" style="text-anchor:start">jalon</text><text x="12" y="${Y(yMax / 2)}" class="gy" style="text-anchor:middle" transform="rotate(-90 12 ${Y(yMax / 2)})">flow</text>`;
+  s += `<text x="4" y="${h0 - 8}" class="gy" style="text-anchor:start">jalon</text><text x="12" y="${Y(yMax / 2)}" class="gy" style="text-anchor:middle" transform="rotate(-90 12 ${Y(yMax / 2)})">flow /10</text>`;
   s += `<text x="4" y="${H - b + 30}" class="gy" style="text-anchor:start">sessions</text>`;
   if (c.plancher != null && c.plancher > 0) s += `<line x1="${X(c.x[7])}" x2="${W - dr}" y1="${Y(c.plancher)}" y2="${Y(c.plancher)}" class="demi"/><text x="${W - dr - 4}" y="${Y(c.plancher) - 5}" class="gl" style="text-anchor:end">plancher de nostalgie</text>`;
   if (c.xVie != null){ const xd = X(Math.min(c.xVie, xFin)), yv = c.purge ? 0 : c.plancher ?? 0;
@@ -258,7 +258,7 @@ function courbeSVG(c, titre, ref){
   } else s += `<text x="${X(c.x[c.omega]) + 10}" y="${Y(0) - 10}" class="gl fort" style="text-anchor:start">ω abandon</text>`;
   let dernierNum = 0, dernierS = -1;
   for (let j = 0; j <= 7; j++){
-    const info = `Jalon ${j} : ${JALONS[j].nom} — ${texteSessions(c.N[j])}, flow ${f(c.y[j])}`;
+    const info = `Jalon ${j} : ${JALONS[j].nom} — après ${texteSessions(c.N[j])}, flow ${f(c.y[j])}/10`;
     const point = c.omega != null && j > c.omega ? "" : `<circle cx="${X(c.x[j])}" cy="${Y(c.y[j])}" r="${j === c.alpha ? 6 : 4}" class="${j === c.alpha ? "pt alpha" : "pt"}"/>`;
     const lisible = j === 0 || X(c.x[j]) - X(c.x[dernierNum]) >= 14;   // numéros trop serrés (jalons très courts) : on saute
     if (lisible) dernierNum = j;
@@ -269,7 +269,7 @@ function courbeSVG(c, titre, ref){
   if (!c.purge){ let der = X(c.x[dernierS]);                            // repères ronds dans le Souvenir
     [50, 100, 200, 500, 1000, 2000, 5000].forEach(v => { if (v <= c.N[7]) return; const xv = X(c.xLoin(v)); if (xv > W - dr || xv - der < 30) return; der = xv;
       s += `<line x1="${xv}" x2="${xv}" y1="${H - b}" y2="${H - b + 4}" class="axe-l"/><text x="${xv}" y="${H - b + 16}" class="gs">${v}</text>`; }); }
-  s += `<text x="${X(c.x[c.alpha])}" y="${Y(c.y[c.alpha]) - 12}" class="gl fort">α ${f(c.y[c.alpha])}</text>`;
+  s += `<text x="${X(c.x[c.alpha])}" y="${Y(c.y[c.alpha]) - 12}" class="gl fort">α ${f(c.y[c.alpha])}/10</text>`;
   if (c.beta != null) s += c.beta === c.alpha ? `<text x="${X(c.x[c.beta]) + 12}" y="${Y(c.y[c.beta]) + 16}" class="gl fort" style="text-anchor:start">β</text>`
     : `<text x="${X(c.x[c.beta]) + 10}" y="${Y(c.y[c.beta]) - 12}" class="gl fort">β</text>`;
   if (c.gamma != null && c.xVie <= xFin) s += `<text x="${X(c.xVie)}" y="${Y(c.plancher ?? 0) - 12}" class="gl fort">γ</text>`;
@@ -293,15 +293,17 @@ function texteSessions(v){
   return e + " session" + (e > 1 ? "s" : "") + (fr ? " " + fr : "");
 }
 
-/* Phrase de synthèse, en texte simple (bandeau, récapitulatif, export). */
+/* Phrase de synthèse, en texte simple (bandeau, récapitulatif, export). Unités (13/10/2026) : flow /10, note /5, temps en sessions, jalons en toutes lettres. */
+const phaseDuJalon = j => j <= 0 ? "I" : SOUSPHASES[j - 1].phase;   // la phase que le jalon vient de conclure
 function syntheseTimeline(c){
   const f = (v, k = 2) => Number(v).toFixed(k).replace(".", ",").replace("-", "−");
-  const purge = c.omega != null;
-  const chute = purge ? `déclin dès le jalon ${c.beta ?? c.alpha} (β), abandon au jalon ${c.omega} (ω)` : c.beta == null ? "pas de déclin" : `déclin dès le jalon ${c.beta} (β)`;
-  const vie = c.vie == null ? `pas de γ : ne descend jamais jusqu'à son plancher de nostalgie (${f(c.marque)}), un classique`
-    : purge ? `durée de vie ≈ ${texteSessions(c.vie)}, jusqu'à l'abandon (${c.classe})`
-    : `γ : au plancher de nostalgie (${f(c.plancher)}) après ≈ ${texteSessions(c.vie)}, puis rangé et ressorti par nostalgie (${c.classe})`;
-  return `α ${f(c.y[c.alpha])} au jalon ${c.alpha} (${JALONS[c.alpha].nom}, après ${texteSessions(c.N[c.alpha])}) · ${chute} · ${vie}`;
+  const purge = c.omega != null, ph = phaseDuJalon(c.alpha);
+  const apogee = `Apogée ${f(c.y[c.alpha])}/10 au jalon ${c.alpha} (${JALONS[c.alpha].nom}), après ${texteSessions(c.N[c.alpha])}, phase ${ph} (${PHASES[ph]})`;
+  const declin = c.beta == null ? "pas de déclin" : `déclin dès le jalon ${c.beta}, après ${texteSessions(c.N[c.beta])}`;
+  const fin = purge ? `abandon au jalon ${c.omega}, après ≈ ${texteSessions(c.vie)} (${c.classe})`
+    : c.vie == null ? `jamais rangé : ne descend pas jusqu'à son plancher de nostalgie (${f(c.marque)}/10), un classique`
+    : `rangé après ≈ ${texteSessions(c.vie)}, au plancher de nostalgie (${f(c.plancher)}/10), puis ressorti par nostalgie (${c.classe})`;
+  return `${apogee} · ${declin} · ${fin}`;
 }
 
 /* Styles du graphique, injectés une fois (les couleurs viennent des variables de la page). */
@@ -586,7 +588,7 @@ function tableJeuxHTML(L, d, qui, moyenne){
     <td class="n"><b>${f(x.note)}</b> ${ecart(x)}</td><td class="n">${f(x.alpha)}</td><td class="n">${x.vie >= 1e7 ? "∞" : Math.round(x.vie)}</td></tr>`;
   const haut = L.slice(0, 8), bas = L.length > 11 ? L.slice(-3) : [];
   return `<p class="pj-discret">${L.length} jeu${L.length > 1 ? "x" : ""} évalué${L.length > 1 ? "s" : ""}, classé${L.length > 1 ? "s" : ""} ${qui === "vous" ? "selon la note qu'ils obtiennent pour vous" : "selon la note vue par " + e(qui) + (moyenne ? " (en moyenne)" : "")} ; l'écart se lit par rapport à la note pour tous.</p>
-    <table class="pj-jeux"><thead><tr><th></th><th>Jeu</th><th class="n">Note</th><th class="n">α</th><th class="n" title="en sessions ; ∞ : un classique">Durée de vie</th></tr></thead>
+    <table class="pj-jeux"><thead><tr><th></th><th>Jeu</th><th class="n">Note /5</th><th class="n" title="Le flow le plus haut de la timeline">Apogée /10</th><th class="n" title="∞ : un classique">Durée de vie (sessions)</th></tr></thead>
     <tbody>${haut.map((x, i) => ligne(x, i + 1)).join("")}</tbody>
     ${bas.length ? `<tbody class="bas"><tr><td colspan="5" class="pj-discret">Ceux qui ${qui === "vous" ? "vous" : "lui"} vont le moins</td></tr>${bas.map((x, i) => ligne(x, L.length - bas.length + i + 1)).join("")}</tbody>` : ""}</table>`;
 }
