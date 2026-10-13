@@ -1,5 +1,5 @@
 /* =====================================================================
-   Flamme Bleue — glyphes des codes (1.2, 13/10/2026)
+   Flamme Bleue — glyphes des codes (1.3, 13/10/2026)
    Un petit dessin par type de code, à côté du code en lettres :
    - projet (3 valeurs) en arc : éclat (trois voisines), la valeur du milieu en haut de l'arc ;
      coin (deux alliées et leur ennemie commune), les alliées aux bouts, l'ennemie sous l'arc, bien détachée ;
@@ -8,7 +8,8 @@
    - généraliste (XY/z) : X et Y en secteurs de 60° pointés à gauche et à droite (nœud papillon couché),
      z en secteur pointillé plus court, centré dessous ;
    - style (X.y) : X en secteur de 60° au côté droit vertical, y en petit disque à droite ;
-   - tempérament (X/y) : X en secteur de 60° au côté droit vertical, y en secteur miroir pointillé (absente).
+   - tempérament (X/y) : X en secteur de 60° au côté droit vertical, y en secteur miroir pointillé (absente),
+     10 % plus petit (à taille égale, le pointillé paraît plus grand).
    Les autres codes (valeur, motivation, trait, anti-valeur) gardent leurs pastilles rondes : glyphe() rend null.
    Usage : FLAMME_GLYPHES.glyphe(code, { W:"#FFFFFF", … }) → chaîne SVG, ou null.
    ===================================================================== */
@@ -58,10 +59,10 @@
     }
     if ((m = code.match(/^([WUBRG])\/([wubrg])$/))) {                   // tempérament : l'absente en secteur miroir pointillé
       const [, x, y] = m, ecart = 2.6;
-      return svg(30.5, 20, secteur(x, 14, 17.5, 14, -150, -90) + secteur(y.toUpperCase(), 14 + ecart, 17.5, 14, -90, -30, true));
+      return svg(30.5, 20, secteur(x, 14, 17.5, 14, -150, -90) + secteur(y.toUpperCase(), 14 + ecart, 17.5, 12.6, -90, -30, true));
     }
     return null;
   }
-  const api = { VERSION: { numero: "1.2", date: "2026-10-13 23:30" }, glyphe };
+  const api = { VERSION: { numero: "1.3", date: "2026-10-13 23:37" }, glyphe };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else racine.FLAMME_GLYPHES = api;
 })(typeof window !== "undefined" ? window : globalThis);

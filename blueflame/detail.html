@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <script src="flamme_moteur.js?v=1.3"></script>
-<script src="flamme_glyphes.js?v=1.2"></script>
+<script src="flamme_glyphes.js?v=1.3"></script>
 <style>
 :root{--ink:#1B2430;--muted:#5B6573;--line:#DDE1E7;--paper:#F4F6F8;--panel:#FFFFFF;--hover:#EEF1F5;--ok:#1E7A46;--warn:#9A5B00;--err:#B42318;
   --serif:"Source Serif 4",Georgia,"Times New Roman",serif;--sans:"IBM Plex Sans","Segoe UI",Arial,sans-serif}
@@ -35,14 +35,17 @@ main{max-width:1400px;margin:16px auto 40px;padding:0 20px}
 .fam{border:1px solid var(--line);border-radius:8px;padding:10px 12px}
 .fam .t{font-size:12px;color:var(--muted)} .fam .c{font:600 15px var(--serif)} .fam .sc{font-size:13px;color:var(--muted)}
 h2{font:600 19px var(--serif);margin:22px 0 10px}
-.bandes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
-.bande{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px}
-.bande h3{font:600 15px var(--serif);margin:0 0 2px} .bande .lim{font-size:12px;color:var(--muted);margin-bottom:8px}
+.legende{display:flex;gap:8px 16px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin:-4px 0 10px}
+.legende .lg{border-left:4px solid;padding-left:6px} .legende b{color:var(--ink);font-weight:600}
+.flux{column-count:5;column-gap:16px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.flux .tb{break-inside:avoid;break-after:avoid;font:600 13.5px var(--serif);border-left:4px solid;padding:2px 0 2px 7px;margin:2px 0 3px}
+.flux .tb span{font:400 11.5px var(--sans);color:var(--muted)} .flux .tb:not(:first-child){margin-top:8px}
+.flux .chip{break-inside:avoid;border-left:3px solid;padding-left:6px}
 .chip{display:flex;gap:6px;align-items:baseline;font-size:12.5px;padding:3px 0;border-bottom:1px solid var(--hover)}
 .chip .gl{flex:none;line-height:0} .chip .gl svg.g{height:16px;width:auto} .chip .cd{font-weight:600;white-space:nowrap} .chip .nm{color:var(--muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .chip .sc{font-variant-numeric:tabular-nums}
-.chip.moi{background:#FFF4D6;border-radius:4px;padding:3px 4px}
-.b-naturel{border-top:4px solid #1E7A46} .b-accessible{border-top:4px solid #6BA368} .b-situationnel{border-top:4px solid #C9A227}
-.b-difficile{border-top:4px solid #D9822B} .b-inaccessible{border-top:4px solid #B42318}
+.chip.moi{background:#FFF4D6;border-radius:0 4px 4px 0}
+.b-naturel{border-color:#1E7A46!important} .b-accessible{border-color:#6BA368!important} .b-situationnel{border-color:#C9A227!important}
+.b-difficile{border-color:#D9822B!important} .b-inaccessible{border-color:#B42318!important}
 .sections{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
 .sect{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;break-inside:avoid}
 .sect h3{font:600 15px var(--serif);margin:0} .sect .ex{font-size:12px;color:var(--muted);margin:0 0 8px}
@@ -72,10 +75,20 @@ footer{border-top:1px solid var(--line);background:var(--panel);padding:4px 20px
 dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);padding:24px;width:min(380px,92vw)} dialog::backdrop{background:rgba(10,15,25,.45)}
 .field{display:block;margin-bottom:12px} .field span{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
 .field input{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:6px;background:var(--paper)}
-@media (max-width:1000px){ .bandes{grid-template-columns:1fr 1fr} .familles{grid-template-columns:1fr 1fr} }
+@media (max-width:1100px){ .flux{column-count:3} .familles{grid-template-columns:1fr 1fr} }
+@media (max-width:700px){ .flux{column-count:1} }
 @page{size:A4 landscape;margin:10mm}
 @media print{ body{background:#fff} header,.outils,footer,dialog{display:none!important} main{max-width:none;margin:0;padding:0}
-  .bande,.sect,.carte-entete{border-color:#ccc} .bandes{grid-template-columns:repeat(5,1fr)} h2{margin-top:12px} }
+  .flux,.sect,.carte-entete{border-color:#ccc} h2{margin:8px 0 6px;font-size:16px}
+  /* page 1 : en-tête et 90 profils ; page 2 : les classements */
+  .carte-entete{padding:10px 14px;margin-bottom:8px} .carte-entete h1{font-size:20px} .familles{margin-top:8px;gap:8px} .fam{padding:6px 10px}
+  .flux{column-count:5;padding:6px 8px} .flux .chip{font-size:10.5px;padding-top:1.5px;padding-bottom:1.5px} .flux .tb{font-size:12px}
+  .chip .gl svg.g{height:13px} .legende{font-size:11px;margin:0 0 6px}
+  h2.classements{break-before:page;margin-top:0}
+  .sections{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px} .sect{padding:6px 8px;break-inside:avoid}
+  .sect h3{font-size:13px} .sect .ex{font-size:10px;margin:0 0 4px} .sect table{font-size:10px;line-height:1.15} .sect td{padding:0.5px 3px}
+  .sect td.n{max-width:0;width:45%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .sect svg.g{height:11px;width:auto} .sect .pip{width:9px;height:9px} .sect .pip.sec{width:6px;height:6px}
+  .note{font-size:10.5px;margin-top:6px} }
 </style>
 </head>
 <body>
@@ -100,7 +113,7 @@ dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);c
   <div style="display:flex;gap:10px"><button class="btn" type="submit">Se connecter</button><button class="btn ghost" type="button" id="login-fermer">Fermer</button></div>
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 <script>
-const VERSION = { numero:"1.12", date:"2026-10-13 23:27" };
+const VERSION = { numero:"1.13", date:"2026-10-13 23:38" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const ACCES = ["proprietaire"];
@@ -184,12 +197,13 @@ function rendre(src){
       </div>
     </section>
     <h2>Accessibilité des 90 profils</h2>
-    <div class="bandes">${BANDES.map(([b, lim]) => {
-      const l = st.sections.profils.filter(p => p.bande === b);
-      return `<div class="bande b-${b}"><h3>${b[0].toUpperCase() + b.slice(1)} <span style="font:12px var(--sans);color:var(--muted)">(${l.length})</span></h3><div class="lim">${lim}</div>
-        ${l.map(p => `<div class="chip${moi.has(p.code) ? " moi" : ""}" data-code="${esc(p.code)}" tabindex="0"><span class="gl">${pips(p.code)}</span><span class="cd">${esc(p.code)}</span><span class="nm">${esc(libelle(p.code))}</span><span class="sc">${pct(p.score)}</span></div>`).join("") || '<div class="lim">aucun</div>'}</div>`;
+    <div class="legende">${BANDES.map(([b, lim]) => `<span class="lg b-${b}"><b>${b[0].toUpperCase() + b.slice(1)}</b> ${lim} · ${st.sections.profils.filter(p => p.bande === b).length}</span>`).join("")}</div>
+    <div class="flux">${BANDES.map(([b, lim]) => {   // une seule liste continue, en colonnes : plus de place perdue pour les bandes peu peuplées
+      const l = st.sections.profils.filter(p => p.bande === b); if (!l.length) return "";
+      return `<div class="tb b-${b}">${b[0].toUpperCase() + b.slice(1)} <span>${lim} · ${l.length}</span></div>` +
+        l.map(p => `<div class="chip b-${b}${moi.has(p.code) ? " moi" : ""}" data-code="${esc(p.code)}" tabindex="0"><span class="gl">${pips(p.code)}</span><span class="cd">${esc(p.code)}</span><span class="nm">${esc(libelle(p.code))}</span><span class="sc">${pct(p.score)}</span></div>`).join("");
     }).join("")}</div>
-    <h2>Classements</h2>
+    <h2 class="classements">Classements</h2>
     <div class="sections">${SECTIONS.map(([k, titre, ex]) => `<section class="sect"><h3>${titre}</h3><p class="ex">${ex}</p><table>
       ${st.sections[k].map(x => `<tr data-code="${esc(x.code)}" tabindex="0"><td class="r">${x.rang}</td><td class="c">${pips(x.code)} ${esc(x.code)}${x.tiers ? ` <span class="n">+ ${x.tiers}</span>` : ""}</td><td class="n">${esc(libelle(x.code))}</td><td class="s">${pct(x.score)}</td></tr>`).join("")}
       </table></section>`).join("")}</div>
