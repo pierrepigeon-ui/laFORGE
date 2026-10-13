@@ -10,17 +10,18 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <script src="flamme_moteur.js?v=1.3"></script>
 <script src="flamme_blason.js?v=1.9"></script>
+<script src="flamme_glyphes.js?v=1.1"></script>
 <style>
 :root{--ink:#1B2430;--muted:#5B6573;--line:#DDE1E7;--paper:#F4F6F8;--panel:#FFFFFF;--hover:#EEF1F5;--bleu:#1F4FD1;--or:#C9A227;
   --W:#8892A0;--U:#0055FF;--B:#111111;--R:#E00000;--G:#00A800;
   --serif:"Source Serif 4",Georgia,"Times New Roman",serif;--sans:"IBM Plex Sans","Segoe UI",Arial,sans-serif}
 @media (prefers-color-scheme: dark){:root{--ink:#E6E9EE;--muted:#9AA4B2;--line:#2C3542;--paper:#11161D;--panel:#171D25;--hover:#1E2630;--bleu:#7FA6FF;
   --W:#C9D0DA;--U:#5C8DFF;--B:#9AA4B2;--R:#FF6B6B;--G:#4CD06A}}
-*{box-sizing:border-box} html{scroll-padding-top:16px;scroll-behavior:smooth} html,body{margin:0}
+*{box-sizing:border-box} html{scroll-padding-top:calc(var(--ent-h, 60px) + 16px);scroll-behavior:smooth} html,body{margin:0}
 body{background:var(--paper);color:var(--ink);font:16px/1.6 var(--sans)}
 a{color:inherit} button,input{font:inherit;color:inherit} :focus-visible{outline:2px solid #3B6FE0;outline-offset:2px} .hidden{display:none!important}
 
-header.bandeau{display:flex;align-items:baseline;gap:18px;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
+header.bandeau{position:sticky;top:0;z-index:20;display:flex;align-items:baseline;gap:18px;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
 .wordmark a{color:inherit;text-decoration:none} .wordmark a:hover{opacity:.7}
 .wordmark{font:600 24px/1 var(--serif);letter-spacing:.02em;margin:0} .signature{font:italic 14px/1.4 var(--serif);color:var(--muted);margin:0}
 header.bandeau nav a{color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:5px} header.bandeau nav a:hover{background:var(--hover);color:var(--ink)}
@@ -34,7 +35,7 @@ header.titre h1{font:600 clamp(32px,5vw,46px)/1.05 var(--serif);margin:0}
 header.titre p{margin:4px 0 0;color:var(--muted);max-width:66ch}
 header.titre .actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
 
-nav#sommaire{position:sticky;top:12px;align-self:start;max-height:calc(100vh - 24px);overflow:auto;font-size:14px;padding:6px 0 20px}
+nav#sommaire{position:sticky;top:calc(var(--ent-h, 60px) + 12px);align-self:start;max-height:calc(100vh - var(--ent-h, 60px) - 24px);overflow:auto;font-size:14px;padding:6px 0 20px}
 nav#sommaire input{width:100%;padding:7px 10px;border:1px solid var(--line);border-radius:7px;background:var(--panel);margin-bottom:10px}
 nav#sommaire summary{display:none;font:600 15px var(--sans);cursor:pointer;padding:4px 2px}
 nav#sommaire li{position:relative} nav#sommaire li > a{margin-left:18px}
@@ -47,7 +48,7 @@ nav#sommaire a{display:block;text-decoration:none;padding:2px 6px;border-radius:
 nav#sommaire a:hover{background:var(--panel);color:var(--ink)}
 nav#sommaire a.actif{color:var(--ink);background:var(--panel);font-weight:500}
 nav#sommaire .niv1>a{font-weight:600;color:var(--ink);margin-top:10px}
-nav#sommaire .pastille{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px;border:1px solid #8892A0}
+nav#sommaire .code{font-size:11px;padding:0 4px;margin-left:2px} nav#sommaire svg.g{height:17px;width:auto} nav#sommaire .pastille{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px;border:1px solid #8892A0}
 
 main{min-width:0;overflow-wrap:break-word}
 main h2{font:600 30px/1.2 var(--serif);margin:42px 0 6px;padding-bottom:6px;border-bottom:2px solid var(--c,var(--ink));color:var(--ink)}
@@ -62,7 +63,7 @@ main h3.section{font:600 22px/1.3 var(--serif);margin:30px 0 8px}
 .code{font:500 12.5px var(--sans);color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 6px;white-space:nowrap}
 .pips{display:inline-flex;gap:3px;align-items:center;vertical-align:1px}
 .pip{width:11px;height:11px;border-radius:50%;border:1px solid #8892A0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-.pip.sec{width:7px;height:7px} .pip.abs{background:transparent!important;border:1.5px dashed var(--c)} .pip.sep{width:auto;height:auto;border:0;font-size:10px;color:var(--muted)}
+.pip.sec{width:7px;height:7px} svg.g{vertical-align:middle;display:inline-block;color:var(--ink);overflow:visible} .pip.abs{background:transparent!important;border:1.5px dashed var(--c)} .pip.sep{width:auto;height:auto;border:0;font-size:10px;color:var(--muted)}
 
 /* fiches */
 .cartes{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin:10px 0 6px}
@@ -127,7 +128,7 @@ mark{background:#FFE58A;color:#1B2430;border-radius:2px}
 @media (max-width:600px){ dl.glossaire,dl.gram{grid-template-columns:1fr} dl.glossaire dd,dl.gram dd{margin-bottom:6px}
   .profil .haut{grid-template-columns:90px 1fr} .profil .vignette{width:90px} .profil .ecu{grid-column:1 / -1;width:60px} .valeur .traits{grid-template-columns:1fr} }
 @media print{
-  header.bandeau,nav#sommaire,header.titre .actions,.vitrine{display:none!important} .page{display:block;max-width:none;padding:0}
+  header.bandeau,nav#sommaire,header.titre .actions,.vitrine{display:none!important} header.bandeau{position:static} .page{display:block;max-width:none;padding:0}
   body{background:#fff;color:#000;font-size:11pt} .carte,.profil{break-inside:avoid-page;border-color:#bbb} main h2{break-before:page} main h2:first-child{break-before:auto}
 }
 </style>
@@ -135,15 +136,14 @@ mark{background:#FFE58A;color:#1B2430;border-radius:2px}
 <body>
 <header class="bandeau">
   <h1 class="wordmark"><a href="index.html" title="Accueil de Flamme Bleue">Flamme Bleue</a></h1><p class="signature">Cartographiez votre énergie</p>
-  <nav><a href="autotest.html">Autotest</a><a href="totems.html" id="lien-totems" class="hidden">Totems</a></nav>
-  <div class="who"><span id="who"></span>
+    <div class="who"><span id="who"></span>
     <button class="btn" id="btn-login" type="button">Se connecter</button>
     <button class="btn hidden" id="btn-logout" type="button">Se déconnecter</button></div>
 </header>
 <div class="page">
   <header class="titre">
     <div><h1>L'encyclopédie</h1>
-      <p>Le modèle Flamme Bleue tel qu'il est dans la base, à jour en direct : les cinq couleurs et leurs valeurs, les motivations, les projets, les tempéraments et les styles, les quatre-vingt-dix profils, le calcul de l'autotest et la grammaire des armoiries.</p></div>
+      <p>Le modèle Flamme Bleue tel qu'il est dans la base, à jour en direct : les cinq valeurs, les motivations, les projets, les tempéraments et les styles, les quatre-vingt-dix profils, le calcul de l'autotest et la grammaire des armoiries.</p></div>
     <div class="actions"><a class="btn hidden" id="aller-moi" href="#">Aller à mon profil</a><button class="btn" id="imprimer" type="button">Imprimer ou enregistrer en PDF</button></div>
   </header>
   <nav id="sommaire" aria-label="Sommaire"><input id="cherche" type="search" placeholder="Chercher dans l'encyclopédie…" aria-label="Chercher"><details id="tocbox" open><summary>Sommaire</summary><p class="plis"><button type="button" id="tout-deplier">Tout déplier</button> · <button type="button" id="tout-replier">Tout replier</button></p><ol id="toc"></ol></details></nav>
@@ -152,7 +152,7 @@ mark{background:#FFE58A;color:#1B2430;border-radius:2px}
 <div style="max-width:1240px;margin:0 auto;padding:0 20px 30px"><p class="version"><span id="credit"></span><br><span id="version"></span></p></div>
 
 <script>
-const VERSION = { numero:"1.0", date:"2026-10-13 22:39" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.4", date:"2026-10-13 23:20" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -164,6 +164,9 @@ const maj = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : "";
 const ancre = code => "e-" + code.replace(/\//g, "_").replace(/\./g, "-");
 $("#version").textContent = `Encyclopédie Flamme Bleue ${VERSION.numero}, version du ${VERSION.date.replace(/(\d{4})-(\d\d)-(\d\d) (\d\d):(\d\d)/,"$3/$2/$1 à $4h$5")} — moteur ${M.VERSION.numero}, blason ${B.VERSION.numero}`;
 $("#imprimer").addEventListener("click", () => window.print());
+/* hauteur de l'en-tête fixe : sert au sommaire et aux ancres */
+const mesurer = () => document.documentElement.style.setProperty("--ent-h", document.querySelector("header.bandeau").offsetHeight + "px");
+mesurer(); addEventListener("resize", mesurer); setTimeout(mesurer, 500);
 
 /* ---- connexion : par la Forge. Sans compte (ou sans rôle Flamme Bleue) : la vitrine ; avec un rôle : tout ---- */
 $("#btn-login").addEventListener("click", () => { location.href = "../?retour=" + encodeURIComponent(location.href); });
@@ -189,7 +192,6 @@ const teinte = c => C[c]?.couleur || { W:"#FFFFFF", U:"#0055FF", B:"#111111", R:
 async function charger(){
   role = null; COMPLET = false; MOI = null;
   try { if (user){ const { data } = await sb.rpc("flamme_mon_role"); role = data || null; } } catch {}
-  $("#lien-totems").classList.toggle("hidden", !role);
   let els = [], cols = [], vocab = [];
   if (role){
     const [a, b, c] = await Promise.all([sb.from("flamme_elements").select("*"), sb.from("flamme_couleurs").select("*"), sb.from("flamme_vocabulaire").select("*").eq("langue", "fr")]);
@@ -256,7 +258,10 @@ function ecussonsALaDemande(){
 }
 
 /* ---- petits outils d'affichage ---- */
+/* glyphes (flamme_glyphes.js) pour projets, profils, styles et tempéraments ; pastilles rondes pour le reste */
+const TEINTES = () => Object.fromEntries(M.ORDRE.map(c => [c, teinte(c)]));
 function pips(code){
+  const g = window.FLAMME_GLYPHES?.glyphe(code, TEINTES()); if (g) return g;
   let out = "", absent = false;
   for (const ch of code){
     if (ch === "/"){ absent = true; out += '<span class="pip sep">/</span>'; continue; }
@@ -267,7 +272,7 @@ function pips(code){
   }
   return `<span class="pips" aria-hidden="true">${out}</span>`;
 }
-const lien = code => E[code] ? `<a href="#${ancre(code)}">${esc(code)} ${esc(E[code].nom)}</a>` : esc(code);
+const lien = code => E[code] ? `<a href="#${ancre(code)}">${pips(code)} <span class="code">${esc(code)}</span> ${esc(E[code].nom)}</a>` : `${pips(code)} <span class="code">${esc(code)}</span>`;
 const titreSiDifferent = e => e.titre && e.titre.trim().replace(/[’']/g, "'") !== (e.devise || "").trim().replace(/[’']/g, "'") ? `<p class="titre">« ${esc(e.titre)} »</p>` : "";
 const textes = e => COMPLET ? ["texte1", "texte2", "texte3"].filter(k => e[k]).map(k => `<p>${nl(e[k])}</p>`).join("") : "";
 const couleurCss = code => { const p = M.analyser(code).principales?.[0] || code.replace(/[^A-Z]/g, "")[0]; return p ? `var(--${p})` : "var(--line)"; };
@@ -304,34 +309,34 @@ function roueSVG(){
   M.ORDRE.forEach((c, i) => { const [x, y] = P[i], v = E[c];
     s += `<circle cx="${x}" cy="${y}" r="24" fill="${teinte(c)}" stroke="#8892A0" stroke-width="1.5"/><text x="${x}" y="${y + 6}" text-anchor="middle" font-family="Arial" font-weight="bold" font-size="17" fill="${["W", "G"].includes(c) ? "#111" : "#fff"}">${c}</text>`;
     const ty = y + (i === 0 ? -32 : 42); s += `<text x="${x}" y="${ty}" text-anchor="middle" font-family="Georgia,serif" font-size="14" fill="currentColor">${esc(v?.nom || couleurNom(c))}</text>`; });
-  return `<svg class="roue" viewBox="0 -20 320 330" role="img" aria-label="La roue des cinq couleurs : chaque couleur est l'alliée de ses deux voisines et l'ennemie des deux autres">${s}</svg>`;
+  return `<svg class="roue" viewBox="0 -20 320 330" role="img" aria-label="La roue des cinq valeurs : chaque valeur est l'alliée de ses deux voisines et l'ennemie des deux autres">${s}</svg>`;
 }
 function sectionPresentation(toc){
   toc.push({ id: "presentation", titre: "Présentation", enfants: [{ id: "p-roue", titre: "La roue" }, { id: "p-couches", titre: "Les couches du modèle" }, { id: "p-codes", titre: "Lire un code" }] });
   const couches = Object.values(V.couche || {}).sort((a, b) => (a.ordre ?? 0) - (b.ordre ?? 0));
   const nb = c => Object.values(E).filter(e => e.couche === c).length;
   return `<h2 id="presentation">Présentation</h2>
-    <p class="chapo">Ce qui nous met en mouvement se lit en cinq couleurs. Leur dosage dessine une carte unique : un profil parmi quatre-vingt-dix, avec sa devise, ses armoiries et son animal-totem.</p>
+    <p class="chapo">Ce qui nous met en mouvement se lit en cinq valeurs, chacune avec sa couleur. Leur dosage dessine une carte unique : un profil parmi quatre-vingt-dix, avec sa devise, ses armoiries et son animal-totem.</p>
     <h3 class="section" id="p-roue">La roue</h3>
-    <div class="texte"><p>Les cinq couleurs se suivent sur une roue : ${M.ORDRE.map(c => `<b>${c}</b> ${esc(couleurNom(c))} (${esc(E[c]?.nom || "")})`).join(", ")}. Chaque couleur est l'<b>alliée</b> de ses deux voisines (trait plein) et l'<b>ennemie</b> des deux autres, à deux pas (pointillés).</p></div>
+    <div class="texte"><p>Les cinq valeurs se suivent sur une roue : ${M.ORDRE.map(c => `${pips(c)} <span class="code">${c}</span> ${esc(couleurNom(c))} (${esc(E[c]?.nom || "")})`).join(", ")}. Chaque valeur est l'<b>alliée</b> de ses deux voisines (trait plein) et l'<b>ennemie</b> des deux autres, à deux pas (pointillés).</p></div>
     ${roueSVG()}
     <h3 class="section" id="p-couches">Les couches du modèle</h3>
     <table class="tab"><tr><th>Couche</th><th>Nombre</th><th>Ce que c'est</th></tr>
       ${couches.map(v => `<tr><td class="g"><b>${esc(maj(v.pluriel))}</b></td><td>${nb(v.cle)}</td><td class="g">${esc(v.description || "")}</td></tr>`).join("")}</table>
     <h3 class="section" id="p-codes">Lire un code</h3>
-    <div class="texte"><p>Chaque élément porte un code fait des lettres des couleurs : <b>W</b> blanc, <b>U</b> bleu, <b>B</b> noir, <b>R</b> rouge, <b>G</b> vert.</p>
-      <ul><li>une <b>majuscule</b> est une couleur principale, présente : ${pips("WU")} <span class="code">WU</span> ;</li>
-        <li>une <b>minuscule après un point</b> est une couleur secondaire : ${pips("W.u")} <span class="code">W.u</span> ;</li>
-        <li>une <b>minuscule après une barre</b> est une couleur absente : ${pips("W/u")} <span class="code">W/u</span>, et seule, une anti-valeur : ${pips("/w")} <span class="code">/w</span>.</li></ul></div>`;
+    <div class="texte"><p>Chaque élément porte un code fait des lettres des valeurs : ${M.ORDRE.map(c => `${pips(c)} <span class="code">${c}</span> ${esc(couleurNom(c))}`).join(", ")}.</p>
+      <ul><li>une <b>majuscule</b> est une valeur principale, présente : ${pips("WU")} <span class="code">WU</span> ;</li>
+        <li>une <b>minuscule après un point</b> est une valeur secondaire : ${pips("W.u")} <span class="code">W.u</span> ;</li>
+        <li>une <b>minuscule après une barre</b> est une valeur absente : ${pips("W/u")} <span class="code">W/u</span>, et seule, une anti-valeur : ${pips("/w")} <span class="code">/w</span>.</li></ul></div>`;
 }
 
 /* ---------------- couleurs : valeurs, traits, anti-valeurs ---------------- */
 function sectionCouleurs(toc){
-  const enf = M.ORDRE.map(c => ({ id: ancre(c), titre: `${maj(E[c]?.nom || c)} (${c})`, pastille: teinte(c) }));
-  toc.push({ id: "couleurs", titre: "Les cinq couleurs", enfants: enf });
+  const enf = M.ORDRE.map(c => ({ id: ancre(c), titre: maj(E[c]?.nom || c), code: c }));
+  toc.push({ id: "couleurs", titre: "Les cinq valeurs", enfants: enf });
   const idx = c => M.ORDRE.indexOf(c), voisin = (c, d) => M.ORDRE[(idx(c) + d + 5) % 5];
-  return `<h2 id="couleurs">Les cinq couleurs</h2>
-    <p class="chapo">Chaque couleur est une <b>valeur</b>, faite de deux <b>traits</b> tournés vers ses alliées ; son absence a aussi un visage, l'<b>anti-valeur</b>.</p>
+  return `<h2 id="couleurs">Les cinq valeurs</h2>
+    <p class="chapo">Chaque valeur a sa couleur sur la roue et se compose de deux <b>traits</b> tournés vers ses alliées ; son absence a aussi un visage, l'<b>anti-valeur</b>.</p>
     ${M.ORDRE.map(c => {
       const v = E[c] || { code: c, nom: couleurNom(c) };
       const traits = parCouche("trait").filter(t => t.code.startsWith(c + c));
@@ -340,7 +345,7 @@ function sectionCouleurs(toc){
       return `<article class="carte valeur" id="${ancre(c)}" style="--c:var(--${c})">
         <div class="tete">${pips(c)} <span class="code">${c}</span> <span style="font-size:13px;color:var(--muted)">${esc(couleurNom(c))} · ${esc(B.EMAUX?.[c] || "")}</span></div>
         <h4>${esc(maj(v.nom))}</h4>${v.devise ? `<p class="devise">« ${esc(v.devise)} »</p>` : ""}${titreSiDifferent(v)}${textes(v)}
-        <div class="traits">${traits.map(t => `<div class="trait" id="${ancre(t.code)}"><span class="code">${esc(t.code)}</span> trait vers ${esc(couleurNom(t.code[2].toUpperCase()))}<br><b>${esc(maj(t.nom))}</b>${t.devise ? `<br><i>« ${esc(t.devise)} »</i>` : ""}${COMPLET && t.texte1 ? `<br>${nl(t.texte1)}` : ""}</div>`).join("")}</div>
+        <div class="traits">${traits.map(t => `<div class="trait" id="${ancre(t.code)}">${pips(t.code)} <span class="code">${esc(t.code)}</span> trait vers ${esc(couleurNom(t.code[2].toUpperCase()))}<br><b>${esc(maj(t.nom))}</b>${t.devise ? `<br><i>« ${esc(t.devise)} »</i>` : ""}${COMPLET && t.texte1 ? `<br>${nl(t.texte1)}` : ""}</div>`).join("")}</div>
         ${anti ? `<div class="anti" id="${ancre(anti.code)}">${pips(anti.code)} <span class="code">${esc(anti.code)}</span> anti-valeur<br><b>${esc(anti.nom)}</b>${anti.devise ? `<br><i>« ${esc(anti.devise)} »</i>` : ""}${COMPLET && anti.texte1 ? `<br>${nl(anti.texte1)}` : ""}</div>` : ""}
         <div class="lie">Alliées : ${allies.map(lien).join(", ")} · Ennemies : ${ennemis.map(lien).join(", ")}</div></article>`;
     }).join("")}`;
@@ -349,22 +354,22 @@ function sectionCouleurs(toc){
 /* ---------------- motivations et projets ---------------- */
 function sectionDuos(toc){
   const mot = M.MOTIVATIONS.map(c => E[c]).filter(Boolean), pro = M.PROJETS.map(c => E[c]).filter(Boolean);
-  toc.push({ id: "motivations", titre: "Les motivations", enfants: mot.map(e => ({ id: ancre(e.code), titre: `${maj(e.nom)} (${e.code})` })) });
-  toc.push({ id: "projets", titre: "Les projets", enfants: pro.map(e => ({ id: ancre(e.code), titre: `${maj(e.nom)} (${e.code})` })) });
+  toc.push({ id: "motivations", titre: "Les motivations", enfants: mot.map(e => ({ id: ancre(e.code), titre: maj(e.nom), code: e.code })) });
+  toc.push({ id: "projets", titre: "Les projets", enfants: pro.map(e => ({ id: ancre(e.code), titre: maj(e.nom), code: e.code })) });
   const voisins = (a, b) => { const d = Math.abs(M.ORDRE.indexOf(a) - M.ORDRE.indexOf(b)); return d === 1 || d === 4; };
   const genre = code => voisins(code[0], code[1]) ? "deux alliées" : "deux ennemies";
   return `<h2 id="motivations">Les motivations</h2>
     <p class="chapo">${esc(V.couche?.motivation?.description || "2 couleurs.")} Les dix paires possibles : cinq unissent deux alliées, cinq réunissent deux ennemies.</p>
     <div class="cartes">${mot.map(e => carte(e, plusMoins(e) + `<div class="lie">${genre(e.code)} : ${[...e.code].map(lien).join(" et ")}</div>`)).join("")}</div>
     <h2 id="projets">Les projets</h2>
-    <p class="chapo">${esc(V.couche?.projet?.description || "3 couleurs.")} Chaque projet réunit trois couleurs et laisse les deux autres de côté.</p>
+    <p class="chapo">${esc(V.couche?.projet?.description || "3 couleurs.")} Chaque projet réunit trois valeurs et laisse les deux autres de côté.</p>
     <div class="cartes">${pro.map(e => carte(e, plusMoins(e) + `<div class="lie">Motivations contenues : ${[[0,1],[0,2],[1,2]].map(([i, j]) => M.ordonner ? M.ordonner(e.code[i] + e.code[j]) : e.code[i] + e.code[j]).map(lien).join(", ")}</div>`)).join("")}</div>`;
 }
 
 /* ---------------- tempéraments ---------------- */
 function sectionTemperaments(toc){
   const t = parCouche("temperament");
-  toc.push({ id: "temperaments", titre: "Les tempéraments", enfants: M.ORDRE.map(c => ({ id: "t-" + c, titre: `Avec ${E[c]?.nom || c} (${c}/…)`, pastille: teinte(c) })) });
+  toc.push({ id: "temperaments", titre: "Les tempéraments", enfants: M.ORDRE.map(c => ({ id: "t-" + c, titre: `Avec ${E[c]?.nom || c}`, code: c, etiquette: c + "/…" })) });
   const meubles = B.MEUBLES || {};
   return `<h2 id="temperaments">Les tempéraments</h2>
     <p class="chapo">${esc(V.couche?.temperament?.description || "")} Ce sont les vingt cartes que l'on classe dans l'autotest ; chacune a son meuble dans les armoiries.</p>
@@ -376,9 +381,9 @@ function sectionTemperaments(toc){
 /* ---------------- styles ---------------- */
 function sectionStyles(toc){
   const s = parCouche("polarite");
-  toc.push({ id: "styles", titre: "Les styles", enfants: M.ORDRE.map(c => ({ id: "s-" + c, titre: `${maj(E[c]?.nom || c)} d'abord (${c}.…)`, pastille: teinte(c) })) });
+  toc.push({ id: "styles", titre: "Les styles", enfants: M.ORDRE.map(c => ({ id: "s-" + c, titre: `${maj(E[c]?.nom || c)} d'abord`, code: c, etiquette: c + ".…" })) });
   return `<h2 id="styles">Les styles</h2>
-    <p class="chapo">${esc(V.couche?.polarite?.description || "1 couleur principale et 1 couleur secondaire.")} Une couleur mène, une autre la colore.</p>
+    <p class="chapo">${esc(V.couche?.polarite?.description || "1 couleur principale et 1 couleur secondaire.")} Une valeur mène, une autre la colore.</p>
     ${M.ORDRE.map(c => `<div class="groupe" id="s-${c}">${pips(c)} ${esc(maj(E[c]?.nom || c))} en tête</div>
       <div class="cartes">${s.filter(e => e.code[0] === c).map(e => carte(e, `<div class="lie">Principale : ${lien(e.code[0])} · secondaire : ${lien(e.code[2].toUpperCase())}</div>`)).join("")}</div>`).join("")}`;
 }
@@ -388,7 +393,7 @@ const FAMILLES = ["radical", "specialiste", "generaliste"];
 function sectionProfils(toc){
   const p = parCouche("profil");
   toc.push({ id: "profils", titre: "Les 90 profils", enfants: FAMILLES.map(f => ({ id: "f-" + f, titre: `${maj(voc("famille", f, 2))} (${p.filter(e => e.famille === f || M.analyser(e.code).famille === f).length})`,
-    enfants: p.filter(e => M.analyser(e.code).famille === f).map(e => ({ id: ancre(e.code), titre: `${e.code} ${e.nom}` })) })) });
+    enfants: p.filter(e => M.analyser(e.code).famille === f).map(e => ({ id: ancre(e.code), titre: maj(e.nom), code: e.code })) })) });
   return `<h2 id="profils">Les 90 profils</h2>
     <p class="chapo">${esc(V.couche?.profil?.description || "")} Chaque profil a un nom, une devise, un animal-totem et des armoiries ; l'écu montré ici est celui du profil type.</p>
     ${FAMILLES.map(f => `<h3 class="section" id="f-${f}">${esc(maj(voc("famille", f, 2)))}</h3><p class="chapo">${esc(V.famille?.[f]?.description || "")}</p>
@@ -420,34 +425,34 @@ function sectionCalcul(toc){
   return `<h2 id="calcul">Le calcul</h2>
     <p class="chapo">Comment un classement de vingt cartes devient cinq scores, puis un profil.</p>
     <h3 class="section" id="c-autotest">L'autotest</h3>
-    <div class="texte"><p>On classe les vingt tempéraments, du plus proche au plus lointain. Chaque tempérament <span class="code">X/y</span> parle de deux couleurs : X présente, y absente. Au rang <i>r</i> (de 1 à 20), il donne <b>20 − r</b> points à sa couleur présente, et <b>r</b> points à sa couleur absente : placer « X sans Y » en tête renforce X et prive Y.</p>
-      <p>Chaque couleur figure dans huit tempéraments ; ses points bruts vont donc de 16 à 144, et se ramènent à un pourcentage :</p></div>
+    <div class="texte"><p>On classe les vingt tempéraments, du plus proche au plus lointain. Chaque tempérament <i>X/y</i> parle de deux valeurs : X présente, y absente. Au rang <i>r</i> (de 1 à 20), il donne <b>20 − r</b> points à sa valeur présente, et <b>r</b> points à sa valeur absente : placer « X sans Y » en tête renforce X et prive Y.</p>
+      <p>Chaque valeur figure dans huit tempéraments ; ses points bruts vont donc de 16 à 144, et se ramènent à un pourcentage :</p></div>
     <div class="formule">score % = (points − 16) / 128 × 100</div>
     <h3 class="section" id="c-profil">Du score au profil</h3>
-    <div class="texte"><p>On range les cinq scores du plus fort au plus faible, puis on regarde où tombent les deux plus grands écarts entre scores voisins. Ils découpent les cinq couleurs en trois groupes, et ce découpage donne la famille :</p></div>
+    <div class="texte"><p>On range les cinq scores du plus fort au plus faible, puis on regarde où tombent les deux plus grands écarts entre scores voisins. Ils découpent les cinq valeurs en trois groupes, et ce découpage donne la famille :</p></div>
     <table class="tab"><tr><th>Famille</th><th>Découpage</th><th>Lecture</th><th>Exemple</th></tr>
-      <tr><td class="g"><b>${esc(maj(voc("famille", "radical")))}</b></td><td>1 | 2 3 | 4 5</td><td class="g">une couleur en tête, deux secondaires</td><td>${pips("U.rg")} <span class="code">U.rg</span></td></tr>
-      <tr><td class="g"><b>${esc(maj(voc("famille", "specialiste")))}</b></td><td>1 2 | 3 | 4 5</td><td class="g">deux couleurs en tête, une secondaire</td><td>${pips("UR.g")} <span class="code">UR.g</span></td></tr>
-      <tr><td class="g"><b>${esc(maj(voc("famille", "generaliste")))}</b></td><td>1 2 | 3 4 | 5</td><td class="g">deux couleurs en tête, une absente</td><td>${pips("UR/w")} <span class="code">UR/w</span></td></tr></table>
+      <tr><td class="g"><b>${esc(maj(voc("famille", "radical")))}</b></td><td>1 | 2 3 | 4 5</td><td class="g">une valeur en tête, deux secondaires</td><td>${pips("U.rg")} <span class="code">U.rg</span></td></tr>
+      <tr><td class="g"><b>${esc(maj(voc("famille", "specialiste")))}</b></td><td>1 2 | 3 | 4 5</td><td class="g">deux valeurs en tête, une secondaire</td><td>${pips("UR.g")} <span class="code">UR.g</span></td></tr>
+      <tr><td class="g"><b>${esc(maj(voc("famille", "generaliste")))}</b></td><td>1 2 | 3 4 | 5</td><td class="g">deux valeurs en tête, une absente</td><td>${pips("UR/w")} <span class="code">UR/w</span></td></tr></table>
     <div class="texte"><p>Le profil ne dépend donc pas du niveau des scores, mais de leurs <b>écarts</b> : c'est la forme de la carte qui compte.</p></div>
     <h3 class="section" id="c-egalites">Les égalités</h3>
     <div class="texte"><p>Quand plusieurs profils sont également justifiés, on retient, dans l'ordre :</p>
-      <ul><li>le plus <b>accessible</b> (voir plus bas) ;</li><li>sinon, celui dont les couleurs ont été classées le plus haut parmi les tempéraments ;</li><li>sinon, l'ordre de la roue (W, U, B, R, G).</li></ul></div>
+      <ul><li>le plus <b>accessible</b> (voir plus bas) ;</li><li>sinon, celui dont les valeurs ont été classées le plus haut parmi les tempéraments ;</li><li>sinon, l'ordre de la roue (W, U, B, R, G).</li></ul></div>
     <h3 class="section" id="c-types">Les profils types</h3>
     <div class="texte"><p>Pour dessiner la fiche ou l'écu d'un profil sans personne derrière, on lui donne des scores types, du rang 1 au rang 5 :</p></div>
     <table class="tab"><tr><th>Famille</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th></tr>
       ${FAMILLES.map(f => `<tr><td class="g">${esc(maj(voc("famille", f)))}</td>${(T[f] || []).map(x => `<td>${x} %</td>`).join("")}</tr>`).join("")}</table>
     <h3 class="section" id="c-access">L'accessibilité des profils</h3>
-    <div class="texte"><p>Pour chacun des 90 profils, on mesure à quel point une personne en est proche : une moyenne pondérée de trois scores, ceux des couleurs qui définissent le profil (pour un généraliste, la couleur absente compte par son manque).</p></div>
-    <table class="tab"><tr><th>Famille</th><th>Couleurs prises</th><th>Poids</th></tr>
+    <div class="texte"><p>Pour chacun des 90 profils, on mesure à quel point une personne en est proche : une moyenne pondérée de trois scores, ceux des valeurs qui définissent le profil (pour un généraliste, la valeur absente compte par son manque).</p></div>
+    <table class="tab"><tr><th>Famille</th><th>Valeurs prises</th><th>Poids</th></tr>
       <tr><td class="g">${esc(maj(voc("famille", "radical")))}</td><td class="g">principale, deux secondaires</td><td>20 · 9 · 9</td></tr>
       <tr><td class="g">${esc(maj(voc("famille", "specialiste")))}</td><td class="g">deux principales, secondaire</td><td>14 · 14 · 10</td></tr>
       <tr><td class="g">${esc(maj(voc("famille", "generaliste")))}</td><td class="g">deux principales, absente (100 − score)</td><td>12 · 12 · 14</td></tr></table>
     <table class="tab"><tr><th>naturel</th><th>accessible</th><th>situationnel</th><th>difficile</th><th>inaccessible</th></tr><tr><td>75 – 100 %</td><td>60 – 75 %</td><td>40 – 60 %</td><td>25 – 40 %</td><td>0 – 25 %</td></tr></table>
     <h3 class="section" id="c-polarise">Polarisé</h3>
-    <div class="texte"><p>Un classement <i>polarisé</i> lit chaque score par son écart à 50 %, dans un sens comme dans l'autre : une couleur très présente (90 %) et une couleur très absente (10 %) pèsent autant, la seconde s'affichant comme une absence (<span class="code">/w</span>). Il montre ce qui marque le plus un profil, par sa présence ou par son absence.</p></div>
+    <div class="texte"><p>Un classement <i>polarisé</i> lit chaque score par son écart à 50 %, dans un sens comme dans l'autre : une valeur très présente (90 %) et une valeur très absente (10 %) pèsent autant, la seconde s'affichant comme une absence (${pips("/w")} <span class="code">/w</span>). Il montre ce qui marque le plus un profil, par sa présence ou par son absence.</p></div>
     <h3 class="section" id="c-oppose">Le profil opposé</h3>
-    <div class="texte"><p>Chaque profil a un opposé, qui inverse ses couleurs : les absentes d'un ${esc(voc("famille", "radical"))} deviennent les principales d'un ${esc(voc("famille", "generaliste"))}, et réciproquement ; un ${esc(voc("famille", "specialiste"))} échange ses principales et ses absentes. Exemple : ${lien("U.rg")} a pour opposé ${(() => { try { return lien(M.oppose("U.rg")); } catch { return "—"; } })()}.</p></div>`;
+    <div class="texte"><p>Chaque profil a un opposé, qui inverse ses valeurs : les absentes d'un ${esc(voc("famille", "radical"))} deviennent les principales d'un ${esc(voc("famille", "generaliste"))}, et réciproquement ; un ${esc(voc("famille", "specialiste"))} échange ses principales et ses absentes. Exemple : ${lien("U.rg")} a pour opposé ${(() => { try { return lien(M.oppose("U.rg")); } catch { return "—"; } })()}.</p></div>`;
 }
 
 /* ---------------- armoiries ---------------- */
@@ -460,7 +465,7 @@ function sectionArmoiries(toc){
     <dl class="gram">${(B.GRAMMAIRE || []).map(([t, d]) => `<dt>${esc(t)}</dt><dd>${esc(d)}</dd>`).join("")}</dl>
     <h3 class="section" id="a-meubles">Les vingt meubles</h3>
     <p class="chapo">Un meuble par tempérament.</p>
-    <div class="meubles">${temps.map(e => `<figure><div data-meuble="${esc(e.code)}"></div><figcaption><b>${esc(maj(meubles[e.code]?.nom || "—"))}</b>${pips(e.code)} <a href="#${ancre(e.code)}">${esc(e.code)} ${esc(e.nom)}</a></figcaption></figure>`).join("")}</div>`;
+    <div class="meubles">${temps.map(e => `<figure><div data-meuble="${esc(e.code)}"></div><figcaption><b>${esc(maj(meubles[e.code]?.nom || "—"))}</b>${lien(e.code)}</figcaption></figure>`).join("")}</div>`;
 }
 
 /* ---------------- glossaire ---------------- */
@@ -468,23 +473,23 @@ function sectionGlossaire(toc){
   toc.push({ id: "glossaire", titre: "Glossaire" });
   const d = (dom, cle) => V[dom]?.[cle]?.description || "";
   const G = [
-    ["Valeur", d("couche", "valeur") + " Ce qui compte pour soi, une couleur de la roue."],
+    ["Valeur", d("couche", "valeur") + " Ce qui compte pour soi ; chaque valeur a sa couleur sur la roue."],
     ["Trait", d("couche", "trait")],
     ["Anti-valeur", d("couche", "anti-valeur")],
-    ["Motivation", d("couche", "motivation") + " Une paire de couleurs."],
-    ["Projet", d("couche", "projet") + " Un trio de couleurs."],
+    ["Motivation", d("couche", "motivation") + " Une paire de valeurs."],
+    ["Projet", d("couche", "projet") + " Un trio de valeurs."],
     ["Tempérament", d("couche", "temperament")],
     ["Style", d("couche", "polarite")],
     ["Profil", d("couche", "profil")],
     [maj(voc("famille", "radical")), d("famille", "radical")],
     [maj(voc("famille", "specialiste")), d("famille", "specialiste")],
     [maj(voc("famille", "generaliste")), d("famille", "generaliste")],
-    ["Alliée, ennemie", "Deux couleurs voisines sur la roue sont alliées ; deux couleurs à deux pas sont ennemies."],
-    ["Couleur principale, secondaire, absente", "Majuscule, minuscule après un point, minuscule après une barre dans un code."],
+    ["Alliée, ennemie", "Deux valeurs voisines sur la roue sont alliées ; deux valeurs à deux pas sont ennemies."],
+    ["Valeur principale, secondaire, absente", "Majuscule, minuscule après un point, minuscule après une barre dans un code."],
     ["Accessibilité", "Proximité d'une personne avec chacun des 90 profils, de naturel à inaccessible."],
     ["Polarisé", "Lu par l'écart à 50 %, présence ou absence."],
     ["Profil type", "Profil dessiné avec des scores types, sans personne derrière."],
-    ["Profil opposé", "Le profil qui inverse les couleurs d'un autre."],
+    ["Profil opposé", "Le profil qui inverse les valeurs d'un autre."],
     ["Écu, meuble, cimier", "L'écu porte les couleurs ; les meubles sont les figures posées dessus ; le cimier, au-dessus, porte l'animal-totem."],
     ["Devise héraldique", "La devise du profil inscrite sur le listel, sous l'écu."],
     ["Animal-totem", "L'animal qui incarne un profil."]
@@ -497,7 +502,7 @@ function noeuds(liste, niv){
   return liste.map(n => {
     const kids = n.enfants?.length ? n.enfants : null, ouvert = niv === 1;
     return `<li class="niv${niv}${kids ? " branche" + (ouvert ? " ouverte" : "") : ""}">
-      ${kids ? `<button type="button" class="pli" aria-expanded="${ouvert}" aria-label="Déplier ou replier">▸</button>` : `<span class="pli-vide"></span>`}<a href="#${n.id}">${n.pastille ? `<span class="pastille" style="background:${n.pastille}"></span>` : ""}${esc(n.titre)}</a>
+      ${kids ? `<button type="button" class="pli" aria-expanded="${ouvert}" aria-label="Déplier ou replier">▸</button>` : `<span class="pli-vide"></span>`}<a href="#${n.id}">${n.code ? pips(n.code) + " " : ""}${esc(n.titre)}${n.code ? ` <span class="code">${esc(n.etiquette || n.code)}</span>` : ""}</a>
       ${kids ? `<ol>${noeuds(kids, niv + 1)}</ol>` : ""}</li>`;
   }).join("");
 }

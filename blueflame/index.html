@@ -10,6 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <script src="flamme_moteur.js?v=1.3"></script>
 <script src="flamme_blason.js?v=1.9"></script>
+<script src="flamme_glyphes.js?v=1.1"></script>
 <style>
 :root{--ink:#1B2430;--muted:#5B6573;--line:#DDE1E7;--paper:#F4F6F8;--panel:#FFFFFF;--hover:#EEF1F5;--bleu:#1F4FD1;--err:#B42318;
   --serif:"Source Serif 4",Georgia,"Times New Roman",serif;--sans:"IBM Plex Sans","Segoe UI",Arial,sans-serif}
@@ -39,6 +40,9 @@ button,input{font:inherit;color:inherit} :focus-visible{outline:2px solid #3B6FE
 #espace .moi .ecu{flex:none;width:64px;display:block;line-height:0;border-radius:6px} #espace .moi .ecu:hover{opacity:.85}
 #espace .moi .ecu svg{width:64px;height:auto;display:block}
 #espace .moi .sous{margin:0} #espace .profil{font:italic 17px/1.4 var(--serif);color:var(--ink);margin:2px 0 0}
+.pips{display:inline-flex;gap:3px;align-items:center;vertical-align:1px}
+svg.g{vertical-align:middle} .pip{width:11px;height:11px;border-radius:50%;border:1px solid #8892A0} .pip.sec{width:7px;height:7px} .pip.abs{background:transparent!important;border:1.5px dashed var(--c)} .pip.sep{width:auto;height:auto;border:0;font-size:10px;color:var(--muted)}
+#espace .profil .code{font:500 12.5px var(--sans);font-style:normal;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 6px}
 #espace .profil a{color:inherit;text-decoration:none;border-bottom:1px solid var(--line)} #espace .profil a:hover{border-color:var(--bleu)}
 #espace .sous{color:var(--muted);font-size:14px;margin:0 0 14px}
 .tuiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
@@ -106,7 +110,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px} .field{display:block;margi
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 
 <script>
-const VERSION = { numero:"1.10", date:"2026-10-13 22:39" };
+const VERSION = { numero:"1.13", date:"2026-10-13 23:20" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -135,7 +139,13 @@ async function monProfil(r){
   const codes = r.codes;
   const { data: els } = await sb.from("flamme_elements").select("code,couche,nom,devise,devise_heraldique,animal_totem,ordre").in("couche", ["profil", "temperament"]);
   const E = Object.fromEntries((els || []).map(e => [e.code, e])), C = Object.fromEntries((cols || []).map(c => [c.code, c]));
-  $("#mon-profil").innerHTML = codes.map(c => `<a href="fiche.html?resultat=${r.id}" title="Voir ma fiche">${esc(c)} — ${esc(E[c]?.nom || "")}</a>`).join(" / ")
+  const pip = code => { const g = window.FLAMME_GLYPHES?.glyphe(code, Object.fromEntries(Object.entries(C).map(([k, v]) => [k, v.couleur]))); if (g) return g;
+    let out = "", abs = false;   // pastilles de couleur, comme partout ailleurs
+    for (const ch of code){ if (ch === "/"){ abs = true; out += '<span class="pip sep">/</span>'; continue; } if (ch === ".") continue;
+      const up = ch.toUpperCase(), t = C[up]?.couleur || "#888", cls = ch === up ? "pip" : abs ? "pip abs" : "pip sec";
+      out += `<span class="${cls}" style="background:${t};--c:${t === "#FFFFFF" ? "#8892A0" : t}"></span>`; }
+    return `<span class="pips" aria-hidden="true">${out}</span>`; };
+  $("#mon-profil").innerHTML = codes.map(c => `<a href="fiche.html?resultat=${r.id}" title="Voir ma fiche">${pip(c)} <span class="code">${esc(c)}</span> ${esc(E[c]?.nom || "")}</a>`).join(" / ")
     + (codes.length > 1 ? ` <span style="font-size:13px;color:var(--muted);font-style:normal">(profil frontière)</span>` : "");
   $("#mon-profil").classList.remove("hidden");
   if (!M || !B || !d) return;
