@@ -134,10 +134,10 @@ mark{background:#FFE58A;color:#1B2430;border-radius:2px}
 </div>
 <div style="max-width:1240px;margin:0 auto;padding:0 20px 30px"><p class="version"><span id="credit"></span><br><span id="version"></span></p></div>
 
-<script src="timeline.js?v=3.1"></script>
+<script src="timeline.js?v=3.3"></script>
 <script src="totems.js?v=4"></script>
 <script>
-const VERSION = { numero:"3.9", date:"2026-10-12 22:28" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.11", date:"2026-10-13 17:00" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -360,13 +360,6 @@ const HEAT = { nom:"Heat: Pedal to the Metal", POID1:2.5, POID:3.49, PROF1:2.5, 
 // notes des 12 paires de Heat, pour la note vue par chaque style
 const HEAT_PAIRES = [["SYS","POID",3.49],["SYS","PROF",3.49],["SYS","MECA",3.5],["SYS","VAR",3.89],["SYS","EXIG",4.23],["EXP","RYT",3],["EXP","MAN",4],["EXP","THEM",3.7],
   ["EXP","LIEN",4.45],["EDI","MAT",1.98],["EDI","ART",4],["EDI","DOC",3.02]].map(([chap, code, note]) => ({ chap, code, note }));
-const EFFETS = {
-  U:"EXIGENCE et PROFONDEUR pèsent encore plus aux jalons 3 et 4. Après le jalon 4, sa stimulation baisse : × (1 − 0,2 × poids × (1 − r)), r = (moy(EXIG1, PROF1) − 2,5) / 2, borné entre 0 et 1 ; aucune baisse si le jeu reste très réflexif (moyenne de 4,5 ou plus).",
-  B:"LIEN et PROFONDEUR pèsent encore plus des jalons 4 à 6. L'adversaire peut être le jeu : un coopératif exigeant ou un solo le nourrit aussi.",
-  R:"MATÉRIEL, ART et THÈME pèsent encore plus des jalons 1 à 3. (La paralysie d'analyse subie est à reprendre : chantier des timelines par moteur.)",
-  W:"LIEN pèse encore plus des jalons 5 à 7. (La place de la vraie parole, LIEN2b, est à reprendre : chantier des timelines par moteur.)",
-  G:"Phase clé transversale : il prolonge l'apogée des autres. (Son effet sur l'estompement de VAR est à définir : chantier des timelines par moteur.)"
-};
 function sectionCroisement(toc){
   if (!M.paires.length || !M.styles.length) return "";
   const n1 = { id:"croisement", titre:"Le croisement (spectromètre)", enfants:[{ id:"x-principe", titre:"Le principe" }, { id:"x-moteurs", titre:"Les moteurs vus par le jeu" }, { id:"x-heat", titre:"Exemple : Heat" }] };
@@ -379,20 +372,24 @@ function sectionCroisement(toc){
     <p class="chapo">Un même jeu n'est pas vécu pareil selon qui joue. Le spectromètre recalcule la note et la courbe du jeu pour chacun des 60 profils de PRISMEplayer (tempérament et style).</p>
     <h3 class="section" id="x-principe">Le principe</h3>
     <div class="texte"><ul>
-      <li><b>Ce qui nourrit un moteur</b> : les paires dont la réussite compte davantage pour lui (« + » à « +++ » : poids 1 à 3).</li>
-      <li><b>Son trait</b> : à quel point le jeu est tourné vers lui, lu dans les axes 1 (ce que le jeu est). Quand le moteur est rejeté, ce trait devient une gêne.</li>
+      <li><b>Ce qui nourrit un moteur</b> : les paires dont la réussite compte pour lui ; elles font la surface « réussite » de la rosace (« + » à « +++ »).</li>
+      <li><b>Son trait</b> : à quel point le jeu est tourné vers lui, lu dans les axes 1 (ce que le jeu est). Quand le moteur est fui, ce trait devient une gêne.</li>
       <li><b>Sa phase clé</b> : le moment de la timeline où il culmine.</li>
-      <li><b>Un profil</b> range les cinq moteurs : le dominant pèse 3, le second 1,5, les deux suivants 0,5 chacun ; le cinquième, celui qu'il fuit, ne nourrit pas : il gêne.</li>
-      <li><b>Sa note</b> : dans chaque chapitre, les paires sont pondérées par ses moteurs (poids 1 + 1 × lien du dominant + 0,5 × lien du second + 1/6 × lien de chacun des deux suivants) ; puis la moyenne des chapitres ; puis la pénalité de rejet : jusqu'à −50 % quand le trait du moteur fui monte de 2 à 5.</li>
-      <li><b>Sa courbe</b> : mêmes jalons, mêmes durées ; les mêmes poids jouent sur la stimulation, et le trait du moteur rejeté entre dans la friction à partir de son moment.</li></ul>
+      <li><b>Un profil</b> (A.b/e) : le dominant compte entièrement, le second à moitié ; le moteur fui gêne. Les deux autres ne jouent pas.</li>
+      <li><b>Sa note</b> : tirée de sa courbe. La note pour tous, plus la moitié de l'écart moyen de sa courbe à la courbe noire sur les jalons 1 à 7. La note et la courbe racontent la même histoire, et la moyenne des 60 notes est la note pour tous.</li>
+      <li><b>Sa courbe</b> (séance du 13/10/2026) : la courbe noire, plus les goûts du dominant (entiers) et du second (à moitié) — ce qu'ils aiment entre dans la stimulation, ce qui les gêne dans la friction —, plus le rejet du moteur fui. Les moteurs 3 et 4 n'y jouent pas.</li>
+      <li><b>Le rejet</b> : la gêne vaut (trait − 2) / 3 × 5. Elle bloque l'envie avant de jouer (entière aux jalons 1 et 2), se tolère à la première session (moitié), puis la résistance monte de 10 % par session, jusqu'à une fois et demie.</li>
+      <li><b>Le temps</b> : le Décrypteur apprend 1,5 fois plus vite, et qui le fuit 1,5 fois plus lentement ; seul ce moteur déplace les jalons. Les autres changent l'usure de VAR.</li>
+      <li><b>Le centrage</b> : les profils altèrent la courbe noire sans la déplacer. À chaque jalon, on retire aux 60 profils leur écart moyen : la moyenne de leurs courbes est la courbe noire.</li>
+      <li><b>Le garde-fou</b> : d'un jalon à l'autre, la courbe d'un profil s'écarte d'au plus 0,5 de la variation de la courbe noire. Les écarts s'installent progressivement ; une longue dérive peut aller jusqu'à l'abandon.</li></ul>
       <p>La note dit combien le jeu plaît à ce joueur ; la courbe dit quand, et combien de temps.</p></div>
     <h3 class="section" id="x-moteurs">Les moteurs vus par le jeu</h3>
-    <div class="defile"><table class="jeu"><thead><tr><th>Moteur</th><th>Ce qui le nourrit</th><th>Son trait</th><th>Phase clé</th><th>Rejeté : gêne dès</th><th>Dans la courbe</th></tr></thead><tbody>
+    <div class="defile"><table class="jeu"><thead><tr><th>Moteur</th><th>Ce qui le nourrit</th><th>Son trait</th><th>Phase clé</th><th>Dans la courbe : ce qu'il aime</th><th>ce qui le gêne</th><th>le temps</th></tr></thead><tbody>
     ${M.moteurs.map(m => { const d = MOTEURS_JEU[m.code]; if (!d) return "";
       return `<tr><td><b style="color:${esc(coul(m))}">${esc(m.nom)}</b><br><small class="vide">${esc(Mo[m.code].fragilite || "")}</small></td>
         <td>${Object.entries(d.nourrit).sort((a, b) => b[1] - a[1]).map(([c, l]) => `<a href="#p-${esc(c)}">${esc(nomP(c))}</a> ${"+".repeat(l)}`).join(", ")}</td>
         <td>${esc(d.traitTxt)}</td><td>${m.climax_phase ? esc(m.climax_phase) + (m.climax_jalon != null ? ` (${fmt(m.climax_jalon, 1)})` : "") : "transversale"}</td>
-        <td class="n">jalon ${d.rejet} (${esc(JALONS[d.rejet].nom)})</td><td>${esc(EFFETS[m.code] || "")}</td></tr>`; }).join("")}</tbody></table></div>
+        <td>${esc(MOTEURS_TIMELINE[m.code]?.aime || "")}</td><td>${esc(MOTEURS_TIMELINE[m.code]?.gene || "")}</td><td>${esc(MOTEURS_TIMELINE[m.code]?.temps || "")}</td></tr>`; }).join("")}</tbody></table></div>
     <p class="vide">Points ouverts : aucun axe ne mesure la tension (lue dans MÉCANIQUE et LIEN), la difficulté (EXIG1 en tient lieu pour les coopératifs), ni la performance devant les autres.</p>
     <h3 class="section" id="x-heat">Exemple : Heat</h3>
     <div class="texte"><p>Note pour tous : <b>${fmt(r.noteBase, 2)}</b>. Du profil le mieux servi au moins bien servi : <b>${fmt(r.lignes[0].note, 2)}</b> (${esc(r.lignes[0].st.nom)}) à <b>${fmt(r.lignes.at(-1).note, 2)}</b> (${esc(r.lignes.at(-1).st.nom)}).</p></div>

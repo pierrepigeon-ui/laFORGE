@@ -1,7 +1,7 @@
 /* PRISME — timeline du jeu : jalons, durées, flow, α β γ ω, durée de vie.
    Module partagé par l'encyclopédie et l'outil d'évaluation. Méthode arrêtée le 08/10/2026 (jeu d'essai : Heat) ; modèle à 12 paires le 11/10/2026 ;
    formules refaites phase par phase le 12/10/2026 avec trois jeux de référence (Gloomhaven, Heat, Flip 7). L'unité est la session. */
-const TIMELINE_VERSION = { numero:"3.1", date:"2026-10-12 22:28" };   // à incrémenter à chaque livraison
+const TIMELINE_VERSION = { numero:"3.3", date:"2026-10-13 17:00" };   // à incrémenter à chaque livraison
 
 const JALONS = [
   { n:0, nom:"identifié", quoi:"Le jeu est connu de loin : critique, vitrine, recommandation." },
@@ -39,68 +39,76 @@ const TERMES = {
 };
 // notes utilisées : axes (avec chiffre) et notes retenues de paires (sans chiffre)
 // LIEN (sans chiffre) est la note de la paire ; VAL1 (palier de prix) vient du prix de la fiche, pas d'un axe
-const TIMELINE_AXES = ["POID1","PROF1","VAR1","MECA1a","MECA2","EXIG1","RYT1","RYT2","MAN1","MAN2","THEM1","LIEN1","LIEN1b","LIEN1c","LIEN2a","LIEN2b","ART2a","ART2b","DOC2"];
+const TIMELINE_AXES = ["POID1","POID2","PROF1","VAR1","MECA1a","MECA2","EXIG1","EXIG2","RYT1","RYT2","MAN1","MAN2","THEM1","THEM2b","LIEN1","LIEN1b","LIEN1c","LIEN2a","LIEN2b","MAT1","ART1","ART2a","ART2b","DOC1","DOC2"];
 const TIMELINE_PAIRES = ["POID","PROF","VAR","EXIG","RYT","MAN","THEM","LIEN","MAT","ART","DOC"];   // MECA : sa note est MECA2
 const PLANCHER_SEUIL = 3;     // marque = max(0, max(THEM, MECA) − 3) : seul un thème ou des mécaniques qui ont vraiment marqué laissent une nostalgie
 const CLASSES_VIE = [[10, "éphémère"], [Infinity, "durable"]];   // une durée de vie infinie (le plancher n'est jamais atteint) : un classique
 
 /* ---- les moteurs de PRISMEplayer vus par le jeu (revue du 08/10/2026, v2 du 10/10/2026) ----
-   nourrit : paires dont la réussite compte davantage (2 = ++, 1 = +) ; trait : à quel point le jeu est tourné vers ce moteur (axes 1, 0 à 5) ;
-   rejet : jalon à partir duquel le trait devient friction pour qui rejette ce moteur ; elan : paires et jalons où le moteur pèse encore plus. */
+   nourrit : paires dont la réussite compte pour ce moteur dans la rosace (surface « réussite » ; 2 = ++, 1 = +) ; trait : à quel point le jeu est tourné vers ce moteur (axes 1, 0 à 5) ;
+   rejet : le moteur fui gêne dès le jalon 1 (séance du 13/10/2026). Ce que chaque moteur change dans la timeline : courbeBrute et MOTEURS_TIMELINE. */
 const MOTEURS_JEU = {
-  U:{ nourrit:{ EXIG:2, PROF:2, POID:1, DOC:1, MECA:1 }, rejet:3, elan:{ paires:["EXIG","PROF"], de:3, a:4 },
+  U:{ nourrit:{ EXIG:2, PROF:2, POID:1, DOC:1, MECA:1 }, rejet:1, elan:null,
       trait:n => moyT(n.EXIG1, n.PROF1, n.POID1), traitTxt:"moy(EXIG1, PROF1, POID1)" },
-  B:{ nourrit:{ LIEN:2, MECA:2, PROF:1 }, rejet:5, elan:{ paires:["LIEN","PROF"], de:4, a:6 },
-      trait:n => moyT(n.LIEN1 == null ? null : n.LIEN1 >= 2 ? n.LIEN1 : Math.max(n.LIEN1, n.EXIG1 ?? 0), n.MECA1a == null ? null : 5 - n.MECA1a),
-      traitTxt:"moy(adversité, 5 − MECA1a) ; adversité = LIEN1, ou max(LIEN1, EXIG1) si LIEN1 ≤ 1 (l'adversaire peut être le jeu)" },
-  R:{ nourrit:{ RYT:2, MECA:2, LIEN:1, THEM:1, MAT:1, ART:1 }, rejet:2, elan:{ paires:["MAT","ART","THEM"], de:1, a:3 },
-      trait:n => moyT(n.RYT1, n.MECA1a, n.LIEN1b), traitTxt:"moy(RYT1, MECA1a, LIEN1b)" },
-  W:{ nourrit:{ LIEN:3, DOC:1 }, rejet:2, elan:{ paires:["LIEN"], de:5, a:7 },
-      trait:n => moyT(n.LIEN1c, n.LIEN1b, n.LIEN1 == null ? null : 5 - n.LIEN1), traitTxt:"moy(LIEN1c, LIEN1b, 5 − LIEN1)" },
-  G:{ nourrit:{ VAR:2, PROF:1, THEM:1, LIEN:1, RYT:1 }, rejet:3, elan:null,
-      trait:n => moyT(n.LIEN1c, n.VAR1), traitTxt:"moy(LIEN1c, VAR1)" }
+  B:{ nourrit:{ LIEN:2, MECA:2, PROF:1 }, rejet:1, elan:null,
+      trait:n => moyT(n.LIEN1, n.MECA1a == null ? null : 5 - n.MECA1a), traitTxt:"moy(LIEN1, 5 − MECA1a) : la compétition, peu de hasard" },
+  R:{ nourrit:{ RYT:2, MECA:2, LIEN:1, THEM:1, MAT:1, ART:1 }, rejet:1, elan:null,
+      trait:n => moyT(n.RYT1, n.VAR1, n.THEM1), traitTxt:"moy(RYT1, VAR1, THEM1) : ça bouge, ça change, ça raconte" },
+  W:{ nourrit:{ LIEN:3, DOC:1 }, rejet:1, elan:null,
+      trait:n => moyT(n.THEM1, n.MAT1, n.ART1), traitTxt:"moy(THEM1, MAT1, ART1) : le thème et les sens" },
+  G:{ nourrit:{ VAR:2, PROF:1, THEM:1, LIEN:1, RYT:1 }, rejet:1, elan:null,
+      trait:n => moyT(n.VAR1, n.PROF1), traitTxt:"moy(VAR1, PROF1) : de la matière pour s'exprimer" }
+};
+// ce que chaque moteur change dans la timeline (séance du 13/10/2026) — pour l'encyclopédie
+const MOTEURS_TIMELINE = {
+  W:{ aime:"THEM, MAT, ART2a dès la boîte ; la communauté (la durée de vie du jeu, sur la courbe noire) dès la première session", gene:"RYT2 ou LIEN raté (sous 3)", temps:"aucune durée ne change" },
+  U:{ aime:"le système entier dès la lecture des règles (PROF, MECA, EXIG comptés double) ; LIEN2a ; DOC2 quand elle est bonne", gene:"ART2b raté ; LIEN2b raté là où la parole a sa place ; DOC2 ratée (comptée trois fois)", temps:"apprend 1,5 fois plus vite (Accès, Premiers pas, Expérimentations) ; qui le fuit, 1,5 fois plus lentement" },
+  B:{ aime:"LIEN1, la compétition ; LIEN2b, la politique, là où la parole a sa place", gene:"le coût d'effort : règles, manuels, logistique, hasard (toléré), renouvellement, attente", temps:"ne se lasse pas de gagner : VAR ne compte plus dans sa stimulation à partir du jalon 5" },
+  R:{ aime:"la promesse jusqu'au jalon 3 ; ART ; des règles courtes et bien écrites ; PROF ; VAR (double) ; des trucs cools à manipuler (MAN2, MAT) ; l'immersion (THEM2b)", gene:"une promesse de volume décevante (POID2) ; de l'exigence sans gratification (EXIG2) ; attendre (RYT1) ; un thème plaqué", temps:"VAR compte double : il sent davantage l'usure" },
+  G:{ aime:"PROF, VAR, EXIG, RYT, THEM, dès la première session", gene:"MAN2 ou LIEN raté (sous 3)", temps:"VAR s'use moins vite pour lui (3 % par session au lieu de 5 %)" }
 };
 function moyT(...a){ a = a.filter(v => v != null && !Number.isNaN(v)); return a.length ? a.reduce((s, v) => s + v, 0) / a.length : null; }
-// un style (v2) : { dom:"U", second:"B", autres:["W","R"], rejet:"G" } → poids 1 pour le dominant, 0,5 pour le second,
-// 1/6 pour chacun des deux suivants (3 / 1,5 / 0,5 / 0,5) ; le moteur fui ne nourrit pas, il gêne (geneRejet)
-const poidsProfil = pr => pr ? { [pr.dom]:1, [pr.second]:.5, [pr.autres[0]]:1 / 6, [pr.autres[1]]:1 / 6 } : {};
+// un profil : le dominant (×1) et le second (×½) jouent sur la courbe, le moteur fui gêne (geneRejet) ; les deux autres ne jouent plus (13/10/2026)
 // d'un code de style à sa lecture : "W.b/u" → { dom:"W", second:"B", autres:["R","G"], rejet:"U" }
 function prDeStyle(code){
   const dom = code[0], second = code[2].toUpperCase(), rejet = code[4].toUpperCase();
   return { dom, second, rejet, autres: [..."WUBRG"].filter(c => c !== dom && c !== second && c !== rejet) };
 }
-// Décrypter culmine à la fin de la compréhension (jalon 4) : ensuite sa stimulation baisse, sauf si le jeu reste très réflexif
-// facteur = 1 − 0,2 × kU × (1 − r), r = (moy(EXIG1, PROF1) − 2,5) / 2 borné à [0, 1] (aucune baisse dès que la moyenne atteint 4,5)
-function declinDecrypter(n, kU){
-  if (!kU) return 1; const m = moyT(n.EXIG1, n.PROF1); const r = m == null ? 0 : Math.min(1, Math.max(0, (m - 2.5) / 2));
-  return 1 - .2 * kU * (1 - r);
-}
 const geneRejet = (n, pr) => { if (!pr) return 0; const t = MOTEURS_JEU[pr.rejet].trait(n); return t == null ? 0 : Math.max(0, t - 2) / 3; };   // 0 à 1
-function poidsPaire(code, pr, j){
-  let w = 1; const k = poidsProfil(pr);
-  Object.entries(k).forEach(([m, km]) => { const l = MOTEURS_JEU[m].nourrit[code] || 0, e = MOTEURS_JEU[m].elan;
-    if (l) w += km * l * (e && j != null && j >= e.de && j <= e.a && e.paires.includes(code) ? 1.5 : 1); });
-  return w;
-}
 
-/* n : { code: valeur } ; une valeur absente (paire sans objet) est retirée des moyennes. pr : sous-profil (facultatif) → courbe vue par ce joueur.
+/* n : { code: valeur } ; une valeur absente (paire sans objet) est retirée des moyennes. pr : profil (facultatif) → courbe vue par ce joueur.
    Formules de la séance du 12/10/2026 (journal « timeline_seance_12-10 ») :
    flow = élan + 2 × r × (S − F) ; élan d'achat = E₀ / (1 + n), E₀ = 0,5 + 0,25 × palier de prix, n = sessions jouées depuis le jalon 2 ;
    r = coefficient de projection (0,6 au jalon 1, 0,8 au jalon 2, 1 ensuite) ; S = moyenne (pondérée) ; F = √(somme des carrés / 3).
    À partir du jalon 4, le flow ne remonte plus. Après le jalon 7, la courbe descend jusqu'au plancher de nostalgie.
-   Les timelines par moteur (pr) reprennent provisoirement les poids des moteurs sur les nouveaux termes : chantier à part. */
-function flowJeu(n, pr){
-  const ok = v => v != null && !Number.isNaN(v);
-  const moy = (...a) => { a = a.filter(ok); return a.length ? a.reduce((s, v) => s + v, 0) / a.length : null; };
-  const inv = v => ok(v) ? 5 - v : null, q = v => Math.round(v * 4) / 4;
-  const k = poidsProfil(pr), kU = k.U || 0;
-  const gene = geneRejet(n, pr) * 5, deRejet = pr ? MOTEURS_JEU[pr.rejet].rejet : 99;
-  const MECA = ok(n.MECA) ? n.MECA : n.MECA2;                     // MÉCANIQUE est indépendante : sa note est MECA2
+   Courbes de profil (séance du 13/10/2026, journal « moteurs_seance_13-10 ») : goûts du dominant (×1) et du second (×½), rejet du moteur fui,
+   vitesse d'apprentissage (Décrypter), usure de VAR (Rayonner, Triompher) ; puis centrage (la moyenne des 60 profils est la courbe noire)
+   et garde-fou (d'un jalon à l'autre, au plus 0,5 d'écart à la variation de la courbe noire). */
+const ok_ = v => v != null && !Number.isNaN(v);
+const moy_ = (...a) => { a = a.filter(ok_); return a.length ? a.reduce((s, v) => s + v, 0) / a.length : null; };
+const inv_ = v => ok_(v) ? 5 - v : null;
+const sous3_ = x => ok_(x) ? Math.max(0, 3 - x) * 5 / 3 : null;      // « raté » : ce qui tombe sous 3 gêne, ce qui est attendu ne coûte rien
+const au2_ = x => ok_(x) ? Math.max(0, x - 2) * 5 / 3 : null;        // « beaucoup » (axe 1) : au-delà de 2
+// le coût d'effort (prototype) : ce qu'il faut investir pour jouer — règles, manuels, logistique, hasard toléré, renouvellement, attente ;
+// moyenne quadratique, sur 5. C'est la gêne du Triomphant ; affiché aussi dans l'en-tête de la fiche.
+function coutEffort(n, jusqua = 7){
+  const L = [au2_(n.POID1), au2_(n.DOC1)].concat(jusqua >= 2 ? [au2_(n.MAN1)] : [])
+    .concat(jusqua >= 3 ? [ok_(n.MECA1a) ? n.MECA1a / 2 : null, au2_(n.VAR1), sous3_(n.RYT1)] : []).filter(ok_);
+  return L.length ? Math.sqrt(L.reduce((t, v) => t + v * v, 0) / L.length) : null;
+}
+
+// la courbe brute (avant centrage et garde-fou) ; ctx : { vieNoire } pour les profils
+function courbeBrute(n, pr, ctx = {}){
+  const ok = ok_, moy = moy_, inv = inv_, q = v => Math.round(v * 4) / 4;
+  const k = { W:0, U:0, B:0, R:0, G:0 }; if (pr){ k[pr.dom] = 1; k[pr.second] = .5; }
+  const vit = pr && pr.rejet === "U" ? 1 / 1.5 : 1 + .5 * k.U;          // le Décrypteur apprend plus vite ; qui le fuit, plus lentement
+  const tauxVAR = .05 - .02 * k.G;                                      // le Rayonnant use VAR moins vite
+  const MECA = ok(n.MECA) ? n.MECA : n.MECA2;                           // MÉCANIQUE est indépendante : sa note est MECA2
   const SYS = moy(n.POID, n.PROF, MECA, n.VAR, n.EXIG), EXP = moy(n.RYT, n.MAN, n.THEM, n.LIEN), EDI = moy(n.MAT, n.ART, n.DOC);
   // T, la gêne d'apprentissage (durée des Premiers pas) : ce qu'il y a à apprendre, tempéré par la documentation (DOC2 est un écart)
   const T = ok(n.POID1) ? .6 * n.POID1 * (1 - (n.DOC2 ?? 0) / 4) : 0;
-  const d = [ (n.VAL1 ?? 0) / 4, q(((n.POID1 ?? 0) + (n.MAN1 ?? 0)) / 5), q(1 + T / 10),
-    q(2 ** ((moy(n.POID1, n.EXIG1, n.VAR1, T, inv(n.ART2b)) ?? 0) - 1)), q(2 ** ((moy(n.PROF, n.EXIG1, n.POID1) ?? 0) - 1)),
+  const d = [ (n.VAL1 ?? 0) / 4, q(((n.POID1 ?? 0) + (n.MAN1 ?? 0)) / 5 / vit), q((1 + T / 10) / vit),
+    q(2 ** ((moy(n.POID1, n.EXIG1, n.VAR1, T, inv(n.ART2b)) ?? 0) - 1) / vit), q(2 ** ((moy(n.PROF, n.EXIG1, n.POID1) ?? 0) - 1)),
     q(2 ** ((moy(n.PROF, n.EXIG, n.VAR1) ?? 0) + .1 - 1)), q(2 ** ((moy(n.VAR, n.MAN2) ?? 0) - 1)) ];
   const N = [0]; d.forEach((v, i) => N.push(N[i] + v));
   const x = [0]; d.forEach((v, i) => x.push(x[i] + Math.log2(1 + v)));
@@ -108,25 +116,45 @@ function flowJeu(n, pr){
   const lassitude = Nj => 1 + .1 * Math.log2(1 + Nj);
   const depuis = (Nj, j0) => Math.max(0, Nj - N[j0]);
   // la promesse de la boîte : le meilleur de ce qu'elle annonce (thème, rythme, manipulation)
-  const prom = [["THEM", n.THEM1], ["RYT", n.RYT1], ["MAN", n.MAN2]].filter(([, v]) => ok(v)).sort((a, b) => b[1] - a[1])[0] || ["THEM", null];
+  const prom = Math.max(...[n.THEM1, n.RYT1, n.MAN2].filter(ok));
+  const parole = (n.LIEN1c ?? 0) >= 2;                                   // la parole ne compte que si le jeu lui laisse de la place
+  const vieN = ctx.vieNoire == null ? 50 : Math.min(ctx.vieNoire, 50), communaute = 5 * Math.log2(1 + vieN) / Math.log2(51);
+  const gene = pr ? geneRejet(n, pr) * 5 : 0;
   const termes = (j, Nj) => {
-    const nS = depuis(Nj, 2), m = depuis(Nj, 4), c = ESTOMPE ** m, g = 1 - c;
-    const app = ok(n.POID1) ? n.POID1 * (1 - (n.DOC2 ?? 0) / 4) / (1 + nS) : null;   // ce qui reste à apprendre ; s'éteint de lui-même
+    const nS = depuis(Nj, 2), m = depuis(Nj, 4), c = (1 - tauxVAR) ** m, g = 1 - ESTOMPE ** m;
+    const app = ok(n.POID1) ? n.POID1 * (1 - (n.DOC2 ?? 0) / 4) / (1 + nS * vit) : null;   // ce qui reste à apprendre ; s'éteint de lui-même
+    const VARj = ok(n.VAR) ? (j >= 5 ? n.VAR * c : n.VAR) : null;
     let S, F;
-    if (j === 1){ S = [["MAT", n.MAT], ["ART", n.ART2a], prom]; F = [n.POID1, inv(n.ART2b)]; }
-    else if (j === 2){ S = [["MAT", n.MAT], ["ART", n.ART2a], prom, ["SYS", SYS]];
+    if (j === 1){ S = [[n.MAT], [n.ART2a], [prom]]; F = [n.POID1, inv(n.ART2b)]; }
+    else if (j === 2){ S = [[n.MAT], [n.ART2a], [prom], [SYS]];
       F = [ok(n.POID1) ? .75 * n.POID1 : null, ok(n.ART2b) ? .75 * (5 - n.ART2b) : null, ok(n.MAN1) ? n.MAN1 * lassitude(Nj) / 2 : null]; }
-    else if (j === 3){ S = [["SYS", SYS], ["PROF", n.PROF], ["MECA", n.MECA2], ["VAR", n.VAR, 2], ["EXP", moy(n.RYT2, n.MAN2, n.THEM, n.LIEN2a)], ["EDI", moy(n.MAT, n.ART)]];
+    else if (j === 3){ S = [[SYS], [n.PROF], [n.MECA2], [n.VAR, 2], [moy(n.RYT2, n.MAN2, n.THEM, n.LIEN2a)], [moy(n.MAT, n.ART)]];
       F = [app, inv(n.ART2b), ok(n.MAN2) ? Math.max(0, 3 - n.MAN2) * 5 / 3 : null]; }          // une charge attendue ne coûte rien
-    else if (j === 4){ S = [["SYS", SYS], ["PROF", n.PROF, 2], ["MECA", n.MECA2], ["VAR", n.VAR, 2], ["EXIG", n.EXIG, 2], ["EXP", EXP], ["EDI", EDI]];
+    else if (j === 4){ S = [[SYS], [n.PROF, 2], [n.MECA2], [n.VAR, 2], [n.EXIG, 2], [EXP], [EDI]];
       F = [app, inv(n.ART2b), inv(n.MAN2)]; }
-    else { S = [["MECA", MECA], ["EXIG", n.EXIG], ["THEM", n.THEM], ["LIEN", n.LIEN], ["MAT", n.MAT], ["VAR", ok(n.VAR) ? n.VAR * c : null]];
+    else { S = [[MECA], [n.EXIG], [n.THEM], [n.LIEN], [n.MAT], [VARj, 1 - k.B]];             // le Triomphant ne se lasse pas : VAR hors de S
       F = [ok(n.POID1) ? n.POID1 * g : null, ok(n.MAN1) ? n.MAN1 * g : null, inv(n.VAR), ok(n.ART2b) ? (5 - n.ART2b) / 2 : null]; }
-    let sw = 0, sv = 0; S.forEach(([code, v, w0]) => { if (!ok(v)) return; const w = (w0 || 1) * (pr ? poidsPaire(code, pr, j) : 1); sw += w; sv += w * v; });
-    const s = (sw ? sv / sw : 0) * (j >= 5 ? declinDecrypter(n, kU) : 1);
-    let f2 = F.filter(ok).reduce((t, v) => t + v * v, 0) / K_FRICTION;
-    if (gene > 0 && j >= deRejet) f2 += gene * gene / K_FRICTION;                        // ce que le joueur rejette devient friction
-    const f = Math.sqrt(f2), r = R_REGIME[Math.min(j, 7)], el = E0 / (1 + nS);
+    // les goûts des moteurs : un terme de plus dans S (pondéré par le moteur), une gêne de plus dans F (× √poids)
+    const aime = (km, v, w = 1) => { if (km && ok(v)) S.push([v, km * w]); };
+    const gene_ = (km, v, fois = 1) => { if (km && ok(v) && v > 0) for (let i = 0; i < fois; i++) F.push(v * Math.sqrt(km)); };
+    if (k.W){ aime(k.W, n.THEM); aime(k.W, n.MAT); aime(k.W, n.ART2a);                       // Rassembler : rassemblé par le thème, les sens, la durée
+      if (j >= 3){ aime(k.W, communaute); gene_(k.W, sous3_(n.RYT2)); gene_(k.W, sous3_(n.LIEN)); } }
+    if (k.U){ if (j >= 2){ aime(k.U, n.POID); aime(k.U, n.PROF, 2); aime(k.U, MECA, 2); aime(k.U, VARj); aime(k.U, n.EXIG, 2);   // Décrypter : le système
+        if ((n.DOC2 ?? 0) > 0) aime(k.U, 2.5 + 1.25 * n.DOC2); gene_(k.U, sous3_(n.ART2b)); if ((n.DOC2 ?? 0) < 0) gene_(k.U, -n.DOC2 / 2 * 5, 3); }
+      if (j >= 3){ aime(k.U, n.LIEN2a); if (parole) gene_(k.U, sous3_(n.LIEN2b)); } }
+    if (k.B){ aime(k.B, n.LIEN1); if (j >= 3 && parole) aime(k.B, n.LIEN2b);                  // Triompher : gagner, à bon compte
+      gene_(k.B, coutEffort(n, j)); }
+    if (k.R){ if (j <= 3) aime(k.R, prom); aime(k.R, n.ART);                                    // S'enflammer : la promesse, l'intensité
+      if (j >= 2){ aime(k.R, moy(inv(n.DOC1), 2.5 + 1.25 * (n.DOC2 ?? 0))); if ((n.POID2 ?? 0) < 0) gene_(k.R, -n.POID2 / 2 * 5); }
+      if (j >= 3){ aime(k.R, n.PROF); aime(k.R, VARj, 2); aime(k.R, moy(n.MAN2, n.MAT)); if ((n.THEM1 ?? 0) >= 2) aime(k.R, n.THEM2b);
+        if ((n.EXIG2 ?? 0) < 0) gene_(k.R, (n.EXIG1 ?? 0) * -n.EXIG2 / 2); gene_(k.R, sous3_(n.RYT1)); if ((n.THEM1 ?? 0) >= 2) gene_(k.R, sous3_(n.THEM2b)); } }
+    if (k.G && j >= 3){ aime(k.G, n.PROF); aime(k.G, VARj); aime(k.G, n.EXIG); aime(k.G, n.RYT); aime(k.G, n.THEM);   // Rayonner : s'exprimer
+      gene_(k.G, sous3_(n.MAN2)); gene_(k.G, sous3_(n.LIEN)); }
+    // le rejet : bloqué avant de jouer (1), toléré à la première session (½), puis de plus en plus résistant (+10 % par session, au plus 1,5)
+    if (gene > 0){ const n3 = N[3] - N[2], kr = j <= 2 ? 1 : j === 3 ? .5 : Math.min(1.5, .5 + .1 * (nS - n3)); F.push(gene * kr); }
+    let sw = 0, sv = 0; S.forEach(([v, w]) => { const ww = w ?? 1; if (ok(v) && ww > 0){ sw += ww; sv += ww * v; } });
+    const s = sw ? sv / sw : 0, f = Math.sqrt(F.filter(ok).reduce((t, v) => t + v * v, 0) / K_FRICTION);
+    const r = R_REGIME[Math.min(j, 7)], el = E0 / (1 + nS);
     return { s, f, el, r, brut: el + 2 * r * (s - f), L: lassitude(Nj), m, g, estompe: c };
   };
   const det = [null], brut = [0];
@@ -135,21 +163,27 @@ function flowJeu(n, pr){
     if (j >= 5 && t.brut > brut[j - 1]){ t.retenu = true; t.brut = brut[j - 1]; }       // à partir du jalon 4, le flow ne remonte plus
     det.push(t); brut.push(t.brut);
   }
+  const marque = Math.max(0, Math.max(n.THEM ?? 0, MECA ?? 0) - PLANCHER_SEUIL);
+  return { d, N, x, brut, det, marque, brutLoinBrut: Nk => termes(7, Nk).brut, SYS, EXP, EDI, E0, T, vit };
+}
+
+// α, β, γ, ω, plancher, durée de vie… d'une courbe brute (noire ou de profil)
+function analyseCourbe(cb){
+  const { N, x, brut, marque } = cb;
   const purge = brut.findIndex((v, j) => j >= 1 && v < 0);
   const y = brut.map((v, j) => purge > 0 && j >= purge ? 0 : Math.min(10, Math.max(0, v)));
   let alpha = 1; for (let j = 2; j <= 7; j++) if (y[j] > y[alpha]) alpha = j;
   // β : début du déclin final, le jalon d'où le flow ne fait plus que baisser (une variation de moins de 0,05 est un plateau) ;
   // γ : l'arrivée au plancher de nostalgie, en sessions (null : jamais, un classique) ; ω : abandon (purge), à la place de γ
   const fin = purge > 0 ? purge : 7, PLATEAU = .05;
-  let beta = null, omega = purge > 0 ? purge : null;
+  let beta = null; const omega = purge > 0 ? purge : null;
   const baisse = j => y[j] < y[j - 1] - PLATEAU;
   let jb = fin; while (jb >= 1 && !baisse(jb)) jb--;                    // un plateau final ne compte pas
   for (; jb >= 1 && baisse(jb); jb--) beta = jb - 1;
   if (beta === 0) beta = null;
   // Souvenir : la marque laissée (thème ou mécaniques) ; le plancher de nostalgie arrête la chute sans jamais relever la courbe
-  const marque = Math.max(0, Math.max(n.THEM ?? 0, MECA ?? 0) - PLANCHER_SEUIL);
   const plancher = purge > 0 ? null : Math.min(marque, brut[7]);
-  const brutLoin = Nk => Math.min(termes(7, Nk).brut, brut[7]);
+  const brutLoin = Nk => Math.min(cb.brutLoinBrut(Nk), brut[7]);
   const yLoin = Nk => purge > 0 ? 0 : Math.min(10, Math.max(0, Math.max(brutLoin(Nk), plancher)));
   const xLoin = Nk => x[7] + Math.log2((1 + Nk) / (1 + N[7]));
   const perte = (yLoin(N[7] * 4 + 3) - yLoin(N[7])) / (xLoin(N[7] * 4 + 3) - x[7]);
@@ -167,8 +201,31 @@ function flowJeu(n, pr){
   }
   const gamma = purge > 0 ? null : vie, sousPhaseGamma = gamma == null ? null : gamma > N[7] ? 7 : Math.max(0, N.findIndex(v => v >= gamma - 1e-9) - 1);
   const classe = vie == null ? "classique" : CLASSES_VIE.find(([s]) => vie < s)[1];
-  return { d, N, x, y, brut, det, alpha, beta, gamma, sousPhaseGamma, omega, purge: purge > 0 ? purge : null, perte, vie, xVie, classe, marque, plancher,
-    yLoin, xLoin, SYS, EXP, EDI, E0, T };
+  return { ...cb, y, alpha, beta, gamma, sousPhaseGamma, omega, purge: purge > 0 ? purge : null, perte, vie, xVie, classe, plancher, yLoin, xLoin };
+}
+
+// le centrage d'un jeu : l'écart moyen des 60 profils à la courbe noire, jalon par jalon (mis en cache)
+const CENTRAGES = new Map();
+function centrageJeu(n, noire){
+  const cle = JSON.stringify(n); if (CENTRAGES.has(cle)) return CENTRAGES.get(cle);
+  const md = [0, 0, 0, 0, 0, 0, 0, 0];
+  PROFILS.forEach(code => { const b = courbeBrute(n, prDeStyle(code), { vieNoire: noire.vie }).brut; for (let j = 1; j <= 7; j++) md[j] += (b[j] - noire.brut[j]) / PROFILS.length; });
+  CENTRAGES.set(cle, md); return md;
+}
+
+function flowJeu(n, pr){
+  const noire = analyseCourbe(courbeBrute(n));
+  if (!pr) return noire;
+  const cb = courbeBrute(n, pr, { vieNoire: noire.vie }), md = centrageJeu(n, noire);
+  // centrage, puis garde-fou : d'un jalon à l'autre, l'écart à la variation de la courbe noire est d'au plus 0,5 ; un flow négatif est un abandon
+  const brut = [0]; let fini = null;
+  for (let j = 1; j <= 7; j++){
+    if (fini != null){ brut.push(fini); continue; }
+    const dN = noire.brut[j] - noire.brut[j - 1], v = Math.min(brut[j - 1] + dN + .5, Math.max(brut[j - 1] + dN - .5, cb.brut[j] - md[j]));
+    brut.push(v); if (v < 0) fini = v;
+  }
+  const decalage = brut[7] - noire.brut[7];
+  return analyseCourbe({ ...cb, brut, marque: noire.marque, brutLoinBrut: Nk => noire.brutLoinBrut(Nk) + decalage });
 }
 
 /* Graphique SVG : phases en bandes, jalons numérotés (nom au survol), α β γ ω, plancher de nostalgie, durée de vie, pointillés. */
@@ -267,12 +324,17 @@ svg.courbe .pt{fill:var(--panel);stroke:var(--ink);stroke-width:2} svg.courbe .p
 })();
 
 /* ---------------- le spectromètre : le jeu vu par chacun des 60 styles ---------------- */
-// note finale vue par un style : dans chaque chapitre, moyenne des paires pondérée par ses moteurs ; puis moyenne des chapitres ; puis pénalité de rejet
+// note finale vue par un profil (séance du 13/10/2026) : tirée de sa courbe — la note pour tous, plus la moitié de l'écart moyen de sa courbe
+// à la courbe noire sur les jalons 1 à 7 (le flow est sur 10, la note sur 5). Centrée par construction : la note et la courbe racontent la même histoire.
 function noteProfil(paires, n, pr){
   const parChap = {};
-  paires.forEach(p => { if (p.note == null) return; const w = poidsPaire(p.code, pr, null); (parChap[p.chap] ??= { sw:0, sv:0 }); parChap[p.chap].sw += w; parChap[p.chap].sv += w * p.note; });
-  const ch = Object.values(parChap).map(c => c.sv / c.sw); if (!ch.length) return null;
-  return ch.reduce((a, b) => a + b, 0) / ch.length * (1 - .5 * geneRejet(n, pr));
+  paires.forEach(p => { if (p.note == null) return; (parChap[p.chap] ??= []).push(p.note); });
+  const ch = Object.values(parChap).map(L => L.reduce((a, b) => a + b, 0) / L.length); if (!ch.length) return null;
+  const base = ch.reduce((a, b) => a + b, 0) / ch.length;
+  if (!pr) return base;
+  const noire = flowJeu(n), c = flowJeu(n, pr); let ec = 0;
+  for (let j = 1; j <= 7; j++) ec += (c.y[j] - noire.y[j]) / 7;
+  return Number.isFinite(ec) ? Math.min(5, Math.max(0, base + ec / 2)) : base;
 }
 // ce que le jeu offre à chaque moteur (trait) et ce qu'il réussit pour lui (moyenne des paires qu'il aime, pondérée)
 function spectreMoteurs(paires, n){
@@ -309,7 +371,7 @@ function spectrometre(n, paires, pl){
     const pr = prDeStyle(code), t = T[temperamentDe(code)], sty = S[styleDe(code)], c = flowJeu(n, pr), note = noteProfil(paires, n, pr), gene = geneRejet(n, pr);
     const st = { code, second: pr.second, nom: `${t?.nom || temperamentDe(code)} (${sty?.nom || styleDe(code)})`, style: sty };
     return { st, temperament:t, moteur:M[pr.dom], pr, c, note, gene,
-      decroche: c.beta != null ? c.beta : gene > 0 ? MOTEURS_JEU[pr.rejet].rejet : null };
+      decroche: c.omega ?? c.beta };
   }).sort((a, b) => (b.note ?? -1) - (a.note ?? -1));
   const resume = L => ({ note: L.reduce((s, l) => s + (l.note ?? 0), 0) / L.length, alpha: L.reduce((s, l) => s + l.c.y[l.c.alpha], 0) / L.length, lignes:L });
   const moteurs = pl.moteurs.map(m => ({ m, ...resume(lignes.filter(l => l.pr.dom === m.code)),
@@ -324,13 +386,14 @@ function courbesParMoteur(r, pl, coul){
   const e = s => String(s ?? "").replace(/[&<>"']/g, k => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[k]));
   const f = v => Number(v).toFixed(2).replace(".", ",");
   const M = Object.fromEntries(pl.moteurs.map(m => [m.code, m])), xs = r.base.x;
-  const series = pl.temperaments.map(t => { const L = r.lignes.filter(l => l.temperament?.code === t.code);
-    const y = xs.map((_, j) => L.reduce((s, l) => s + l.c.y[j], 0) / (L.length || 1));
-    return { t, y, alpha: Math.max(...y), note: L.reduce((s, l) => s + (l.note ?? 0), 0) / (L.length || 1) }; });
+  // chaque tempérament a ses propres jalons (le Décrypteur apprend plus vite, qui le fuit plus lentement) : moyenne des x et des y de ses profils
+  const series = pl.temperaments.map(t => { const L = r.lignes.filter(l => l.temperament?.code === t.code), nb = L.length || 1;
+    const y = xs.map((_, j) => L.reduce((s, l) => s + l.c.y[j], 0) / nb), x = xs.map((_, j) => L.reduce((s, l) => s + l.c.x[j], 0) / nb);
+    return { t, y, x, alpha: Math.max(...y), note: L.reduce((s, l) => s + (l.note ?? 0), 0) / nb }; });
   const yMax = Math.max(5, Math.ceil(Math.max(...series.map(x => x.alpha), ...r.base.y)));
-  const W = 360, H = 200, g = 30, dr = 10, h0 = 14, b = 24, xFin = xs[7] + 1;
+  const W = 360, H = 200, g = 30, dr = 10, h0 = 14, b = 24, xFin = Math.max(xs[7], ...series.map(x => x.x[7])) + 1;
   const X = v => g + v / xFin * (W - g - dr), Y = v => H - b - v / yMax * (H - b - h0);
-  const ligne = (y, cls, style) => `<polyline class="${cls}" style="${style || ""}" points="${xs.map((v, j) => `${X(v).toFixed(1)},${Y(y[j]).toFixed(1)}`).join(" ")}"/>`;
+  const ligne = (y, cls, style, x = xs) => `<polyline class="${cls}" style="${style || ""}" points="${x.map((v, j) => `${X(v).toFixed(1)},${Y(y[j]).toFixed(1)}`).join(" ")}"/>`;
   return `<div class="pm-grille">${pl.moteurs.map(m => {
     const S = series.filter(x => x.t.moteur === m.code);
     let svg = `<svg class="pm" viewBox="0 0 ${W} ${H}" role="img" aria-label="Courbes des tempéraments de ${e(m.nom)}">`;
@@ -338,7 +401,7 @@ function courbesParMoteur(r, pl, coul){
     for (let v = 0; v <= yMax; v++) svg += `<line x1="${g}" x2="${W - dr}" y1="${Y(v)}" y2="${Y(v)}" class="grille"/><text x="${g - 5}" y="${Y(v) + 4}" class="gy">${v}</text>`;
     let dn = 0; xs.forEach((v, j) => { if (j === 0 || X(v) - X(xs[dn]) >= 12){ dn = j; svg += `<text x="${X(v)}" y="${H - b + 15}" class="gx">${j}</text>`; } });
     svg += ligne(r.base.y, "ref");
-    S.forEach(x => svg += ligne(x.y, "pm-c", `stroke:${coul(M[x.t.fuit])}`));
+    S.forEach(x => svg += ligne(x.y, "pm-c", `stroke:${coul(M[x.t.fuit])}`, x.x));
     svg += `</svg>`;
     const g2 = r.moteurs.find(x => x.m.code === m.code);
     return `<figure class="pm-carte"><figcaption><span style="color:${e(coul(m))}">${e(m.nom)}</span><span class="pm-note">${g2 ? f(g2.note) : ""}</span></figcaption>${svg}

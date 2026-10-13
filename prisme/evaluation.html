@@ -116,7 +116,7 @@ button.lien,a.lien{border:0;background:none;padding:0;font:inherit;color:inherit
 table.sp-extremes{margin:0 0 10px} table.tl-table tr.choisi td{background:color-mix(in srgb, var(--accent) 9%, transparent)} table.tl-table small{color:var(--muted)}
 .sp-courbe{border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:10px 0;background:var(--paper)} .sp-courbe h3{font:600 17px var(--serif);margin:0 0 4px}
 #pied .tl-pied{cursor:pointer} #pied .tl-pied b{font-size:16px;font-weight:600} #pied .tl-pied b small{display:inline;font-size:12px;color:var(--muted);font-weight:400}
-#pied .cout-pied b{font-size:16px;font-weight:600}
+#pied .cout-pied b{font-size:16px;font-weight:600} #pied .proto{font-size:10px;text-transform:uppercase;letter-spacing:.04em;border:1px solid var(--line);border-radius:4px;padding:0 3px;color:var(--muted)}
 .carnet{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:26px 0 10px}
 .carnet h2{font:600 20px var(--serif);margin:0 0 4px}
 .carnet textarea{min-height:220px}
@@ -239,9 +239,9 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
 <dialog id="dlg-recap"><div id="recap"></div><p style="text-align:right;margin:12px 0 0"><button class="btn" id="fermer-recap" type="button">Fermer</button></p></dialog>
 <div class="wrap"><p class="version" id="version"></p></div>
 
-<script src="timeline.js?v=3.1"></script>
+<script src="timeline.js?v=3.3"></script>
 <script>
-const VERSION = { numero:"3.22", date:"2026-10-12 22:28" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.24", date:"2026-10-13 17:00" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -648,6 +648,9 @@ function recalculer(){
   $("#pied").insertAdjacentHTML("beforeend", `<div class="tl-pied" data-tl title="${tl.c ? esc(syntheseTimeline(tl.c)) : "Timeline incomplète"}"><small>Timeline</small><b>${tl.c ? piedTimeline(tl.c) : "—"}</b></div>`);
   const k = tl.c ? coutFiche(tl.c) : null;
   $("#pied").insertAdjacentHTML("beforeend", `<div class="cout-pied" title="${esc(k ? texteCout(k) + " (prix ÷ durée de vie, plafonnée à " + PLAFOND_PARTIES_VIE + " sessions)" : "Coût par session : il faut le prix et une timeline complète")}"><small>Coût par session</small><b>${k ? texteCout(k).replace(/ par session.*/, "") : "—"}</b></div>`);
+  // coût d'effort (prototype, 13/10/2026) : règles, manuels, logistique, hasard toléré, renouvellement, attente ; moyenne quadratique sur 5
+  const ce = coutEffort(entreesTimeline().n);
+  $("#pied").insertAdjacentHTML("beforeend", `<div class="cout-pied" title="Coût d'effort (prototype) : ce qu'il faut investir pour jouer — règles (POID1), manuels (DOC1), logistique (MAN1), hasard (MECA1a, à moitié), renouvellement (VAR1), attente (RYT1). Sur 5 ; c'est la gêne du Triomphant."><small>Coût d'effort <span class="proto">proto</span></small><b>${ce == null ? "—" : fmt(ce, 2)}</b></div>`);
   return c;
 }
 
@@ -694,7 +697,7 @@ function majSpectro(n){
   const coul = m => (matchMedia("(prefers-color-scheme: dark)").matches ? m.couleur_sombre : m.couleur) || m.couleur || "var(--accent)";
   const ligne = l => `<tr class="${spChoisi === l.st.code ? "choisi" : ""}"><td><button type="button" class="lien" data-sp="${esc(l.st.code)}">${esc(maj(l.st.nom))}</button><br><small>${esc(l.st.code)} · conduit par ${esc(Mo[l.pr.second]?.nom || "")} · fuit ${esc(Mo[l.pr.rejet]?.nom || "")}</small></td>
     <td class="n"><b>${fmt(l.note, 2)}</b></td><td class="n">${fmt(l.c.y[l.c.alpha], 2)} <small>j${l.c.alpha}</small></td><td class="n">${l.c.vie == null ? "∞" : Math.round(l.c.vie)}</td>
-    <td>${l.c.omega != null ? `abandon au jalon ${l.c.omega} (ω)` : l.c.beta != null ? `déclin dès le jalon ${l.c.beta}` : l.gene > 0 ? `gêné dès le jalon ${MOTEURS_JEU[l.pr.rejet].rejet} (${JALONS[MOTEURS_JEU[l.pr.rejet].rejet].nom})` : "—"}</td></tr>`;
+    <td>${l.c.omega != null ? `abandon au jalon ${l.c.omega} (ω)` : l.c.beta != null ? `déclin dès le jalon ${l.c.beta}` : "pas de déclin"}</td></tr>`;
   const det = spChoisi && r.lignes.find(l => l.st.code === spChoisi);
   const ouverts = new Set([...box.querySelectorAll("details[open]")].map(d => d.id));
   box.innerHTML = `<div class="sp-haut"><figure>${rosaceSVG(r.spectre, PL.moteurs.map(m => ({ code:m.code, nom:m.nom, couleur:coul(m) })))}
