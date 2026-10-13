@@ -217,7 +217,7 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
 <section id="fiche" class="hidden">
   <div id="barre-fiche">
     <button class="btn ghost" id="retour" type="button">← Les fiches</button>
-    <span class="jeu" id="titre-jeu"></span><span class="lecture" id="lecture"></span>
+    <span class="jeu" id="titre-jeu"></span><a class="btn ghost" id="vers-jeu" href="jeux.html" title="La fiche du jeu, telle que la voient les joueurs">Fiche du jeu</a><span class="lecture" id="lecture"></span>
     <span class="prog"><span id="prog"></span></span><span id="prog-txt" style="font-size:13px;color:var(--muted)"></span>
     <button class="btn ghost" id="suivante" type="button">Paire suivante à remplir</button>
     <select id="aller" aria-label="Aller à une paire"><option value="">Aller à…</option></select>
@@ -241,7 +241,7 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
 
 <script src="timeline.js?v=3.4"></script>
 <script>
-const VERSION = { numero:"3.25", date:"2026-10-13 21:29" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.26", date:"2026-10-13 21:43" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -309,11 +309,12 @@ async function demarrer(){
   } catch (e){ $("#msg-accueil").className = "msg err"; $("#msg-accueil").textContent = "Lecture du modèle impossible : " + e.message; return; }
   M.paires.sort((a, b) => M.chapitres.find(c => c.code === a.chapitre).ordre - M.chapitres.find(c => c.code === b.chapitre).ordre || a.ordre - b.ordre);
   remplirJeux(); await chargerFiches(); afficherFiches();
-  const q = new URLSearchParams(location.search).get("jeu");
+  const P = new URLSearchParams(location.search), q = P.get("jeu");
   if (q && M.jeux.some(j => j.code === q)){
-    const f = toutes.find(e => e.jeu === q && e.evaluateur === user.id) || toutes.find(e => e.jeu === q && e.statut === "finale") || toutes.find(e => e.jeu === q);
-    f ? ouvrirFiche(f) : ouvrirJeu(q);
-  }
+    if (P.has("evaluer") && role !== "lecteur") ouvrirJeu(q);   // « Évaluer » depuis la fiche du jeu : sa propre fiche, nouvelle au besoin
+    else { const f = toutes.find(e => e.jeu === q && e.evaluateur === user.id) || toutes.find(e => e.jeu === q && e.statut === "finale") || toutes.find(e => e.jeu === q);
+      f ? ouvrirFiche(f) : ouvrirJeu(q); }
+  } else if (P.has("ajout") && role !== "lecteur") $("#btn-ajout").click();
 }
 async function chargerFiches(){
   [toutes, valeurs] = await Promise.all([lireTout("prisme_evaluations", q => q.order("modifie_le", { ascending:false })), lireTout("prisme_evaluation_valeurs")]);
@@ -380,7 +381,7 @@ function ouvrirFiche(f){
   fiche = { ...f }; saisie = f.id ? saisieDe(f.id) : {}; enAttente = new Set(); ficheModifiee = false;
   lectureSeule = f.evaluateur !== user.id || role === "lecteur";
   $("#accueil").classList.add("hidden"); $("#fiche").classList.remove("hidden"); $("#pied").classList.remove("hidden");
-  $("#titre-jeu").textContent = nomJeu(f.jeu);
+  $("#titre-jeu").textContent = nomJeu(f.jeu); $("#vers-jeu").href = "jeu.html?jeu=" + encodeURIComponent(f.jeu);
   $("#lecture").textContent = lectureSeule ? `Fiche de ${nomDe(f.evaluateur)}, en lecture seule` : "";
   $("#finale").checked = f.statut === "finale"; $("#finale").disabled = lectureSeule;
   $("#suivante").classList.toggle("hidden", lectureSeule);

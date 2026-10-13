@@ -26,6 +26,7 @@ main{max-width:920px;margin:0 auto;padding:10px 24px 40px}
 .entete .sous{font-size:13.5px;color:var(--muted);margin:0 0 10px}
 .chiffres{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;margin:0}
 .chiffres span b{font-weight:600}
+.actions-eval{margin:12px 0 0;display:flex;gap:8px;flex-wrap:wrap}
 section{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px 26px;margin-top:16px}
 section h2{font:600 22px/1.25 var(--serif);margin:0 0 4px}
 section .question{font:italic 15px var(--serif);color:var(--muted);margin:0 0 14px}
@@ -62,7 +63,7 @@ h3.chap{font:600 17px var(--serif);margin:14px 0 2px;color:var(--c)}
 
 <script src="timeline.js?v=3.4"></script>
 <script>
-const VERSION = { numero:"1.0", date:"2026-10-13 21:29" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.1", date:"2026-10-13 21:43" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -101,13 +102,21 @@ async function afficher(user){
   document.title = `PRISME — ${jeu.nom}`;
   const profil = codeDeResultat(res?.[0]);
   const F = d.fiches.filter(f => f.jeu === code), R = resumeJeu(F, d.paires, d.axes, profil);
-  const lecteur = NIVEAUX[role] >= NIVEAUX.lecteur;
-  const lienEval = lecteur ? `<p><a class="btn" href="evaluation.html?jeu=${encodeURIComponent(code)}">${NIVEAUX[role] >= NIVEAUX.evaluateur ? "Les fiches d'évaluation, et la mienne" : "Les fiches d'évaluation"}</a></p>` : "";
+  // l'évaluation : « Voir mon évaluation » ou « Évaluer » pour l'évaluateur, « Voir l'évaluation » pour le lecteur s'il en existe une, rien pour le joueur
+  let lienEval = "";
+  if (NIVEAUX[role] >= NIVEAUX.lecteur){
+    const { data: T } = await sb.from("prisme_evaluations").select("id,evaluateur,statut").eq("jeu", code);
+    const mienne = (T || []).find(f => f.evaluateur === user.id), url = "evaluation.html?jeu=" + encodeURIComponent(code);
+    if (NIVEAUX[role] >= NIVEAUX.evaluateur) lienEval = mienne ? `<a class="btn" href="${url}">Voir mon évaluation</a>` : `<a class="btn" href="${url}&evaluer=1">Évaluer</a>`
+      + (!mienne && T?.length ? ` <a class="btn" href="${url}">Voir l'évaluation</a>` : "");
+    else if (T?.length) lienEval = `<a class="btn" href="${url}">Voir l'évaluation</a>`;
+  }
+  const actions = lienEval ? `<p class="actions-eval">${lienEval}</p>` : "";
   const img = jeu.image_url ? `<img src="${esc(jeu.image_url)}" alt="">` : `<span class="sans-image"></span>`;
   const bgg = jeu.bgg_id ? ` · <a href="https://boardgamegeek.com/boardgame/${encodeURIComponent(jeu.bgg_id)}" target="_blank" rel="noopener">BoardGameGeek</a>` : "";
   if (!R){
-    $("#contenu").innerHTML = `<div class="entete">${img}<div><h1>${esc(jeu.nom)}</h1><p class="sous">Pas encore de fiche finale${bgg}</p></div></div>
-      <section><p class="discret">Ce jeu n'a pas encore été évalué jusqu'au bout : ses notes paraîtront ici dès qu'une fiche sera déclarée finale.</p>${lienEval}</section>`;
+    $("#contenu").innerHTML = `<div class="entete">${img}<div><h1>${esc(jeu.nom)}</h1><p class="sous">Pas encore de fiche finale${bgg}</p>${actions}</div></div>
+      <section><p class="discret">Ce jeu n'a pas encore été évalué jusqu'au bout : ses notes paraîtront ici dès qu'une fiche sera déclarée finale.</p></section>`;
     return;
   }
   const m = R.m, ch = [];
@@ -122,7 +131,7 @@ async function afficher(user){
 
   // les notes : finale, chapitres, et pour vous
   const nomCh = c => chapitres?.find(x => x.code === c)?.nom || c;
-  let h = `<div class="entete">${img}<div><h1>${esc(jeu.nom)}</h1><p class="sous">${F.length} fiche${F.length > 1 ? "s" : ""} finale${F.length > 1 ? "s" : ""}${F.length > 1 ? " (moyenne)" : ""}${bgg}</p><p class="chiffres">${ch.join("")}</p></div></div>
+  let h = `<div class="entete">${img}<div><h1>${esc(jeu.nom)}</h1><p class="sous">${F.length} fiche${F.length > 1 ? "s" : ""} finale${F.length > 1 ? "s" : ""}${F.length > 1 ? " (moyenne)" : ""}${bgg}</p><p class="chiffres">${ch.join("")}</p>${actions}</div></div>
   <section><h2>Les notes</h2><p class="question">Sur 5 : chaque chapitre est la moyenne de ses paires, la note finale la moyenne des trois chapitres.</p>
     <div class="notes"><div class="finale"><small>Note PRISME</small><b>${fmt(R.finale)}</b></div>
     ${(chapitres || []).filter(c => R.chap[c.code] != null).map(c => `<div style="--c:var(--${esc(c.code)})"><small>${esc(c.nom)}</small><b>${fmt(R.chap[c.code])}</b></div>`).join("")}
@@ -157,7 +166,7 @@ async function afficher(user){
           <td class="axes">${A.map(a => { const v = val(a); return v == null ? "" : `<span>${esc(a.nom)} : <b>${esc(v)}</b></span>`; }).join(" ")}</td></tr>`; }).join("")}
     </tbody></table>`;
   });
-  h += `</section>${lienEval ? `<section>${lienEval}</section>` : ""}`;
+  h += `</section>`;
   $("#contenu").innerHTML = h;
 }
 </script>

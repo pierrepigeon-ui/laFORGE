@@ -42,6 +42,9 @@ button,input{font:inherit;color:inherit} :focus-visible{outline:2px solid #3B6FE
 #espace .cadre{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px 22px}
 #espace h2{font:600 22px var(--serif);margin:0 0 4px}
 #espace .sous{color:var(--muted);font-size:14.5px;margin:0 0 14px}
+#espace .profil{display:inline-flex;align-items:center;gap:6px;color:var(--ink);text-decoration:none;vertical-align:middle}
+#espace .profil b{font-weight:600} #espace .profil:hover b{text-decoration:underline}
+#espace .ico{width:28px;height:28px;flex:none}
 #espace .sous b{color:var(--ink)}
 .tuiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
 .tuile{display:block;border:1px solid var(--line);border-radius:10px;padding:14px 16px;text-decoration:none;color:var(--ink);background:var(--paper)}
@@ -67,9 +70,9 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px} .field{display:block;margi
   <p class="acrostiche"><b>P</b>ourquoi <b>R</b>estons-nous <b>I</b>mpliqués, <b>S</b>timulés, <b>M</b>otivés, <b>E</b>ngagés ?</p>
   <p class="auteur">par l'Arpenteur</p>
   <div class="actions">
-    <a class="btn" href="questionnaire.html">Passer le questionnaire du joueur</a>
-    <a class="btn ghost" href="rosace.html">Explorer la rosace</a>
-    <a class="btn ghost" href="encyclopedie.html">L'encyclopédie</a>
+    <a class="btn visiteur" href="questionnaire.html">Passer le questionnaire du joueur</a>
+    <a class="btn ghost visiteur" href="rosace.html">Explorer la rosace</a>
+    <a class="btn ghost visiteur" href="encyclopedie.html">L'encyclopédie</a>
     <a class="btn ghost" id="btn-login-2" href="../">Se connecter</a>
   </div>
 </section>
@@ -94,8 +97,9 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px} .field{display:block;margi
 
 <footer><span>PRISME — l'Arpenteur <a class="contact" href="../?contact&amp;depuis=prisme">Écrire à l'Arpenteur</a></span><span id="version"></span></footer>
 
+<script src="totems.js?v=4"></script>
 <script>
-const VERSION = { numero:"3.2", date:"2026-10-13 21:29" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.3", date:"2026-10-13 21:43" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -118,6 +122,7 @@ sb.auth.onAuthStateChange((_e, session) => {
 async function afficherEspace(){
   $("#btn-login").classList.toggle("hidden", !!user); $("#btn-logout").classList.toggle("hidden", !user);
   $("#btn-login-2").classList.toggle("hidden", !!user);
+  document.querySelectorAll(".actions .visiteur").forEach(b => b.classList.toggle("hidden", !!user));   // connecté : les tuiles prennent le relais
   $("#who").textContent = user ? user.email : "";
   if (!user){ $("#espace").classList.add("hidden"); return; }
   const [{ data: role }, { data: moiP }, { data: moiF }, { data: res }] = await Promise.all([
@@ -132,23 +137,25 @@ async function afficherEspace(){
   if (dernier){
     const c = dernier.classement, code = dernier.style || (c ? c[0] + "." + c[1].toLowerCase() + "/" + c[4].toLowerCase() : null);
     if (code){
-      const [{ data: t }, { data: st }] = await Promise.all([
+      const [{ data: t }, { data: st }, { data: mot }] = await Promise.all([
         sb.from("prisme_player_temperaments").select("nom").eq("code", code[0] + "/" + code[4]).maybeSingle(),
-        sb.from("prisme_player_styles").select("nom").eq("code", code.slice(0, 3)).maybeSingle()]);
-      if (t && st) profil = { tem: t.nom, style: st.nom, provisoire: Object.keys(dernier.reponses || {}).length < 25 };
+        sb.from("prisme_player_styles").select("nom").eq("code", code.slice(0, 3)).maybeSingle(),
+        sb.from("prisme_player_moteurs").select("code,couleur,couleur_sombre"), chargerTotems()]);
+      // le totem du tempérament (couleur du moteur dominant) et l'emblème du style (couleur du second), comme sur la fiche du joueur
+      const sombre = matchMedia("(prefers-color-scheme: dark)").matches, coul = c => { const m = (mot || []).find(x => x.code === c); return m ? (sombre && m.couleur_sombre) || m.couleur : "currentColor"; };
+      if (t && st) profil = { tem: t.nom, style: st.nom, provisoire: Object.keys(dernier.reponses || {}).length < 25,
+        totem: totemSVG(code[0] + "/" + code[4], coul(code[0]), { cls:"ico" }), embleme: emblemeSVG(code.slice(0, 3), coul(code[2].toUpperCase()), { cls:"ico" }) };
     }
   }
   $("#espace").classList.remove("hidden");
   $("#bonjour").textContent = `Bonjour${nom ? ", " + nom : ""}`;
   $("#espace-sous").innerHTML = dernier && profil
-    ? `Votre profil de joueur : <b>${esc(profil.tem.charAt(0).toUpperCase() + profil.tem.slice(1))}</b> (${esc(profil.style)})${profil.provisoire ? ", provisoire" : ""}, le ${new Date(dernier.passe_le).toLocaleDateString("fr-FR")}.`
+    ? `Votre profil de joueur : <a class="profil" href="fiche.html">${profil.totem}<b>${esc(profil.tem.charAt(0).toUpperCase() + profil.tem.slice(1))}</b> (${esc(profil.style)})${profil.embleme}</a>${profil.provisoire ? ", provisoire" : ""}, le ${new Date(dernier.passe_le).toLocaleDateString("fr-FR")}.`
     : "Vous n'avez pas encore enregistré de profil de joueur : commencez par le questionnaire.";
   let t = dernier ? tuile("fiche.html", "Mon profil de joueur", "Vos moteurs, vos tempéraments, votre style, votre rival") : "";
   t += tuile("rosace.html", "La rosace", dernier ? "Votre place sur la roue des joueurs" : "Cinq moteurs, vingt tempéraments, vingt styles");
   t += tuile("questionnaire.html", "Questionnaire du joueur", dernier ? "Revoir ou modifier vos réponses" : "Vingt-cinq situations de jeu, dix minutes");
   t += tuile("jeux.html", "Les jeux", dernier ? "Les jeux évalués, leur note pour tous et pour vous" : "Les jeux évalués et ce qu'ils promettent");
-  if (["proprietaire","editeur","evaluateur"].includes(role)) t += tuile("evaluation.html", "Évaluer un jeu", "Remplir ou reprendre une fiche PRISMEgame");
-  else if (role === "lecteur") t += tuile("evaluation.html", "Les fiches d'évaluation", "Lire les fiches PRISMEgame, justifications comprises");
   t += tuile("encyclopedie.html", "L'encyclopédie", "Le modèle complet : le jeu, le joueur, leurs grilles et leurs exemples");
   if (["proprietaire","editeur"].includes(role)) t += tuile("console.html", "Console", "Parcourir et éditer le modèle PRISME");
   $("#tuiles").innerHTML = t;
