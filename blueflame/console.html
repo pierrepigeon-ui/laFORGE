@@ -197,8 +197,6 @@ table.j td{border-bottom:1px solid var(--line);padding:8px 10px;vertical-align:t
       <button role="tab" aria-selected="false" data-tab="personnes" id="tab-personnes">Personnes</button>
       <button role="tab" aria-selected="false" data-tab="resultats" id="tab-resultats">Résultats</button>
       <button role="tab" aria-selected="false" data-tab="saisie" id="tab-saisie">Saisie</button>
-      <a class="navlink" href="autotest.html">Autotest</a>
-      <a class="navlink hidden" href="rosace.html" id="lien-rosace">Rosace</a>
       <a class="navlink" href="totems.html" id="lien-totems">Totems</a>
     </nav>
     <div class="who"><span id="backup-info"></span><button class="btn ghost hidden" id="backup" type="button">Sauvegarder la base</button><span id="who"></span><button class="btn ghost" id="mdp" type="button">Mon mot de passe</button><button class="btn ghost" id="logout" type="button">Se déconnecter</button></div>
@@ -248,7 +246,7 @@ table.j td{border-bottom:1px solid var(--line);padding:8px 10px;vertical-align:t
 
 <script>
 /* ================= configuration ================= */
-const VERSION = { numero:"1.28", date:"2026-10-10 21:23" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.29", date:"2026-10-13 22:34" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 
@@ -347,7 +345,6 @@ async function demarrer(){
   $("#tab-personnes").classList.toggle("hidden", role !== "proprietaire");
   $("#tab-resultats").classList.toggle("hidden", role !== "proprietaire");
   $("#tab-saisie").classList.toggle("hidden", role !== "proprietaire");
-  $("#lien-rosace").classList.toggle("hidden", role !== "proprietaire");
   if (role === "proprietaire") infoSauvegarde();
   if (!role){
     $("#editor-host").innerHTML = `<p class="empty">Ton compte est bien connecté, mais aucun rôle ne lui est attribué dans Flamme Bleue. Le propriétaire doit te déclarer dans la table des rôles.</p>`;
