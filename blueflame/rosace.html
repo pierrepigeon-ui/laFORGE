@@ -30,7 +30,7 @@ main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;padding:14p
 #scene{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px}
 #scene > svg{width:100%;height:auto;display:block;touch-action:none}
 #scene:fullscreen{display:flex;align-items:center;justify-content:center;padding:0;border:0;border-radius:0;background:#fff}
-#scene:fullscreen > svg{flex:none;width:min(100vw,100vh);height:min(100vw,100vh);max-width:none}
+#scene:fullscreen > svg{flex:none;width:100vw;height:100vh;max-width:none}
 #scene.zoome{cursor:grab;user-select:none} #scene.glisse{cursor:grabbing} #scene.glisse .el{cursor:grabbing}
 #scene .el{cursor:pointer;transition:opacity .2s}
 #scene .el:hover{filter:brightness(1.06)}
@@ -87,7 +87,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px} .field{display:block;margi
   <div style="display:flex;gap:10px"><button class="btn" type="submit">Se connecter</button><button class="btn ghost" type="button" id="login-fermer">Fermer</button></div>
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 <script>
-const VERSION = { numero:"1.23", date:"2026-10-14 23:09" };
+const VERSION = { numero:"1.24", date:"2026-10-14 23:13" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const ACCES = ["proprietaire"];   // rôles autorisés (en attendant la table des droits d'accès)
@@ -238,48 +238,57 @@ function basculer(){
 $("#bascule").addEventListener("click", basculer);
 /* ---------- zoom à la molette (affichage seulement : les téléchargements restent la rosace entière) ----------
    molette : zoom centré sur le pointeur, de ×1 à ×6 ; glisser : déplacer la vue une fois zoomé ;
-   le bouton « Zoom ×… » revient à la rosace entière. Le zoom est gardé quand la rosace se redessine. */
+   le bouton « Zoom ×… » revient à ×1. La vue épouse la forme de la zone d'affichage : en plein écran,
+   la rosace zoomée occupe tout l'écran, pas seulement un carré. Le zoom est gardé quand la rosace se redessine. */
 const TAILLE = 1800, ZMAX = 6;
-let vue = { x: 0, y: 0, w: TAILLE };
+let vue = { cx: TAILLE / 2, cy: TAILLE / 2, z: 1 };
+function cadre(){                                            // largeur et hauteur visibles, en unités de la rosace
+  const r = $("#scene > svg").getBoundingClientRect(), a = r.width && r.height ? r.width / r.height : 1;
+  const h = a >= 1 ? TAILLE / vue.z : TAILLE / vue.z / a;    // à ×1, toute la rosace tient dans la zone
+  return { w: h * a, h, r };
+}
 function appliquerZoom(){
   const svg = $("#scene > svg"); if (!svg) return;
-  vue.w = Math.min(TAILLE, Math.max(TAILLE / ZMAX, vue.w));
-  vue.x = Math.min(TAILLE - vue.w, Math.max(0, vue.x)); vue.y = Math.min(TAILLE - vue.w, Math.max(0, vue.y));
-  svg.setAttribute("viewBox", `${vue.x.toFixed(1)} ${vue.y.toFixed(1)} ${vue.w.toFixed(1)} ${vue.w.toFixed(1)}`);
-  const z = TAILLE / vue.w, zoome = z > 1.001;
+  vue.z = Math.min(ZMAX, Math.max(1, vue.z));
+  const { w, h } = cadre();
+  const borner = (c, t) => t >= TAILLE ? TAILLE / 2 : Math.min(TAILLE - t / 2, Math.max(t / 2, c));
+  vue.cx = borner(vue.cx, w); vue.cy = borner(vue.cy, h);
+  svg.setAttribute("viewBox", [vue.cx - w / 2, vue.cy - h / 2, w, h].map(n => n.toFixed(1)).join(" "));
+  const zoome = vue.z > 1.001;
   $("#scene").classList.toggle("zoome", zoome);
   $("#zoom-reset").classList.toggle("hidden", !zoome);
-  $("#zoom-reset").textContent = `Zoom ×${z.toFixed(1).replace(".", ",")} — revenir à ×1`;
-}
-function pointRosace(ev){                                   // coordonnées du pointeur dans la rosace
-  const r = $("#scene > svg").getBoundingClientRect();
-  return [vue.x + (ev.clientX - r.left) / r.width * vue.w, vue.y + (ev.clientY - r.top) / r.height * vue.w, r];
+  $("#zoom-reset").textContent = `Zoom ×${vue.z.toFixed(1).replace(".", ",")} — revenir à ×1`;
 }
 $("#scene").addEventListener("wheel", ev => {
   if (!$("#scene > svg")) return;
   ev.preventDefault();
-  const [px, py] = pointRosace(ev), f = Math.exp(Math.sign(ev.deltaY) * 0.18), w = Math.min(TAILLE, Math.max(TAILLE / ZMAX, vue.w * f));
-  vue = { x: px - (px - vue.x) * w / vue.w, y: py - (py - vue.y) * w / vue.w, w };
+  const { w, h, r } = cadre();
+  const px = vue.cx - w / 2 + (ev.clientX - r.left) / r.width * w, py = vue.cy - h / 2 + (ev.clientY - r.top) / r.height * h;
+  const z = Math.min(ZMAX, Math.max(1, vue.z * Math.exp(-Math.sign(ev.deltaY) * 0.18))), k = vue.z / z;   // le point sous la souris ne bouge pas
+  vue = { cx: px + (vue.cx - px) * k, cy: py + (vue.cy - py) * k, z };
   appliquerZoom();
 }, { passive: false });
 let prise = null, aGlisse = false;
 $("#scene").addEventListener("pointerdown", ev => {
-  if (vue.w >= TAILLE || ev.button !== 0) return;
-  prise = { x: ev.clientX, y: ev.clientY, vx: vue.x, vy: vue.y }; aGlisse = false;
+  if (vue.z <= 1.001 || ev.button !== 0) return;
+  prise = { x: ev.clientX, y: ev.clientY, cx: vue.cx, cy: vue.cy }; aGlisse = false;
 });
 window.addEventListener("pointermove", ev => {
   if (!prise) return;
   const dx = ev.clientX - prise.x, dy = ev.clientY - prise.y;
   if (!aGlisse && Math.hypot(dx, dy) < 5) return;
   aGlisse = true; $("#scene").classList.add("glisse");
-  const r = $("#scene > svg").getBoundingClientRect();
-  vue.x = prise.vx - dx / r.width * vue.w; vue.y = prise.vy - dy / r.height * vue.w; appliquerZoom();
+  const { w, h, r } = cadre();
+  vue.cx = prise.cx - dx / r.width * w; vue.cy = prise.cy - dy / r.height * h; appliquerZoom();
 });
 window.addEventListener("pointerup", () => { prise = null; $("#scene").classList.remove("glisse"); });
 $("#scene").addEventListener("click", ev => { if (aGlisse){ ev.stopImmediatePropagation(); ev.preventDefault(); aGlisse = false; } }, true);   // un glissé n'est pas un clic
-$("#zoom-reset").addEventListener("click", () => { vue = { x: 0, y: 0, w: TAILLE }; appliquerZoom(); });
-/* plein écran : la rosace seule ; Échap (géré par le navigateur) ramène à la page. Le zoom y fonctionne aussi. */
+$("#zoom-reset").addEventListener("click", () => { vue = { cx: TAILLE / 2, cy: TAILLE / 2, z: 1 }; appliquerZoom(); });
+/* plein écran : la rosace seule, sur tout l'écran ; Échap (géré par le navigateur) ramène à la page.
+   On y entre et on en sort à ×1, rosace entière ; le zoom et le glissé y fonctionnent. */
 $("#plein-ecran").addEventListener("click", () => { const sc = $("#scene"); if (sc.requestFullscreen) sc.requestFullscreen().catch(() => {}); });
+document.addEventListener("fullscreenchange", () => { vue = { cx: TAILLE / 2, cy: TAILLE / 2, z: 1 }; requestAnimationFrame(appliquerZoom); });
+window.addEventListener("resize", () => requestAnimationFrame(appliquerZoom));
 if (!document.fullscreenEnabled) $("#plein-ecran").hidden = true;
 $("#scene").addEventListener("click", e => { if (e.target.closest(".centre")) basculer(); });
 
