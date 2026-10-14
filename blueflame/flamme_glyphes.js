@@ -1,11 +1,12 @@
 /* =====================================================================
-   Flamme Bleue — glyphes des codes (2.0, 14/10/2026) — « système C »
+   Flamme Bleue — glyphes des codes (2.1, 14/10/2026) — « système C »
    Un petit dessin par type de code, à côté du code en lettres :
    - valeur (W) : un disque plein ;
    - anti-valeur (/w) : un disque pointillé barré ;
    - absences composées (/wu, /wbg, du Détail) : une ligne de disques pointillés barrés ;
-   - trait (WWu) : une gélule de la valeur, cerclée de sa couleur, avec le disque de la voisine
-     du côté où elle se trouve sur la roue (WWg à gauche, WWu à droite) ;
+   - trait (WWu) : une gélule de la valeur, contour et fond de la même teinte (blanc compris), avec le disque
+     de la voisine du côté où elle se trouve sur la roue (WWg à gauche, WWu à droite), le tout entouré d'un
+     trait fin gris — ou d'un anneau de la teinte voulue (options.anneau, utilisé par la rosace) ;
    - motivation (WU) et projet (GWU) : la mini-rosace — chaque valeur à sa place sur la roue
      (W en haut, puis U, B, R, G dans le sens des aiguilles), cercle en filigrane ;
    - style (X.y) : X en secteur de 60° au côté droit vertical, y en petit disque à droite ;
@@ -14,7 +15,7 @@
    - spécialiste (XY.z) : X et Y en secteurs de 60° posés à plat, légèrement écartés, z en petit disque entre eux ;
    - généraliste (XY/z) : X et Y en secteurs de 60° pointés à gauche et à droite (nœud papillon), z en disque pointillé barré dessous.
    Les trois glyphes de profil sont cadrés dans la même boîte.
-   Usage : FLAMME_GLYPHES.glyphe(code, { W:"#FFFFFF", … }) → chaîne SVG, ou null si le code est inconnu.
+   Usage : FLAMME_GLYPHES.glyphe(code, { W:"#FFFFFF", … }, { anneau:"#00D900" }) → chaîne SVG, ou null si le code est inconnu.
    ===================================================================== */
 (function (racine) {
   const ORDRE = ["W", "U", "B", "R", "G"];
@@ -25,7 +26,7 @@
   // boîtes englobantes des glyphes de profil (x, y, largeur, hauteur), pour les cadrer pareil
   const BOITE = { radical: [1.1, 3, 31.8, 14], specialiste: [2, 4.9, 30, 12.6], generaliste: [3, 1.5, 28, 17.6] };
 
-  function glyphe(code, teintes) {
+  function glyphe(code, teintes, options = {}) {
     const T = c => (teintes && teintes[c]) || DEFAUT[c];
     const blanc = c => T(c).toUpperCase() === "#FFFFFF";
     const trait = c => blanc(c) ? BORD : T(c);                                  // contour lisible pour le blanc
@@ -53,8 +54,10 @@
     }
     if ((m = code.match(/^([WUBRG])\1([wubrg])$/))) {                                             // trait
       const X = m[1], V = m[2].toUpperCase(), gauche = ORDRE[(ORDRE.indexOf(X) + 4) % 5] === V, L = 26, r = 5, y0 = 5;
-      return svg(30, 20, `<rect x="2" y="${y0}" width="${L}" height="${2 * r}" rx="${r}" fill="${T(X)}" stroke="${trait(X)}" stroke-width="1.6"/>`
-        + `<circle cx="${gauche ? 2 + r : 2 + L - r}" cy="${y0 + r}" r="${r - .5}" fill="${T(V)}" stroke="${trait(X)}" stroke-width="1.4"/>`);
+      const e = .8, sa = options.anneau ? 1.3 : .6, d = e + sa / 2;             // anneau posé juste autour du contour de la gélule
+      return svg(30, 20, `<rect x="2" y="${y0}" width="${L}" height="${2 * r}" rx="${r}" fill="${T(X)}" stroke="${T(X)}" stroke-width="1.6"/>`
+        + `<circle cx="${gauche ? 2 + r : 2 + L - r}" cy="${y0 + r}" r="${r - .5}" fill="${T(V)}" stroke="${T(X)}" stroke-width="1.4"/>`
+        + `<rect x="${f2(2 - d)}" y="${f2(y0 - d)}" width="${f2(L + 2 * d)}" height="${f2(2 * r + 2 * d)}" rx="${f2(r + d)}" fill="none" stroke="${options.anneau || BORD}" stroke-width="${sa}"/>`);
     }
     if (/^[WUBRG]{2,3}$/.test(code)) {                                                            // motivation, projet : mini-rosace
       let s = `<circle cx="10" cy="10" r="8.6" fill="none" stroke="currentColor" stroke-width=".8" opacity=".22"/>`;
@@ -83,6 +86,6 @@
     }
     return null;
   }
-  const api = { VERSION: { numero: "2.0", date: "2026-10-14 20:49" }, glyphe };
+  const api = { VERSION: { numero: "2.1", date: "2026-10-14 22:33" }, glyphe };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else racine.FLAMME_GLYPHES = api;
 })(typeof window !== "undefined" ? window : globalThis);

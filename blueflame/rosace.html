@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <script src="flamme_moteur.js?v=1.3"></script>
-<script src="flamme_glyphes.js?v=2.0"></script>
+<script src="flamme_glyphes.js?v=2.1"></script>
 <style>
 :root{--ink:#1B2430;--muted:#5B6573;--line:#DDE1E7;--paper:#F4F6F8;--panel:#FFFFFF;--hover:#EEF1F5;--ok:#1E7A46;--warn:#9A5B00;--err:#B42318;
   --serif:"Source Serif 4",Georgia,"Times New Roman",serif;--sans:"IBM Plex Sans","Segoe UI",Arial,sans-serif}
@@ -28,7 +28,8 @@ header a{color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:
 .outils select{padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:var(--panel);max-width:340px}
 main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;padding:14px 20px 40px;max-width:1500px;margin:auto;align-items:start}
 #scene{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px}
-#scene > svg{width:100%;height:auto;display:block}
+#scene > svg{width:100%;height:auto;display:block;touch-action:none}
+#scene.zoome{cursor:grab;user-select:none} #scene.glisse{cursor:grabbing} #scene.glisse .el{cursor:grabbing}
 #scene .el{cursor:pointer;transition:opacity .2s}
 #scene .el:hover{filter:brightness(1.06)}
 #scene.focus .el.eteint{opacity:.16}
@@ -66,6 +67,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px} .field{display:block;margi
     <a class="btn ghost hidden" id="lien-fiche" href="#" target="_blank">Voir sa fiche</a>
     <a class="btn ghost hidden" id="lien-ecusson" href="#" target="_blank">Voir son écusson</a>
     <a class="btn ghost hidden" id="lien-detail" href="#" target="_blank">Voir le détail</a>
+    <button class="btn ghost hidden" id="zoom-reset" type="button" title="Revenir à la rosace entière">Zoom ×1</button>
     <button class="btn ghost" id="dl-svg" type="button">Télécharger en SVG</button>
     <button class="btn ghost" id="dl-png" type="button">Télécharger en PNG</button>
     <span class="msg" id="msg" role="status"></span>
@@ -82,7 +84,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px} .field{display:block;margi
   <div style="display:flex;gap:10px"><button class="btn" type="submit">Se connecter</button><button class="btn ghost" type="button" id="login-fermer">Fermer</button></div>
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 <script>
-const VERSION = { numero:"1.18", date:"2026-10-14 22:20" };
+const VERSION = { numero:"1.21", date:"2026-10-14 22:55" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const ACCES = ["proprietaire"];   // rôles autorisés (en attendant la table des droits d'accès)
@@ -134,14 +136,16 @@ const inclus = (a, b) => [...a.pres].every(x => b.pres.has(x)) && [...a.abs].eve
 /* profil : on allume ce que le profil contient.
    élément cliqué (prioritaire) : on allume ce qu'il contient ET ce qui le contient (W → WU, WUB, W/r, WWu… ; WU → W, U, WUB, W.u…). */
 /* Les lettres dans les disques cèdent la place au glyphe du code (flamme_glyphes.js) :
-   motivations, projets, tempéraments ; les traits reçoivent le leur sur le haut du cadre ; les valeurs n'en ont plus besoin.
-   Un fond blanc, juste à la taille du glyphe, le garde lisible sur les cadres de sa couleur (pas pour les traits). */
+   motivations et projets ; les traits reçoivent le leur sur le haut du cadre, cerclé de la valeur secondaire comme le cadre ;
+   les valeurs et les tempéraments n'en ont pas (nom seul, centré dans le cadre).
+   Sous la mini-rosace, un disque de FOND_MINI (le jaune du centre : le blanc se confondait avec la valeur W). */
+const FOND_MINI = "#FFD400";   // ou "none" pour un fond transparent
 const LETTRE = /(?:<g filter="url\(#shadow\)">\s*)?<circle cx="([\d.]+)" cy="([\d.]+)" r="([\d.]+)"[^>]*\/>\s*<text [^>]*>[WUBRGwubrg]<\/text>(?:\s*<\/g>)?/g;
-function poser(code, cx, cy, h, fond){
-  const g = window.FLAMME_GLYPHES?.glyphe(code); if (!g) return "";
+function poser(code, cx, cy, h, fond, options){
+  const g = window.FLAMME_GLYPHES?.glyphe(code, null, options); if (!g) return "";
   const [, w0, h0] = g.match(/width="([\d.]+)" height="([\d.]+)"/), w = h * w0 / h0;
   let dessous = "";
-  if (fond === "disque") dessous = `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${(h * 0.43 + 1.5).toFixed(1)}" fill="#FFFFFF" fill-opacity=".9"/>`;   // juste le tour de la mini-rosace
+  if (fond === "disque") dessous = `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${(h * 0.43 + 1.5).toFixed(1)}" fill="${FOND_MINI}"/>`;   // juste le tour de la mini-rosace
   else if (fond) dessous = `<rect x="${(cx - w / 2 - 1.5).toFixed(1)}" y="${(cy - h / 2 - 0.5).toFixed(1)}" width="${(w + 3).toFixed(1)}" height="${(h + 1).toFixed(1)}" rx="${(h / 2).toFixed(1)}" fill="#FFFFFF" fill-opacity=".9"/>`;
   return dessous + g.replace(/^<svg class="g" width="[\d.]+" height="[\d.]+"/, `<svg x="${(cx - w / 2).toFixed(1)}" y="${(cy - h / 2).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}"`);
 }
@@ -151,7 +155,8 @@ function glyphiser(s, code){
   if (/^[WUBRG]{2}[wubrg]$/.test(code)){                               // trait : gélule à cheval sur le haut du cadre, textes un peu plus bas
     const r = s.match(/<rect x="([\d.]+)" y="([\d.]+)" width="([\d.]+)"/);
     s = decaler(s, /(<text x="[\d.]+" y=")([\d.]+)("[^>]*class="trait-)/g, 4);
-    return r ? s.replace(/<\/g>\s*$/, poser(code, +r[1] + +r[3] / 2, +r[2] + 1, 26, false) + "</g>") : s;
+    const anneau = s.match(/<rect [^>]*stroke="(#[0-9A-Fa-f]{6})"/)?.[1];          // la couleur du cadre = la valeur secondaire
+    return r ? s.replace(/<\/g>\s*$/, poser(code, +r[1] + +r[3] / 2, +r[2] + 1, 26, false, { anneau }) + "</g>") : s;
   }
   if (!L.length) return s;
   s = s.replace(LETTRE, "").replace(/<text [^>]*>\/<\/text>/g, "");
@@ -159,10 +164,9 @@ function glyphiser(s, code){
     return decaler(s, /(<text x="[\d.]+" y=")([\d.]+)("[^>]*class="val-)/g, -24 + { W: 0, U: 7, G: 7, B: 13, R: 13 }[code]);
   const xs = L.map(l => l.x), cx = (Math.min(...xs) + Math.max(...xs)) / 2, cy = L[0].y, r = L[0].r;
   if (/^[WUBRG]{2,3}$/.test(code)) return s + poser(code, cx, cy - r * 0.35, r * 2.6, "disque");   // motivation, projet : mini-rosace, un peu remontée
-  // tempérament : cadre agrandi de 5 de chaque côté, nom un peu plus bas
-  s = s.replace(/<rect x="([\d.]+)" y="([\d.]+)" width="([\d.]+)" height="([\d.]+)"/g, (m, x, y, w, h) => `<rect x="${+x - 5}" y="${+y - 5}" width="${+w + 10}" height="${+h + 10}"`);
-  s = decaler(s, /(<text x="[\d.]+" y=")([\d.]+)("[^>]*class="temp-)/g, 7);
-  return s + poser(code, cx, cy - 2, r * 2.9, true);
+  // tempérament : pas de glyphe, le nom centré verticalement dans le cadre
+  const c = s.match(/<rect x="[\d.]+" y="([\d.]+)" width="[\d.]+" height="([\d.]+)"/);
+  return c ? s.replace(/(<text x="[\d.]+" y=")[\d.]+("[^>]*class="temp-name)/, `$1${(+c[1] + +c[2] / 2 + 4).toFixed(1)}$2`) : s;
 }
 function construireSVG(profil, element){
   let regle = null;
@@ -204,6 +208,7 @@ function dessiner(){
   const actif = !!p && surbrillance;
   svgCourant = construireSVG(actif ? p : "", focusEl);
   $("#scene").innerHTML = svgCourant;
+  appliquerZoom();
   $("#bascule").hidden = !p;
   $("#bascule").setAttribute("aria-pressed", surbrillance);
   $("#bascule").textContent = "Surbrillance : " + (surbrillance ? "activée" : "désactivée");
@@ -225,6 +230,48 @@ function basculer(){
   surbrillance = !surbrillance; dessiner();
 }
 $("#bascule").addEventListener("click", basculer);
+/* ---------- zoom à la molette (affichage seulement : les téléchargements restent la rosace entière) ----------
+   molette : zoom centré sur le pointeur, de ×1 à ×6 ; glisser : déplacer la vue une fois zoomé ;
+   le bouton « Zoom ×… » revient à la rosace entière. Le zoom est gardé quand la rosace se redessine. */
+const TAILLE = 1800, ZMAX = 6;
+let vue = { x: 0, y: 0, w: TAILLE };
+function appliquerZoom(){
+  const svg = $("#scene > svg"); if (!svg) return;
+  vue.w = Math.min(TAILLE, Math.max(TAILLE / ZMAX, vue.w));
+  vue.x = Math.min(TAILLE - vue.w, Math.max(0, vue.x)); vue.y = Math.min(TAILLE - vue.w, Math.max(0, vue.y));
+  svg.setAttribute("viewBox", `${vue.x.toFixed(1)} ${vue.y.toFixed(1)} ${vue.w.toFixed(1)} ${vue.w.toFixed(1)}`);
+  const z = TAILLE / vue.w, zoome = z > 1.001;
+  $("#scene").classList.toggle("zoome", zoome);
+  $("#zoom-reset").classList.toggle("hidden", !zoome);
+  $("#zoom-reset").textContent = `Zoom ×${z.toFixed(1).replace(".", ",")} — revenir à ×1`;
+}
+function pointRosace(ev){                                   // coordonnées du pointeur dans la rosace
+  const r = $("#scene > svg").getBoundingClientRect();
+  return [vue.x + (ev.clientX - r.left) / r.width * vue.w, vue.y + (ev.clientY - r.top) / r.height * vue.w, r];
+}
+$("#scene").addEventListener("wheel", ev => {
+  if (!$("#scene > svg")) return;
+  ev.preventDefault();
+  const [px, py] = pointRosace(ev), f = Math.exp(Math.sign(ev.deltaY) * 0.18), w = Math.min(TAILLE, Math.max(TAILLE / ZMAX, vue.w * f));
+  vue = { x: px - (px - vue.x) * w / vue.w, y: py - (py - vue.y) * w / vue.w, w };
+  appliquerZoom();
+}, { passive: false });
+let prise = null, aGlisse = false;
+$("#scene").addEventListener("pointerdown", ev => {
+  if (vue.w >= TAILLE || ev.button !== 0) return;
+  prise = { x: ev.clientX, y: ev.clientY, vx: vue.x, vy: vue.y }; aGlisse = false;
+});
+window.addEventListener("pointermove", ev => {
+  if (!prise) return;
+  const dx = ev.clientX - prise.x, dy = ev.clientY - prise.y;
+  if (!aGlisse && Math.hypot(dx, dy) < 5) return;
+  aGlisse = true; $("#scene").classList.add("glisse");
+  const r = $("#scene > svg").getBoundingClientRect();
+  vue.x = prise.vx - dx / r.width * vue.w; vue.y = prise.vy - dy / r.height * vue.w; appliquerZoom();
+});
+window.addEventListener("pointerup", () => { prise = null; $("#scene").classList.remove("glisse"); });
+$("#scene").addEventListener("click", ev => { if (aGlisse){ ev.stopImmediatePropagation(); ev.preventDefault(); aGlisse = false; } }, true);   // un glissé n'est pas un clic
+$("#zoom-reset").addEventListener("click", () => { vue = { x: 0, y: 0, w: TAILLE }; appliquerZoom(); });
 $("#scene").addEventListener("click", e => { if (e.target.closest(".centre")) basculer(); });
 
 /* ---------- fiche ---------- */
