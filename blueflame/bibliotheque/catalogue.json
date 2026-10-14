@@ -19,10 +19,11 @@
    "statut": "exact"
   },
   "W/r": {
-   "nom": "chaîne",
+   "nom": "colonne ionique",
    "fichier": "meubles/W_r.svg",
-   "icone": "crossed-chains",
-   "statut": "exact"
+   "icone": "ionic-column",
+   "statut": "exact",
+   "note": "remplace chaîne (14/10/2026)"
   },
   "W/g": {
    "nom": "balance",
@@ -51,10 +52,11 @@
    "statut": "exact"
   },
   "U/w": {
-   "nom": "comète",
+   "nom": "prisme",
    "fichier": "meubles/U_w.svg",
-   "icone": "comet-spark",
-   "statut": "exact"
+   "icone": "prism",
+   "statut": "exact",
+   "note": "remplace comète (14/10/2026)"
   },
   "B/r": {
    "nom": "marteau",
@@ -87,10 +89,11 @@
    "statut": "exact"
   },
   "R/w": {
-   "nom": "chaîne brisée",
+   "nom": "aile",
    "fichier": "meubles/R_w.svg",
-   "icone": "breaking-chain",
-   "statut": "exact"
+   "icone": "feathered-wing",
+   "statut": "exact",
+   "note": "remplace chaîne brisée (14/10/2026)"
   },
   "R/u": {
    "nom": "fasce ondée",

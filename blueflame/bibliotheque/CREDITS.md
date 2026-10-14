@@ -18,3 +18,7 @@ Les couleurs d'origine ont été remplacées par `currentColor`, pour que le mot
 Cinq animaux sont des **dessins originaux** créés pour Blue Flame, dans l'esprit graphique de game-icons : hirondelle (R.wu), moineau (GU.w), suricate (UR/b), caméléon (RW/g), paon (BG/w). Ils n'appellent aucun crédit tiers.
 
 Cinq autres sont des **compositions** de deux icônes game-icons (même licence CC BY 3.0, modification autorisée) : pique-bœuf sur buffle (G.wu), vouivre sur son trésor (BG.r), luciole (RW.u), araignée sur sa toile (UB/r, yeux masqués), zèbre (GW/u, rayures ajoutées).
+
+## Révision des meubles (14/10/2026)
+
+Trois meubles remplacés : colonne ionique (W/r, icône `ionic-column`) au lieu de la chaîne, prisme (U/w, `prism`) au lieu de la comète, aile (R/w, `feathered-wing`) au lieu de la chaîne brisée. Mêmes source et licence (game-icons.net, CC BY 3.0).
