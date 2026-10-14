@@ -82,7 +82,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px} .field{display:block;margi
   <div style="display:flex;gap:10px"><button class="btn" type="submit">Se connecter</button><button class="btn ghost" type="button" id="login-fermer">Fermer</button></div>
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 <script>
-const VERSION = { numero:"1.16", date:"2026-10-14 21:13" };
+const VERSION = { numero:"1.17", date:"2026-10-14 22:12" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const ACCES = ["proprietaire"];   // rôles autorisés (en attendant la table des droits d'accès)
@@ -128,7 +128,7 @@ function couleursDe(code){
   return { pres: new Set(av.replace(".", "").toUpperCase()), abs: new Set(ap.toUpperCase()) };
 }
 
-const FLAMME_CENTRE = `<g transform="translate(830 825) scale(1.4)"><defs><linearGradient id="rosace-flamme-g" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#0B2E8A"/><stop offset=".55" stop-color="#2F6BFF"/><stop offset="1" stop-color="#BFE0FF"/></linearGradient></defs><path fill="url(#rosace-flamme-g)" d="M50 4c4 16 22 24 22 48 0 12-6 22-14 26 4-8 2-18-6-24 2 10-4 16-8 18-2-10-10-12-10-22-8 8-10 20-4 30C18 76 14 64 16 52c3-16 18-22 22-36 4 8 4 16 2 22 8-6 12-18 10-34z"/></g>`;
+const FLAMME_CENTRE = `<g transform="translate(800 752) scale(2)"><rect x="6" y="86" width="88" height="8" rx="4" fill="#0B2E8A"/><path fill="#2F6BFF" d="M13 84c-7-7-5-18 9-34-1 14 6 26-1 34zM30 84c-7-9-4-24 13-46-2 18 6 34-1 46zM47 84c-8-10-5-30 15-56-3 22 7 42-1 56zM64 84c-7-9-4-26 13-44-2 18 6 32-1 44zM81 84c-7-7-5-20 10-36-1 14 6 28-1 36z"/><text x="6" y="116" textLength="88" lengthAdjust="spacingAndGlyphs" fill="#0B2E8A" style="font:600 15px 'Source Serif 4',Georgia,'Times New Roman',serif">Flamme Bleue</text></g>`;
 /* a ⊆ b : toutes les couleurs présentes de a sont présentes dans b, toutes ses absentes sont absentes dans b */
 const inclus = (a, b) => [...a.pres].every(x => b.pres.has(x)) && [...a.abs].every(x => b.abs.has(x));
 /* profil : on allume ce que le profil contient.
@@ -182,7 +182,7 @@ function construireSVG(profil, element){
       return `<g class="el${eteint}" data-code="${esc(p.code)}">${s}</g>`;
     }
     if (!p.code && s.includes("Disque central")){                // logo au centre, nom dessous ; clic = bascule de la surbrillance
-      s = s.replace(/(<circle[^>]*\/>)/, `$1\n${FLAMME_CENTRE}`).replace('y="907"', 'y="962"');
+      s = s.replace(/(<circle[^>]*\/>)/, `$1\n${FLAMME_CENTRE}`).replace(/<text x=\"900\" y=\"907\"[\s\S]*?Flamme Bleue<\/text>/, "");
       s = `<g class="centre">${s}</g>`;
     }
     return s;
