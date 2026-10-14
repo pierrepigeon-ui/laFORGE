@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <script src="flamme_moteur.js?v=1.3"></script>
+<script src="flamme_glyphes.js?v=2.0"></script>
 <style>
 :root{--ink:#1B2430;--muted:#5B6573;--line:#DDE1E7;--paper:#F4F6F8;--panel:#FFFFFF;--hover:#EEF1F5;--ok:#1E7A46;--warn:#9A5B00;--err:#B42318;
   --serif:"Source Serif 4",Georgia,"Times New Roman",serif;--sans:"IBM Plex Sans","Segoe UI",Arial,sans-serif}
@@ -27,7 +28,7 @@ header a{color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:
 .outils select{padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:var(--panel);max-width:340px}
 main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;padding:14px 20px 40px;max-width:1500px;margin:auto;align-items:start}
 #scene{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px}
-#scene svg{width:100%;height:auto;display:block}
+#scene > svg{width:100%;height:auto;display:block}
 #scene .el{cursor:pointer;transition:opacity .2s}
 #scene .el:hover{filter:brightness(1.06)}
 #scene.focus .el.eteint{opacity:.16}
@@ -81,7 +82,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px} .field{display:block;margi
   <div style="display:flex;gap:10px"><button class="btn" type="submit">Se connecter</button><button class="btn ghost" type="button" id="login-fermer">Fermer</button></div>
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 <script>
-const VERSION = { numero:"1.12", date:"2026-10-11 23:38" };
+const VERSION = { numero:"1.16", date:"2026-10-14 21:13" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const ACCES = ["proprietaire"];   // rôles autorisés (en attendant la table des droits d'accès)
@@ -132,6 +133,37 @@ const FLAMME_CENTRE = `<g transform="translate(830 825) scale(1.4)"><defs><linea
 const inclus = (a, b) => [...a.pres].every(x => b.pres.has(x)) && [...a.abs].every(x => b.abs.has(x));
 /* profil : on allume ce que le profil contient.
    élément cliqué (prioritaire) : on allume ce qu'il contient ET ce qui le contient (W → WU, WUB, W/r, WWu… ; WU → W, U, WUB, W.u…). */
+/* Les lettres dans les disques cèdent la place au glyphe du code (flamme_glyphes.js) :
+   motivations, projets, tempéraments ; les traits reçoivent le leur sur le haut du cadre ; les valeurs n'en ont plus besoin.
+   Un fond blanc, juste à la taille du glyphe, le garde lisible sur les cadres de sa couleur (pas pour les traits). */
+const LETTRE = /(?:<g filter="url\(#shadow\)">\s*)?<circle cx="([\d.]+)" cy="([\d.]+)" r="([\d.]+)"[^>]*\/>\s*<text [^>]*>[WUBRGwubrg]<\/text>(?:\s*<\/g>)?/g;
+function poser(code, cx, cy, h, fond){
+  const g = window.FLAMME_GLYPHES?.glyphe(code); if (!g) return "";
+  const [, w0, h0] = g.match(/width="([\d.]+)" height="([\d.]+)"/), w = h * w0 / h0;
+  let dessous = "";
+  if (fond === "disque") dessous = `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${(h * 0.43 + 1.5).toFixed(1)}" fill="#FFFFFF" fill-opacity=".9"/>`;   // juste le tour de la mini-rosace
+  else if (fond) dessous = `<rect x="${(cx - w / 2 - 1.5).toFixed(1)}" y="${(cy - h / 2 - 0.5).toFixed(1)}" width="${(w + 3).toFixed(1)}" height="${(h + 1).toFixed(1)}" rx="${(h / 2).toFixed(1)}" fill="#FFFFFF" fill-opacity=".9"/>`;
+  return dessous + g.replace(/^<svg class="g" width="[\d.]+" height="[\d.]+"/, `<svg x="${(cx - w / 2).toFixed(1)}" y="${(cy - h / 2).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}"`);
+}
+const decaler = (s, re, dy) => s.replace(re, (m, a, y, b) => a + (+y + dy) + b);
+function glyphiser(s, code){
+  const L = [...s.matchAll(LETTRE)].map(m => ({ x: +m[1], y: +m[2], r: +m[3] }));
+  if (/^[WUBRG]{2}[wubrg]$/.test(code)){                               // trait : gélule à cheval sur le haut du cadre, textes un peu plus bas
+    const r = s.match(/<rect x="([\d.]+)" y="([\d.]+)" width="([\d.]+)"/);
+    s = decaler(s, /(<text x="[\d.]+" y=")([\d.]+)("[^>]*class="trait-)/g, 4);
+    return r ? s.replace(/<\/g>\s*$/, poser(code, +r[1] + +r[3] / 2, +r[2] + 1, 26, false) + "</g>") : s;
+  }
+  if (!L.length) return s;
+  s = s.replace(LETTRE, "").replace(/<text [^>]*>\/<\/text>/g, "");
+  if (/^[WUBRG]$/.test(code))                                          // valeur : plus de disque, nom et devise remontés au centre (selon l'inclinaison du secteur)
+    return decaler(s, /(<text x="[\d.]+" y=")([\d.]+)("[^>]*class="val-)/g, -24 + { W: 0, U: 7, G: 7, B: 13, R: 13 }[code]);
+  const xs = L.map(l => l.x), cx = (Math.min(...xs) + Math.max(...xs)) / 2, cy = L[0].y, r = L[0].r;
+  if (/^[WUBRG]{2,3}$/.test(code)) return s + poser(code, cx, cy - r * 0.35, r * 2.6, "disque");   // motivation, projet : mini-rosace, un peu remontée
+  // tempérament : cadre agrandi de 5 de chaque côté, nom un peu plus bas
+  s = s.replace(/<rect x="([\d.]+)" y="([\d.]+)" width="([\d.]+)" height="([\d.]+)"/g, (m, x, y, w, h) => `<rect x="${+x - 5}" y="${+y - 5}" width="${+w + 10}" height="${+h + 10}"`);
+  s = decaler(s, /(<text x="[\d.]+" y=")([\d.]+)("[^>]*class="temp-)/g, 7);
+  return s + poser(code, cx, cy - 2, r * 2.9, true);
+}
 function construireSVG(profil, element){
   let regle = null;
   if (element){ const x = couleursDe(element); regle = c => inclus(c, x) || inclus(x, c); }
@@ -141,8 +173,10 @@ function construireSVG(profil, element){
     if (p.code){
       const e = E[p.code] || {};
       const [d1, d2] = scinder(e.devise);
-      s = s.replace("{{nom}}", esc(e.nom ?? p.code)).replace("{{devise}}", esc(e.devise ?? ""))
+      const nom = /^[WUBRG]$/.test(p.code) ? (e.nom ?? p.code).toLocaleUpperCase("fr-FR") : (e.nom ?? p.code);   // les valeurs en capitales
+      s = s.replace("{{nom}}", esc(nom)).replace("{{devise}}", esc(e.devise ?? ""))
            .replace("{{d1}}", esc(d1)).replace("{{d2}}", esc(d2));
+      s = glyphiser(s, p.code);
       let eteint = regle && !regle(couleursDe(p.code)) ? " eteint" : "";
       if (element === p.code) eteint = " choisi";
       return `<g class="el${eteint}" data-code="${esc(p.code)}">${s}</g>`;
@@ -176,7 +210,7 @@ function dessiner(){
   const c = $("#scene .centre"); if (c) c.insertAdjacentHTML("afterbegin", `<title>${focusEl ? "Revenir à la rosace entière" : !p ? "Choisir d'abord un profil à mettre en lumière" : surbrillance ? "Éteindre la surbrillance" : "Rallumer la surbrillance"}</title>`);
   $("#msg").className = "msg";
   if (focusEl){ $("#msg").textContent = `En lumière : ${focusEl} (${E[focusEl]?.nom || ""}) et tout ce qui s'y rattache — ce qu'il contient et ce qui le contient. Clic au centre, sur l'élément ou à côté pour revenir.`; return; }
-  $("#msg").textContent = !p ? "" : actif ? `En lumière${p === monProfil ? ", ton profil" : ""} : les éléments compatibles avec ${p} (${E[p]?.nom || ""}) — couleurs présentes et absentes du profil.`
+  $("#msg").textContent = !p ? "" : actif ? `En lumière${p === monProfil ? ", ton profil" : ""} : les éléments compatibles avec ${p} (${E[p]?.nom || ""}) — valeurs présentes et absentes du profil.`
                                          : `Surbrillance désactivée — clique au centre de la rosace pour la rallumer.`;
 }
 /* une seule bascule : le bouton noir et le centre de la rosace font la même chose */
