@@ -51,7 +51,7 @@ table.cl td.f{font-size:16px;width:22px;text-align:center}
 table.cl td.n{font-weight:600;text-transform:uppercase;font-size:12px;letter-spacing:.02em;white-space:nowrap}
 table.cl td.d{color:#5B6573;font-style:italic}
 table.cl tr.top td{background:#F4F6F8}
-table.cl svg.g{height:15px;width:auto;vertical-align:-3px}   /* glyphes des projets : à la hauteur d'une ligne */
+table.cl svg.g{height:15px;width:auto;vertical-align:-3px} .impact svg.g{height:16px;width:auto;vertical-align:-3px}   /* glyphes des projets : à la hauteur d'une ligne */
 .pips{display:inline-flex;gap:3px;align-items:center;vertical-align:1px} svg.g{vertical-align:middle;display:inline-block;overflow:visible}
 .pip{width:11px;height:11px;border-radius:50%;border:1px solid #8892A0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .pip.sec{width:7px;height:7px} .pip.abs{background:transparent!important;border:1.5px dashed var(--c)} .pip.sep{width:auto;height:auto;border:0;font-size:10px;color:#5B6573}
@@ -99,7 +99,7 @@ dialog h2{border:0} .field{display:block;margin-bottom:12px} .field span{display
   <div style="display:flex;gap:10px"><button class="btn" type="submit">Se connecter</button><button class="btn ghost" type="button" id="login-fermer">Fermer</button></div>
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 <script>
-const VERSION = { numero:"1.12", date:"2026-10-14 20:49" };
+const VERSION = { numero:"1.13", date:"2026-10-14 21:42" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const M = window.FLAMME_MOTEUR;
@@ -150,7 +150,7 @@ async function lireScores(){
 function blocProfil(code){
   const f = E[code] || {};
   const paras = [f.texte1, f.texte2, f.texte3].filter(Boolean).map(t => `<p>${esc(t)}</p>`).join("");
-  return `<section class="profil"><div class="code">${pips(code)}${esc(code)}</div><h1>${esc(f.nom || code)}</h1>
+  return `<section class="profil"><div class="code" title="${esc(code)}">${pips(code)}</div><h1>${esc(f.nom || code)}</h1>
     <div class="devise">${esc(f.devise || "")}</div>${paras ? `<div class="texte">${paras}</div>` : ""}</section>`;
 }
 function tableau(liste){
@@ -162,7 +162,7 @@ function rendre(src){
   const s01 = Object.fromEntries(M.ORDRE.map(c => [c, src.scores[c] / 100]));
   const f = M.fiche(s01, { classement: src.classement });
   const codes = f.profil.codes;
-  const impacts = (liste, champ, phrase) => liste.map(x => `<div class="impact"><b>${nomMaj(x.code)} (${esc(x.code)})</b> ${phrase}, ce qui peut présenter les impacts suivants :
+  const impacts = (liste, champ, phrase) => liste.map(x => `<div class="impact"><b><span title="${esc(x.code)}">${pips(x.code)}</span> ${nomMaj(x.code)}</b> ${phrase}, ce qui peut présenter les impacts suivants :
     <div>${esc(E[x.code]?.[champ] || "—")}</div></div>`).join("");
   const roles = liste => liste.map(x => `<div class="roles"><div>${esc(E[x.code]?.texte_plus || "")}</div><div>${esc(E[x.code]?.texte_moins || "")}</div></div>`).join("");
   $("#feuille").innerHTML = `
@@ -179,8 +179,7 @@ function rendre(src){
       </div>
       <div>
         <h2 style="margin-top:0">Scores</h2>
-        <div class="histo">${M.ORDRE.map(c => `<div><span style="height:${Math.max(2, src.scores[c] * .5)}px;background:${C[c]?.couleur}"></span>${c}</div>`).join("")}</div>
-        <div style="font-size:12px;color:#5B6573">${M.ORDRE.map(c => `${c} ${String(Math.round(src.scores[c] * 10) / 10).replace(".", ",")}`).join(" · ")}</div>
+        <div class="histo">${M.ORDRE.map(c => `<div title="${esc(E[c]?.nom || c)}"><span style="height:${Math.max(2, src.scores[c] * .5)}px;background:${C[c]?.couleur}"></span>${String(Math.round(src.scores[c] * 10) / 10).replace(".", ",")}</div>`).join("")}</div>
         <h2>Valeurs <small style="font:12px var(--sans);color:#5B6573">ce qui est important</small></h2>${tableau(f.valeurs)}
         <h2>Motivations <small style="font:12px var(--sans);color:#5B6573">ce qui apporte l'énergie</small></h2>${tableau(f.motivations)}
         <h2>Projets <small style="font:12px var(--sans);color:#5B6573">où l'énergie est utilisée</small></h2>${tableau(f.projets)}

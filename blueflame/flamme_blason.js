@@ -10,7 +10,7 @@
   if (typeof module === "object" && module.exports) module.exports = b; else racine.FLAMME_BLASON = b;
 })(typeof self !== "undefined" ? self : this, function (M) {
   "use strict";
-  const VERSION = { numero: "1.10", date: "2026-10-14 21:36" };
+  const VERSION = { numero: "1.11", date: "2026-10-14 21:42" };
 
 /* Meubles héraldiques FLAMME : silhouettes pleines dans une boîte 100 × 100, cernées de sable.
    Chaque meuble : { nom, pluriel, genre ('m'|'f'), svg } — svg sans couleur (fill/stroke hérités). */
@@ -254,7 +254,7 @@ const MEUBLES = {
       formes.push(`<path d="${ECU}" fill="none" stroke="${teinte(e1)}" stroke-width="${2 * W}" clip-path="url(#pg-${id})"/>`,
                   `<path d="${ECU}" fill="none" stroke="${teinte(e2)}" stroke-width="${2 * W}" clip-path="url(#pd-${id})"/>`);
       return { texte: `à la bordure partie ${de(e1)} et ${de(e2)}`,
-        lecture: `La bordure porte les deux couleurs absentes, ${e1} (${pct(s[e1])}) à dextre et ${e2} (${pct(s[e2])}) à senestre, partagée sur le même axe que le reste de l'écu.` };
+        lecture: `La bordure porte les deux valeurs absentes, ${e1} (${pct(s[e1])}) à dextre et ${e2} (${pct(s[e2])}) à senestre, partagée sur le même axe que le reste de l'écu.` };
     }
 
     // 1.9 : quatre couleurs montrées, la cinquième (la moins signifiante) se lit dans la forme
@@ -277,11 +277,11 @@ const MEUBLES = {
       zones = [{ y0: 0, y1: 480, g: A, d: A }];
       const gp = piece.art === "une" ? "f" : "m";
       blason = `${cap(de(A))} diapré, à ${piece.art} ${piece.nom} ${accorde("parti", gp)} ${de(b1)} ${lig(b1, gp)} et ${de(b2)} ${lig(b2, gp)}, à la bordure ${de(e)}`;
-      lecture.push(`Famille radicale : une couleur domine, deux autres la traversent, une l'entoure.`,
-        `Le champ ${de(A)} porte la couleur principale, ${A} (${pct(s[A])}).`,
-        `${cap(piece.art === "une" ? "la" : "le")} ${piece.nom} porte les deux couleurs secondaires, ${b1} (${pct(s[b1])}) et ${b2} (${pct(s[b2])}), partagé${piece.art === "une" ? "e" : ""} à proportion ; son épaisseur suit leur force, et chaque bord suit sa couleur (${lig(b1, "m")}, ${lig(b2, "m")}).`,
-        `Sa forme dit la couleur qu'on ne peint pas, ${d} (${pct(s[d])}), la quatrième : ${piece.nom} pour ${EMAUX[d]}.`,
-        `La bordure ${de(e)} porte la couleur la plus absente, ${e} (${pct(s[e])}).`);
+      lecture.push(`Famille radicale : une valeur domine, deux autres la traversent, une l'entoure.`,
+        `Le champ ${de(A)} porte la valeur principale, ${A} (${pct(s[A])}).`,
+        `${cap(piece.art === "une" ? "la" : "le")} ${piece.nom} porte les deux valeurs secondaires, ${b1} (${pct(s[b1])}) et ${b2} (${pct(s[b2])}), partagé${piece.art === "une" ? "e" : ""} à proportion ; son épaisseur suit leur force, et chaque bord suit sa couleur (${lig(b1, "m")}, ${lig(b2, "m")}).`,
+        `Sa forme dit la valeur qu'on ne peint pas, ${d} (${pct(s[d])}), la quatrième : ${piece.nom} pour ${EMAUX[d]}.`,
+        `La bordure ${de(e)} porte la valeur la plus absente, ${e} (${pct(s[e])}).`);
       pos = { deux: true, haut: 30, bas: 440, places: places(A, A, 34, 440, 24) };
     } else {
       let [A1, A2] = parScore(a.principales);
@@ -294,7 +294,7 @@ const MEUBLES = {
         zones = [{ y0: 0, y1: 480, g: A1, d: A2, x: xs }];
         blason = `${cap(forme)} ${de(A1)} diapré et ${de(A2)}${eg ? " diapré" : ""}, ${bo.texte}`;
         lecture.push(`Famille spécialiste : deux moteurs, cernés par ce qui manque.`,
-          `Le champ ${forme} porte les deux couleurs principales, ${A1} (${pct(s[A1])}) et ${A2} (${pct(s[A2])}) ; sa forme dit la couleur qu'on ne montre pas, ${c} (${pct(s[c])}).`, bo.lecture);
+          `Le champ ${forme} porte les deux valeurs principales, ${A1} (${pct(s[A1])}) et ${A2} (${pct(s[A2])}) ; sa forme dit la valeur qu'on ne montre pas, ${c} (${pct(s[c])}).`, bo.lecture);
         pos = { deux: true, haut: 30, bas: 440, places: places(A1, A2, 34, 440, 24) };
       } else {
         let [c1, c2] = parScore(a.secondaires); const e = a.absentes;
@@ -306,9 +306,9 @@ const MEUBLES = {
         zones = [{ y0: 0, y1: 20 + h, g: c1, d: c1 }, { y0: 20 + h, y1: 480, g: A1, d: A2, x: xs }];
         blason = `${cap(forme)} ${de(A1)} diapré et ${de(A2)}${eg ? " diapré" : ""}, au chef ${de(c1)} ${LIGNE[c1]}, à la bordure ${de(e)}`;
         lecture.push(`Famille généraliste : un large éventail, cerné par un seul manque.`,
-          `Le champ ${forme} porte les deux couleurs principales, ${A1} (${pct(s[A1])}) et ${A2} (${pct(s[A2])}) ; sa forme dit la couleur qu'on ne montre pas, ${c2} (${pct(s[c2])}).`,
-          `Le chef ${de(c1)} porte la troisième couleur, ${c1} (${pct(s[c1])}).`,
-          `La bordure ${de(e)} est la couleur absente, ${e} (${pct(s[e])}).`);
+          `Le champ ${forme} porte les deux valeurs principales, ${A1} (${pct(s[A1])}) et ${A2} (${pct(s[A2])}) ; sa forme dit la valeur qu'on ne montre pas, ${c2} (${pct(s[c2])}).`,
+          `Le chef ${de(c1)} porte la troisième valeur, ${c1} (${pct(s[c1])}).`,
+          `La bordure ${de(e)} est la valeur absente, ${e} (${pct(s[e])}).`);
         pos = { deux: true, haut: 20 + h + 6, bas: 440, places: places(A1, A2, 20 + h + 22, 440, 24) };
       }
     }
@@ -428,18 +428,18 @@ ${o.devise ? listel(o.devise, id) : ""}
   const pct = x => String(Math.round(x * 10) / 10).replace(".", ",") + " %";
 
   const GRAMMAIRE = [
-    ["Les émaux", "Chaque couleur du modèle prend son émail héraldique : argent (W), azur (U), sable (B), gueules (R), sinople (G). L'or, métal libre, est celui de Flamme Bleue : il porte les meubles."],
+    ["Les émaux", "Chaque valeur du modèle prend son émail héraldique : argent (W), azur (U), sable (B), gueules (R), sinople (G). L'or, métal libre, est celui de Flamme Bleue : il porte les meubles."],
     ["La règle des émaux", "On ne pose jamais métal sur métal ni couleur sur couleur. Juxtaposer reste permis : les partitions peuvent donc unir deux couleurs. Les meubles sont d'or, ou de sable sur l'argent."],
-    ["Quatre couleurs, et une forme", "Chaque écu peint quatre des cinq couleurs. La cinquième, la moins signifiante pour le profil, ne se peint pas : elle se lit dans la forme, celle de la pièce chez un radical, celle du champ chez un spécialiste ou un généraliste. Rien n'est perdu : quatre couleurs connues désignent la cinquième."],
-    ["Le côté d'honneur", "La dextre (à gauche pour qui regarde l'écu) est la place d'honneur : la couleur la plus forte s'y place, ou au centre pour un chapé ou un chaussé."],
-    ["Radical (A.bc)", "Champ plein de la principale ; une pièce partie des deux secondaires ; bordure de la plus faible. La 4e couleur, cachée, donne la forme de la pièce : chef pour l'argent, bande pour l'azur, barre pour le sable, chevron pour les gueules, pal pour le sinople."],
-    ["Spécialiste (AB.c)", "Champ des deux principales ; bordure partie des deux absentes. La 3e couleur, cachée car elle est dans la moyenne, donne la forme du champ : écartelé pour l'argent, tranché pour l'azur, taillé pour le sable, chapé pour les gueules, chaussé pour le sinople."],
-    ["Généraliste (AB/e)", "Champ des deux principales ; chef de la 3e couleur ; bordure de l'absente. La 4e couleur, cachée, donne la forme du champ, selon le même code que les spécialistes."],
+    ["Quatre valeurs, et une forme", "Chaque écu peint quatre des cinq valeurs. La cinquième, la moins signifiante pour le profil, ne se peint pas : elle se lit dans la forme, celle de la pièce chez un radical, celle du champ chez un spécialiste ou un généraliste. Rien n'est perdu : quatre valeurs connues désignent la cinquième."],
+    ["Le côté d'honneur", "La dextre (à gauche pour qui regarde l'écu) est la place d'honneur : la valeur la plus forte s'y place, ou au centre pour un chapé ou un chaussé."],
+    ["Radical (A.bc)", "Champ plein de la principale ; une pièce partie des deux secondaires ; bordure de la plus faible. La 4e valeur, cachée, donne la forme de la pièce : chef pour l'argent, bande pour l'azur, barre pour le sable, chevron pour les gueules, pal pour le sinople."],
+    ["Spécialiste (AB.c)", "Champ des deux principales ; bordure partie des deux absentes. La 3e valeur, cachée car elle est dans la moyenne, donne la forme du champ : écartelé pour l'argent, tranché pour l'azur, taillé pour le sable, chapé pour les gueules, chaussé pour le sinople."],
+    ["Généraliste (AB/e)", "Champ des deux principales ; chef de la 3e valeur ; bordure de l'absente. La 4e valeur, cachée, donne la forme du champ, selon le même code que les spécialistes."],
     ["Les lignes de partition", "Le bord d'une pièce suit sa couleur : l'argent est crénelé, l'azur ondé, le sable denché, les gueules flammées, le sinople engrêlé."],
-    ["Les proportions", "La hauteur d'un chef ou l'épaisseur d'une pièce suit la force de ses couleurs. Chaque partage suit le rapport des deux couleurs, avec un écart amplifié trois fois pour être visible ; pour un chapé ou un chaussé, la surface visible de chaque couleur respecte sa part. L'écart à l'héraldique orthodoxe est voulu : l'écu dit les scores."],
-    ["Les égalités", "Quand deux couleurs sont à égalité, la roue (W, U, B, R, G) départage : celle qui suit l'autre, par le plus court chemin, prend la place d'honneur ou se cache. Chez un généraliste, on cache la couleur moyenne qui suit l'absente."],
+    ["Les proportions", "La hauteur d'un chef ou l'épaisseur d'une pièce suit la force de ses valeurs. Chaque partage suit le rapport des deux valeurs, avec un écart amplifié trois fois pour être visible ; pour un chapé ou un chaussé, la surface visible de chaque valeur respecte sa part. L'écart à l'héraldique orthodoxe est voulu : l'écu dit les scores."],
+    ["Les égalités", "Quand deux valeurs sont à égalité, la roue (W, U, B, R, G) départage : celle qui suit l'autre, par le plus court chemin, prend la place d'honneur ou se cache. Chez un généraliste, on cache la valeur moyenne qui suit l'absente."],
     ["Profil frontière", "Écus accolés : un écu par profil, côte à côte, comme on réunit deux lignées."],
-    ["Le diapré", "Arabesques claires sur la couleur dominante (sur les deux principales en cas d'égalité)."],
+    ["Le diapré", "Arabesques claires sur la valeur dominante (sur les deux principales en cas d'égalité)."],
     ["Les meubles", "Deux meubles tirés des tempéraments, chacun posé sur une seule couleur, là où la place est la plus grande : le n° 1 sur la principale, le n° 2 sur la seconde (ou sur la même, si la place manque). Leur taille suit l'intensité du tempérament, écart amplifié."],
     ["Le cimier", "L'animal-totem du profil, au-dessus de l'écu."],
     ["La devise", "Portée sur un listel sous l'écu."]
