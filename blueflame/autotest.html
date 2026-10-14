@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/3.46.0/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <script src="flamme_moteur.js?v=1.3"></script>
+<script src="flamme_glyphes.js?v=2.0"></script>
 <style>
 :root{
   --ink:#1B2430; --muted:#5B6573; --line:#DDE1E7; --paper:#F4F6F8; --panel:#FFFFFF;
@@ -49,11 +50,11 @@ header{display:flex;align-items:baseline;gap:18px;padding:12px 20px;border-botto
 main{display:grid;grid-template-columns:minmax(0,3.6fr) minmax(280px,1.2fr);gap:20px;padding:18px 24px 40px;max-width:1500px;margin:auto;align-items:start}
 
 /* grille : 1 5 9 13 17 / 2 6 10 14 18 / ... (colonnes) */
-#grille{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(4,auto);grid-auto-flow:column;gap:10px}
-.slot{position:relative;min-height:112px;padding:18px 6px 6px;background:var(--panel);border:1px solid var(--line);border-radius:9px}
+#grille{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(4,1fr);grid-auto-flow:column;gap:10px}
+.slot{position:relative;display:flex;flex-direction:column;min-height:112px;padding:18px 6px 6px;background:var(--panel);border:1px solid var(--line);border-radius:9px}
 .slot.over{outline:2px solid var(--focus);outline-offset:1px}
 .rang{position:absolute;top:4px;left:7px;font:600 12px var(--sans);color:var(--muted)}
-.carte{position:relative;min-height:84px;padding:10px 10px 8px;border-radius:7px;cursor:grab;user-select:none;touch-action:manipulation}
+.carte{position:relative;flex:1;min-height:84px;padding:10px 10px 8px;border-radius:7px;cursor:grab;user-select:none;touch-action:manipulation}
 .carte.drag{opacity:.35}
 .carte.choisie{box-shadow:0 0 0 3px var(--focus)}
 .carte .code{font:600 12px var(--sans);letter-spacing:.02em;display:flex;align-items:center;gap:6px}
@@ -62,7 +63,10 @@ main{display:grid;grid-template-columns:minmax(0,3.6fr) minmax(280px,1.2fr);gap:
 .disque.abs{background:transparent;border:2px dashed var(--c);box-shadow:none;box-sizing:border-box}
 .disque.abs.blanc{border-color:#8892A0}
 .disques .sep-d{font-size:10px;color:#5B6573}
-.carte .nom{font:600 15px/1.25 var(--serif);margin-top:3px}
+.carte .tete{display:flex;align-items:center;gap:7px;padding-right:18px}
+.carte .gly{flex:none;line-height:0;background:#fff;border-radius:11px;padding:2px 5px;box-shadow:0 0 0 1px rgba(27,36,48,.3)}
+.carte .gly svg.g{height:19px;width:auto;display:block}
+.carte .nom{font:600 15px/1.2 var(--serif);min-width:0}
 .carte .devise{font:italic 12.5px/1.3 var(--serif);margin-top:3px;opacity:.9}
 .carte .ico{position:absolute;top:8px;right:8px;font-size:17px;opacity:.6}
 .bulle{position:absolute;z-index:20;left:0;top:calc(100% + 6px);width:260px;padding:10px 12px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.18);font:13.5px/1.45 var(--serif);display:none}
@@ -77,13 +81,13 @@ aside{display:flex;flex-direction:column;gap:14px;position:sticky;top:12px}
 #valeurs{display:flex;gap:5px;margin-bottom:12px}
 .vign{flex:1 1 0;min-width:0;padding:5px 2px;border-radius:4px;border:2px solid;text-align:center;cursor:grab;user-select:none}
 .vign.over,.vign.choisie{outline:2px dashed var(--ink);outline-offset:2px}
-.vign b{display:block;font-size:14px}
+.vign b{display:block;font-size:11.5px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .vign span{font-size:11px}
 .barre{display:grid;grid-template-columns:18px 1fr 50px;gap:6px;align-items:center;font-size:12px;margin-bottom:6px}
 .fond{height:14px;background:var(--hover);border:1px solid var(--line);border-radius:4px;overflow:hidden}
 .val{height:100%;border-radius:3px}
 .pct{text-align:right;font-variant-numeric:tabular-nums}
-.pips{display:inline-flex;gap:3px;align-items:center;vertical-align:1px}
+.pips{display:inline-flex;gap:3px;align-items:center;vertical-align:1px} svg.g{vertical-align:middle;display:inline-block;overflow:visible} .gh{line-height:0}
 .pip{width:12px;height:12px;border-radius:50%;border:1px solid #8892A0}
 .pip.sec{width:8px;height:8px}
 .pip.abs{background:transparent!important;border:1.5px dashed var(--c)}
@@ -169,7 +173,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px}
 </dialog>
 
 <script>
-const VERSION = { numero:"1.12", date:"2026-10-10 19:32" };
+const VERSION = { numero:"1.13", date:"2026-10-14 21:21" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const M = window.FLAMME_MOTEUR;
@@ -248,7 +252,9 @@ $("#form-login").addEventListener("submit", async e => {
 });
 
 /* ---------- pastilles ---------- */
+const teintes = () => Object.fromEntries(Object.entries(couleurs).map(([k, v]) => [k, v.couleur]));
 function pips(code){
+  const g = window.FLAMME_GLYPHES?.glyphe(code, teintes()); if (g) return g;   // glyphe du code (flamme_glyphes.js)
   let out = "", absent = false;
   for (const ch of code){
     if (ch === "/"){ absent = true; out += '<span class="pip sep">/</span>'; continue; }
@@ -284,7 +290,7 @@ function afficherGrille(){
       <div class="carte${choisie === i ? " choisie" : ""}" draggable="true" tabindex="0" data-i="${i}" style="${styleCarte(code)}"
            aria-label="Rang ${i + 1} : ${esc(t.nom)}, ${esc(t.devise)}">
         ${ICONES[code] ? `<i class="ti ${ICONES[code]} ico" aria-hidden="true"></i>` : ""}
-        <div class="code">${disques(code)} ${esc(code)}</div><div class="nom">${esc(t.nom)}</div><div class="devise">${esc(t.devise)}</div>
+        <div class="tete"><span class="gly" title="${esc(code)}">${pips(code)}</span><span class="nom">${esc(t.nom)}</span></div><div class="devise">${esc(t.devise)}</div>
         <div class="bulle">${t.titre ? `<b>« ${esc(t.titre)} »</b>` : ""}${esc([t.texte1, t.texte2, t.texte3].filter(Boolean).join(" "))}</div>
       </div></div>`;
   }).join("");
@@ -330,7 +336,7 @@ function afficherValeurs(p){
   $("#valeurs").innerHTML = ordre.map((c, i) => {
     const co = couleurs[c];
     return `<div class="vign${vChoisie === i ? " choisie" : ""}" draggable="true" tabindex="0" data-i="${i}" title="${esc(E[c]?.nom || c)}"
-      style="background:${co.couleur};color:${co.couleur_texte};border-color:${c === "W" ? "#888" : co.couleur}"><b>${c}</b><span>${fmt(p[c])} %</span></div>`;
+      style="background:${co.couleur};color:${co.couleur_texte};border-color:${c === "W" ? "#888" : co.couleur}"><b>${esc(E[c]?.nom || c)}</b><span>${fmt(p[c])} %</span></div>`;
   }).join("");
   const v = $("#valeurs");
   const reordonner = (de, vers) => { const o = ordre.slice(); const [x] = o.splice(de, 1); o.splice(vers, 0, x); vChoisie = null; trierSelonValeurs(o); };
@@ -351,7 +357,7 @@ function afficherResultats(){
   const r = M.profil(p, { classement: liste });
   dernier = { p, r, classement: liste.slice() };
   afficherValeurs(p);
-  $("#histo").innerHTML = M.ORDRE.map(c => `<div class="barre"><b>${c}</b><div class="fond"><div class="val" style="width:${p[c]}%;background:${couleurs[c].couleur};${c === "W" ? "border:1px solid #888" : ""}"></div></div><span class="pct">${fmt(p[c])} %</span></div>`).join("");
+  $("#histo").innerHTML = M.ORDRE.map(c => `<div class="barre"><b title="${esc(E[c]?.nom || c)}">${pips(c)}</b><div class="fond"><div class="val" style="width:${p[c]}%;background:${couleurs[c].couleur};${c === "W" ? "border:1px solid #888" : ""}"></div></div><span class="pct">${fmt(p[c])} %</span></div>`).join("");
   $("#profil").innerHTML =
     (r.frontiere ? `<p class="frontiere">Profil frontière : vos scores vous placent à égalité entre ${r.codes.length} profils.</p>` : "") +
     r.codes.map(code => {
@@ -417,7 +423,7 @@ async function historique(){
   if (error){ bloc.classList.add("hidden"); return; }
   bloc.classList.remove("hidden");
   $("#historique").innerHTML = data.length
-    ? `<ul>${data.map(r => `<li>${new Date(r.passe_le).toLocaleDateString("fr-FR")} — <b>${esc(r.codes[0])}</b>
+    ? `<ul>${data.map(r => `<li>${new Date(r.passe_le).toLocaleDateString("fr-FR")} — <span class="gh" title="${esc(r.codes[0])}">${pips(r.codes[0])}</span> <b>${esc(E[r.codes[0]]?.nom || r.codes[0])}</b>
         <a class="lien" href="fiche.html?resultat=${r.id}" target="_blank">fiche</a>
         <a class="lien" href="ecusson.html?resultat=${r.id}" target="_blank">écusson</a>
         <button class="lien reprendre" data-id="${r.id}" type="button">reprendre</button>
