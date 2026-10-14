@@ -83,7 +83,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px}
   <a class="porte hidden" href="blueflame/" id="porte-flamme">
     <h2 class="marque-fb"><svg class="embleme-fb" viewBox="0 24 100 98" role="img" aria-label="Flamme Bleue"><rect x="6" y="86" width="88" height="8" rx="4" fill="var(--fb-socle,#0B2E8A)"/><path fill="var(--fb-langue,#2F6BFF)" d="M13 84c-7-7-5-18 9-34-1 14 6 26-1 34zM30 84c-7-9-4-24 13-46-2 18 6 34-1 46zM47 84c-8-10-5-30 15-56-3 22 7 42-1 56zM64 84c-7-9-4-26 13-44-2 18 6 32-1 44zM81 84c-7-7-5-20 10-36-1 14 6 28-1 36z"/><text x="6" y="116" textLength="88" lengthAdjust="spacingAndGlyphs" fill="var(--fb-nom,#0B2E8A)" style="font:600 15px 'Source Serif 4',Georgia,'Times New Roman',serif">Flamme Bleue</text></svg></h2>
     <p class="devise">Cartographiez votre énergie</p>
-    <p id="texte-flamme">Cinq couleurs, quatre-vingt-dix profils : ce qui vous met en mouvement, avec sa devise et ses armoiries.</p>
+    <p id="texte-flamme">Cinq valeurs, quatre-vingt-dix profils : ce qui vous met en mouvement, avec sa devise et ses armoiries.</p>
   </a>
   <a class="porte hidden" href="prisme/" id="porte-prisme">
     <span class="embleme roue" aria-hidden="true"></span>
@@ -149,7 +149,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px}
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 
 <script>
-const VERSION = { numero:"1.5", date:"2026-10-14 22:12" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.6", date:"2026-10-14 22:16" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 
@@ -207,7 +207,7 @@ async function aiguiller(session, viaConnexion){
 function afficher(sites){
   $("#porte-flamme").classList.toggle("hidden", !sites.includes("flamme"));
   $("#porte-prisme").classList.toggle("hidden", !sites.includes("prisme"));
-  $("#texte-flamme").textContent = user ? "Cinq couleurs, quatre-vingt-dix profils : ce qui vous met en mouvement, avec sa devise et ses armoiries."
+  $("#texte-flamme").textContent = user ? "Cinq valeurs, quatre-vingt-dix profils : ce qui vous met en mouvement, avec sa devise et ses armoiries."
                                         : "Passez l'autotest : en vingt tempéraments, votre profil parmi quatre-vingt-dix, avec sa devise et ses armoiries.";
   $("#who").textContent = user ? user.email : "";
   $("#btn-login").classList.toggle("hidden", !!user);
