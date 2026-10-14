@@ -85,7 +85,7 @@ dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);c
   <div style="display:flex;gap:10px"><button class="btn" type="submit">Se connecter</button><button class="btn ghost" type="button" id="login-fermer">Fermer</button></div>
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 <script>
-const VERSION = { numero:"1.7", date:"2026-10-10 19:32" };
+const VERSION = { numero:"1.9", date:"2026-10-14 21:36" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const M = window.FLAMME_MOTEUR;
@@ -132,7 +132,7 @@ function afficher(){
         </div></article>`; }).join("") + `</div>`;
   }
   $("#liste").innerHTML = html || `<p class="sous">Aucun totem ne correspond.</p>`;
-  $("#sous").textContent = `${n} profil${n > 1 ? "s" : ""} affiché${n > 1 ? "s" : ""} sur 90 — chaque vignette porte l'animal d'or sur les couleurs principales du profil.`;
+  $("#sous").textContent = `${n} profil${n > 1 ? "s" : ""} affiché${n > 1 ? "s" : ""} sur 90 — chaque vignette porte l'animal d'or sur la couleur de ses valeurs principales.`;
 }
 function puces(){
   $("#puces-familles").innerHTML = [["", "Toutes"], ...FAMILLES.map(([f, t]) => [f, t.split(" ")[0]])].map(([f, t]) =>
@@ -150,8 +150,8 @@ async function charger(){
   if (error) throw new Error(error.message);
   PROFILS = els.filter(e => e.couche === "profil").sort((a, b) => (a.ordre ?? 0) - (b.ordre ?? 0)); C = Object.fromEntries((cols || []).map(c => [c.code, c]));
   try {
-    CAT = await (await fetch("bibliotheque/catalogue.json?v=3")).json();
-    await Promise.all(Object.entries(CAT.animaux).map(async ([k, v]) => { if (v.fichier) IMG[k] = interieur(await (await fetch("bibliotheque/" + v.fichier + "?v=3")).text()); }));
+    CAT = await (await fetch("bibliotheque/catalogue.json?v=4")).json();
+    await Promise.all(Object.entries(CAT.animaux).map(async ([k, v]) => { if (v.fichier) IMG[k] = interieur(await (await fetch("bibliotheque/" + v.fichier + "?v=4")).text()); }));
   } catch (e){ console.warn("Bibliothèque d'images indisponible", e); }
   puces(); afficher();
 }

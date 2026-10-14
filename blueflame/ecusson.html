@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <script src="flamme_moteur.js?v=1.3"></script>
-<script src="flamme_blason.js?v=1.9"></script>
+<script src="flamme_blason.js?v=1.10"></script>
 <style>
 :root{--ink:#1B2430;--muted:#5B6573;--line:#DDE1E7;--paper:#F4F6F8;--panel:#FFFFFF;--hover:#EEF1F5;--ok:#1E7A46;--warn:#9A5B00;--err:#B42318;
   --serif:"Source Serif 4",Georgia,"Times New Roman",serif;--sans:"IBM Plex Sans","Segoe UI",Arial,sans-serif}
@@ -85,7 +85,7 @@ dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);c
   <div style="display:flex;gap:10px"><button class="btn" type="submit">Se connecter</button><button class="btn ghost" type="button" id="login-fermer">Fermer</button></div>
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 <script>
-const VERSION = { numero:"2.3", date:"2026-10-10 19:32" };
+const VERSION = { numero:"2.4", date:"2026-10-14 21:36" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const M = window.FLAMME_MOTEUR, B = window.FLAMME_BLASON;
@@ -123,18 +123,20 @@ async function chargerBibliotheque(){
   if (BIB) return BIB;
   BIB = { meubles: {}, animaux: {}, catalogue: null };
   try {
-    const cat = await (await fetch("bibliotheque/catalogue.json?v=3")).json(); BIB.catalogue = cat;
-    await Promise.all(Object.entries(cat.meubles).map(async ([k, v]) => { if (v.fichier) BIB.meubles[k] = interieur(await (await fetch("bibliotheque/" + v.fichier + "?v=3")).text()); }));
+    const cat = await (await fetch("bibliotheque/catalogue.json?v=4")).json(); BIB.catalogue = cat;
+    await Promise.all(Object.entries(cat.meubles).map(async ([k, v]) => { if (v.fichier) BIB.meubles[k] = interieur(await (await fetch("bibliotheque/" + v.fichier + "?v=4")).text()); }));
   } catch (e){ console.warn("Bibliothèque d'images indisponible : dessins internes utilisés.", e); }
   return BIB;
 }
 async function imageAnimal(code){
   const v = BIB?.catalogue?.animaux?.[code];
   if (!v?.fichier) return null;
-  if (!(code in BIB.animaux)){ try { BIB.animaux[code] = interieur(await (await fetch("bibliotheque/" + v.fichier + "?v=3")).text()); } catch { BIB.animaux[code] = null; } }
+  if (!(code in BIB.animaux)){ try { BIB.animaux[code] = interieur(await (await fetch("bibliotheque/" + v.fichier + "?v=4")).text()); } catch { BIB.animaux[code] = null; } }
   return BIB.animaux[code];
 }
 
+/* « de le garant » → « du garant », « de les… » → « des… » */
+const deNom = n => /^le /i.test(n) ? "du " + n.slice(3) : /^les /i.test(n) ? "des " + n.slice(4) : "de " + n;
 async function rendre(src){
   const s01 = Object.fromEntries(M.ORDRE.map(c => [c, src.scores[c] / 100]));
   const codes = M.profil(s01, { classement: src.classement }).codes;
@@ -158,7 +160,7 @@ async function rendre(src){
     <section class="armes${frontiere ? " accoles" : ""}">
       <div class="ecus">${svgs.map((r, i) => `<figure>${r.svg}<figcaption>${esc(E[codes[i]]?.nom || codes[i])}<small>${esc(codes[i])}</small></figcaption></figure>`).join("")}</div>
       <div>
-        <h1 class="titre">${frontiere ? "Écus accolés" : "Les armes de " + esc(E[codes[0]]?.nom || codes[0])}</h1>
+        <h1 class="titre">${frontiere ? "Écus accolés" : "Les armes " + esc(deNom(E[codes[0]]?.nom || codes[0]))}</h1>
         <div class="sous">${src.type ? "Profil type (scores types de la famille)" : (src.qui ? esc(src.qui) + " — " : "") + dateFr(src.date)} — ${M.ORDRE.map(c => `${c} ${String(Math.round(src.scores[c] * 10) / 10).replace(".", ",")}`).join(" · ")}</div>
         ${svgs.map((r, i) => `${frontiere ? `<h2>${esc(codes[i])} — ${esc(E[codes[i]]?.nom || "")}</h2>` : ""}<p class="blasonnement">${esc(r.blason)}</p>
           ${frontiere ? `<ol class="lecture">${r.lecture.slice(0, r.lecture.findIndex(l => l.startsWith("En cœur"))).map(l => `<li>${esc(l)}</li>`).join("")}</ol>` : ""}`).join("")}

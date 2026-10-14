@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <script src="flamme_moteur.js?v=1.3"></script>
-<script src="flamme_blason.js?v=1.9"></script>
+<script src="flamme_blason.js?v=1.10"></script>
 <script src="flamme_glyphes.js?v=2.0"></script>
 <style>
 :root{--ink:#1B2430;--muted:#5B6573;--line:#DDE1E7;--paper:#F4F6F8;--panel:#FFFFFF;--hover:#EEF1F5;--bleu:#1F4FD1;--err:#B42318;
@@ -111,7 +111,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px} .field{display:block;margi
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 
 <script>
-const VERSION = { numero:"1.16", date:"2026-10-14 20:49" };
+const VERSION = { numero:"1.17", date:"2026-10-14 21:36" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -156,9 +156,9 @@ async function monProfil(r){
     temps = M.statistiques(s01, Object.values(E).filter(e => e.couche === "profil").map(e => e.code)).sections.temperaments.map(x => x.code); }
   const images = { meubles: {}, animal: null };
   try {
-    const cat = await (await fetch("bibliotheque/catalogue.json?v=3")).json();
-    await Promise.all(Object.entries(cat.meubles).map(async ([k, v]) => { if (v.fichier) images.meubles[k] = interieur(await (await fetch("bibliotheque/" + v.fichier + "?v=3")).text()); }));
-    const a = cat.animaux?.[codes[0]]; if (a?.fichier) images.animal = interieur(await (await fetch("bibliotheque/" + a.fichier + "?v=3")).text());
+    const cat = await (await fetch("bibliotheque/catalogue.json?v=4")).json();
+    await Promise.all(Object.entries(cat.meubles).map(async ([k, v]) => { if (v.fichier) images.meubles[k] = interieur(await (await fetch("bibliotheque/" + v.fichier + "?v=4")).text()); }));
+    const a = cat.animaux?.[codes[0]]; if (a?.fichier) images.animal = interieur(await (await fetch("bibliotheque/" + a.fichier + "?v=4")).text());
   } catch { /* dessins internes en secours */ }
   const c = codes[0];
   const e = B.ecusson({ images, code: c, scores: d.scores, temperaments: temps, couleurs: C, id: "accueil",
