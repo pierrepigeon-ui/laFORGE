@@ -29,6 +29,8 @@ header a{color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:
 main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;padding:14px 20px 40px;max-width:1500px;margin:auto;align-items:start}
 #scene{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px}
 #scene > svg{width:100%;height:auto;display:block;touch-action:none}
+#scene:fullscreen{display:flex;align-items:center;justify-content:center;padding:0;border:0;border-radius:0;background:#fff}
+#scene:fullscreen > svg{width:auto;height:100vh;max-width:100vw}
 #scene.zoome{cursor:grab;user-select:none} #scene.glisse{cursor:grabbing} #scene.glisse .el{cursor:grabbing}
 #scene .el{cursor:pointer;transition:opacity .2s}
 #scene .el:hover{filter:brightness(1.06)}
@@ -67,6 +69,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px} .field{display:block;margi
     <a class="btn ghost hidden" id="lien-fiche" href="#" target="_blank">Voir sa fiche</a>
     <a class="btn ghost hidden" id="lien-ecusson" href="#" target="_blank">Voir son écusson</a>
     <a class="btn ghost hidden" id="lien-detail" href="#" target="_blank">Voir le détail</a>
+    <button class="btn ghost" id="plein-ecran" type="button" title="La rosace seule, en plein écran (Échap pour revenir)">Plein écran</button>
     <button class="btn ghost hidden" id="zoom-reset" type="button" title="Revenir à la rosace entière">Zoom ×1</button>
     <button class="btn ghost" id="dl-svg" type="button">Télécharger en SVG</button>
     <button class="btn ghost" id="dl-png" type="button">Télécharger en PNG</button>
@@ -84,7 +87,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px} .field{display:block;margi
   <div style="display:flex;gap:10px"><button class="btn" type="submit">Se connecter</button><button class="btn ghost" type="button" id="login-fermer">Fermer</button></div>
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 <script>
-const VERSION = { numero:"1.21", date:"2026-10-14 22:55" };
+const VERSION = { numero:"1.22", date:"2026-10-14 23:04" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const ACCES = ["proprietaire"];   // rôles autorisés (en attendant la table des droits d'accès)
@@ -138,8 +141,10 @@ const inclus = (a, b) => [...a.pres].every(x => b.pres.has(x)) && [...a.abs].eve
 /* Les lettres dans les disques cèdent la place au glyphe du code (flamme_glyphes.js) :
    motivations et projets ; les traits reçoivent le leur sur le haut du cadre, cerclé de la valeur secondaire comme le cadre ;
    les valeurs et les tempéraments n'en ont pas (nom seul, centré dans le cadre).
-   Sous la mini-rosace, un disque de FOND_MINI (le jaune du centre : le blanc se confondait avec la valeur W). */
-const FOND_MINI = "#FFD400";   // ou "none" pour un fond transparent
+   Sous la mini-rosace, un disque de FOND_MINI, le gris du contour des glyphes (le blanc se confondait avec la valeur W). */
+const FOND_MINI = "#8892A0";
+const FOND_CENTRE = "#F6F1E4";   // ivoire (ex-jaune #FFD400 du classeur)
+const HALO = "#2F6BFF";          // halo de l'élément cliqué : le bleu du logo
 const LETTRE = /(?:<g filter="url\(#shadow\)">\s*)?<circle cx="([\d.]+)" cy="([\d.]+)" r="([\d.]+)"[^>]*\/>\s*<text [^>]*>[WUBRGwubrg]<\/text>(?:\s*<\/g>)?/g;
 function poser(code, cx, cy, h, fond, options){
   const g = window.FLAMME_GLYPHES?.glyphe(code, null, options); if (!g) return "";
@@ -186,7 +191,7 @@ function construireSVG(profil, element){
       return `<g class="el${eteint}" data-code="${esc(p.code)}">${s}</g>`;
     }
     if (!p.code && s.includes("Disque central")){                // logo au centre, nom dessous ; clic = bascule de la surbrillance
-      s = s.replace(/(<circle[^>]*\/>)/, `$1\n${FLAMME_CENTRE}`).replace(/<text x=\"900\" y=\"907\"[\s\S]*?Flamme Bleue<\/text>/, "");
+      s = s.replace('fill="#FFD400"', `fill="${FOND_CENTRE}"`).replace(/(<circle[^>]*\/>)/, `$1\n${FLAMME_CENTRE}`).replace(/<text x=\"900\" y=\"907\"[\s\S]*?Flamme Bleue<\/text>/, "");
       s = `<g class="centre">${s}</g>`;
     }
     return s;
@@ -195,7 +200,7 @@ function construireSVG(profil, element){
 <defs>
 <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#000" flood-opacity=".28"/></filter>
 <style>${GABARIT.css}
-.el.eteint{opacity:.16} .el.choisi{filter:drop-shadow(0 0 7px #FFD400) drop-shadow(0 0 3px #FFD400)}</style>
+.el.eteint{opacity:.16} .el.choisi{filter:drop-shadow(0 0 7px ${HALO}) drop-shadow(0 0 3px ${HALO})}</style>
 ${GABARIT.defs.join("\n")}
 </defs>
 ${parts}
@@ -272,6 +277,9 @@ window.addEventListener("pointermove", ev => {
 window.addEventListener("pointerup", () => { prise = null; $("#scene").classList.remove("glisse"); });
 $("#scene").addEventListener("click", ev => { if (aGlisse){ ev.stopImmediatePropagation(); ev.preventDefault(); aGlisse = false; } }, true);   // un glissé n'est pas un clic
 $("#zoom-reset").addEventListener("click", () => { vue = { x: 0, y: 0, w: TAILLE }; appliquerZoom(); });
+/* plein écran : la rosace seule ; Échap (géré par le navigateur) ramène à la page. Le zoom y fonctionne aussi. */
+$("#plein-ecran").addEventListener("click", () => { const sc = $("#scene"); if (sc.requestFullscreen) sc.requestFullscreen().catch(() => {}); });
+if (!document.fullscreenEnabled) $("#plein-ecran").hidden = true;
 $("#scene").addEventListener("click", e => { if (e.target.closest(".centre")) basculer(); });
 
 /* ---------- fiche ---------- */
