@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <script src="flamme_moteur.js?v=1.3"></script>
-<script src="flamme_glyphes.js?v=1.3"></script>
+<script src="flamme_glyphes.js?v=2.0"></script>
 <style>
 :root{--ink:#1B2430;--muted:#5B6573;--line:#DDE1E7;--paper:#F4F6F8;--panel:#FFFFFF;--hover:#EEF1F5;--ok:#1E7A46;--warn:#9A5B00;--err:#B42318;
   --serif:"Source Serif 4",Georgia,"Times New Roman",serif;--sans:"IBM Plex Sans","Segoe UI",Arial,sans-serif}
@@ -113,7 +113,7 @@ dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);c
   <div style="display:flex;gap:10px"><button class="btn" type="submit">Se connecter</button><button class="btn ghost" type="button" id="login-fermer">Fermer</button></div>
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 <script>
-const VERSION = { numero:"1.13", date:"2026-10-13 23:38" };
+const VERSION = { numero:"1.15", date:"2026-10-14 20:49" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const ACCES = ["proprietaire"];
@@ -147,17 +147,17 @@ function libelle(code){
 
 const POL = '<i class="pol">polarisées</i><sup>*</sup>', POLS = '<i class="pol">polarisés</i><sup>*</sup>';
 const SECTIONS = [
-  ["valeurs", "Valeurs", "1 couleur — score brut"],
-  ["valeursPolarisees", "Valeurs " + POL, "1 couleur — présence ou absence la plus marquée"],
-  ["motivations", "Motivations", "2 couleurs — données corrigées"],
-  ["motivationsPolarisees", "Motivations " + POL, "2 couleurs — présence ou absence la plus marquée, données corrigées"],
-  ["projets", "Projets", "3 couleurs — données corrigées"],
-  ["projetsRedresses", "Projets " + POLS, "3 couleurs — présence ou absence la plus marquée, données corrigées"],
-  ["directions", "Styles", "1 couleur principale, 1 couleur secondaire — données corrigées"],
-  ["temperaments", "Tempéraments", "1 couleur présente, 1 couleur absente"]
+  ["valeurs", "Valeurs", "1 valeur — score brut"],
+  ["valeursPolarisees", "Valeurs " + POL, "1 valeur — présence ou absence la plus marquée"],
+  ["motivations", "Motivations", "2 valeurs — données corrigées"],
+  ["motivationsPolarisees", "Motivations " + POL, "2 valeurs — présence ou absence la plus marquée, données corrigées"],
+  ["projets", "Projets", "3 valeurs — données corrigées"],
+  ["projetsRedresses", "Projets " + POLS, "3 valeurs — présence ou absence la plus marquée, données corrigées"],
+  ["directions", "Styles", "1 valeur principale, 1 valeur secondaire — données corrigées"],
+  ["temperaments", "Tempéraments", "1 valeur présente, 1 valeur absente"]
 ];
 const NOTE_POLARISE = `<p class="note"><sup>*</sup> <i>Polarisé</i> : chaque score est lu par son écart à 50 %, dans un sens comme dans l'autre.
-  Une couleur très présente (90 %) et une couleur très absente (10 %) pèsent autant ; la seconde s'affiche comme une absence (<b>/w</b>, <b>/wu</b>…).
+  Une valeur très présente (90 %) et une valeur très absente (10 %) pèsent autant ; la seconde s'affiche comme une absence (<b>/w</b>, <b>/wu</b>…).
   Le classement montre donc ce qui marque le plus le profil, par sa présence ou par son absence.</p>`;
 const BANDES = [["naturel","100 – 75 %"],["accessible","75 – 60 %"],["situationnel","60 – 40 %"],["difficile","40 – 25 %"],["inaccessible","25 – 0 %"]];
 

@@ -10,7 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <script src="flamme_moteur.js?v=1.3"></script>
 <script src="flamme_blason.js?v=1.9"></script>
-<script src="flamme_glyphes.js?v=1.3"></script>
+<script src="flamme_glyphes.js?v=2.0"></script>
 <style>
 :root{--ink:#1B2430;--muted:#5B6573;--line:#DDE1E7;--paper:#F4F6F8;--panel:#FFFFFF;--hover:#EEF1F5;--bleu:#1F4FD1;--or:#C9A227;
   --W:#8892A0;--U:#0055FF;--B:#111111;--R:#E00000;--G:#00A800;
@@ -152,7 +152,7 @@ mark{background:#FFE58A;color:#1B2430;border-radius:2px}
 <div style="max-width:1240px;margin:0 auto;padding:0 20px 30px"><p class="version"><span id="credit"></span><br><span id="version"></span></p></div>
 
 <script>
-const VERSION = { numero:"1.4", date:"2026-10-13 23:20" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.6", date:"2026-10-14 20:49" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -359,10 +359,10 @@ function sectionDuos(toc){
   const voisins = (a, b) => { const d = Math.abs(M.ORDRE.indexOf(a) - M.ORDRE.indexOf(b)); return d === 1 || d === 4; };
   const genre = code => voisins(code[0], code[1]) ? "deux alliées" : "deux ennemies";
   return `<h2 id="motivations">Les motivations</h2>
-    <p class="chapo">${esc(V.couche?.motivation?.description || "2 couleurs.")} Les dix paires possibles : cinq unissent deux alliées, cinq réunissent deux ennemies.</p>
+    <p class="chapo">${esc(V.couche?.motivation?.description || "2 valeurs.")} Les dix paires possibles : cinq unissent deux alliées, cinq réunissent deux ennemies.</p>
     <div class="cartes">${mot.map(e => carte(e, plusMoins(e) + `<div class="lie">${genre(e.code)} : ${[...e.code].map(lien).join(" et ")}</div>`)).join("")}</div>
     <h2 id="projets">Les projets</h2>
-    <p class="chapo">${esc(V.couche?.projet?.description || "3 couleurs.")} Chaque projet réunit trois valeurs et laisse les deux autres de côté.</p>
+    <p class="chapo">${esc(V.couche?.projet?.description || "3 valeurs.")} Chaque projet réunit trois valeurs et laisse les deux autres de côté.</p>
     <div class="cartes">${pro.map(e => carte(e, plusMoins(e) + `<div class="lie">Motivations contenues : ${[[0,1],[0,2],[1,2]].map(([i, j]) => M.ordonner ? M.ordonner(e.code[i] + e.code[j]) : e.code[i] + e.code[j]).map(lien).join(", ")}</div>`)).join("")}</div>`;
 }
 
@@ -383,7 +383,7 @@ function sectionStyles(toc){
   const s = parCouche("polarite");
   toc.push({ id: "styles", titre: "Les styles", enfants: M.ORDRE.map(c => ({ id: "s-" + c, titre: `${maj(E[c]?.nom || c)} d'abord`, code: c, etiquette: c + ".…" })) });
   return `<h2 id="styles">Les styles</h2>
-    <p class="chapo">${esc(V.couche?.polarite?.description || "1 couleur principale et 1 couleur secondaire.")} Une valeur mène, une autre la colore.</p>
+    <p class="chapo">${esc(V.couche?.polarite?.description || "1 valeur principale et 1 valeur secondaire.")} Une valeur mène, une autre la colore.</p>
     ${M.ORDRE.map(c => `<div class="groupe" id="s-${c}">${pips(c)} ${esc(maj(E[c]?.nom || c))} en tête</div>
       <div class="cartes">${s.filter(e => e.code[0] === c).map(e => carte(e, `<div class="lie">Principale : ${lien(e.code[0])} · secondaire : ${lien(e.code[2].toUpperCase())}</div>`)).join("")}</div>`).join("")}`;
 }

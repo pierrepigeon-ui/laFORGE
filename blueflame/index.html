@@ -10,7 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <script src="flamme_moteur.js?v=1.3"></script>
 <script src="flamme_blason.js?v=1.9"></script>
-<script src="flamme_glyphes.js?v=1.3"></script>
+<script src="flamme_glyphes.js?v=2.0"></script>
 <style>
 :root{--ink:#1B2430;--muted:#5B6573;--line:#DDE1E7;--paper:#F4F6F8;--panel:#FFFFFF;--hover:#EEF1F5;--bleu:#1F4FD1;--err:#B42318;
   --serif:"Source Serif 4",Georgia,"Times New Roman",serif;--sans:"IBM Plex Sans","Segoe UI",Arial,sans-serif}
@@ -39,7 +39,8 @@ button,input{font:inherit;color:inherit} :focus-visible{outline:2px solid #3B6FE
 #espace .moi{display:flex;gap:16px;align-items:center;margin-bottom:14px}
 #espace .moi .ecu{flex:none;width:64px;display:block;line-height:0;border-radius:6px} #espace .moi .ecu:hover{opacity:.85}
 #espace .moi .ecu svg{width:64px;height:auto;display:block}
-#espace .moi .sous{margin:0} #espace .profil{font:italic 17px/1.4 var(--serif);color:var(--ink);margin:2px 0 0}
+#espace .moi .sous{margin:0} #espace .profil{font:italic 24px/1.3 var(--serif);color:var(--ink);margin:4px 0 2px}
+#espace .profil a{display:inline-flex;align-items:center;gap:10px;border:0!important} #espace .profil .nom{border-bottom:1px solid var(--line)} #espace .profil a:hover .nom{border-color:var(--bleu)} #espace .profil svg.g{height:30px;width:auto}
 .pips{display:inline-flex;gap:3px;align-items:center;vertical-align:1px}
 svg.g{vertical-align:middle} .pip{width:11px;height:11px;border-radius:50%;border:1px solid #8892A0} .pip.sec{width:7px;height:7px} .pip.abs{background:transparent!important;border:1.5px dashed var(--c)} .pip.sep{width:auto;height:auto;border:0;font-size:10px;color:var(--muted)}
 #espace .profil .code{font:500 12.5px var(--sans);font-style:normal;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 6px}
@@ -91,8 +92,8 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px} .field{display:block;margi
 
 <!-- Textes de présentation : à ajuster librement -->
 <section class="blocs">
-  <article class="bloc"><h2>Cinq couleurs, cinq énergies</h2>
-    <p>Ce qui nous met en mouvement se lit en cinq couleurs. Leur dosage dessine une carte unique : la vôtre.</p></article>
+  <article class="bloc"><h2>Cinq valeurs, cinq énergies</h2>
+    <p>Ce qui nous met en mouvement se lit en cinq valeurs, chacune avec sa couleur. Leur dosage dessine une carte unique : la vôtre.</p></article>
   <article class="bloc"><h2>L'autotest</h2>
     <p>Classez vingt tempéraments, du plus proche au plus lointain. Votre profil se révèle parmi quatre-vingt-dix, avec sa devise et ses armoiries.</p></article>
   <article class="bloc"><h2>La Forge de l'Arpenteur</h2>
@@ -110,7 +111,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px} .field{display:block;margi
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 
 <script>
-const VERSION = { numero:"1.13", date:"2026-10-13 23:20" };
+const VERSION = { numero:"1.16", date:"2026-10-14 20:49" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -145,7 +146,7 @@ async function monProfil(r){
       const up = ch.toUpperCase(), t = C[up]?.couleur || "#888", cls = ch === up ? "pip" : abs ? "pip abs" : "pip sec";
       out += `<span class="${cls}" style="background:${t};--c:${t === "#FFFFFF" ? "#8892A0" : t}"></span>`; }
     return `<span class="pips" aria-hidden="true">${out}</span>`; };
-  $("#mon-profil").innerHTML = codes.map(c => `<a href="fiche.html?resultat=${r.id}" title="Voir ma fiche">${pip(c)} <span class="code">${esc(c)}</span> ${esc(E[c]?.nom || "")}</a>`).join(" / ")
+  $("#mon-profil").innerHTML = codes.map(c => `<a href="fiche.html?resultat=${r.id}" title="${esc(c)} — voir ma fiche">${pip(c)} <span class="nom">${esc(E[c]?.nom || "")}</span></a>`).join(" / ")
     + (codes.length > 1 ? ` <span style="font-size:13px;color:var(--muted);font-style:normal">(profil frontière)</span>` : "");
   $("#mon-profil").classList.remove("hidden");
   if (!M || !B || !d) return;
