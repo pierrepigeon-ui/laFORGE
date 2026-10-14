@@ -113,7 +113,7 @@ dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);c
   <div style="display:flex;gap:10px"><button class="btn" type="submit">Se connecter</button><button class="btn ghost" type="button" id="login-fermer">Fermer</button></div>
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 <script>
-const VERSION = { numero:"1.15", date:"2026-10-14 20:49" };
+const VERSION = { numero:"1.16", date:"2026-10-14 20:58" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const ACCES = ["proprietaire"];
@@ -141,7 +141,10 @@ function pips(code){
 const NOMS_COULEUR = { W:"blanc", U:"bleu", B:"noir", R:"rouge", G:"vert" };
 function libelle(code){
   if (E[code]) return E[code].nom;
-  if (code.startsWith("/")) return "absence de " + [...code.slice(1).toUpperCase()].map(c => NOMS_COULEUR[c]).join(", ");
+  if (code.startsWith("/")){   // motivation ou projet en absence : « NE PAS » + son verbe, comme les anti-valeurs
+    const e = E[code.slice(1).toUpperCase()];
+    return e ? "NE PAS " + e.nom : "absence de " + [...code.slice(1).toUpperCase()].map(c => NOMS_COULEUR[c]).join(", ");
+  }
   return "";
 }
 
