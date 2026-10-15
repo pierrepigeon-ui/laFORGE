@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
-<script src="flamme_moteur.js?v=1.4"></script>
-<script src="flamme_glyphes.js?v=2.0"></script>
+<script src="flamme_moteur.js?v=1.5"></script>
+<script src="flamme_glyphes.js?v=2.3"></script>
 <style>
 :root{--ink:#1B2430;--muted:#5B6573;--line:#DDE1E7;--paper:#F4F6F8;--panel:#FFFFFF;--hover:#EEF1F5;--ok:#1E7A46;--warn:#9A5B00;--err:#B42318;
   --serif:"Source Serif 4",Georgia,"Times New Roman",serif;--sans:"IBM Plex Sans","Segoe UI",Arial,sans-serif}
@@ -35,20 +35,29 @@ main{max-width:1400px;margin:16px auto 40px;padding:0 20px}
 .fam{border:1px solid var(--line);border-radius:8px;padding:10px 12px}
 .fam .t{font-size:12px;color:var(--muted)} .fam .c{font:600 15px var(--serif)} .fam .sc{font-size:13px;color:var(--muted)}
 h2{font:600 19px var(--serif);margin:22px 0 10px}
-.legende{display:flex;gap:8px 16px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin:-4px 0 10px}
-.legende .lg{border-left:4px solid;padding-left:6px} .legende b{color:var(--ink);font-weight:600}
-.flux{column-count:5;column-gap:16px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
-.flux .tb{break-inside:avoid;break-after:avoid;font:600 13.5px var(--serif);border-left:4px solid;padding:2px 0 2px 7px;margin:2px 0 3px}
-.flux .tb span{font:400 11.5px var(--sans);color:var(--muted)} .flux .tb:not(:first-child){margin-top:8px}
-.flux .chip{break-inside:avoid;border-left:3px solid;padding-left:6px}
+.acces{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+/* légende : une case par bande, sur la même grille que les 5 colonnes de la liste */
+.legende{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px 16px;font-size:12.5px;margin:0 0 10px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+/* chaque case en parallélogramme, côtés obliques à 45° (décalage = hauteur de la case) */
+.legende .lg{height:26px;padding:0 30px;display:flex;justify-content:space-between;align-items:center;gap:6px;white-space:nowrap;
+  clip-path:polygon(26px 0,100% 0,calc(100% - 26px) 100%,0 100%)} .legende b{color:#1B2430;font-weight:600}
+.legende .lg span{color:#3A4554;font-variant-numeric:tabular-nums}
+.flux{column-count:5;column-gap:16px}
+.flux .chip{break-inside:avoid;padding-left:6px;padding-right:6px;border-radius:4px;margin-bottom:2px;color:#1B2430}
 .chip{display:flex;gap:6px;align-items:baseline;font-size:12.5px;padding:3px 0;border-bottom:1px solid var(--hover)}
 .chip .gl{flex:none;line-height:0} .chip .gl svg.g{height:16px;width:auto} .chip .cd{font-weight:600;white-space:nowrap} .chip .nm{color:var(--muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .chip .sc{font-variant-numeric:tabular-nums}
-.chip.moi{background:#FFF4D6;border-radius:0 4px 4px 0}
-.b-naturel{border-color:#1E7A46!important} .b-accessible{border-color:#6BA368!important} .b-situationnel{border-color:#C9A227!important}
-.b-difficile{border-color:#D9822B!important} .b-inaccessible{border-color:#B42318!important}
-.sections{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.flux .chip .nm{color:#3A4554} .flux .chip .sc{color:#1B2430}
+.chip.moi{box-shadow:inset 0 0 0 2px #1B2430;font-weight:600} .chip.moi .nm{color:#1B2430}
+/* bandes d'accessibilité : fonds pastel (naturel cyan, accessible vert, situationnel jaune, difficile orange, inaccessible rouge) */
+.b-naturel{background:#EAF7FA} .b-accessible{background:#EDF7EB} .b-situationnel{background:#FCF8E6} .b-difficile{background:#FDF0E4} .b-inaccessible{background:#FBEBEA}
+.legende .b-naturel{background:#D3F0F6} .legende .b-accessible{background:#DCF1D8} .legende .b-situationnel{background:#FBF1C8} .legende .b-difficile{background:#FCDDC2} .legende .b-inaccessible{background:#F7CFCC}
+.b-naturel,.b-accessible,.b-situationnel,.b-difficile,.b-inaccessible{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.note.large{max-width:none}
+/* classements : col. 1 valeurs, motivations, projets ; col. 2 les mêmes polarisés ; col. 3 styles ; col. 4 tempéraments */
+.sections{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:start}
+.sections .colonne{display:flex;flex-direction:column;gap:12px;min-width:0}
 .sect{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;break-inside:avoid}
-.sect h3{font:600 15px var(--serif);margin:0} .sect .ex{font-size:12px;color:var(--muted);margin:0 0 8px}
+.sect h3{font:600 15px/1.3 var(--serif);margin:0 0 6px} .sect h3 sup{line-height:0}   /* l'astérisque ne décale plus les lignes d'une colonne à l'autre */ .sect .ex{font-size:12px;color:var(--muted);margin:0 0 8px}
 .sect table{border-collapse:collapse;width:100%;font-size:13px}
 .sect td{padding:2px 4px;border-bottom:1px solid var(--hover)} .sect td.r{color:var(--muted);width:24px} .sect td.s{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .sect td.n{color:var(--muted)} .sect td.c{white-space:nowrap}
@@ -75,17 +84,17 @@ footer{border-top:1px solid var(--line);background:var(--panel);padding:4px 20px
 dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);padding:24px;width:min(380px,92vw)} dialog::backdrop{background:rgba(10,15,25,.45)}
 .field{display:block;margin-bottom:12px} .field span{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
 .field input{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:6px;background:var(--paper)}
-@media (max-width:1100px){ .flux{column-count:3} .familles{grid-template-columns:1fr 1fr} }
-@media (max-width:700px){ .flux{column-count:1} }
+@media (max-width:1100px){ .flux{column-count:3} .legende{grid-template-columns:repeat(3,minmax(0,1fr))} .familles{grid-template-columns:1fr 1fr} .sections{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (max-width:700px){ .flux{column-count:1} .legende{grid-template-columns:1fr} .sections{grid-template-columns:1fr} }
 @page{size:A4 landscape;margin:10mm}
 @media print{ body{background:#fff} header,.outils,footer,dialog{display:none!important} main{max-width:none;margin:0;padding:0}
   .flux,.sect,.carte-entete{border-color:#ccc} h2{margin:8px 0 6px;font-size:16px}
   /* page 1 : en-tête et 90 profils ; page 2 : les classements */
   .carte-entete{padding:10px 14px;margin-bottom:8px} .carte-entete h1{font-size:20px} .familles{margin-top:8px;gap:8px} .fam{padding:6px 10px}
-  .flux{column-count:5;padding:6px 8px} .flux .chip{font-size:10.5px;padding-top:1.5px;padding-bottom:1.5px} .flux .tb{font-size:12px}
+  .acces{padding:6px 8px} .flux{column-count:5} .flux .chip{font-size:10.5px;padding-top:1.5px;padding-bottom:1.5px;margin-bottom:1px} .legende{grid-template-columns:repeat(5,minmax(0,1fr))}
   .chip .gl svg.g{height:13px} .legende{font-size:11px;margin:0 0 6px}
   h2.classements{break-before:page;margin-top:0}
-  .sections{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px} .sect{padding:6px 8px;break-inside:avoid}
+  .sections{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px} .sections .colonne{gap:8px} .sect{padding:6px 8px;break-inside:avoid}
   .sect h3{font-size:13px} .sect .ex{font-size:10px;margin:0 0 4px} .sect table{font-size:10px;line-height:1.15} .sect td{padding:0.5px 3px}
   .sect td.n{max-width:0;width:45%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .sect svg.g{height:11px;width:auto} .sect .pip{width:9px;height:9px} .sect .pip.sec{width:6px;height:6px}
   .note{font-size:10.5px;margin-top:6px} }
@@ -113,7 +122,7 @@ dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);c
   <div style="display:flex;gap:10px"><button class="btn" type="submit">Se connecter</button><button class="btn ghost" type="button" id="login-fermer">Fermer</button></div>
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 <script>
-const VERSION = { numero:"1.17", date:"2026-10-15 17:38" };
+const VERSION = { numero:"1.19", date:"2026-10-15 19:22" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const ACCES = ["proprietaire"];
@@ -128,7 +137,7 @@ $("#version").textContent = `Détail ${VERSION.numero}, version du ${VERSION.dat
 
 function pips(code){
   // glyphe (projets, profils, styles, tempéraments) si le code en a un ; sinon les pastilles rondes
-  const g = window.FLAMME_GLYPHES?.glyphe(code, Object.fromEntries(Object.entries(C).map(([k, v]) => [k, v.couleur]))); if (g) return g;
+  const g = window.FLAMME_GLYPHES?.glyphe(code, Object.fromEntries(Object.entries(C).map(([k, v]) => [k, v.couleur])), { fondMini: "#8892A0" }); if (g) return g;
   let out = "", absent = false;
   for (const ch of code){
     if (ch === "/"){ absent = true; out += '<span class="pip sep">/</span>'; continue; }
@@ -159,15 +168,17 @@ const SECTIONS = [
   ["directions", "Styles", "1 valeur principale, 1 valeur secondaire — données corrigées"],
   ["temperaments", "Tempéraments", "1 valeur présente, 1 valeur absente"]
 ];
+const COLONNES = [["valeurs", "motivations", "projets"], ["valeursPolarisees", "motivationsPolarisees", "projetsRedresses"], ["directions"], ["temperaments"]];
 const NOTE_POLARISE = `<p class="note"><sup>*</sup> <i>Polarisé</i> : chaque score est lu par son écart à 50 %, dans un sens comme dans l'autre.
-  Une valeur très présente (90 %) et une valeur très absente (10 %) pèsent autant ; la seconde s'affiche comme une absence (<b>/w</b>, <b>/wu</b>…).
+  Une valeur très présente (90 %) et une valeur très absente (10 %) pèsent autant ; la seconde s'affiche comme une absence : glyphe barré, sur fond rouge pâle pour une motivation ou un projet.
   Le classement montre donc ce qui marque le plus le profil, par sa présence ou par son absence.</p>`;
-const BANDES = [["naturel","≥ +30"],["accessible","+15 à +30"],["situationnel","−15 à +15"],["difficile","−30 à −15"],["inaccessible","≤ −30"]];
+const BANDES = [["naturel","≥ +30 pts"],["accessible","+15 à +30 pts"],["situationnel","−15 à +15 pts"],["difficile","−30 à −15 pts"],["inaccessible","≤ −30 pts"]];
 const signe = x => { const v = Math.round(x * 1000) / 10; return (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(1).replace(".", ","); };   // accessibilité, en points
-const NOTE_ACCES = `<p class="note">Pour chaque profil, les cinq valeurs se rangent en trois étages : principales, secondaires, autres.
-  On mesure l'écart entre les valeurs de deux étages différents (huit paires, quelle que soit la famille) et on en fait la moyenne, en points.
+const NOTE_ACCES = `<p class="note large">Pour chaque profil, les cinq valeurs se rangent en trois étages : principales, secondaires, autres.
+  On mesure l'écart entre les valeurs de deux étages différents (huit paires, quelle que soit la famille) et on en fait la moyenne.
+  L'unité est le point de pourcentage : vos scores sont des pourcentages, et un écart de 30 points sépare par exemple 80 % de 50 %.
   Positif : les scores soutiennent la structure du profil, et plus la marge est grande, moins le profil est menacé. Négatif : les scores la contredisent.
-  Un profil et son opposé ont des scores exactement opposés.</p>`;
+  Un profil et son opposé ont des scores exactement opposés. La liste se lit en colonnes, du plus accessible au moins accessible ; votre profil est encadré.</p>`;
 
 async function lireScores(){
   const q = new URLSearchParams(location.search);
@@ -191,11 +202,11 @@ function rendre(src){
   const codesProfils = Object.values(E).filter(e => e.couche === "profil").sort((a, b) => (a.ordre ?? 0) - (b.ordre ?? 0)).map(e => e.code);
   const st = M.statistiques(s01, codesProfils, { classement: src.classement });
   const moi = new Set(st.profil.codes);
-  const fam = (titre, liste) => `<div class="fam"><div class="t">${titre}</div>${liste.map(x => `<div class="c" data-code="${esc(x.code)}" tabindex="0">${pips(x.code)} ${esc(x.code)} ${esc(libelle(x.code))}</div>`).join("")}
-    <div class="sc">${liste.length ? signe(liste[0].score) + " — " + liste[0].bande : ""}${liste.length > 1 ? " (égalité)" : ""}</div></div>`;
+  const fam = (titre, liste) => `<div class="fam"><div class="t">${titre}</div>${liste.map(x => `<div class="c" data-code="${esc(x.code)}" tabindex="0">${pips(x.code)} ${esc(libelle(x.code))}</div>`).join("")}
+    <div class="sc">${liste.length ? signe(liste[0].score) + " pts — " + liste[0].bande : ""}${liste.length > 1 ? " (égalité)" : ""}</div></div>`;
   $("#page").innerHTML = `
     <section class="carte-entete">
-      <h1>Statistiques du profil ${st.profil.codes.map(c => `${pips(c)} ${esc(c)} ${esc(libelle(c))}`).join(" / ")}</h1>
+      <h1>Statistiques du profil ${st.profil.codes.map(c => `${pips(c)} ${esc(libelle(c))}`).join(" / ")}</h1>
       <div class="meta">${src.type ? "Profil type (scores types de la famille)" : (src.qui ? esc(src.qui) + " — " : "") + dateFr(src.date)} — scores : ${M.ORDRE.map(c => `${c} ${pct(s01[c])}`).join(", ")}${st.profil.frontiere ? " — profil frontière" : ""}</div>
       <div class="familles">
         ${fam("Meilleur radical (1.23)", st.parFamille.radical)}
@@ -206,16 +217,15 @@ function rendre(src){
     </section>
     <h2>Accessibilité des 90 profils</h2>
     ${NOTE_ACCES}
-    <div class="legende">${BANDES.map(([b, lim]) => `<span class="lg b-${b}"><b>${b[0].toUpperCase() + b.slice(1)}</b> ${lim} · ${st.sections.profils.filter(p => p.bande === b).length}</span>`).join("")}</div>
-    <div class="flux">${BANDES.map(([b, lim]) => {   // une seule liste continue, en colonnes : plus de place perdue pour les bandes peu peuplées
-      const l = st.sections.profils.filter(p => p.bande === b); if (!l.length) return "";
-      return `<div class="tb b-${b}">${b[0].toUpperCase() + b.slice(1)} <span>${lim} · ${l.length}</span></div>` +
-        l.map(p => `<div class="chip b-${b}${moi.has(p.code) ? " moi" : ""}" data-code="${esc(p.code)}" tabindex="0"><span class="gl">${pips(p.code)}</span><span class="cd">${esc(p.code)}</span><span class="nm">${esc(libelle(p.code))}</span><span class="sc">${signe(p.score)}</span></div>`).join("");
-    }).join("")}</div>
+    <div class="acces">
+    <div class="legende">${BANDES.map(([b, lim]) => `<span class="lg b-${b}"><b>${b[0].toUpperCase() + b.slice(1)}</b><span>${lim} · ${st.sections.profils.filter(p => p.bande === b).length}</span></span>`).join("")}</div>
+    <div class="flux">${st.sections.profils.map(p =>   // une seule liste continue, en colonnes ; la couleur de fond dit la bande
+      `<div class="chip b-${p.bande}${moi.has(p.code) ? " moi" : ""}" data-code="${esc(p.code)}" tabindex="0"><span class="gl">${pips(p.code)}</span><span class="nm">${esc(libelle(p.code))}</span><span class="sc">${signe(p.score)}</span></div>`).join("")}</div>
+    </div>
     <h2 class="classements">Classements</h2>
-    <div class="sections">${SECTIONS.map(([k, titre, ex]) => `<section class="sect"><h3>${titre}</h3><p class="ex">${ex}</p><table>
-      ${st.sections[k].map(x => `<tr data-code="${esc(x.code)}" tabindex="0"><td class="r">${x.rang}</td><td class="c">${pips(x.code)} ${esc(x.code)}${x.tiers ? ` <span class="n">+ ${x.tiers}</span>` : ""}</td><td class="n">${esc(libelle(x.code))}</td><td class="s">${pct(x.score)}</td></tr>`).join("")}
-      </table></section>`).join("")}</div>
+    <div class="sections">${COLONNES.map(col => `<div class="colonne">${col.map(k => { const [, titre, ex] = SECTIONS.find(x => x[0] === k); return `<section class="sect"><h3>${titre}</h3><table>
+      ${st.sections[k].map(x => `<tr data-code="${esc(x.code)}" tabindex="0"><td class="r">${x.rang}</td><td class="c">${pips(x.code)}</td><td class="n">${esc(libelle(x.code))}</td><td class="s">${pct(x.score)}</td></tr>`).join("")}
+      </table></section>`; }).join("")}</div>`).join("")}</div>
     ${NOTE_POLARISE}`;
   $("#lien-fiche").href = "fiche.html" + location.search;
   document.title = `Flamme Bleue — détail ${st.profil.codes.join(" / ")}`;

@@ -1,21 +1,23 @@
 /* =====================================================================
-   Flamme Bleue — glyphes des codes (2.1, 14/10/2026) — « système C »
+   Flamme Bleue — glyphes des codes (2.3, 15/10/2026) — « système C »
    Un petit dessin par type de code, à côté du code en lettres :
-   - valeur (W) : un disque plein ;
+   - valeur (W) : un disque plein, de la même taille que celui de l'anti-valeur ;
    - anti-valeur (/w) : un disque pointillé barré ;
-   - absences composées (/wu, /wbg, du Détail) : une ligne de disques pointillés barrés ;
+   - absences composées (/wu, /wbg, du Détail) : la mini-rosace de la motivation ou du projet correspondant,
+     sur un fond rouge pâle, barrée d'un trait rouge cerné de blanc ;
    - trait (WWu) : une gélule de la valeur, contour et fond de la même teinte (blanc compris), avec le disque
      de la voisine du côté où elle se trouve sur la roue (WWg à gauche, WWu à droite), le tout entouré d'un
      trait fin gris — ou d'un anneau de la teinte voulue (options.anneau, utilisé par la rosace) ;
    - motivation (WU) et projet (GWU) : la mini-rosace — chaque valeur à sa place sur la roue
      (W en haut, puis U, B, R, G dans le sens des aiguilles), cercle en filigrane ;
+     avec options.fondMini (une teinte), les secteurs non concernés sont peints de cette teinte (gris dans le Détail, comme la rosace) ;
    - style (X.y) : X en secteur de 60° au côté droit vertical, y en petit disque à droite ;
    - tempérament (X/y) : X en secteur de 60° au côté droit vertical, y en disque pointillé barré ;
    - radical (X.yz) : X en secteur de 72° orienté comme W sur la rosace, y et z en petits disques ;
    - spécialiste (XY.z) : X et Y en secteurs de 60° posés à plat, légèrement écartés, z en petit disque entre eux ;
    - généraliste (XY/z) : X et Y en secteurs de 60° pointés à gauche et à droite (nœud papillon), z en disque pointillé barré dessous.
    Les trois glyphes de profil sont cadrés dans la même boîte.
-   Usage : FLAMME_GLYPHES.glyphe(code, { W:"#FFFFFF", … }, { anneau:"#00D900" }) → chaîne SVG, ou null si le code est inconnu.
+   Usage : FLAMME_GLYPHES.glyphe(code, { W:"#FFFFFF", … }, { anneau:"#00D900", fondMini:"#8892A0" }) → chaîne SVG, ou null si le code est inconnu.
    ===================================================================== */
 (function (racine) {
   const ORDRE = ["W", "U", "B", "R", "G"];
@@ -46,11 +48,20 @@
     };
     let m;
 
-    if (/^[WUBRG]$/.test(code)) return svg(14, 20, rond(code, 7, 10, 5.4));                        // valeur
+    if (/^[WUBRG]$/.test(code)) return svg(16, 20, rond(code, 8, 10, 6));                        // valeur
+    const miniRosace = (lettres, fond) => {
+      let r = fond ? `<circle cx="10" cy="10" r="8.6" fill="${fond}"/>`
+                   : `<circle cx="10" cy="10" r="8.6" fill="none" stroke="currentColor" stroke-width=".8" opacity=".22"/>`;
+      ORDRE.forEach(c => { if (lettres.includes(c)) r += secteur(c, 10, 10, 8.6, ANGLE[c] - 36, ANGLE[c] + 36); });
+      return r;
+    };
     if ((m = code.match(/^\/([wubrg]+)$/))) {                                                     // anti-valeur, absences composées
       const L = [...m[1].toUpperCase()];
       if (L.length === 1) return svg(16, 20, barre(L[0], 8, 10, 6));
-      return svg(L.length * 11 + 2, 20, L.map((c, i) => barre(c, 6.5 + i * 11, 10, 4.6)).join(""));
+      // motivation ou projet absent : sa mini-rosace sur fond rouge pâle, barrée d'un trait rouge cerné de blanc
+      return svg(20, 20, miniRosace(L.join(""), "#F6CACA")
+        + `<line x1="3.2" y1="16.8" x2="16.8" y2="3.2" stroke="#FFFFFF" stroke-width="3.4" stroke-linecap="round"/>`
+        + `<line x1="3.2" y1="16.8" x2="16.8" y2="3.2" stroke="#C81E1E" stroke-width="1.7" stroke-linecap="round"/>`);
     }
     if ((m = code.match(/^([WUBRG])\1([wubrg])$/))) {                                             // trait
       const X = m[1], V = m[2].toUpperCase(), gauche = ORDRE[(ORDRE.indexOf(X) + 4) % 5] === V, L = 26, r = 5, y0 = 5;
@@ -59,11 +70,7 @@
         + `<circle cx="${gauche ? 2 + r : 2 + L - r}" cy="${y0 + r}" r="${r - .5}" fill="${T(V)}" stroke="${T(X)}" stroke-width="1.4"/>`
         + `<rect x="${f2(2 - d)}" y="${f2(y0 - d)}" width="${f2(L + 2 * d)}" height="${f2(2 * r + 2 * d)}" rx="${f2(r + d)}" fill="none" stroke="${options.anneau || BORD}" stroke-width="${sa}"/>`);
     }
-    if (/^[WUBRG]{2,3}$/.test(code)) {                                                            // motivation, projet : mini-rosace
-      let s = `<circle cx="10" cy="10" r="8.6" fill="none" stroke="currentColor" stroke-width=".8" opacity=".22"/>`;
-      ORDRE.forEach(c => { if (code.includes(c)) s += secteur(c, 10, 10, 8.6, ANGLE[c] - 36, ANGLE[c] + 36); });
-      return svg(20, 20, s);
-    }
+    if (/^[WUBRG]{2,3}$/.test(code)) return svg(20, 20, miniRosace(code, options.fondMini));      // motivation, projet : mini-rosace
     if ((m = code.match(/^([WUBRG])\.([wubrg])([wubrg])$/))) {                                   // radical
       const [, x, y, z] = m;
       return profil("radical", secteur(x, 17, 17, 14, -126, -54) + rond(y.toUpperCase(), 4.5, 12, 3.4) + rond(z.toUpperCase(), 29.5, 12, 3.4));
@@ -86,6 +93,6 @@
     }
     return null;
   }
-  const api = { VERSION: { numero: "2.1", date: "2026-10-14 22:33" }, glyphe };
+  const api = { VERSION: { numero: "2.3", date: "2026-10-15 19:22" }, glyphe };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else racine.FLAMME_GLYPHES = api;
 })(typeof window !== "undefined" ? window : globalThis);
