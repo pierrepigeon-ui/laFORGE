@@ -1,8 +1,8 @@
 /* =====================================================================
-   Flamme Bleue — glyphes des codes (2.3, 15/10/2026) — « système C »
+   Flamme Bleue — glyphes des codes (2.4, 15/10/2026) — « système C »
    Un petit dessin par type de code, à côté du code en lettres :
    - valeur (W) : un disque plein, de la même taille que celui de l'anti-valeur ;
-   - anti-valeur (/w) : un disque pointillé barré ;
+   - anti-valeur (/w) : une croix (en x) de la teinte de la valeur, cernée de gris pour le blanc (2.4 : remplace le disque pointillé barré) ;
    - absences composées (/wu, /wbg, du Détail) : la mini-rosace de la motivation ou du projet correspondant,
      sur un fond rouge pâle, barrée d'un trait rouge cerné de blanc ;
    - trait (WWu) : une gélule de la valeur, contour et fond de la même teinte (blanc compris), avec le disque
@@ -12,10 +12,10 @@
      (W en haut, puis U, B, R, G dans le sens des aiguilles), cercle en filigrane ;
      avec options.fondMini (une teinte), les secteurs non concernés sont peints de cette teinte (gris dans le Détail, comme la rosace) ;
    - style (X.y) : X en secteur de 60° au côté droit vertical, y en petit disque à droite ;
-   - tempérament (X/y) : X en secteur de 60° au côté droit vertical, y en disque pointillé barré ;
+   - tempérament (X/y) : X en secteur de 60° au côté droit vertical, y en croix ;
    - radical (X.yz) : X en secteur de 72° orienté comme W sur la rosace, y et z en petits disques ;
    - spécialiste (XY.z) : X et Y en secteurs de 60° posés à plat, légèrement écartés, z en petit disque entre eux ;
-   - généraliste (XY/z) : X et Y en secteurs de 60° pointés à gauche et à droite (nœud papillon), z en disque pointillé barré dessous.
+   - généraliste (XY/z) : X et Y en secteurs de 60° pointés à gauche et à droite (nœud papillon), z en croix dessous.
    Les trois glyphes de profil sont cadrés dans la même boîte.
    Usage : FLAMME_GLYPHES.glyphe(code, { W:"#FFFFFF", … }, { anneau:"#00D900", fondMini:"#8892A0" }) → chaîne SVG, ou null si le code est inconnu.
    ===================================================================== */
@@ -33,8 +33,13 @@
     const blanc = c => T(c).toUpperCase() === "#FFFFFF";
     const trait = c => blanc(c) ? BORD : T(c);                                  // contour lisible pour le blanc
     const rond = (c, x, y, r = 4.6) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${T(c)}" stroke="${BORD}" stroke-width="1"/>`;
-    const barre = (c, x, y, r) => `<circle cx="${x}" cy="${y}" r="${r}" fill="none" stroke="${trait(c)}" stroke-width="1.3" stroke-dasharray="2 1.5"/>`
-      + `<line x1="${f2(x - r * .72)}" y1="${f2(y + r * .72)}" x2="${f2(x + r * .72)}" y2="${f2(y - r * .72)}" stroke="${trait(c)}" stroke-width="1.2"/>`;
+    // valeur absente : une croix (en x) de sa teinte ; le blanc est cerné de gris pour rester visible
+    const croix = (c, x, y, r) => {
+      const k = r * .78, d = `M${f2(x - k)} ${f2(y - k)} L${f2(x + k)} ${f2(y + k)} M${f2(x - k)} ${f2(y + k)} L${f2(x + k)} ${f2(y - k)}`;
+      const ep = Math.max(1.5, r * .36);
+      return blanc(c) ? `<path d="${d}" stroke="${BORD}" stroke-width="${f2(ep + 1.4)}" stroke-linecap="round" fill="none"/><path d="${d}" stroke="#FFFFFF" stroke-width="${f2(ep)}" stroke-linecap="round" fill="none"/>`
+                      : `<path d="${d}" stroke="${T(c)}" stroke-width="${f2(ep)}" stroke-linecap="round" fill="none"/>`;
+    };
     const secteur = (c, cx, cy, R, a1, a2) => {
       const r = d => d * Math.PI / 180, p = d => [cx + R * Math.cos(r(d)), cy + R * Math.sin(r(d))];
       const [x1, y1] = p(a1), [x2, y2] = p(a2);
@@ -57,7 +62,7 @@
     };
     if ((m = code.match(/^\/([wubrg]+)$/))) {                                                     // anti-valeur, absences composées
       const L = [...m[1].toUpperCase()];
-      if (L.length === 1) return svg(16, 20, barre(L[0], 8, 10, 6));
+      if (L.length === 1) return svg(16, 20, croix(L[0], 8, 10, 6));
       // motivation ou projet absent : sa mini-rosace sur fond rouge pâle, barrée d'un trait rouge cerné de blanc
       return svg(20, 20, miniRosace(L.join(""), "#F6CACA")
         + `<line x1="3.2" y1="16.8" x2="16.8" y2="3.2" stroke="#FFFFFF" stroke-width="3.4" stroke-linecap="round"/>`
@@ -81,7 +86,7 @@
     }
     if ((m = code.match(/^([WUBRG])([WUBRG])\/([wubrg])$/))) {                                   // généraliste
       const [, x, y, z] = m;
-      return profil("generaliste", secteur(x, 17, 8.5, 14, 150, 210) + secteur(y, 17, 8.5, 14, -30, 30) + barre(z.toUpperCase(), 17, 15.2, 3.9));
+      return profil("generaliste", secteur(x, 17, 8.5, 14, 150, 210) + secteur(y, 17, 8.5, 14, -30, 30) + croix(z.toUpperCase(), 17, 15.2, 3.9));
     }
     if ((m = code.match(/^([WUBRG])\.([wubrg])$/))) {                                            // style
       const [, x, y] = m;
@@ -89,10 +94,10 @@
     }
     if ((m = code.match(/^([WUBRG])\/([wubrg])$/))) {                                            // tempérament
       const [, x, y] = m;
-      return svg(29, 20, secteur(x, 14, 17.5, 14, -150, -90) + barre(y.toUpperCase(), 22, 10.5, 4.6));
+      return svg(29, 20, secteur(x, 14, 17.5, 14, -150, -90) + croix(y.toUpperCase(), 22, 10.5, 4.6));
     }
     return null;
   }
-  const api = { VERSION: { numero: "2.3", date: "2026-10-15 19:22" }, glyphe };
+  const api = { VERSION: { numero: "2.4", date: "2026-10-15 22:50" }, glyphe };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else racine.FLAMME_GLYPHES = api;
 })(typeof window !== "undefined" ? window : globalThis);
