@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/3.46.0/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
-<script src="flamme_moteur.js?v=1.5"></script>
+<script src="flamme_moteur.js?v=1.6"></script>
 <script src="flamme_glyphes.js?v=2.1"></script>
 <style>
 :root{
@@ -150,6 +150,24 @@ aside{display:flex;flex-direction:column;gap:14px;position:sticky;top:12px}
 .profil .texte{font:15px/1.6 var(--serif);margin-top:8px;white-space:pre-line}
 .compare{margin-top:12px;font-size:13px;padding:8px 10px;border-radius:8px;background:var(--bleu-doux)}
 .verrou{font-size:13px;color:var(--muted);margin-top:10px}
+/* cohérence du test (éditeurs et propriétaire) */
+.bloc .entete{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.bloc .entete h2{margin:0 0 10px}
+.bascule{border:1px solid var(--line);background:transparent;border-radius:999px;padding:2px 10px;font-size:12px;cursor:pointer;color:var(--muted)}
+.bascule:hover{background:var(--hover);color:var(--ink)}
+.coh-ligne{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.coh-rho{font:600 24px/1 var(--serif);font-variant-numeric:tabular-nums}
+.coh-bande{font:600 12.5px var(--sans);padding:3px 10px;border-radius:999px}
+.coh-tres{background:#D6EFDC;color:#14532D} .coh-coherent{background:#E6F4D8;color:#365314} .coh-fragile{background:#FCE3C6;color:#7C3A0A} .coh-hasard{background:#F7D3D0;color:#7F1D1D}
+.coh-tri{display:flex;gap:6px;font-size:12px;color:var(--muted);align-items:center;margin:4px 0 6px}
+.coh-tri button{border:1px solid var(--line);background:transparent;border-radius:6px;padding:1px 8px;font-size:12px;cursor:pointer;color:var(--muted)}
+.coh-tri button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+table.coh{border-collapse:collapse;width:100%;font-size:12.5px}
+table.coh th{font-weight:500;color:var(--muted);text-align:right;padding:2px 4px;border-bottom:1px solid var(--line)} table.coh th:first-child{text-align:left}
+table.coh td{padding:3px 4px;border-bottom:1px solid var(--hover);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+table.coh td:first-child{text-align:left;white-space:normal}
+table.coh td.fort{font-weight:600} table.coh tr.loin td{background:var(--sel)}
+.coh-aide{font-size:12px;color:var(--muted);margin:8px 0 0;line-height:1.45}
 .historique li{font-size:13px;margin-bottom:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .historique ul{list-style:none;padding:0;margin:0}
 .lien{background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;padding:0;font-size:12px}
@@ -218,6 +236,10 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px}
       <h2>Profil</h2>
       <div id="profil"></div>
     </section>
+    <section class="bloc hidden" id="bloc-coherence" aria-live="polite">
+      <div class="entete"><h2>Cohérence du test</h2><button type="button" class="bascule" id="bascule-coherence" aria-expanded="true">Masquer</button></div>
+      <div id="coherence"></div>
+    </section>
     <section class="bloc historique hidden" id="bloc-historique">
       <h2>Mes résultats</h2>
       <div id="historique"></div>
@@ -238,7 +260,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px}
 </dialog>
 
 <script>
-const VERSION = { numero:"2.0", date:"2026-10-15 18:35" };
+const VERSION = { numero:"2.1", date:"2026-10-15 22:01" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const M = window.FLAMME_MOTEUR;
@@ -557,6 +579,7 @@ function afficherResultats(){
     $("#valeurs").innerHTML = ""; $("#histo").innerHTML = `<p class="verrou">Les scores apparaissent dès que les 20 cartes sont rangées dans les piles.</p>`;
     $("#profil").innerHTML = `<p class="verrou">Votre profil apparaîtra ici.</p>`;
     $("#bandeau").innerHTML = `<div class="p">Encore ${bac.length} carte${bac.length > 1 ? "s" : ""} à ranger pour voir vos scores</div>`;
+    afficherCoherence(null);
     return;
   }
   const { pourcentages: p } = M.scoresDepuisTemperaments(etat.ordre, etat.ecarts);
@@ -564,6 +587,7 @@ function afficherResultats(){
   const simple = M.profil(M.scoresDepuisTemperaments(etat.ordre).pourcentages, { classement: etat.ordre });
   dernier = { p, r, classement: etat.ordre.slice(), ecarts: etat.ecarts.slice() };
   afficherValeurs(p);
+  afficherCoherence(etat);
   $("#histo").innerHTML = M.ORDRE.map(c => `<div class="barre"><b title="${esc(E[c]?.nom || c)}">${pips(c)}</b><div class="fond"><div class="val" style="width:${p[c]}%;background:${couleurs[c].couleur};${c === "W" ? "border:1px solid #888" : ""}"></div></div><span class="pct">${fmt(p[c])} %</span></div>`).join("");
   $("#profil").innerHTML =
     (r.frontiere ? `<p class="frontiere">Profil frontière : vos scores vous placent à égalité entre ${r.codes.length} profils.</p>` : "") +
@@ -580,6 +604,46 @@ function afficherResultats(){
   $("#bandeau").innerHTML = `<div class="ligne">${M.ORDRE.map(c => `<span class="v"><b><i style="background:${couleurs[c].couleur}"></i>${Math.round(p[c])}</b>${esc(E[c]?.nom || c)}</span>`).join("")}</div>
     <div class="p">${esc(E[r.code]?.nom || r.code)} (${esc(r.code)})${simple.code !== r.code ? ` · sans écarts : ${esc(simple.code)}` : ""}</div>`;
 }
+
+/* ---------- cohérence du test ----------
+   Visible pour les éditeurs et le propriétaire (affichée par défaut, avec une bascule pour la masquer) ;
+   invisible, bascule comprise, pour les invités et les visiteurs non connectés. */
+const voitCoherence = () => role === "proprietaire" || role === "editeur";
+let cohAffichee = true, triCoh = "rang", cohTout = false;
+try { cohAffichee = localStorage.getItem("fb-coherence") !== "masquee"; } catch {}
+const CLASSE_BANDE = { "très cohérent": "coh-tres", "cohérent": "coh-coherent", "fragile": "coh-fragile", "proche du hasard": "coh-hasard" };
+const nb1 = x => (Math.round(x * 10) / 10).toString().replace(".", ",");
+const signeN = (x, suffixe = "") => { const v = Math.round(x * 10) / 10; return (v > 0 ? "+" : v < 0 ? "−" : "") + (suffixe ? Math.abs(v).toFixed(1).replace(".", ",") : nb1(Math.abs(v))) + suffixe; };   // points : toujours une décimale
+function afficherCoherence(etat){
+  const bloc = $("#bloc-coherence");
+  bloc.classList.toggle("hidden", !voitCoherence());
+  if (!voitCoherence()) return;
+  const b = $("#bascule-coherence"); b.textContent = cohAffichee ? "Masquer" : "Afficher"; b.setAttribute("aria-expanded", cohAffichee);
+  const z = $("#coherence"); z.classList.toggle("hidden", !cohAffichee);
+  if (!cohAffichee) return;
+  if (!etat){ z.innerHTML = `<p class="verrou">La cohérence apparaît dès que les 20 cartes sont rangées.</p>`; return; }
+  const c = M.coherence(etat.ordre, etat.ecarts);
+  const cle = triCoh === "rang" ? (l => Math.abs(l.ecartRang) * 1000 + Math.abs(l.ecartProx)) : (l => Math.abs(l.ecartProx) * 1000 + Math.abs(l.ecartRang));
+  const lignes = c.lignes.slice().sort((a, b) => cle(b) - cle(a)), vues = cohTout ? lignes : lignes.slice(0, 6);
+  z.innerHTML = `<div class="coh-ligne"><span class="coh-rho" title="Indice ρ : 1 si votre classement est exactement celui que vos scores prévoient">${c.rho.toFixed(2).replace(".", ",")}</span>
+      <span class="coh-bande ${CLASSE_BANDE[c.bande]}">${c.bande[0].toUpperCase() + c.bande.slice(1)}</span></div>
+    <div class="coh-tri">Du plus éloigné au moins éloigné, trié par
+      <button type="button" data-tri="rang" aria-pressed="${triCoh === "rang"}">rang</button><button type="button" data-tri="prox" aria-pressed="${triCoh === "prox"}">proximité</button></div>
+    <table class="coh"><thead><tr><th>Tempérament</th><th title="Rang déclaré → rang attendu">Rang</th><th>Écart</th><th title="Proximité déclarée − proximité attendue">Proximité</th></tr></thead><tbody>
+    ${vues.map(l => `<tr class="${Math.abs(l.ecartRang) >= 4 ? "loin" : ""}"><td>${esc(E[l.code]?.nom || l.code)}</td><td>${l.rangDeclare} → ${nb1(l.rangAttendu)}</td>
+      <td class="${triCoh === "rang" ? "fort" : ""}">${signeN(l.ecartRang)}</td><td class="${triCoh === "prox" ? "fort" : ""}">${signeN(l.ecartProx, " pts")}</td></tr>`).join("")}
+    </tbody></table>
+    <button type="button" class="lien" id="coh-tout" style="margin-top:6px">${cohTout ? "N'afficher que les 6 premiers" : "Voir les 20 tempéraments"}</button>
+    <p class="coh-aide">ρ compare votre classement à celui que vos propres scores prévoient : au moins 0,90 très cohérent, 0,80 cohérent, 0,70 fragile, en dessous proche du hasard (un classement au hasard obtient déjà 0,44 en moyenne).
+      Écart positif : carte placée plus près de vous que vos scores ne le prévoient. Lignes surlignées : 4 rangs d'écart ou plus.</p>`;
+  z.querySelectorAll(".coh-tri button").forEach(x => x.addEventListener("click", e => { e.stopPropagation(); triCoh = x.dataset.tri; afficherCoherence(etatCourant()); }));
+  $("#coh-tout").addEventListener("click", e => { e.stopPropagation(); cohTout = !cohTout; afficherCoherence(etatCourant()); });
+}
+$("#bascule-coherence").addEventListener("click", e => {
+  e.stopPropagation(); cohAffichee = !cohAffichee;
+  try { localStorage.setItem("fb-coherence", cohAffichee ? "affichee" : "masquee"); } catch {}
+  afficherCoherence(etatCourant());
+});
 
 /* ---------- reprise du dernier résultat enregistré ---------- */
 let dernierEnregistre = null;

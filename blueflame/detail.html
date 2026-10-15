@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
-<script src="flamme_moteur.js?v=1.5"></script>
+<script src="flamme_moteur.js?v=1.6"></script>
 <script src="flamme_glyphes.js?v=2.3"></script>
 <style>
 :root{--ink:#1B2430;--muted:#5B6573;--line:#DDE1E7;--paper:#F4F6F8;--panel:#FFFFFF;--hover:#EEF1F5;--ok:#1E7A46;--warn:#9A5B00;--err:#B42318;
@@ -53,6 +53,21 @@ h2{font:600 19px var(--serif);margin:22px 0 10px}
 .legende .b-naturel{background:#D3F0F6} .legende .b-accessible{background:#DCF1D8} .legende .b-situationnel{background:#FBF1C8} .legende .b-difficile{background:#FCDDC2} .legende .b-inaccessible{background:#F7CFCC}
 .b-naturel,.b-accessible,.b-situationnel,.b-difficile,.b-inaccessible{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .note.large{max-width:none}
+/* cohérence du test */
+.coh-tete{display:flex;gap:16px 28px;align-items:center;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin-bottom:12px}
+.coh-rho{font:600 34px/1 var(--serif);font-variant-numeric:tabular-nums} .coh-rho small{display:block;font:400 12px var(--sans);color:var(--muted);margin-top:4px}
+.coh-bande{font:600 14px var(--sans);padding:4px 12px;border-radius:999px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.coh-tres{background:#D6EFDC;color:#14532D} .coh-coherent{background:#E6F4D8;color:#365314} .coh-fragile{background:#FCE3C6;color:#7C3A0A} .coh-hasard{background:#F7D3D0;color:#7F1D1D}
+.coh-texte{flex:1;min-width:260px;font-size:13.5px;color:var(--muted);line-height:1.5}
+.coh-table-cadre{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;overflow-x:auto}
+table.coh{border-collapse:collapse;width:100%;font-size:13px}
+table.coh th{font:600 12px var(--sans);color:var(--muted);text-align:right;padding:4px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+table.coh th.g{text-align:left} table.coh th button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0;text-decoration:underline dotted}
+table.coh th button[aria-pressed="true"]{color:var(--ink);text-decoration:none} table.coh th button[aria-pressed="true"]::after{content:" ▼"}
+table.coh td{padding:3px 8px;border-bottom:1px solid var(--hover);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+table.coh td.g{text-align:left} table.coh td.g .n{margin-left:6px}
+table.coh td.fort{font-weight:600} table.coh tr.loin{background:#FFF4E5;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+table.coh .sep{border-left:1px solid var(--line)}
 /* classements : col. 1 valeurs, motivations, projets ; col. 2 les mêmes polarisés ; col. 3 styles ; col. 4 tempéraments */
 .sections{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:start}
 .sections .colonne{display:flex;flex-direction:column;gap:12px;min-width:0}
@@ -93,7 +108,8 @@ dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);c
   .carte-entete{padding:10px 14px;margin-bottom:8px} .carte-entete h1{font-size:20px} .familles{margin-top:8px;gap:8px} .fam{padding:6px 10px}
   .acces{padding:6px 8px} .flux{column-count:5} .flux .chip{font-size:10.5px;padding-top:1.5px;padding-bottom:1.5px;margin-bottom:1px} .legende{grid-template-columns:repeat(5,minmax(0,1fr))}
   .chip .gl svg.g{height:13px} .legende{font-size:11px;margin:0 0 6px}
-  h2.classements{break-before:page;margin-top:0}
+  h2.classements,h2.coherence{break-before:page;margin-top:0}
+  .coh-tete{padding:8px 12px} .coh-rho{font-size:26px} table.coh{font-size:11px} table.coh td,table.coh th{padding:1.5px 6px}
   .sections{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px} .sections .colonne{gap:8px} .sect{padding:6px 8px;break-inside:avoid}
   .sect h3{font-size:13px} .sect .ex{font-size:10px;margin:0 0 4px} .sect table{font-size:10px;line-height:1.15} .sect td{padding:0.5px 3px}
   .sect td.n{max-width:0;width:45%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .sect svg.g{height:11px;width:auto} .sect .pip{width:9px;height:9px} .sect .pip.sec{width:6px;height:6px}
@@ -122,7 +138,7 @@ dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);c
   <div style="display:flex;gap:10px"><button class="btn" type="submit">Se connecter</button><button class="btn ghost" type="button" id="login-fermer">Fermer</button></div>
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 <script>
-const VERSION = { numero:"1.19", date:"2026-10-15 19:22" };
+const VERSION = { numero:"1.20", date:"2026-10-15 22:00" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const ACCES = ["proprietaire"];
@@ -168,6 +184,32 @@ const SECTIONS = [
   ["directions", "Styles", "1 valeur principale, 1 valeur secondaire — données corrigées"],
   ["temperaments", "Tempéraments", "1 valeur présente, 1 valeur absente"]
 ];
+const nb1 = x => (Math.round(x * 10) / 10).toString().replace(".", ",");
+const signeN = (x, suffixe = "") => { const v = Math.round(x * 10) / 10; return (v > 0 ? "+" : v < 0 ? "−" : "") + (suffixe ? Math.abs(v).toFixed(1).replace(".", ",") : nb1(Math.abs(v))) + suffixe; };   // points : toujours une décimale
+const CLASSE_BANDE = { "très cohérent": "coh-tres", "cohérent": "coh-coherent", "fragile": "coh-fragile", "proche du hasard": "coh-hasard" };
+let COH = null, triCoh = "rang";
+function lignesCoherence(){
+  const cle = triCoh === "rang" ? (l => Math.abs(l.ecartRang) * 1000 + Math.abs(l.ecartProx)) : (l => Math.abs(l.ecartProx) * 1000 + Math.abs(l.ecartRang));
+  return COH.lignes.slice().sort((a, b) => cle(b) - cle(a)).map((l, i) => `<tr data-code="${esc(l.code)}" tabindex="0" class="${Math.abs(l.ecartRang) >= 4 ? "loin" : ""}">
+    <td>${i + 1}</td><td class="g">${pips(l.code)}<span class="n">${esc(libelle(l.code))}</span></td>
+    <td class="sep">${l.rangDeclare}</td><td>${nb1(l.rangAttendu)}</td><td class="${triCoh === "rang" ? "fort" : ""}">${signeN(l.ecartRang)}</td>
+    <td class="sep">${Math.round(l.proxDeclaree)} %</td><td>${Math.round(l.proxAttendue)} %</td><td class="${triCoh === "prox" ? "fort" : ""}">${signeN(l.ecartProx, " pts")}</td></tr>`).join("");
+}
+function blocCoherence(src){
+  if (!Array.isArray(src.classement) || src.classement.length !== 20)
+    return `<p class="note large">La cohérence demande le classement des 20 tempéraments : ouvrez le détail depuis un résultat enregistré${src.type ? " (un profil type n'a pas de classement)" : ""}.</p>`;
+  COH = M.coherence(src.classement, Array.isArray(src.ecarts) && src.ecarts.length === 19 ? src.ecarts.map(Number) : undefined);
+  return `<div class="coh-tete"><div class="coh-rho">${COH.rho.toFixed(2).replace(".", ",")}<small>indice ρ</small></div>
+      <span class="coh-bande ${CLASSE_BANDE[COH.bande]}">${COH.bande[0].toUpperCase() + COH.bande.slice(1)}</span>
+      <p class="coh-texte">L'indice compare le classement déclaré des tempéraments à celui que ses propres scores prévoient : 1 si les deux sont identiques.
+        Repères : au moins 0,90 très cohérent, 0,80 cohérent, 0,70 fragile, en dessous proche du hasard. Un classement tiré au hasard obtient déjà 0,44 en moyenne (0,69 dans 95 % des cas), parce que les scores viennent du même classement.</p></div>
+    <div class="coh-table-cadre"><table class="coh"><thead><tr>
+      <th>#</th><th class="g">Tempérament</th><th class="sep">Rang déclaré</th><th>Rang attendu</th><th><button type="button" data-tri="rang" aria-pressed="${triCoh === "rang"}">Écart de rang</button></th>
+      <th class="sep">Proximité déclarée</th><th>Proximité attendue</th><th><button type="button" data-tri="prox" aria-pressed="${triCoh === "prox"}">Écart de proximité</button></th>
+    </tr></thead><tbody id="coh-corps">${lignesCoherence()}</tbody></table></div>
+    <p class="note large">Du plus éloigné au moins éloigné ; cliquez sur un en-tête d'écart pour changer de tri. Écart positif : la carte a été placée plus près de soi que ses scores ne le prévoient ; négatif : plus loin.
+      La proximité déclarée tient compte des intercalaires (100 % pour la carte la plus proche, 0 % pour la plus éloignée) ; la proximité attendue ramène les scores des tempéraments sur la même échelle. Lignes surlignées : 4 rangs d'écart ou plus.</p>`;
+}
 const COLONNES = [["valeurs", "motivations", "projets"], ["valeursPolarisees", "motivationsPolarisees", "projetsRedresses"], ["directions"], ["temperaments"]];
 const NOTE_POLARISE = `<p class="note"><sup>*</sup> <i>Polarisé</i> : chaque score est lu par son écart à 50 %, dans un sens comme dans l'autre.
   Une valeur très présente (90 %) et une valeur très absente (10 %) pèsent autant ; la seconde s'affiche comme une absence : glyphe barré, sur fond rouge pâle pour une motivation ou un projet.
@@ -191,7 +233,7 @@ async function lireScores(){
     const { data, error } = await sb.from("flamme_resultats").select("*").eq("id", q.get("resultat")).maybeSingle();
     if (error || !data) throw new Error("Ce résultat est introuvable.");
     const { data: pers } = await sb.rpc("flamme_personnes"); const p = (pers || []).find(x => x.user_id === data.user_id);
-    return { scores: data.scores, date: data.passe_le, qui: p ? (p.nom || p.email) : "", classement: data.classement };
+    return { scores: data.scores, date: data.passe_le, qui: p ? (p.nom || p.email) : "", classement: data.classement, ecarts: data.ecarts };
   }
   const s = {}; for (const c of M.ORDRE){ const v = parseFloat(String(q.get(c) ?? "").replace(",", ".")); if (!isFinite(v)) throw new Error("Il manque des scores : ouvre le détail depuis la console ou depuis une fiche."); s[c] = v; }
   return { scores: s, date: new Date().toISOString(), qui: "" };
@@ -226,7 +268,14 @@ function rendre(src){
     <div class="sections">${COLONNES.map(col => `<div class="colonne">${col.map(k => { const [, titre, ex] = SECTIONS.find(x => x[0] === k); return `<section class="sect"><h3>${titre}</h3><table>
       ${st.sections[k].map(x => `<tr data-code="${esc(x.code)}" tabindex="0"><td class="r">${x.rang}</td><td class="c">${pips(x.code)}</td><td class="n">${esc(libelle(x.code))}</td><td class="s">${pct(x.score)}</td></tr>`).join("")}
       </table></section>`; }).join("")}</div>`).join("")}</div>
-    ${NOTE_POLARISE}`;
+    ${NOTE_POLARISE}
+    <h2 class="coherence">Cohérence du test</h2>
+    ${blocCoherence(src)}`;
+  document.querySelectorAll("table.coh th button").forEach(b => b.addEventListener("click", ev => {
+    ev.stopPropagation(); triCoh = b.dataset.tri;
+    document.querySelectorAll("table.coh th button").forEach(x => x.setAttribute("aria-pressed", x.dataset.tri === triCoh));
+    $("#coh-corps").innerHTML = lignesCoherence();
+  }));
   $("#lien-fiche").href = "fiche.html" + location.search;
   document.title = `Flamme Bleue — détail ${st.profil.codes.join(" / ")}`;
 }

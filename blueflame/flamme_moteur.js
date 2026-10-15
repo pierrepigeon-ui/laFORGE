@@ -8,6 +8,7 @@
    1.4 (15/10/2026) : accessibilité des profils par les écarts entre étages (méthode de Pierre),
      à la place des pondérations par famille ; nouvelles bandes symétriques.
    1.5 (15/10/2026) : autotest à écarts — scoresDepuisTemperaments accepte les écarts entre tempéraments voisins.
+   1.6 (15/10/2026) : cohérence du test — comparaison du classement déclaré au classement recalculé depuis les scores.
    Utilisable dans une page web (window.FLAMME_MOTEUR) ou sous Node (require).
    ===================================================================== */
 (function (racine, fabrique) {
@@ -17,7 +18,7 @@
 })(typeof self !== "undefined" ? self : this, function () {
   "use strict";
 
-  const VERSION = { numero: "1.5", date: "2026-10-15 18:33" };
+  const VERSION = { numero: "1.6", date: "2026-10-15 22:00" };
   const ORDRE = ["W", "U", "B", "R", "G"];
 
   /* ---------- ordre canonique des combinaisons (usrSortCode) ---------- */
@@ -298,6 +299,31 @@
     return { bruts, pourcentages, positions };
   }
 
+  /* ---------- cohérence du test (idée de Pierre, 15/10/2026) ----------
+     On compare le classement déclaré des 20 tempéraments à celui que les scores qui en découlent « prévoient »
+     (le classement des tempéraments du Détail : score de X/y = moyenne de v(X) et de 1 − v(y)).
+     - ρ : corrélation de rang (Spearman, égalités moyennées). Plancher à connaître : un classement tiré au hasard
+       obtient déjà 0,44 en moyenne (0,69 dans 95 % des cas), car les scores viennent du même classement.
+     - par tempérament : écart de rang (attendu − déclaré : positif = placé plus près de soi que prévu)
+       et écart de proximité en points (déclarée, avec les intercalaires, − attendue, scores ramenés de 0 à 100 %). */
+  const BANDES_COHERENCE = [[0.90, "très cohérent"], [0.80, "cohérent"], [0.70, "fragile"], [-Infinity, "proche du hasard"]];
+  function coherence(classement, ecarts) {
+    const { pourcentages: p, positions } = scoresDepuisTemperaments(classement, ecarts);
+    const v = c => p[c] / 100;
+    const attendu = classement.map(t => [t, (v(t[0]) + 1 - v(t[2].toUpperCase())) / 2]).sort((a, b) => b[1] - a[1]);
+    const rangAttendu = {}; let i = 0;
+    while (i < 20){ let j = i; while (j + 1 < 20 && Math.abs(attendu[j + 1][1] - attendu[i][1]) < 1e-9) j++; for (let k = i; k <= j; k++) rangAttendu[attendu[k][0]] = (i + j) / 2 + 1; i = j + 1; }
+    const sc = Object.fromEntries(attendu), mn = attendu[19][1], mx = attendu[0][1];
+    const lignes = classement.map((t, k) => {
+      const proxDeclaree = (20 - positions[k]) / 19 * 100, proxAttendue = mx - mn > 1e-12 ? (sc[t] - mn) / (mx - mn) * 100 : 50;
+      return { code: t, rangDeclare: k + 1, rangAttendu: rangAttendu[t], ecartRang: rangAttendu[t] - (k + 1),
+               proxDeclaree, proxAttendue, ecartProx: proxDeclaree - proxAttendue };
+    });
+    const d2 = lignes.reduce((a, l) => a + l.ecartRang ** 2, 0);
+    const rho = 1 - 6 * d2 / (20 * (400 - 1));
+    return { rho, bande: BANDES_COHERENCE.find(([s]) => rho >= s - 1e-12)[1], lignes };
+  }
+
   /* =================================================================
      Fiche (prPRINT) et statistiques (prDétail)
      Entrée : scores des 5 couleurs sur 0–1 (diviser par 100 les pourcentages de l'autotest).
@@ -400,5 +426,5 @@
     return { sections, parFamille, moinsAccessibles: derniers(sections.profils, 1), profil: profil(s, options) };
   }
 
-  return { VERSION, ORDRE, accessibilite, SEUILS, ordonner, codeCanonique, analyser, profil, profilsEgaux, profilClasseur, scoresTypes, fiche, statistiques, classer, FLECHES, MOTIVATIONS, PROJETS, oppose, scoresDepuisTemperaments, positionsDepuisEcarts, ECARTS, PARAMETRES_TYPES };
+  return { VERSION, ORDRE, accessibilite, SEUILS, ordonner, codeCanonique, analyser, profil, profilsEgaux, profilClasseur, scoresTypes, fiche, statistiques, classer, FLECHES, MOTIVATIONS, PROJETS, oppose, scoresDepuisTemperaments, positionsDepuisEcarts, ECARTS, coherence, BANDES_COHERENCE, PARAMETRES_TYPES };
 });
