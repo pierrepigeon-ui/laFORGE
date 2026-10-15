@@ -5,6 +5,8 @@
      usrProfil360           -> profilClasseur() (à l'identique), profil() (égalités conservées)
      prPARAM                -> scoresTypes()
      autotest (calculerScores) -> scoresDepuisTemperaments()
+   1.4 (15/10/2026) : accessibilité des profils par les écarts entre étages (méthode de Pierre),
+     à la place des pondérations par famille ; nouvelles bandes symétriques.
    Utilisable dans une page web (window.FLAMME_MOTEUR) ou sous Node (require).
    ===================================================================== */
 (function (racine, fabrique) {
@@ -14,7 +16,7 @@
 })(typeof self !== "undefined" ? self : this, function () {
   "use strict";
 
-  const VERSION = { numero: "1.3", date: "2026-10-01 23:01" };
+  const VERSION = { numero: "1.4", date: "2026-10-15 17:38" };
   const ORDRE = ["W", "U", "B", "R", "G"];
 
   /* ---------- ordre canonique des combinaisons (usrSortCode) ---------- */
@@ -199,7 +201,7 @@
   /**
    * Profil unique (règle de départage validée par Pierre le 01/10/2026).
    * Quand plusieurs profils sont ex aequo :
-   *   1. le plus accessible (score de la carte des 90 profils) ;
+   *   1. le plus accessible (score de la carte des 90 profils) — inopérant depuis la 1.4 : des ex aequo sont toujours aussi accessibles ;
    *   2. sinon, celui dont les couleurs ont été placées le plus haut dans le classement des tempéraments de la personne ;
    *   3. sinon, l'ordre de la roue (W, U, B, R, G).
    * @param {Object} s scores (0–1 ou 0–100)
@@ -210,10 +212,8 @@
     const r = profilsEgaux(s);
     let cands = r.codes.slice(), departage = null;
     if (cands.length > 1){
-      const max = Math.max(...ORDRE.map(c => s[c])), s01 = max > 1 ? Object.fromEntries(ORDRE.map(c => [c, s[c] / 100])) : s;
-      const acc = c => { const a = analyser(c), w = POIDS[a.famille], v = x => s01[x.toUpperCase()];
-        const x = a.famille === "radical" ? [v(c[0]), v(c[2]), v(c[3])] : a.famille === "generaliste" ? [v(c[0]), v(c[1]), 1 - v(c[3])] : [v(c[0]), v(c[1]), v(c[3])];
-        return r5((x[0] * w[0] + x[1] * w[1] + x[2] * w[2]) / (w[0] + w[1] + w[2])); };
+      // (depuis la 1.4, des profils ex aequo ont la même accessibilité : cette étape ne départage plus, le classement prend le relais)
+      const acc = c => r5(accessibilite(s, c));
       const best = Math.max(...cands.map(acc)); const n0 = cands.length;
       cands = cands.filter(c => Math.abs(acc(c) - best) < 1e-9);
       if (cands.length < n0) departage = "accessibilite";
@@ -332,10 +332,23 @@
     };
   }
 
-  /* bandes d'accessibilité des profils (prDétail) */
-  const BANDES = [[0.75, "naturel"], [0.60, "accessible"], [0.40, "situationnel"], [0.25, "difficile"], [-Infinity, "inaccessible"]];
-  const bande = x => BANDES.find(([seuil]) => x >= seuil - 1e-12)[1];
-  const POIDS = { radical: [20, 9, 9], generaliste: [12, 12, 14], specialiste: [14, 14, 10] };
+  /* ---------- accessibilité d'un profil (méthode de Pierre, 15/10/2026) ----------
+     Le profil range les 5 valeurs en trois étages : principales, secondaires, autres.
+     On mesure l'écart entre chaque valeur et chaque valeur d'un autre étage, dans le sens attendu
+     (8 paires pour toutes les familles : comparaison équitable, sans pondération), puis on fait la moyenne.
+     Plus la marge est grande, plus le profil est accessible (« moins il est menacé ») ; négatif : les scores le contredisent.
+     Échelle des scores reçus (0–1 → de −1 à +1 ; 0–100 → de −100 à +100). Un profil et son opposé ont des scores opposés. */
+  function accessibilite(s, code) {
+    const a = analyser(code), t = [[...a.principales], [...a.secondaires], [...a.absentes]];
+    let somme = 0;
+    for (let i = 0; i < 3; i++) for (let j = i + 1; j < 3; j++) for (const x of t[i]) for (const y of t[j]) somme += s[x] - s[y];
+    return somme / 8;
+  }
+  /* bandes d'accessibilité (prDétail), symétriques autour de 0, sur l'échelle 0–1 :
+     d'après 4 000 autotests simulés, environ 10 / 15 / 39 / 15 / 10 profils sur 90 */
+  const SEUILS = { naturel: 0.30, accessible: 0.15 };
+  const bande = x => x >= SEUILS.naturel - 1e-12 ? "naturel" : x >= SEUILS.accessible - 1e-12 ? "accessible"
+                   : x > -SEUILS.accessible + 1e-12 ? "situationnel" : x > -SEUILS.naturel + 1e-12 ? "difficile" : "inaccessible";
 
   /**
    * Statistiques (prDétail) : dix classements, sur les scores bruts 0–1.
@@ -363,12 +376,8 @@
         return { code: c, tiers: t, score: r5(moy([moy([v(c[0]), v(c[1])]), v(t)])) };
       }),
       profils: L(codesProfils, c => {
-        const a = analyser(c), w = POIDS[a.famille];
-        const x = a.famille === "radical" ? [v(c[0]), v(c[2]), v(c[3])]
-                : a.famille === "generaliste" ? [v(c[0]), v(c[1]), 1 - v(c[3])]
-                : [v(c[0]), v(c[1]), v(c[3])];
-        const sc = r5((x[0] * w[0] + x[1] * w[1] + x[2] * w[2]) / (w[0] + w[1] + w[2]));
-        return { code: c, famille: a.famille, score: sc, bande: bande(sc) };
+        const sc = r5(accessibilite(s, c));
+        return { code: c, famille: analyser(c).famille, score: sc, bande: bande(sc) };
       })
     };
     // meilleur profil de chaque famille (haut de prDétail)
@@ -377,5 +386,5 @@
     return { sections, parFamille, moinsAccessibles: derniers(sections.profils, 1), profil: profil(s, options) };
   }
 
-  return { VERSION, ORDRE, ordonner, codeCanonique, analyser, profil, profilsEgaux, profilClasseur, scoresTypes, fiche, statistiques, classer, FLECHES, MOTIVATIONS, PROJETS, oppose, scoresDepuisTemperaments, PARAMETRES_TYPES };
+  return { VERSION, ORDRE, accessibilite, SEUILS, ordonner, codeCanonique, analyser, profil, profilsEgaux, profilClasseur, scoresTypes, fiche, statistiques, classer, FLECHES, MOTIVATIONS, PROJETS, oppose, scoresDepuisTemperaments, PARAMETRES_TYPES };
 });

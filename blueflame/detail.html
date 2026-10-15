@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
-<script src="flamme_moteur.js?v=1.3"></script>
+<script src="flamme_moteur.js?v=1.4"></script>
 <script src="flamme_glyphes.js?v=2.0"></script>
 <style>
 :root{--ink:#1B2430;--muted:#5B6573;--line:#DDE1E7;--paper:#F4F6F8;--panel:#FFFFFF;--hover:#EEF1F5;--ok:#1E7A46;--warn:#9A5B00;--err:#B42318;
@@ -113,7 +113,7 @@ dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);c
   <div style="display:flex;gap:10px"><button class="btn" type="submit">Se connecter</button><button class="btn ghost" type="button" id="login-fermer">Fermer</button></div>
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 <script>
-const VERSION = { numero:"1.16", date:"2026-10-14 20:58" };
+const VERSION = { numero:"1.17", date:"2026-10-15 17:38" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const ACCES = ["proprietaire"];
@@ -162,7 +162,12 @@ const SECTIONS = [
 const NOTE_POLARISE = `<p class="note"><sup>*</sup> <i>Polarisé</i> : chaque score est lu par son écart à 50 %, dans un sens comme dans l'autre.
   Une valeur très présente (90 %) et une valeur très absente (10 %) pèsent autant ; la seconde s'affiche comme une absence (<b>/w</b>, <b>/wu</b>…).
   Le classement montre donc ce qui marque le plus le profil, par sa présence ou par son absence.</p>`;
-const BANDES = [["naturel","100 – 75 %"],["accessible","75 – 60 %"],["situationnel","60 – 40 %"],["difficile","40 – 25 %"],["inaccessible","25 – 0 %"]];
+const BANDES = [["naturel","≥ +30"],["accessible","+15 à +30"],["situationnel","−15 à +15"],["difficile","−30 à −15"],["inaccessible","≤ −30"]];
+const signe = x => { const v = Math.round(x * 1000) / 10; return (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(1).replace(".", ","); };   // accessibilité, en points
+const NOTE_ACCES = `<p class="note">Pour chaque profil, les cinq valeurs se rangent en trois étages : principales, secondaires, autres.
+  On mesure l'écart entre les valeurs de deux étages différents (huit paires, quelle que soit la famille) et on en fait la moyenne, en points.
+  Positif : les scores soutiennent la structure du profil, et plus la marge est grande, moins le profil est menacé. Négatif : les scores la contredisent.
+  Un profil et son opposé ont des scores exactement opposés.</p>`;
 
 async function lireScores(){
   const q = new URLSearchParams(location.search);
@@ -187,7 +192,7 @@ function rendre(src){
   const st = M.statistiques(s01, codesProfils, { classement: src.classement });
   const moi = new Set(st.profil.codes);
   const fam = (titre, liste) => `<div class="fam"><div class="t">${titre}</div>${liste.map(x => `<div class="c" data-code="${esc(x.code)}" tabindex="0">${pips(x.code)} ${esc(x.code)} ${esc(libelle(x.code))}</div>`).join("")}
-    <div class="sc">${liste.length ? pct(liste[0].score) + " — " + liste[0].bande : ""}${liste.length > 1 ? " (égalité)" : ""}</div></div>`;
+    <div class="sc">${liste.length ? signe(liste[0].score) + " — " + liste[0].bande : ""}${liste.length > 1 ? " (égalité)" : ""}</div></div>`;
   $("#page").innerHTML = `
     <section class="carte-entete">
       <h1>Statistiques du profil ${st.profil.codes.map(c => `${pips(c)} ${esc(c)} ${esc(libelle(c))}`).join(" / ")}</h1>
@@ -200,11 +205,12 @@ function rendre(src){
       </div>
     </section>
     <h2>Accessibilité des 90 profils</h2>
+    ${NOTE_ACCES}
     <div class="legende">${BANDES.map(([b, lim]) => `<span class="lg b-${b}"><b>${b[0].toUpperCase() + b.slice(1)}</b> ${lim} · ${st.sections.profils.filter(p => p.bande === b).length}</span>`).join("")}</div>
     <div class="flux">${BANDES.map(([b, lim]) => {   // une seule liste continue, en colonnes : plus de place perdue pour les bandes peu peuplées
       const l = st.sections.profils.filter(p => p.bande === b); if (!l.length) return "";
       return `<div class="tb b-${b}">${b[0].toUpperCase() + b.slice(1)} <span>${lim} · ${l.length}</span></div>` +
-        l.map(p => `<div class="chip b-${b}${moi.has(p.code) ? " moi" : ""}" data-code="${esc(p.code)}" tabindex="0"><span class="gl">${pips(p.code)}</span><span class="cd">${esc(p.code)}</span><span class="nm">${esc(libelle(p.code))}</span><span class="sc">${pct(p.score)}</span></div>`).join("");
+        l.map(p => `<div class="chip b-${b}${moi.has(p.code) ? " moi" : ""}" data-code="${esc(p.code)}" tabindex="0"><span class="gl">${pips(p.code)}</span><span class="cd">${esc(p.code)}</span><span class="nm">${esc(libelle(p.code))}</span><span class="sc">${signe(p.score)}</span></div>`).join("");
     }).join("")}</div>
     <h2 class="classements">Classements</h2>
     <div class="sections">${SECTIONS.map(([k, titre, ex]) => `<section class="sect"><h3>${titre}</h3><p class="ex">${ex}</p><table>
