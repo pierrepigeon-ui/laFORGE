@@ -121,6 +121,21 @@ dialog h2{font:600 22px var(--serif);margin:0 0 16px}
 .saisie-profil .nom{font:600 24px var(--serif)} .saisie-profil .devise{font:italic 16px var(--serif);color:var(--muted)}
 @media (max-width:760px){ .saisie-grille{grid-template-columns:repeat(2,1fr)} }
 
+/* catalogue de profils */
+#catalogue-pane{grid-column:1 / -1;overflow:auto;padding:20px 28px;max-width:1200px}
+#catalogue-pane h2{font:600 22px var(--serif);margin:0 0 6px}
+#catalogue-pane .aide{color:var(--muted);font-size:14px;max-width:760px;margin:0 0 14px}
+.cat-nouvelle{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:0 0 18px}
+.cat-nouvelle summary{cursor:pointer;font:600 16px var(--serif)}
+.cat-champs{display:grid;grid-template-columns:2fr 3fr;gap:10px;margin-top:12px}
+@media (max-width:760px){ .cat-champs{grid-template-columns:1fr} }
+.cat-champs .field{margin:0}
+.cat-partage{display:inline-flex;align-items:center;gap:6px;font-size:14px}
+.cat-edit{display:grid;grid-template-columns:2fr 3fr;gap:10px;margin:10px 0}
+@media (max-width:760px){ .cat-edit{grid-template-columns:1fr} }
+.cat-edit .field{margin:0}
+.badge-partage{font:500 11px var(--sans);color:var(--muted);border:1px solid currentColor;border-radius:3px;padding:0 4px;margin-left:6px;vertical-align:2px}
+
 /* production d'une personne */
 .sous-titre{font:600 17px var(--serif);margin:22px 0 8px}
 
@@ -197,6 +212,7 @@ table.j td{border-bottom:1px solid var(--line);padding:8px 10px;vertical-align:t
       <button role="tab" aria-selected="false" data-tab="personnes" id="tab-personnes">Personnes</button>
       <button role="tab" aria-selected="false" data-tab="resultats" id="tab-resultats">Résultats</button>
       <button role="tab" aria-selected="false" data-tab="saisie" id="tab-saisie">Saisie</button>
+      <button role="tab" aria-selected="false" data-tab="catalogue" id="tab-catalogue">Catalogue</button>
       <a class="navlink" href="totems.html" id="lien-totems">Totems</a>
     </nav>
     <div class="who"><span id="backup-info"></span><button class="btn ghost hidden" id="backup" type="button">Sauvegarder la base</button><span id="who"></span><button class="btn ghost" id="mdp" type="button">Mon mot de passe</button><button class="btn ghost" id="logout" type="button">Se déconnecter</button></div>
@@ -238,6 +254,9 @@ table.j td{border-bottom:1px solid var(--line);padding:8px 10px;vertical-align:t
       <div id="saisie-resultat"></div>
     </section>
   </main>
+  <main id="view-catalogue" class="hidden">
+    <section id="catalogue-pane"></section>
+  </main>
   <main id="view-resultats" class="hidden">
     <section id="resultats-pane"></section>
   </main>
@@ -246,7 +265,7 @@ table.j td{border-bottom:1px solid var(--line);padding:8px 10px;vertical-align:t
 
 <script>
 /* ================= configuration ================= */
-const VERSION = { numero:"1.29", date:"2026-10-13 22:34" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.30", date:"2026-10-15 23:30" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 
@@ -345,6 +364,7 @@ async function demarrer(){
   $("#tab-personnes").classList.toggle("hidden", role !== "proprietaire");
   $("#tab-resultats").classList.toggle("hidden", role !== "proprietaire");
   $("#tab-saisie").classList.toggle("hidden", role !== "proprietaire");
+  $("#tab-catalogue").classList.toggle("hidden", role !== "proprietaire" && role !== "editeur");
   if (role === "proprietaire") infoSauvegarde();
   if (!role){
     $("#editor-host").innerHTML = `<p class="empty">Ton compte est bien connecté, mais aucun rôle ne lui est attribué dans Flamme Bleue. Le propriétaire doit te déclarer dans la table des rôles.</p>`;
@@ -512,7 +532,7 @@ async function afficherJournal(){
 
 
 /* ================= sauvegarde ================= */
-const TABLES_SAUVEGARDE = ["flamme_couleurs","flamme_vocabulaire","flamme_elements","flamme_elements_traductions","flamme_resultats","forge_utilisateurs","forge_journal","forge_messages","forge_parametres"];   // Flamme Bleue et parties communes ; PRISME a sa propre sauvegarde
+const TABLES_SAUVEGARDE = ["flamme_couleurs","flamme_vocabulaire","flamme_elements","flamme_elements_traductions","flamme_resultats","forge_utilisateurs","forge_journal","forge_messages","forge_parametres","flamme_catalogue"];   // Flamme Bleue et parties communes ; PRISME a sa propre sauvegarde
 async function lireTout(table){
   const tout = [], pas = 1000;
   for (let debut = 0; ; debut += pas){
@@ -546,7 +566,10 @@ $("#backup").addEventListener("click", async () => {
   const b = $("#backup"); b.disabled = true; b.textContent = "Sauvegarde…";
   try {
     const donnees = {};
-    for (const t of TABLES_SAUVEGARDE) donnees[t] = await lireTout(t);
+    for (const t of TABLES_SAUVEGARDE){
+      try { donnees[t] = await lireTout(t); }
+      catch (e){ if (t === "flamme_catalogue") donnees[t] = []; else throw e; }   // catalogue : absent tant que son script n'est pas installé
+    }
     const maintenant = new Date();
     const horo = maintenant.toLocaleDateString("sv-SE") + "_" + maintenant.toTimeString().slice(0,5).replace(":","h");
     const comptes = Object.fromEntries(TABLES_SAUVEGARDE.map(t => [t, donnees[t].length]));
@@ -742,8 +765,17 @@ function detailResultat(tr){
     <div class="row-btn"><a class="btn ghost" href="fiche.html?resultat=${r.id}" target="_blank">Fiche</a>
     <a class="btn ghost" href="ecusson.html?resultat=${r.id}" target="_blank">Écusson</a>
     <a class="btn ghost" href="detail.html?resultat=${r.id}" target="_blank">Détail</a>
+    <button class="btn ghost" type="button" data-copie="${r.id}">Copier dans le catalogue</button>
     <button class="btn ghost" type="button" data-suppr="${r.id}">Effacer ce résultat</button></div></div></td>`;
   tr.after(d);
+  d.querySelector("[data-copie]").addEventListener("click", async e => {
+    e.stopPropagation();
+    const nom = prompt("Nom de la fiche dans le catalogue :", `${resNoms[r.user_id] || "Résultat"} — ${new Date(r.passe_le).toLocaleDateString("fr-FR")}`);
+    if (!nom || !nom.trim()) return;
+    const { error } = await sb.from("flamme_catalogue").insert({ nom: nom.trim(), scores: r.scores, classement: r.classement, ecarts: r.ecarts ?? null,
+      codes: r.codes, frontiere: r.frontiere, origine: "copie", version_moteur: r.version_moteur, version_autotest: r.version_autotest });
+    alert(error ? "Copie refusée : " + error.message + (/flamme_catalogue/.test(error.message) ? " (le script flamme_catalogue.sql est-il installé ?)" : "") : `« ${nom.trim()} » est rangé dans le catalogue (privé, à toi seul).`);
+  });
   d.querySelector("[data-suppr]").addEventListener("click", async e => {
     e.stopPropagation();
     if (!confirm(`Effacer définitivement le résultat de ${resNoms[r.user_id] || "cette personne"} du ${new Date(r.passe_le).toLocaleDateString("fr-FR")} ?`)) return;
@@ -826,11 +858,128 @@ async function enregistrerSaisie(v, r){
 }
 const analyserFamille = c => window.FLAMME_MOTEUR.analyser(c).famille;
 
+/* ================= catalogue de profils (éditeur, propriétaire) =================
+   Des fiches qui ne sont pas des autotests de comptes : tests, démos, coaching.
+   Privées par défaut ; « partagée » les montre aux éditeurs ; le propriétaire voit tout. */
+const CAT = { scores: { W:"", U:"", B:"", R:"", G:"" }, filtre: "", cache: [] };
+async function afficherCatalogue(msg){
+  const host = $("#catalogue-pane");
+  const { data, error } = await sb.from("flamme_catalogue").select("*").order("modifie_le", { ascending:false }).limit(2000);
+  if (error){
+    host.innerHTML = `<h2>Catalogue de profils</h2><p class="msg err">Le catalogue est illisible : ${esc(error.message)}.${/flamme_catalogue/.test(error.message) ? " Le script flamme_catalogue.sql doit d'abord être exécuté dans Supabase." : ""}</p>`;
+    return;
+  }
+  CAT.cache = data || [];
+  const moi = state.user.id, proprio = state.role === "proprietaire";
+  const filtres = { "": "Toutes les fiches", miennes: "Mes fiches", partagees: "Les fiches partagées" };
+  const lignes = CAT.cache.filter(f => !CAT.filtre || (CAT.filtre === "miennes" ? f.auteur === moi : f.partage));
+  host.innerHTML = `
+    <h2>Catalogue de profils</h2>
+    <p class="aide">Des profils rangés pour des tests, des démos ou du coaching, à part des autotests des comptes. Chaque fiche est privée par défaut ; cochée « partagée », elle est visible par les éditeurs${proprio ? " ; tu vois toutes les fiches, partagées ou non" : ""}. Pour un client, des initiales ou un pseudonyme suffisent.</p>
+    <details class="cat-nouvelle" id="cat-nouvelle"${CAT.cache.length ? "" : " open"}><summary>Nouvelle fiche à partir de scores</summary>
+      <div class="cat-champs">
+        <label class="field"><span>Nom de la fiche</span><input id="cat-nom" maxlength="120" placeholder="Démo : le radical vibrer, Client A. M., Pierre en 2019…"></label>
+        <label class="field"><span>Note (facultative)</span><input id="cat-note" placeholder="Contexte, date de l'entretien, source des scores…"></label>
+      </div>
+      <div class="saisie-grille" id="cat-grille"></div>
+      <p class="msg" id="cat-somme" role="status"></p>
+      <div id="cat-apercu"></div>
+      <div class="row-btn" style="align-items:center;margin-top:10px">
+        <label class="cat-partage"><input type="checkbox" id="cat-partage"> partagée avec les éditeurs</label>
+        <button class="btn" type="button" id="cat-ranger" disabled>Ranger dans le catalogue</button></div>
+      <p class="count">Pour garder aussi le classement des tempéraments et la cohérence, fais passer l'autotest à la personne : à la fin, le bouton « Ranger dans le catalogue » enregistre tout. Un résultat existant se copie depuis l'onglet Résultats.</p>
+    </details>
+    <div class="res-outils">
+      <select id="cat-filtre" aria-label="Filtre">${Object.entries(filtres).map(([k, l]) => `<option value="${k}"${k === CAT.filtre ? " selected" : ""}>${l} (${CAT.cache.filter(f => !k || (k === "miennes" ? f.auteur === moi : f.partage)).length})</option>`).join("")}</select>
+      <span class="count">Clique sur une ligne pour l'ouvrir, la modifier ou l'effacer.</span>
+      ${msg ? `<span class="msg ok">${esc(msg)}</span>` : ""}
+    </div>
+    ${lignes.length ? `<table class="j"><thead><tr><th>Fiche</th><th>Profil</th><th>Scores W U B R G</th><th>Auteur</th><th>Modifiée le</th></tr></thead>
+    <tbody>${lignes.map(f => `<tr class="res" data-id="${f.id}">
+      <td><b>${esc(f.nom)}</b>${f.partage ? '<span class="badge-partage">partagée</span>' : ""}${f.note ? `<div class="count">${esc(f.note)}</div>` : ""}</td>
+      <td>${(f.codes || []).slice(0, 1).map(c => `${pips(c)} ${esc(c)} <span class="count">${esc(state.elements.find(e => e.code === c)?.nom || "")}</span>`).join("")}${f.origine !== "saisie" ? ` <span class="draft">${esc(f.origine)}</span>` : ""}</td>
+      <td><div class="mini" title="${M_ORDRE.map(c => c + " " + fmt1(f.scores[c])).join(" · ")}">${M_ORDRE.map(c => `<span style="height:${Math.max(2, (f.scores[c] || 0) * .26)}px;background:${state.couleurs[c]?.couleur || "#999"}"></span>`).join("")}</div></td>
+      <td>${f.auteur === moi ? "moi" : esc(f.auteur_nom || "")}</td>
+      <td class="count">${new Date(f.modifie_le).toLocaleString("fr-FR")}</td></tr>`).join("")}</tbody></table>`
+    : `<p class="empty">${CAT.cache.length ? "Aucune fiche dans ce filtre." : "Le catalogue est vide. Range une première fiche ci-dessus, depuis l'autotest, ou depuis un résultat."}</p>`}`;
+  $("#cat-grille").innerHTML = M_ORDRE.map(c => `<label><b>${pips(c)} ${c}</b><span>${esc(state.vocab.couleur?.[c]?.singulier || "")}</span>
+    <input type="number" min="0" max="100" step="0.1" data-c="${c}" value="${CAT.scores[c]}" inputmode="decimal"></label>`).join("");
+  $("#cat-grille").querySelectorAll("input").forEach(i => i.addEventListener("input", () => { CAT.scores[i.dataset.c] = i.value; calculerCatalogue(); }));
+  $("#cat-nom").addEventListener("input", calculerCatalogue);
+  $("#cat-ranger").addEventListener("click", rangerCatalogue);
+  $("#cat-filtre").addEventListener("change", e => { CAT.filtre = e.target.value; afficherCatalogue(); });
+  host.querySelectorAll("tr.res").forEach(tr => tr.addEventListener("click", () => detailCatalogue(tr)));
+  calculerCatalogue();
+}
+function scoresCatalogue(){
+  const v = Object.fromEntries(M_ORDRE.map(c => [c, parseFloat(String(CAT.scores[c]).replace(",", "."))]));
+  if (M_ORDRE.some(c => !isFinite(v[c]))) return { msg: "Saisis les cinq valeurs (en %, somme 250 %)." };
+  if (M_ORDRE.some(c => v[c] < 0 || v[c] > 100)) return { msg: "Chaque valeur doit être comprise entre 0 et 100.", err: true };
+  const somme = M_ORDRE.reduce((a, c) => a + v[c], 0), ecart = Math.round((somme - 250) * 10) / 10;
+  if (Math.abs(ecart) > 0.5) return { msg: `Somme : ${fmt1(somme)} %. ${ecart > 0 ? `Il y a ${fmt1(ecart)} point${ecart >= 2 ? "s" : ""} de trop` : `Il manque ${fmt1(-ecart)} point${-ecart >= 2 ? "s" : ""}`} pour atteindre 250 %.`, err: true };
+  try { return { v, r: window.FLAMME_MOTEUR.profil(v), msg: `Somme : ${fmt1(somme)} % ✓` }; }
+  catch (e){ return { msg: "Profil incalculable : " + e.message, err: true }; }
+}
+function calculerCatalogue(){
+  const m = $("#cat-somme"), out = $("#cat-apercu"); if (!m) return;
+  const x = scoresCatalogue();
+  m.className = "msg" + (x.err ? " err" : x.r ? " ok" : ""); m.textContent = x.msg;
+  out.innerHTML = x.r ? `<div class="saisie-profil" style="padding:10px 14px">${pips(x.r.code)} <b>${esc(x.r.code)}</b> — ${esc(state.elements.find(e => e.code === x.r.code)?.nom || "")}${x.r.voisins.length ? ` <span class="count">(ex aequo avec ${esc(x.r.voisins.join(", "))})</span>` : ""}</div>` : "";
+  $("#cat-ranger").disabled = !x.r || !$("#cat-nom").value.trim();
+}
+async function rangerCatalogue(){
+  const x = scoresCatalogue(), nom = $("#cat-nom").value.trim(); if (!x.r || !nom) return;
+  const b = $("#cat-ranger"); b.disabled = true;
+  const { error } = await sb.from("flamme_catalogue").insert({ nom, note: $("#cat-note").value.trim() || null, partage: $("#cat-partage").checked,
+    scores: x.v, classement: null, ecarts: null, codes: [x.r.code, ...x.r.voisins], frontiere: x.r.voisins.length > 0,
+    origine: "saisie", version_moteur: window.FLAMME_MOTEUR.VERSION.numero, version_autotest: "console " + VERSION.numero });
+  if (error){ const m = $("#cat-somme"); m.className = "msg err"; m.textContent = "Enregistrement refusé : " + error.message; b.disabled = false; return; }
+  CAT.scores = { W:"", U:"", B:"", R:"", G:"" };
+  afficherCatalogue(`« ${nom} » est rangé dans le catalogue.`);
+}
+function detailCatalogue(tr){
+  const suivant = tr.nextElementSibling;
+  if (suivant?.classList.contains("ligne-detail")){ suivant.remove(); return; }
+  const f = CAT.cache.find(x => String(x.id) === tr.dataset.id);
+  const modifiable = state.role === "proprietaire" || f.auteur === state.user.id;
+  const d = document.createElement("tr"); d.className = "ligne-detail";
+  d.innerHTML = `<td colspan="5"><div class="detail-res">
+    <b>Scores</b> : ${M_ORDRE.map(c => `${c} ${fmt1(f.scores[c])} %`).join(", ")}
+    ${f.classement ? `<ol>${f.classement.map(c => `<li>${pips(c)} ${esc(c)} ${esc(state.elements.find(e => e.code === c)?.nom || "")}</li>`).join("")}</ol>` : '<p class="count">Pas de classement des tempéraments (fiche saisie à partir des scores).</p>'}
+    <p class="count">Rangée le ${new Date(f.cree_le).toLocaleString("fr-FR")} par ${f.auteur === state.user.id ? "toi" : esc(f.auteur_nom || "?")} — origine : ${esc(f.origine)} — moteur ${esc(f.version_moteur || "?")}</p>
+    ${modifiable ? `<div class="cat-edit">
+      <label class="field"><span>Nom</span><input data-champ="nom" maxlength="120" value="${esc(f.nom)}"></label>
+      <label class="field"><span>Note</span><input data-champ="note" value="${esc(f.note || "")}"></label></div>
+      <label class="cat-partage" style="margin-bottom:10px"><input type="checkbox" data-champ="partage"${f.partage ? " checked" : ""}> partagée avec les éditeurs</label>` : ""}
+    <div class="row-btn" style="margin-top:8px"><a class="btn ghost" href="fiche.html?catalogue=${f.id}" target="_blank">Fiche</a>
+      <a class="btn ghost" href="ecusson.html?catalogue=${f.id}" target="_blank">Écusson</a>
+      ${state.role === "proprietaire" ? `<a class="btn ghost" href="detail.html?catalogue=${f.id}" target="_blank">Détail</a>` : ""}
+      ${modifiable ? `<button class="btn" type="button" data-act="enregistrer">Enregistrer les changements</button>
+      <button class="btn ghost" type="button" data-act="effacer">Effacer cette fiche</button>` : ""}</div>
+    <p class="msg" data-msg role="status"></p></div></td>`;
+  tr.after(d);
+  d.querySelector('[data-act="enregistrer"]')?.addEventListener("click", async () => {
+    const nom = d.querySelector('[data-champ="nom"]').value.trim(), m = d.querySelector("[data-msg]");
+    if (!nom){ m.className = "msg err"; m.textContent = "Le nom ne peut pas être vide."; return; }
+    const { error } = await sb.from("flamme_catalogue").update({ nom, note: d.querySelector('[data-champ="note"]').value.trim() || null,
+      partage: d.querySelector('[data-champ="partage"]').checked }).eq("id", f.id);
+    if (error){ m.className = "msg err"; m.textContent = "Modification refusée : " + error.message; return; }
+    afficherCatalogue(`« ${nom} » est enregistrée.`);
+  });
+  d.querySelector('[data-act="effacer"]')?.addEventListener("click", async () => {
+    if (!confirm(`Effacer définitivement la fiche « ${f.nom} » du catalogue ?`)) return;
+    const { error } = await sb.from("flamme_catalogue").delete().eq("id", f.id);
+    if (error){ const m = d.querySelector("[data-msg]"); m.className = "msg err"; m.textContent = "Effacement refusé : " + error.message; return; }
+    afficherCatalogue(`« ${f.nom} » est effacée.`);
+  });
+}
+
 /* ================= onglets ================= */
 document.querySelectorAll("nav button").forEach(b => b.addEventListener("click", () => {
   document.querySelectorAll("nav button").forEach(x => x.setAttribute("aria-selected", x === b));
   const t = b.dataset.tab;
-  ["elements","journal","personnes","resultats","saisie"].forEach(v => $("#view-" + v).classList.toggle("hidden", v !== t));
+  ["elements","journal","personnes","resultats","saisie","catalogue"].forEach(v => $("#view-" + v).classList.toggle("hidden", v !== t));
+  if (t === "catalogue") afficherCatalogue();
   if (t === "saisie") afficherSaisie();
   if (t === "resultats") afficherResultats();
   if (t === "journal") afficherJournal();
@@ -838,6 +987,6 @@ document.querySelectorAll("nav button").forEach(b => b.addEventListener("click",
 }));
 window.addEventListener("beforeunload", e => { if (estModifie()){ e.preventDefault(); e.returnValue = ""; } });
 </script>
-<script src="entete.js?v=1.1"></script>
+<script src="entete.js?v=1.3"></script>
 </body>
 </html>

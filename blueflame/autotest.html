@@ -199,7 +199,6 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px}
 <header>
   <h1 class="wordmark"><a href="index.html" title="Accueil de Flamme Bleue">Flamme Bleue</a></h1>
   <p class="signature">Cartographiez votre énergie</p>
-  <nav class="nav"><a href="console.html" title="Console : parcourir le contenu, changer son mot de passe">Console</a></nav>
   <div class="who"><span id="who"></span>
     <button class="btn ghost" id="btn-login" type="button">Se connecter</button>
     <button class="btn ghost hidden" id="btn-logout" type="button">Se déconnecter</button>
@@ -212,6 +211,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px}
   <div class="actions">
     <button class="btn" id="btn-save" type="button" disabled>Enregistrer mon résultat</button>
     <button class="btn ghost" id="btn-fiche" type="button" disabled>Voir ma fiche</button>
+    <button class="btn ghost hidden" id="btn-catalogue" type="button" title="Ranger ce résultat dans le catalogue de profils (tests, démos, coaching), sans l'enregistrer comme le vôtre">Ranger dans le catalogue…</button>
     <button class="btn ghost" id="btn-reset" type="button">Recommencer</button>
   </div>
   <p class="msg" id="msg" role="status"></p>
@@ -260,7 +260,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px}
 </dialog>
 
 <script>
-const VERSION = { numero:"2.2", date:"2026-10-15 22:50" };
+const VERSION = { numero:"2.3", date:"2026-10-15 23:30" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const M = window.FLAMME_MOTEUR;
@@ -335,6 +335,7 @@ function majSession(){
   $("#btn-fiche").disabled = !role;
   $("#btn-fiche").title = role ? "" : "Connectez-vous pour afficher votre fiche de profil";
   $("#btn-save").title = role ? "" : "Connectez-vous pour enregistrer votre résultat";
+  $("#btn-catalogue").classList.toggle("hidden", role !== "proprietaire" && role !== "editeur");
 }
 $("#btn-login").addEventListener("click", () => { location.href = "../?retour=" + encodeURIComponent(location.href); });   // connexion centralisée sur la Forge
 $("#login-fermer").addEventListener("click", () => $("#dlg-login").close());
@@ -692,6 +693,20 @@ $("#btn-save").addEventListener("click", async () => {
   dernierEnregistre = cle(dernier.classement, dernier.ecarts);
   msg(`Résultat enregistré : ${dernier.r.code}.${sansEcarts ? " Les écarts n'ont pas pu être enregistrés : la base n'a pas encore la colonne prévue pour eux." : ""}`, sansEcarts ? "warn" : "ok"); historique();
 });
+/* catalogue de profils (éditeur, propriétaire) : le test passé pour quelqu'un d'autre, rangé à part */
+$("#btn-catalogue").addEventListener("click", async () => {
+  if (role !== "proprietaire" && role !== "editeur") return;
+  if (!dernier){ msg("Rangez d'abord les 20 cartes dans les piles, ou passez au classement.", "warn"); return; }
+  const nom = prompt("Nom de la fiche dans le catalogue (privée, à vous seul ; partageable ensuite dans la console) :", "");
+  if (!nom || !nom.trim()) return;
+  const b = $("#btn-catalogue"); b.disabled = true;
+  const { error } = await sb.from("flamme_catalogue").insert({ nom: nom.trim(), classement: dernier.classement, ecarts: dernier.ecarts, scores: dernier.p,
+    codes: [dernier.r.code, ...dernier.r.voisins], frontiere: dernier.r.voisins.length > 0, origine: "autotest",
+    version_moteur: M.VERSION.numero, version_autotest: VERSION.numero });
+  b.disabled = false;
+  if (error){ msg("Rangement refusé : " + error.message + (/flamme_catalogue/.test(error.message) ? " (le catalogue n'est pas encore installé dans la base)" : ""), "err"); return; }
+  msg(`« ${nom.trim()} » est rangé dans le catalogue (${dernier.r.code}). Retrouvez-le dans la console, onglet Catalogue.`, "ok");
+});
 $("#btn-fiche").addEventListener("click", () => {
   if (!role || !dernier) return;
   // valeurs exactes : un arrondi casserait les égalités qui font les profils frontière
@@ -733,6 +748,6 @@ async function historique(){
 /* ---------- démarrage ---------- */
 (async () => { if (await pret) rendre(); })();
 </script>
-<script src="entete.js?v=1.2"></script>
+<script src="entete.js?v=1.3"></script>
 </body>
 </html>

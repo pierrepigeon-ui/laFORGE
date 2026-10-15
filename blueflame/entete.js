@@ -1,8 +1,11 @@
 /* =====================================================================
-   Flamme Bleue — en-tête commun (1.2, 14/10/2026)
+   Flamme Bleue — en-tête commun (1.3, 15/10/2026)
    - la couronne de cinq flammes (logo 2026) devant le nom « Flamme Bleue », qui ramène à l'accueil ;
    - un lien « La Forge », avec sa petite enclume, en haut à droite, comme dans PRISME :
-     il n'apparaît que si la personne a aussi accès à PRISME (la Forge a alors autre chose à proposer).
+     il n'apparaît que si la personne a aussi accès à PRISME (la Forge a alors autre chose à proposer) ;
+   - (1.3) le bouton de la console, au même endroit sur toutes les pages, juste avant l'adresse de la personne :
+     « Console » pour l'éditeur et le propriétaire, « Le modèle » pour l'invité, rien pour un visiteur anonyme
+     ni sur la console elle-même.
    À charger APRÈS le script de la page (il réutilise son client Supabase « sb »).
    ===================================================================== */
 (function () {
@@ -20,6 +23,11 @@
     .fb-forge img{display:block}
     .fb-forge.cache{display:none}
     .barre > .fb-forge{margin-right:auto}   /* accueil : calé à gauche */
+    .fb-console{display:inline-flex;align-items:center;gap:6px;color:inherit;text-decoration:none;font-size:13px;font-weight:500;
+      border:1px solid currentColor;border-radius:7px;padding:4px 10px;opacity:.85;margin-right:6px;white-space:nowrap}
+    .fb-console:hover{opacity:1;background:rgba(127,127,127,.12)}
+    .fb-console.cache{display:none}
+    .fb-console svg{width:14px;height:14px;flex:none}
     @media (prefers-color-scheme: dark){ .fb-forge img{background:#F6F5F1;border-radius:3px;padding:1px} }`;
   document.head.appendChild(css);
 
@@ -38,12 +46,28 @@
   lien.innerHTML = `<img src="${ENCLUME}" alt="" width="15" height="17">La Forge`;
   zone.insertBefore(lien, zone.firstChild);
 
+  // le bouton de la console (pas sur la console elle-même)
+  const surConsole = /console\.html$/.test(location.pathname);
+  const consoleBtn = document.createElement("a");
+  consoleBtn.className = "fb-console cache"; consoleBtn.href = "console.html";
+  consoleBtn.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M4.5 6.5l2 1.5-2 1.5M8 10h3.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Console</span>';
+  if (!surConsole){ const avant = zone.querySelector("#who"); zone.insertBefore(consoleBtn, avant && avant.parentNode === zone ? avant : null); }
+
   let client = null;
   try { client = sb; } catch { return; }                         // « sb » : le client Supabase de la page
   let vu = undefined;
   client.auth.onAuthStateChange((_e, session) => {
     const id = session?.user?.id || null; if (id === vu) return; vu = id;
-    if (!id){ lien.classList.add("cache"); return; }
+    if (!id){ lien.classList.add("cache"); consoleBtn.classList.add("cache"); return; }
+    setTimeout(async () => {
+      try {
+        const { data: role } = await client.rpc("flamme_mon_role");
+        const invite = role === "invite";
+        consoleBtn.querySelector("span").textContent = invite ? "Le modèle" : "Console";
+        consoleBtn.title = invite ? "Parcourir les profils du modèle ; changer votre mot de passe" : "Console : le contenu du modèle, le catalogue de profils, les résultats";
+        consoleBtn.classList.toggle("cache", !role);
+      } catch { consoleBtn.classList.add("cache"); }
+    }, 0);
     setTimeout(async () => {
       try { const { data } = await client.rpc("prisme_mon_role"); lien.classList.toggle("cache", !data); }
       catch { lien.classList.add("cache"); }

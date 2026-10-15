@@ -81,7 +81,7 @@ dialog h2{border:0} .field{display:block;margin-bottom:12px} .field span{display
 <body>
 <header>
   <h1 class="wordmark"><a href="index.html" title="Accueil de Flamme Bleue">Flamme Bleue</a></h1><p class="signature">Cartographiez votre énergie</p>
-  <nav><a href="autotest.html">Autotest</a><a href="console.html">Console</a></nav>
+  <nav><a href="autotest.html">Autotest</a></nav>
   <div class="who"><span id="who"></span>
     <button class="btn ghost" id="btn-login" type="button">Se connecter</button>
     <button class="btn ghost hidden" id="btn-logout" type="button">Se déconnecter</button></div>
@@ -100,7 +100,7 @@ dialog h2{border:0} .field{display:block;margin-bottom:12px} .field span{display
   <div style="display:flex;gap:10px"><button class="btn" type="submit">Se connecter</button><button class="btn ghost" type="button" id="login-fermer">Fermer</button></div>
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 <script>
-const VERSION = { numero:"1.15", date:"2026-10-15 22:50" };
+const VERSION = { numero:"1.16", date:"2026-10-15 23:30" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const M = window.FLAMME_MOTEUR;
@@ -133,6 +133,11 @@ async function lireScores(){
     const code = q.get("type");
     if (!M.analyser(code).famille) throw new Error(`« ${code} » n'est pas un code de profil.`);
     return { scores: M.scoresTypes(code), date: null, qui: "", type: code };
+  }
+  if (q.get("catalogue")){                                                    // fiche du catalogue de profils
+    const { data, error } = await sb.from("flamme_catalogue").select("*").eq("id", q.get("catalogue")).maybeSingle();
+    if (error || !data) throw new Error("Cette fiche du catalogue est introuvable, ou tu n'as pas le droit de la consulter.");
+    return { scores: data.scores, date: data.cree_le, qui: "Catalogue : " + data.nom, classement: data.classement, ecarts: data.ecarts, catalogue: data.id };
   }
   if (q.get("resultat")){
     const { data, error } = await sb.from("flamme_resultats").select("*").eq("id", q.get("resultat")).maybeSingle();
@@ -218,6 +223,6 @@ sb.auth.onAuthStateChange(async (_e, session) => {
   } catch (err){ $("#bloque").textContent = err.message; }
 });
 </script>
-<script src="entete.js?v=1.1"></script>
+<script src="entete.js?v=1.3"></script>
 </body>
 </html>
