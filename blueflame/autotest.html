@@ -2,25 +2,25 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Flamme Bleue — autotest</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/3.46.0/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
-<script src="flamme_moteur.js?v=1.3"></script>
-<script src="flamme_glyphes.js?v=2.0"></script>
+<script src="flamme_moteur.js?v=1.5"></script>
+<script src="flamme_glyphes.js?v=2.1"></script>
 <style>
 :root{
   --ink:#1B2430; --muted:#5B6573; --line:#DDE1E7; --paper:#F4F6F8; --panel:#FFFFFF;
-  --hover:#EEF1F5; --sel:#E3E8EF; --ok:#1E7A46; --warn:#9A5B00; --err:#B42318; --focus:#3B6FE0;
+  --hover:#EEF1F5; --sel:#E3E8EF; --ok:#1E7A46; --warn:#9A5B00; --err:#B42318; --focus:#3B6FE0; --bleu-doux:#E4ECFD;
   --serif:"Source Serif 4", Georgia, "Times New Roman", serif;
   --sans:"IBM Plex Sans", "Segoe UI", Arial, sans-serif;
 }
 @media (prefers-color-scheme: dark){
   :root{ --ink:#E6E9EE; --muted:#9AA4B2; --line:#2C3542; --paper:#11161D; --panel:#171D25;
-         --hover:#1E2630; --sel:#26303C; --ok:#5CC98A; --warn:#E0A84A; --err:#F2837A; }
+         --hover:#1E2630; --sel:#26303C; --ok:#5CC98A; --warn:#E0A84A; --err:#F2837A; --bleu-doux:#1C2A48; }
 }
 *{box-sizing:border-box}
 html,body{margin:0}
@@ -38,6 +38,7 @@ header{display:flex;align-items:baseline;gap:18px;padding:12px 20px;border-botto
 .who{margin-left:auto;font-size:13px;color:var(--muted);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .btn{border:1px solid var(--ink);background:var(--ink);color:var(--panel);padding:8px 14px;border-radius:6px;cursor:pointer;font-weight:500}
 .btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.ghost:hover{background:var(--hover)}
 .btn:disabled{opacity:.4;cursor:default}
 .msg{font-size:14px;min-height:1.4em;margin:6px 0 0}
 .msg.err{color:var(--err)} .msg.ok{color:var(--ok)} .msg.warn{color:var(--warn)}
@@ -48,31 +49,79 @@ header{display:flex;align-items:baseline;gap:18px;padding:12px 20px;border-botto
 .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
 
 main{display:grid;grid-template-columns:minmax(0,3.6fr) minmax(280px,1.2fr);gap:20px;padding:18px 24px 40px;max-width:1500px;margin:auto;align-items:start}
+#travail{min-width:0}
 
-/* grille : 1 5 9 13 17 / 2 6 10 14 18 / ... (colonnes) */
-#grille{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(4,1fr);grid-auto-flow:column;gap:10px}
-.slot{position:relative;display:flex;flex-direction:column;min-height:112px;padding:18px 6px 6px;background:var(--panel);border:1px solid var(--line);border-radius:9px}
-.slot.over{outline:2px solid var(--focus);outline-offset:1px}
-.rang{position:absolute;top:4px;left:7px;font:600 12px var(--sans);color:var(--muted)}
-.carte{position:relative;flex:1;min-height:84px;padding:10px 10px 8px;border-radius:7px;cursor:grab;user-select:none;touch-action:manipulation}
-.carte.drag{opacity:.35}
+/* onglets des trois vues */
+.onglets{display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin-bottom:14px}
+.onglet{border:1px solid transparent;border-bottom:none;background:transparent;padding:8px 16px;border-radius:8px 8px 0 0;cursor:pointer;color:var(--muted);font-weight:500;margin-bottom:-1px}
+.onglet[aria-selected="true"]{background:var(--panel);border-color:var(--line);color:var(--ink)}
+.onglet.pc-seul{display:none}
+@media (min-width:900px){ .onglet.pc-seul{display:inline-block} }
+.aide{font-size:13.5px;color:var(--muted);margin:0 0 12px;max-width:80ch}
+.barre-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0}
+
+/* cartes (sans glyphe) : fond de la valeur présente, bord pointillé de la valeur fuie */
+.carte{position:relative;border-radius:7px;padding:7px 10px;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+.carte .nom{font:600 15px/1.2 var(--serif);display:flex;align-items:center;gap:6px}
+.carte .nom .t{flex:1;min-width:0}
+.carte .ico{font-size:16px;opacity:.7;flex:none}
+.carte .devise{font:italic 12.5px/1.3 var(--serif);margin-top:2px;opacity:.9;display:block}
 .carte.choisie{box-shadow:0 0 0 3px var(--focus)}
-.carte .code{font:600 12px var(--sans);letter-spacing:.02em;display:flex;align-items:center;gap:6px}
-.disques{display:inline-flex;align-items:center;gap:3px;background:#fff;border-radius:10px;padding:2px 5px;box-shadow:0 0 0 1px rgba(27,36,48,.35)}
-.disque{width:11px;height:11px;border-radius:50%;background:var(--c);box-shadow:inset 0 0 0 1px rgba(27,36,48,.35)}
-.disque.abs{background:transparent;border:2px dashed var(--c);box-shadow:none;box-sizing:border-box}
-.disque.abs.blanc{border-color:#8892A0}
-.disques .sep-d{font-size:10px;color:#5B6573}
-.carte .tete{display:flex;align-items:center;gap:7px;padding-right:18px}
-.carte .gly{flex:none;line-height:0;background:#fff;border-radius:11px;padding:2px 5px;box-shadow:0 0 0 1px rgba(27,36,48,.3)}
-.carte .gly svg.g{height:19px;width:auto;display:block}
-.carte .nom{font:600 15px/1.2 var(--serif);min-width:0}
-.carte .devise{font:italic 12.5px/1.3 var(--serif);margin-top:3px;opacity:.9}
-.carte .ico{position:absolute;top:8px;right:8px;font-size:17px;opacity:.6}
-.bulle{position:absolute;z-index:20;left:0;top:calc(100% + 6px);width:260px;padding:10px 12px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.18);font:13.5px/1.45 var(--serif);display:none}
+.bulle{position:absolute;z-index:20;left:0;top:calc(100% + 6px);width:min(300px,80vw);padding:10px 12px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.18);font:13.5px/1.45 var(--serif);display:none;cursor:auto}
 .bulle b{display:block;font-style:italic;font-weight:600;margin-bottom:4px}
-.carte:hover .bulle,.carte.choisie .bulle{display:block}
-#grille .slot:nth-last-child(-n+8) .bulle{left:auto;right:0}
+.liste .carte:hover .bulle,.liste .carte.choisie .bulle{display:block}
+/* proximité de la carte, en % (100 = la plus proche de soi), et sa variation au dernier changement */
+.prox{flex:none;background:#FFFFFF;color:#1B2430;border-radius:999px;padding:0 6px;font:500 11.5px/1.5 var(--sans);font-variant-numeric:tabular-nums;box-shadow:0 0 0 1px rgba(27,36,48,.25)}
+.prox .delta{font-weight:600;margin-left:3px}
+.prox .delta.haut{color:#1E7A46} .prox .delta.bas{color:#B42318}
+.carte.change .prox{box-shadow:0 0 0 2px #3B6FE0}
+@media (prefers-reduced-motion:no-preference){ .carte.change .prox{animation:eclat 1.2s ease-out} @keyframes eclat{from{transform:scale(1.25)}to{transform:none}} }
+
+/* piles */
+.bac{background:var(--panel);border:1px dashed var(--line);border-radius:10px;padding:10px;min-height:58px;display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.bac .vide,.pile .vide{font-size:13px;color:var(--muted);align-self:center}
+.piles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+@media (max-width:1300px){ .piles{grid-template-columns:minmax(0,1fr)} }
+.pile{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:6px;min-height:110px;cursor:pointer}
+@media (max-width:1300px){ .pile{min-height:64px} }
+.pile.cible,.bac.cible{outline:2px solid var(--focus);outline-offset:1px}
+.pile h3{margin:0;font:600 14px var(--serif);display:flex;justify-content:space-between;gap:8px}
+.pile h3 span{font:400 12px var(--sans);color:var(--muted)}
+.bac .carte,.pile .carte{cursor:grab;padding:5px 9px}
+.bac .carte .nom,.pile .carte .nom{font-size:14px}
+.bac .carte .devise,.pile .carte .devise{font-size:11.5px}
+
+/* classement à intercalaires */
+.liste{display:flex;flex-direction:column;max-width:680px}
+.rang{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:8px;align-items:center}
+.rang .num{font:600 12px var(--sans);color:var(--muted);text-align:right;font-variant-numeric:tabular-nums;line-height:1.2}
+.rang .num small{display:block;font-weight:400;font-size:11px}
+.rang .carte{cursor:grab}
+.rang.over .carte{outline:2px solid var(--focus);outline-offset:2px}
+.fleches{display:flex;gap:2px}
+.fleches button{border:1px solid var(--line);background:var(--panel);border-radius:6px;width:30px;height:30px;cursor:pointer;line-height:1}
+.fleches button:hover{background:var(--hover)}
+.fleches button:disabled{opacity:.35;cursor:default}
+.inter{margin-left:52px;display:flex;align-items:center;gap:8px;border:0;background:transparent;cursor:pointer;width:calc(100% - 52px);padding:0;color:var(--muted);font-size:11.5px}
+.inter .trait{flex:1;border-top:1px solid var(--line)}
+.inter[data-n="0"]{height:10px} .inter[data-n="0"] .trait{border-top:2px dotted var(--focus)}
+.inter[data-n="1"]{height:16px}
+.inter[data-n="2"]{height:34px} .inter[data-n="2"] .trait{border-top:2px solid var(--muted)}
+.inter[data-n="3"]{height:58px} .inter[data-n="3"] .trait{border-top:4px double var(--ink)}
+.inter .lib{white-space:nowrap;padding:1px 8px;border:1px solid var(--line);border-radius:999px;background:var(--panel)}
+.inter[data-n="1"] .lib{opacity:.55}
+.inter:hover .lib{border-color:var(--focus);opacity:1;color:var(--ink)}
+
+/* règle (grand écran) */
+.regle-cadre{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+.regle{position:relative;height:760px}
+.regle .axe{position:absolute;left:34px;top:20px;bottom:20px;border-left:2px solid var(--line)}
+.regle .graduation{position:absolute;left:28px;width:14px;border-top:1px solid var(--line)}
+.regle .bout{position:absolute;left:46px;font-size:11.5px;color:var(--muted)}
+.regle .carte{position:absolute;width:225px;cursor:ns-resize;padding:4px 9px;touch-action:none}
+.regle .carte .devise,.regle .carte .ico{display:none}
+.regle .carte .nom{font-size:14px}
+.regle .carte.glisse{z-index:5;box-shadow:0 6px 18px rgba(0,0,0,.25)}
 
 /* colonne résultats */
 aside{display:flex;flex-direction:column;gap:14px;position:sticky;top:12px}
@@ -99,6 +148,7 @@ aside{display:flex;flex-direction:column;gap:14px;position:sticky;top:12px}
 .profil .devise{font:italic 15px/1.35 var(--serif);color:var(--muted);margin-top:2px}
 .profil .titre{font:italic 15px/1.45 var(--serif);margin-top:8px}
 .profil .texte{font:15px/1.6 var(--serif);margin-top:8px;white-space:pre-line}
+.compare{margin-top:12px;font-size:13px;padding:8px 10px;border-radius:8px;background:var(--bleu-doux)}
 .verrou{font-size:13px;color:var(--muted);margin-top:10px}
 .historique li{font-size:13px;margin-bottom:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .historique ul{list-style:none;padding:0;margin:0}
@@ -111,13 +161,20 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px}
 .field span{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
 .field input{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:6px;background:var(--paper)}
 
-@media (max-width:1100px){ main{grid-template-columns:1fr} aside{position:static} }
-@media (max-width:760px){
-  #grille{grid-template-columns:1fr 1fr;grid-auto-flow:row;grid-template-rows:none}
-  .bulle{width:min(260px,80vw)}
-  #grille .slot:nth-child(even) .bulle{left:auto;right:0}
-  .intro,main{padding-left:12px;padding-right:12px}
+/* bandeau des scores, fixé en bas quand les résultats passent sous la zone de travail */
+.bandeau{display:none}
+@media (max-width:1100px){
+  main{grid-template-columns:1fr} aside{position:static}
+  body{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+  .bandeau{display:block;position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--panel);border-top:1px solid var(--line);
+    box-shadow:0 -4px 14px rgba(0,0,0,.12);padding:8px max(16px,env(safe-area-inset-right,0px)) calc(8px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+  .bandeau .ligne{display:flex;justify-content:space-between;gap:6px;max-width:640px;margin:auto}
+  .bandeau .v{display:flex;flex-direction:column;align-items:center;font-size:11px;color:var(--muted);flex:1;min-width:0}
+  .bandeau .v b{font:600 15px var(--sans);color:var(--ink);font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:4px}
+  .bandeau .v i{width:10px;height:10px;border-radius:50%;box-shadow:inset 0 0 0 1px #8892A0;display:inline-block}
+  .bandeau .p{font:600 14px var(--serif);text-align:center;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 }
+@media (max-width:760px){ .intro,main{padding-left:12px;padding-right:12px} }
 </style>
 </head>
 <body>
@@ -133,7 +190,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px}
 
 <section class="intro">
   <h1>Autotest</h1>
-  <p>Classez les 20 tempéraments, du plus proche de vous (1) au plus éloigné (20). Faites glisser une carte sur une autre place, ou touchez une carte puis la place voulue. Survolez ou touchez une carte pour lire sa description. Vous pouvez aussi réordonner les cinq valeurs : les tempéraments se rangent alors selon cet ordre. Une fois connecté, vous retrouvez votre dernier résultat enregistré.</p>
+  <p>Rangez d'abord les 20 tempéraments en piles, de « tout à fait moi » à « pas du tout moi ». Classez-les ensuite, du plus proche de vous au plus éloigné, en disant entre deux cartes voisines si elles sont inséparables, proches, nettement séparées ou séparées par un fossé. Survolez ou touchez une carte du classement pour lire sa description. Une fois connecté, vous retrouvez votre dernier résultat enregistré.</p>
   <div class="actions">
     <button class="btn" id="btn-save" type="button" disabled>Enregistrer mon résultat</button>
     <button class="btn ghost" id="btn-fiche" type="button" disabled>Voir ma fiche</button>
@@ -143,7 +200,14 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px}
 </section>
 
 <main>
-  <section id="grille" aria-label="Classement des tempéraments"><p>Chargement…</p></section>
+  <section id="travail" aria-label="Classement des tempéraments">
+    <div class="onglets" role="tablist">
+      <button class="onglet" role="tab" data-vue="piles" aria-selected="true" type="button">Piles</button>
+      <button class="onglet" role="tab" data-vue="classement" aria-selected="false" type="button">Classement</button>
+      <button class="onglet pc-seul" role="tab" data-vue="regle" aria-selected="false" type="button">Règle</button>
+    </div>
+    <div id="vue"><p>Chargement…</p></div>
+  </section>
   <aside>
     <section class="bloc">
       <h2>Valeurs</h2>
@@ -160,6 +224,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px}
     </section>
   </aside>
 </main>
+<div class="bandeau" id="bandeau" aria-hidden="true"></div>
 <footer id="version"></footer>
 
 <dialog id="dlg-login">
@@ -173,7 +238,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px}
 </dialog>
 
 <script>
-const VERSION = { numero:"1.13", date:"2026-10-14 21:21" };
+const VERSION = { numero:"2.0", date:"2026-10-15 18:35" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const M = window.FLAMME_MOTEUR;
@@ -187,9 +252,17 @@ const ICONES = {"W/u":"ti-plant-2","W/b":"ti-badge","W/r":"ti-puzzle","W/g":"ti-
   "U/g":"ti-route-2","U/w":"ti-bulb","B/r":"ti-stairs-up","B/g":"ti-target","B/w":"ti-crown","B/u":"ti-mountain",
   "R/g":"ti-trending-up","R/w":"ti-link-off","R/u":"ti-wave-sine","R/b":"ti-flame","G/w":"ti-seedling","G/u":"ti-sun",
   "G/b":"ti-heart-handshake","G/r":"ti-circles"};
+const PILES = ["Tout à fait moi", "Plutôt moi", "Mitigé", "Plutôt pas moi", "Pas du tout moi"];
+// écarts entre deux cartes voisines (moteur 1.5) : inséparables 1, proches 2, nettement 3, un fossé 4 — jamais d'égalité
+const NIVEAUX = ["inséparables", "proches", "nettement", "un fossé"];
+const PROCHES = M.ECARTS.proches;
+const niveau = e => Math.max(0, Math.min(3, Math.round(e) - 1));
+const ecartsSimples = () => Array(19).fill(PROCHES);
 
-let E = {}, couleurs = {}, temperamentsInitiaux = [], liste = [], role = null, user = null, dernier = null;
-let glisse = null, choisie = null, vGlisse = null, vChoisie = null, textesComplets = false;
+let E = {}, couleurs = {}, temperamentsInitiaux = [], role = null, user = null, dernier = null;
+// état du test : le classement (liste + 19 écarts), les piles qui servent à le construire, la vue affichée
+let liste = [], ecarts = ecartsSimples(), bac = [], piles = PILES.map(() => []), vue = "piles", classementFait = false, pilesModifiees = false;
+let choisie = null, vGlisse = null, vChoisie = null, textesComplets = false, PROX = {}, AVANT = {};
 
 $("#version").textContent = `Autotest ${VERSION.numero}, version du ${VERSION.date.replace(/(\d{4})-(\d\d)-(\d\d) (\d\d):(\d\d)/,"$3/$2/$1 à $4h$5")} — moteur ${M.VERSION.numero}`;
 
@@ -197,17 +270,17 @@ $("#version").textContent = `Autotest ${VERSION.numero}, version du ${VERSION.da
 async function charger(){
   const { data, error } = await sb.rpc("flamme_autotest_contenu", { p_langue: "fr" });
   if (error || !data?.elements){
-    $("#grille").innerHTML = `<p class="msg err">Le contenu du test n'a pas pu être chargé${error ? " : " + esc(error.message) : ""}.</p>`;
+    $("#vue").innerHTML = `<p class="msg err">Le contenu du test n'a pas pu être chargé${error ? " : " + esc(error.message) : ""}.</p>`;
     return false;
   }
   data.couleurs.forEach(c => couleurs[c.code] = c);
   data.elements.forEach(e => E[e.code] = e);
   temperamentsInitiaux = data.elements.filter(e => e.couche === "temperament").map(e => e.code);
   if (temperamentsInitiaux.length !== 20){
-    $("#grille").innerHTML = `<p class="msg err">Le test attend 20 tempéraments validés, la base en contient ${temperamentsInitiaux.length}.</p>`;
+    $("#vue").innerHTML = `<p class="msg err">Le test attend 20 tempéraments validés, la base en contient ${temperamentsInitiaux.length}.</p>`;
     return false;
   }
-  liste = temperamentsInitiaux.slice();
+  repartir();
   return true;
 }
 async function chargerTextesComplets(){
@@ -230,7 +303,7 @@ sb.auth.onAuthStateChange(async (_e, session) => {
   } else {
     Object.values(E).forEach(e => { delete e.texte1; delete e.texte2; delete e.texte3; });
   }
-  majSession(); if (liste.length) afficherResultats(); historique();
+  majSession(); rendre(); historique();
 });
 function majSession(){
   $("#who").textContent = user ? (role ? `Connecté : ${user.email}` : `${user.email} (compte sans accès Flamme Bleue)`) : "";
@@ -251,7 +324,7 @@ $("#form-login").addEventListener("submit", async e => {
   $("#dlg-login").close();
 });
 
-/* ---------- pastilles ---------- */
+/* ---------- pastilles (résultats) ---------- */
 const teintes = () => Object.fromEntries(Object.entries(couleurs).map(([k, v]) => [k, v.couleur]));
 function pips(code){
   const g = window.FLAMME_GLYPHES?.glyphe(code, teintes()); if (g) return g;   // glyphe du code (flamme_glyphes.js)
@@ -265,67 +338,192 @@ function pips(code){
   return `<span class="pips" aria-hidden="true">${out}</span>`;
 }
 
-/* ---------- grille des tempéraments ---------- */
-// disques : la couleur présente pleine, la couleur absente en pointillés
-function disques(code){
-  const [p, a] = code.split("/"), A = a.toUpperCase();
-  const d = (c, abs) => `<span class="disque${abs ? " abs" : ""}${c === "W" ? " blanc" : ""}" style="--c:${couleurs[c].couleur}" title="${esc(c)}${abs ? " (absent)" : ""}"></span>`;
-  return `<span class="disques">${d(p)}<span class="sep-d">/</span>${d(A, true)}</span>`;
+/* ---------- état du test ---------- */
+function repartir(){
+  liste = temperamentsInitiaux.slice(); ecarts = ecartsSimples();
+  bac = temperamentsInitiaux.slice(); piles = PILES.map(() => []); vue = "piles"; classementFait = false; pilesModifiees = false; choisie = null; PROX = {}; AVANT = {};
 }
+// le classement que donneraient les piles : « proches » dans une pile, « nettement » entre deux piles voisines, « un fossé » si une pile vide les sépare
+function depuisPiles(){
+  if (bac.length || piles.every(p => !p.length)) return null;
+  const ordre = [], ec = []; let derniere = null;
+  piles.forEach((p, k) => p.forEach((c, i) => {
+    if (ordre.length) ec.push(i === 0 ? Math.min(M.ECARTS.fosse, PROCHES + (k - derniere)) : PROCHES);
+    ordre.push(c); derniere = k;
+  }));
+  return { ordre, ecarts: ec };
+}
+// ce qui est affiché et enregistré : sur les piles, leur aperçu si elles sont complètes et ont changé depuis le dernier passage au classement ;
+// sinon le classement (un coup d'œil aux piles ne défait pas un classement retouché)
+function etatCourant(){
+  if (vue === "piles"){
+    const r = depuisPiles();
+    if (r && (pilesModifiees || !classementFait)) return r;
+    return classementFait ? { ordre: liste, ecarts } : null;
+  }
+  return { ordre: liste, ecarts };
+}
+function versClassement(){
+  const r = depuisPiles();
+  if (r){ liste = r.ordre; ecarts = r.ecarts; }
+  else if (!classementFait){ liste = piles.flat().concat(bac); ecarts = ecartsSimples(); }   // classer directement, sans finir les piles
+  classementFait = true; pilesModifiees = false; vue = "classement";
+}
+const doitReconstruire = () => (pilesModifiees && depuisPiles()) || !classementFait;
+
+/* ---------- cartes ---------- */
 function styleCarte(code){
   const [p, a] = code.split("/"); const cp = couleurs[p], ca = couleurs[a.toUpperCase()];
   const fond = p === "W" ? "#F1F1F1" : cp.couleur;
-  return `background:${fond};color:${cp.couleur_texte};border:2px solid ${ca.couleur};outline:2px dashed ${ca.couleur};outline-offset:-7px`;
+  return `background:${fond};color:${cp.couleur_texte};border:2px solid ${ca.couleur};outline:2px dashed ${ca.couleur};outline-offset:-6px`;
 }
-function deplacer(de, vers){
-  if (de === null || de === vers) return;
-  const [x] = liste.splice(de, 1); liste.splice(vers, 0, x);
-  choisie = null; afficherGrille(); afficherResultats();
+function badge(code){
+  if (!(code in PROX)) return "";
+  const d = code in AVANT ? PROX[code] - AVANT[code] : 0;
+  return `<span class="prox" title="Proximité : 100 % pour la carte la plus proche de vous, 0 % pour la plus éloignée">${Math.round(PROX[code])} %${Math.abs(d) >= 0.5 ? `<span class="delta ${d > 0 ? "haut" : "bas"}">${d > 0 ? "▲" : "▼"}${Math.round(Math.abs(d))}</span>` : ""}</span>`;
 }
-function afficherGrille(){
-  const g = $("#grille");
-  g.innerHTML = liste.map((code, i) => {
-    const t = E[code];
-    return `<div class="slot" data-i="${i}"><span class="rang">${i + 1}</span>
-      <div class="carte${choisie === i ? " choisie" : ""}" draggable="true" tabindex="0" data-i="${i}" style="${styleCarte(code)}"
-           aria-label="Rang ${i + 1} : ${esc(t.nom)}, ${esc(t.devise)}">
-        ${ICONES[code] ? `<i class="ti ${ICONES[code]} ico" aria-hidden="true"></i>` : ""}
-        <div class="tete"><span class="gly" title="${esc(code)}">${pips(code)}</span><span class="nom">${esc(t.nom)}</span></div><div class="devise">${esc(t.devise)}</div>
-        <div class="bulle">${t.titre ? `<b>« ${esc(t.titre)} »</b>` : ""}${esc([t.texte1, t.texte2, t.texte3].filter(Boolean).join(" "))}</div>
-      </div></div>`;
-  }).join("");
+const change = code => code in PROX && code in AVANT && Math.abs(PROX[code] - AVANT[code]) >= 0.5 ? " change" : "";
+function carte(code, { attrs = "", style = "", bulle = false } = {}){
+  const t = E[code];
+  return `<div class="carte${choisie === code ? " choisie" : ""}${change(code)}" data-code="${code}" style="${styleCarte(code)}${style}" tabindex="0" ${attrs}
+    aria-label="${esc(t.nom)}, ${esc(t.devise)}${code in PROX ? `, proximité ${Math.round(PROX[code])} %` : ""}">
+    <span class="nom">${ICONES[code] ? `<i class="ti ${ICONES[code]} ico" aria-hidden="true"></i>` : ""}<span class="t">${esc(t.nom)}</span>${badge(code)}</span>
+    <span class="devise">${esc(t.devise)}</span>
+    ${bulle && (t.titre || t.texte1) ? `<div class="bulle">${t.titre ? `<b>« ${esc(t.titre)} »</b>` : ""}${esc([t.texte1, t.texte2, t.texte3].filter(Boolean).join(" "))}</div>` : ""}</div>`;   // description réservée aux comptes : pas de bulle vide
 }
-const grille = $("#grille");
-grille.addEventListener("dragstart", e => { const c = e.target.closest(".carte"); if (!c) return; glisse = +c.dataset.i; c.classList.add("drag"); e.dataTransfer.effectAllowed = "move"; });
-grille.addEventListener("dragend", e => e.target.closest(".carte")?.classList.remove("drag"));
-grille.addEventListener("dragover", e => { const s = e.target.closest(".slot"); if (!s) return; e.preventDefault(); grille.querySelectorAll(".over").forEach(x => x !== s && x.classList.remove("over")); s.classList.add("over"); });
-grille.addEventListener("dragleave", e => { const s = e.target.closest(".slot"); if (s && !s.contains(e.relatedTarget)) s.classList.remove("over"); });
-grille.addEventListener("drop", e => { const s = e.target.closest(".slot"); if (!s) return; e.preventDefault(); const d = glisse; glisse = null; deplacer(d, +s.dataset.i); });
-// toucher / cliquer : choisir une carte, puis la place
-grille.addEventListener("click", e => {
-  const s = e.target.closest(".slot"); if (!s) return; e.stopPropagation();
-  const i = +s.dataset.i;
-  if (choisie === null){ choisie = i; afficherGrille(); grille.querySelector(`.carte[data-i="${i}"]`)?.focus(); }
-  else if (choisie === i){ choisie = null; afficherGrille(); }
-  else deplacer(choisie, i);
-});
-grille.addEventListener("keydown", e => {
-  const c = e.target.closest(".carte"); if (!c) return; const i = +c.dataset.i;
-  if (e.key === "Enter" || e.key === " "){ e.preventDefault(); c.closest(".slot").click(); }
-  if ((e.key === "ArrowUp" || e.key === "ArrowLeft") && e.altKey && i > 0){ e.preventDefault(); deplacer(i, i - 1); grille.querySelector(`.carte[data-i="${i-1}"]`)?.focus(); }
-  if ((e.key === "ArrowDown" || e.key === "ArrowRight") && e.altKey && i < 19){ e.preventDefault(); deplacer(i, i + 1); grille.querySelector(`.carte[data-i="${i+1}"]`)?.focus(); }
-  if (e.key === "Escape"){ choisie = null; afficherGrille(); }
-});
-document.addEventListener("click", () => { if (choisie !== null){ choisie = null; afficherGrille(); } if (vChoisie !== null){ vChoisie = null; afficherResultats(); } });
+
+/* ---------- affichage ---------- */
+function rendre(){
+  if (!temperamentsInitiaux.length) return;
+  const etat = etatCourant();
+  let nouveau = {};
+  if (etat){ const pos = M.positionsDepuisEcarts(etat.ecarts); nouveau = Object.fromEntries(etat.ordre.map((c, i) => [c, (20 - pos[i]) / 19 * 100])); }
+  // la variation n'est montrée que si quelque chose a bougé depuis l'affichage précédent
+  if (Object.keys(nouveau).some(c => !(c in PROX) || Math.abs(nouveau[c] - PROX[c]) >= 0.5)) AVANT = PROX;
+  if (!Object.keys(nouveau).length) AVANT = {};
+  PROX = nouveau;
+  document.querySelectorAll(".onglet").forEach(o => o.setAttribute("aria-selected", o.dataset.vue === vue));
+  ({ piles: vuePiles, classement: vueClassement, regle: vueRegle })[vue]();
+  afficherResultats();
+}
+
+function vuePiles(){
+  if (!bac.length && piles.every(p => !p.length)) bac = liste.slice();
+  $("#vue").innerHTML = `
+    <p class="aide">Rangez chaque carte dans la pile qui vous correspond, sans quota : une pile peut en recevoir sept et une autre aucune. Glissez une carte, ou touchez-la puis touchez une pile. Les piles donnent l'ordre de départ du classement et ses premiers intercalaires.</p>
+    <div class="bac" data-pile="bac" aria-label="Cartes à ranger">${bac.length ? bac.map(c => carte(c, { attrs: 'draggable="true"' })).join("") : '<span class="vide">Toutes les cartes sont rangées.</span>'}</div>
+    <div class="piles">${piles.map((p, k) => `<div class="pile" data-pile="${k}" role="group" aria-label="${PILES[k]}">
+      <h3>${PILES[k]} <span>${p.length}</span></h3>${p.map(c => carte(c, { attrs: 'draggable="true"' })).join("") || '<span class="vide">Vide</span>'}</div>`).join("")}</div>
+    <div class="barre-actions">
+      <button class="btn" id="b-suite" type="button">${doitReconstruire() ? (bac.length ? "Classer directement, sans finir les piles" : "Passer au classement") : "Revenir au classement"}</button>
+      ${bac.length ? `<span class="aide" style="margin:0">Encore ${bac.length} carte${bac.length > 1 ? "s" : ""} à ranger.</span>` : ""}
+    </div>`;
+  const z = $("#vue");
+  const deplacer = (code, cible) => {
+    bac = bac.filter(c => c !== code); piles = piles.map(p => p.filter(c => c !== code));
+    if (cible === "bac") bac.push(code); else piles[+cible].push(code);
+    pilesModifiees = true; choisie = null; rendre();
+  };
+  z.querySelectorAll(".carte").forEach(el => {
+    el.addEventListener("dragstart", e => { e.dataTransfer.setData("text/plain", el.dataset.code); e.dataTransfer.effectAllowed = "move"; });
+    el.addEventListener("click", e => { e.stopPropagation(); choisie = choisie === el.dataset.code ? null : el.dataset.code; rendre(); });
+    el.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); el.click(); } });
+  });
+  z.querySelectorAll("[data-pile]").forEach(p => {
+    p.addEventListener("dragover", e => { e.preventDefault(); p.classList.add("cible"); });
+    p.addEventListener("dragleave", e => { if (!p.contains(e.relatedTarget)) p.classList.remove("cible"); });
+    p.addEventListener("drop", e => { e.preventDefault(); const c = e.dataTransfer.getData("text/plain"); if (E[c]) deplacer(c, p.dataset.pile); });
+    p.addEventListener("click", e => { if (choisie){ e.stopPropagation(); deplacer(choisie, p.dataset.pile); } });
+  });
+  $("#b-suite").addEventListener("click", e => { e.stopPropagation(); if (doitReconstruire()) versClassement(); else vue = "classement"; choisie = null; rendre(); });
+}
+
+function vueClassement(){
+  const pos = M.positionsDepuisEcarts(ecarts);
+  $("#vue").innerHTML = `
+    <p class="aide">Du plus proche de vous au plus éloigné. Touchez un intercalaire pour dire l'écart entre deux cartes voisines : inséparables, proches, nettement, un fossé. Déplacez une carte en la glissant ou avec les flèches ; les intercalaires restent à leur place. Le pourcentage d'une carte est sa proximité : 100 % pour la plus proche de vous, 0 % pour la plus éloignée.</p>
+    <div class="liste">${liste.map((c, i) => `
+      <div class="rang" data-i="${i}">
+        <span class="num">${i + 1}<small>pos. ${fmt(pos[i])}</small></span>
+        ${carte(c, { attrs: 'draggable="true"', bulle: true })}
+        <span class="fleches"><button type="button" data-monte="${i}" aria-label="Monter ${esc(E[c].nom)}" ${i === 0 ? "disabled" : ""}>▲</button><button type="button" data-descend="${i}" aria-label="Descendre ${esc(E[c].nom)}" ${i === 19 ? "disabled" : ""}>▼</button></span>
+      </div>${i < 19 ? `<button type="button" class="inter" data-g="${i}" data-n="${niveau(ecarts[i])}" aria-label="Écart entre ${esc(E[c].nom)} et ${esc(E[liste[i + 1]].nom)} : ${NIVEAUX[niveau(ecarts[i])]}. Toucher pour changer.">
+        <span class="trait"></span><span class="lib">${Number.isInteger(ecarts[i]) ? "" : "≈ "}${NIVEAUX[niveau(ecarts[i])]}</span><span class="trait"></span></button>` : ""}`).join("")}
+    </div>
+    <div class="barre-actions"><button class="btn ghost" id="b-proches" type="button">Tous les intercalaires sur « proches »</button></div>`;
+  const z = $("#vue");
+  const bouger = (de, vers) => { if (vers < 0 || vers > 19 || de === vers) return; const [x] = liste.splice(de, 1); liste.splice(vers, 0, x); choisie = null; rendre(); };
+  // un toucher fait défiler : proches → nettement → un fossé → inséparables → proches
+  z.querySelectorAll(".inter").forEach(b => b.addEventListener("click", e => { e.stopPropagation(); const g = +b.dataset.g; ecarts[g] = (niveau(ecarts[g]) + 1) % 4 + 1; rendre(); $(`.inter[data-g="${g}"]`)?.focus(); }));
+  z.querySelectorAll("[data-monte]").forEach(b => b.addEventListener("click", e => { e.stopPropagation(); const i = +b.dataset.monte; bouger(i, i - 1); $(`[data-monte="${i - 1}"]`)?.focus(); }));
+  z.querySelectorAll("[data-descend]").forEach(b => b.addEventListener("click", e => { e.stopPropagation(); const i = +b.dataset.descend; bouger(i, i + 1); $(`[data-descend="${i + 1}"]`)?.focus(); }));
+  z.querySelectorAll(".rang").forEach(r => {
+    const c = r.querySelector(".carte");
+    c.addEventListener("dragstart", e => { e.dataTransfer.setData("text/plain", r.dataset.i); e.dataTransfer.effectAllowed = "move"; });
+    c.addEventListener("click", e => { e.stopPropagation(); choisie = choisie === c.dataset.code ? null : c.dataset.code; rendre(); });
+    c.addEventListener("keydown", e => {
+      const i = +r.dataset.i;
+      if (e.key === "Enter" || e.key === " "){ e.preventDefault(); c.click(); }
+      if (e.key === "ArrowUp" && e.altKey){ e.preventDefault(); bouger(i, i - 1); $(`.rang[data-i="${i - 1}"] .carte`)?.focus(); }
+      if (e.key === "ArrowDown" && e.altKey){ e.preventDefault(); bouger(i, i + 1); $(`.rang[data-i="${i + 1}"] .carte`)?.focus(); }
+    });
+    r.addEventListener("dragover", e => { e.preventDefault(); r.classList.add("over"); });
+    r.addEventListener("dragleave", e => { if (!r.contains(e.relatedTarget)) r.classList.remove("over"); });
+    r.addEventListener("drop", e => { e.preventDefault(); const de = parseInt(e.dataTransfer.getData("text/plain"), 10); if (Number.isInteger(de)) bouger(de, +r.dataset.i); });
+  });
+  $("#b-proches").addEventListener("click", e => { e.stopPropagation(); ecarts = ecartsSimples(); rendre(); });
+}
+
+const H = 760, PAD = 22, CH = 30;
+function vueRegle(){
+  const cum = [0]; ecarts.forEach(e => cum.push(cum[cum.length - 1] + e));
+  const total = Math.max(cum[cum.length - 1], 1), echelle = (H - 2 * PAD - CH) / total;
+  const tops = cum.map(u => PAD + u * echelle);
+  const couloirs = [], gauche = tops.map(t => { let k = couloirs.findIndex(b => b <= t + 0.5); if (k < 0){ k = couloirs.length; couloirs.push(0); } couloirs[k] = t + CH + 4; return 60 + k * 238; });
+  let grad = ""; for (let u = 0; u <= total + 1e-9; u += 1) grad += `<span class="graduation" style="top:${PAD + CH / 2 + u * echelle}px"></span>`;
+  $("#vue").innerHTML = `
+    <p class="aide">Faites glisser les cartes de haut en bas : la hauteur, c'est la proximité avec vous, et la distance entre deux cartes, c'est l'écart. Une graduation vaut l'écart « inséparables », deux graduations l'écart « proches ». Deux cartes lâchées l'une sur l'autre restent séparées d'une graduation. Les cartes trop proches se décalent sur le côté pour rester lisibles.</p>
+    <div class="regle-cadre"><div class="regle" id="regle" style="min-width:${80 + couloirs.length * 238}px">
+      <span class="axe"></span>${grad}
+      <span class="bout" style="top:2px">plus proche de moi</span><span class="bout" style="bottom:2px">plus éloigné</span>
+      ${liste.map((c, i) => carte(c, { style: `;top:${tops[i]}px;left:${gauche[i]}px` })).join("")}
+    </div></div>`;
+  $("#regle").querySelectorAll(".carte").forEach(el => {
+    el.addEventListener("pointerdown", e => {
+      e.preventDefault(); e.stopPropagation(); el.setPointerCapture(e.pointerId); el.classList.add("glisse");
+      const y0 = e.clientY, top0 = parseFloat(el.style.top);
+      const bouge = ev => { el.style.top = Math.max(0, Math.min(H - CH, top0 + ev.clientY - y0)) + "px"; };
+      const lache = () => {
+        el.removeEventListener("pointermove", bouge); el.removeEventListener("pointerup", lache); el.removeEventListener("pointercancel", lache);
+        const u = new Map(liste.map((c, i) => [c, cum[i]]));
+        u.set(el.dataset.code, (parseFloat(el.style.top) - PAD) / echelle);
+        const tri = [...u.entries()].sort((a, b) => a[1] - b[1]);
+        liste = tri.map(x => x[0]);
+        ecarts = tri.slice(1).map((x, i) => Math.max(1, Math.round((x[1] - tri[i][1]) * 100) / 100));   // jamais moins qu'« inséparables » : pas d'égalité
+        rendre();
+      };
+      el.addEventListener("pointermove", bouge); el.addEventListener("pointerup", lache); el.addEventListener("pointercancel", lache);
+    });
+  });
+}
+
+document.querySelectorAll(".onglet").forEach(o => o.addEventListener("click", e => {
+  e.stopPropagation(); if (!temperamentsInitiaux.length) return;
+  const v = o.dataset.vue;
+  if (v !== "piles" && vue === "piles" && doitReconstruire()) versClassement();
+  vue = v; choisie = null; rendre();
+}));
+document.addEventListener("click", () => { if (choisie !== null){ choisie = null; rendre(); } if (vChoisie !== null){ vChoisie = null; afficherResultats(); } });
 
 /* ---------- valeurs : réordonner les 5 couleurs ---------- */
 function trierSelonValeurs(ordre){
+  if (vue === "piles") versClassement();
   const rang = Object.fromEntries(ordre.map((c, i) => [c, i]));
   liste.sort((a, b) => {
     const [pa, aa] = a.split("/"), [pb, ab] = b.split("/");
     return rang[pa] - rang[pb] || rang[ab.toUpperCase()] - rang[aa.toUpperCase()];
   });
-  choisie = null; afficherGrille(); afficherResultats();
+  choisie = null; rendre();
 }
 function ordreValeurs(p){
   // ordre d'affichage des vignettes : scores décroissants, égalités dans l'ordre de la roue
@@ -353,9 +551,18 @@ function afficherValeurs(p){
 
 /* ---------- résultats ---------- */
 function afficherResultats(){
-  const { pourcentages: p } = M.scoresDepuisTemperaments(liste);
-  const r = M.profil(p, { classement: liste });
-  dernier = { p, r, classement: liste.slice() };
+  const etat = etatCourant();
+  if (!etat){
+    dernier = null;
+    $("#valeurs").innerHTML = ""; $("#histo").innerHTML = `<p class="verrou">Les scores apparaissent dès que les 20 cartes sont rangées dans les piles.</p>`;
+    $("#profil").innerHTML = `<p class="verrou">Votre profil apparaîtra ici.</p>`;
+    $("#bandeau").innerHTML = `<div class="p">Encore ${bac.length} carte${bac.length > 1 ? "s" : ""} à ranger pour voir vos scores</div>`;
+    return;
+  }
+  const { pourcentages: p } = M.scoresDepuisTemperaments(etat.ordre, etat.ecarts);
+  const r = M.profil(p, { classement: etat.ordre });
+  const simple = M.profil(M.scoresDepuisTemperaments(etat.ordre).pourcentages, { classement: etat.ordre });
+  dernier = { p, r, classement: etat.ordre.slice(), ecarts: etat.ecarts.slice() };
   afficherValeurs(p);
   $("#histo").innerHTML = M.ORDRE.map(c => `<div class="barre"><b title="${esc(E[c]?.nom || c)}">${pips(c)}</b><div class="fond"><div class="val" style="width:${p[c]}%;background:${couleurs[c].couleur};${c === "W" ? "border:1px solid #888" : ""}"></div></div><span class="pct">${fmt(p[c])} %</span></div>`).join("");
   $("#profil").innerHTML =
@@ -368,42 +575,58 @@ function afficherResultats(){
         ${f.titre && f.titre !== f.devise ? `<div class="titre">« ${esc(f.titre)} »</div>` : ""}
         ${texte ? `<div class="texte">${esc(texte)}</div>` : ""}</div>`;
     }).join("") +
+    (simple.code !== r.code ? `<p class="compare">Sans les écarts (classement simple), votre profil serait <b>${esc(E[simple.code]?.nom || simple.code)}</b> (${esc(simple.code)}).</p>` : "") +
     (textesComplets ? "" : `<p class="verrou">${user ? "Votre compte n'a pas encore accès aux portraits complets." : "Connectez-vous pour lire le portrait complet et enregistrer votre résultat."}</p>`);
+  $("#bandeau").innerHTML = `<div class="ligne">${M.ORDRE.map(c => `<span class="v"><b><i style="background:${couleurs[c].couleur}"></i>${Math.round(p[c])}</b>${esc(E[c]?.nom || c)}</span>`).join("")}</div>
+    <div class="p">${esc(E[r.code]?.nom || r.code)} (${esc(r.code)})${simple.code !== r.code ? ` · sans écarts : ${esc(simple.code)}` : ""}</div>`;
 }
 
 /* ---------- reprise du dernier résultat enregistré ---------- */
 let dernierEnregistre = null;
+const cle = (classement, ec) => classement.join() + "|" + (ec || ecartsSimples()).join();
 const dateFr = d => new Date(d).toLocaleDateString("fr-FR");
+const ecartsValides = ec => Array.isArray(ec) && ec.length === 19 && ec.every(x => typeof x === "number" && x > 0) ? ec.slice() : ecartsSimples();
 function restaurer(r){
   // le classement enregistré doit contenir exactement les 20 tempéraments actuels
   const ok = r.classement.length === 20 && [...r.classement].sort().join() === [...temperamentsInitiaux].sort().join();
   if (!ok){ msg(`Le résultat du ${dateFr(r.passe_le)} ne correspond plus aux tempéraments actuels : il n'a pas pu être repris.`, "warn"); return false; }
-  liste = r.classement.slice(); choisie = null; afficherGrille(); afficherResultats();
+  liste = r.classement.slice(); ecarts = ecartsValides(r.ecarts); bac = []; piles = PILES.map(() => []);
+  classementFait = true; pilesModifiees = false; vue = "classement"; choisie = null; PROX = {}; AVANT = {}; rendre();
   msg(`Votre résultat du ${dateFr(r.passe_le)} a été repris. Vous pouvez le modifier et l'enregistrer à nouveau.`, "ok");
   return true;
 }
+async function lireResultats(champs, limite){
+  // la colonne « ecarts » peut ne pas encore exister : on relit alors sans elle
+  let q = await sb.from("flamme_resultats").select(champs + ",ecarts").eq("user_id", user.id).order("passe_le", { ascending:false }).limit(limite);
+  if (q.error && /ecarts/.test(q.error.message)) q = await sb.from("flamme_resultats").select(champs).eq("user_id", user.id).order("passe_le", { ascending:false }).limit(limite);
+  return q;
+}
 async function reprendreDernier(){
-  const { data } = await sb.from("flamme_resultats").select("passe_le,classement").eq("user_id", user.id).order("passe_le", { ascending:false }).limit(1);
-  const r = data?.[0]; dernierEnregistre = r ? r.classement.join() : null;
+  const { data } = await lireResultats("passe_le,classement", 1);
+  const r = data?.[0]; dernierEnregistre = r ? cle(r.classement, ecartsValides(r.ecarts)) : null;
   if (!r) return;
-  const pasEncoreTouche = liste.join() === temperamentsInitiaux.join();
+  const pasEncoreTouche = !classementFait && piles.every(p => !p.length);
   if (pasEncoreTouche || confirm(`Reprendre votre dernier résultat enregistré (${dateFr(r.passe_le)}) ? Votre classement en cours serait remplacé.`)) restaurer(r);
 }
 
 /* ---------- enregistrer, recommencer ---------- */
 const msg = (t, cls = "") => { const m = $("#msg"); m.className = "msg " + cls; m.textContent = t; };
 $("#btn-save").addEventListener("click", async () => {
-  if (!role || !dernier) return;
-  if (dernierEnregistre === dernier.classement.join()){ msg("Ce classement est déjà enregistré : modifiez-le avant d'enregistrer un nouveau résultat.", "warn"); return; }
+  if (!role) return;
+  if (!dernier){ msg("Rangez d'abord les 20 cartes dans les piles, ou passez au classement.", "warn"); return; }
+  if (dernierEnregistre === cle(dernier.classement, dernier.ecarts)){ msg("Ce classement est déjà enregistré : modifiez-le avant d'enregistrer un nouveau résultat.", "warn"); return; }
   $("#btn-save").disabled = true;
-  const { error } = await sb.from("flamme_resultats").insert({
-    classement: dernier.classement, scores: dernier.p, codes: [dernier.r.code, ...dernier.r.voisins], frontiere: dernier.r.voisins.length > 0,
+  const ligne = {
+    classement: dernier.classement, ecarts: dernier.ecarts, scores: dernier.p, codes: [dernier.r.code, ...dernier.r.voisins], frontiere: dernier.r.voisins.length > 0,
     version_moteur: M.VERSION.numero, version_autotest: VERSION.numero
-  });
+  };
+  let { error } = await sb.from("flamme_resultats").insert(ligne);
+  let sansEcarts = false;
+  if (error && /ecarts/.test(error.message)){ delete ligne.ecarts; sansEcarts = true; ({ error } = await sb.from("flamme_resultats").insert(ligne)); }
   $("#btn-save").disabled = false;
   if (error){ msg("Enregistrement refusé : " + error.message, "err"); return; }
-  dernierEnregistre = dernier.classement.join();
-  msg(`Résultat enregistré : ${dernier.r.code}.`, "ok"); historique();
+  dernierEnregistre = cle(dernier.classement, dernier.ecarts);
+  msg(`Résultat enregistré : ${dernier.r.code}.${sansEcarts ? " Les écarts n'ont pas pu être enregistrés : la base n'a pas encore la colonne prévue pour eux." : ""}`, sansEcarts ? "warn" : "ok"); historique();
 });
 $("#btn-fiche").addEventListener("click", () => {
   if (!role || !dernier) return;
@@ -412,14 +635,14 @@ $("#btn-fiche").addEventListener("click", () => {
   window.open("fiche.html?" + q, "_blank");
 });
 $("#btn-reset").addEventListener("click", () => {
-  if (!confirm("Remettre les 20 tempéraments dans leur ordre de départ ?")) return;
-  liste = temperamentsInitiaux.slice(); choisie = null; msg(""); afficherGrille(); afficherResultats();
+  if (!confirm("Tout recommencer ? Les 20 tempéraments reviennent dans les cartes à ranger, et les écarts sont effacés.")) return;
+  repartir(); msg(""); rendre();
 });
 
 async function historique(){
   const bloc = $("#bloc-historique");
   if (!role){ bloc.classList.add("hidden"); return; }
-  const { data, error } = await sb.from("flamme_resultats").select("id,passe_le,codes,frontiere,classement").eq("user_id", user.id).order("passe_le", { ascending:false }).limit(20);
+  const { data, error } = await lireResultats("id,passe_le,codes,frontiere,classement", 20);
   if (error){ bloc.classList.add("hidden"); return; }
   bloc.classList.remove("hidden");
   $("#historique").innerHTML = data.length
@@ -432,7 +655,7 @@ async function historique(){
   $("#historique").querySelectorAll(".reprendre").forEach(b => b.addEventListener("click", e => {
     e.stopPropagation();
     const r = data.find(x => String(x.id) === b.dataset.id);
-    if (liste.join() === r.classement.join()){ msg("Ce résultat est déjà affiché.", "ok"); return; }
+    if (classementFait && cle(liste, ecarts) === cle(r.classement, ecartsValides(r.ecarts))){ msg("Ce résultat est déjà affiché.", "ok"); return; }
     if (confirm(`Reprendre le résultat du ${dateFr(r.passe_le)} ? Votre classement en cours sera remplacé.`)) restaurer(r);
   }));
   $("#historique").querySelectorAll(".effacer").forEach(b => b.addEventListener("click", async e => {
@@ -444,8 +667,8 @@ async function historique(){
 }
 
 /* ---------- démarrage ---------- */
-(async () => { if (await pret){ afficherGrille(); afficherResultats(); } })();
+(async () => { if (await pret) rendre(); })();
 </script>
-<script src="entete.js?v=1.1"></script>
+<script src="entete.js?v=1.2"></script>
 </body>
 </html>

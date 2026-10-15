@@ -7,6 +7,7 @@
      autotest (calculerScores) -> scoresDepuisTemperaments()
    1.4 (15/10/2026) : accessibilité des profils par les écarts entre étages (méthode de Pierre),
      à la place des pondérations par famille ; nouvelles bandes symétriques.
+   1.5 (15/10/2026) : autotest à écarts — scoresDepuisTemperaments accepte les écarts entre tempéraments voisins.
    Utilisable dans une page web (window.FLAMME_MOTEUR) ou sous Node (require).
    ===================================================================== */
 (function (racine, fabrique) {
@@ -16,7 +17,7 @@
 })(typeof self !== "undefined" ? self : this, function () {
   "use strict";
 
-  const VERSION = { numero: "1.4", date: "2026-10-15 17:38" };
+  const VERSION = { numero: "1.5", date: "2026-10-15 18:33" };
   const ORDRE = ["W", "U", "B", "R", "G"];
 
   /* ---------- ordre canonique des combinaisons (usrSortCode) ---------- */
@@ -269,19 +270,32 @@
   }
 
   /* ---------- autotest : scores à partir du classement des 20 tempéraments ---------- */
+  /* Écarts entre deux tempéraments voisins (choix de Pierre, 15/10/2026) : jamais d'égalité.
+     « proches » partout redonne exactement le classement simple (positions 1, 2, … 20). */
+  const ECARTS = { inseparables: 1, proches: 2, nettement: 3, fosse: 4 };
+  /** Positions de 1 à 20 à partir des 19 écarts : on cumule, puis on ramène entre 1 et 20 (les extrêmes restent à 1 et 20). */
+  function positionsDepuisEcarts(ecarts) {
+    const cum = [0]; ecarts.forEach(e => cum.push(cum[cum.length - 1] + e));
+    const total = cum[cum.length - 1];
+    return cum.map(x => total > 0 ? 1 + 19 * x / total : 10.5);
+  }
   /**
    * @param {string[]} codes les 20 tempéraments dans l'ordre choisi (le 1er = le plus proche de soi)
-   * @returns {{bruts:Object, pourcentages:Object}} pourcentages bornés à 0–100
+   * @param {number[]} [ecarts] les 19 écarts entre tempéraments voisins (ECARTS) ; absents ou invalides : classement simple
+   * @returns {{bruts:Object, pourcentages:Object, positions:number[]}} pourcentages bornés à 0–100 ;
+   *   chaque tempérament distribue 20 points (20 − position à la valeur présente, position à la valeur fuie), d'où une somme de 250 %
    */
-  function scoresDepuisTemperaments(codes) {
+  function scoresDepuisTemperaments(codes, ecarts) {
     if (codes.length !== 20) throw new Error("il faut classer les 20 tempéraments");
+    const ok = Array.isArray(ecarts) && ecarts.length === 19 && ecarts.every(e => typeof e === "number" && isFinite(e) && e > 0);
+    const positions = ok ? positionsDepuisEcarts(ecarts) : codes.map((_, i) => i + 1);
     const bruts = { W: 0, U: 0, B: 0, R: 0, G: 0 };
     codes.forEach((t, i) => {
-      const [p, a] = t.split("/"); const rang = i + 1;
-      bruts[p] += 20 - rang; bruts[a.toUpperCase()] += rang;
+      const [p, a] = t.split("/");
+      bruts[p] += 20 - positions[i]; bruts[a.toUpperCase()] += positions[i];
     });
     const pourcentages = Object.fromEntries(ORDRE.map(c => [c, Math.max(0, Math.min(100, (bruts[c] - 16) / 128 * 100))]));
-    return { bruts, pourcentages };
+    return { bruts, pourcentages, positions };
   }
 
   /* =================================================================
@@ -386,5 +400,5 @@
     return { sections, parFamille, moinsAccessibles: derniers(sections.profils, 1), profil: profil(s, options) };
   }
 
-  return { VERSION, ORDRE, accessibilite, SEUILS, ordonner, codeCanonique, analyser, profil, profilsEgaux, profilClasseur, scoresTypes, fiche, statistiques, classer, FLECHES, MOTIVATIONS, PROJETS, oppose, scoresDepuisTemperaments, PARAMETRES_TYPES };
+  return { VERSION, ORDRE, accessibilite, SEUILS, ordonner, codeCanonique, analyser, profil, profilsEgaux, profilClasseur, scoresTypes, fiche, statistiques, classer, FLECHES, MOTIVATIONS, PROJETS, oppose, scoresDepuisTemperaments, positionsDepuisEcarts, ECARTS, PARAMETRES_TYPES };
 });
