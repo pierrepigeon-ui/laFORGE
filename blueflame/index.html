@@ -109,7 +109,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px} .field{display:block;margi
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 
 <script>
-const VERSION = { numero:"1.25", date:"2026-10-17 18:00" };
+const VERSION = { numero:"1.26", date:"2026-10-17 20:15" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -197,6 +197,7 @@ sb.auth.onAuthStateChange(async (_e, session) => {
     t += tuile(`ecusson.html?resultat=${dernier.id}`, "Mes armes", "Votre écusson et sa devise");
   }
   // la console n'a plus de tuile : son bouton est dans le bandeau (entete.js 1.3)
+  t += tuile("comparaison.html", "Comparer", "Deux profils ou une équipe : accords, discordes, profil moyen");
   t += tuile("galerie.html", "Personnages", "Qui partage quel profil ? Des centaines de personnages, par univers (expérimental)");
   if (role === "proprietaire") t += tuile("rosace.html", "Rosace", "La carte complète du modèle");
   $("#tuiles").innerHTML = t;
