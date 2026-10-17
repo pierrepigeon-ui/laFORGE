@@ -9,6 +9,7 @@
      à la place des pondérations par famille ; nouvelles bandes symétriques.
    1.5 (15/10/2026) : autotest à écarts — scoresDepuisTemperaments accepte les écarts entre tempéraments voisins.
    1.6 (15/10/2026) : cohérence du test — comparaison du classement déclaré au classement recalculé depuis les scores.
+   1.7 (17/10/2026) : robustesse du profil (méthode de Pierre) — pousser() et robustesse().
    Utilisable dans une page web (window.FLAMME_MOTEUR) ou sous Node (require).
    ===================================================================== */
 (function (racine, fabrique) {
@@ -18,7 +19,7 @@
 })(typeof self !== "undefined" ? self : this, function () {
   "use strict";
 
-  const VERSION = { numero: "1.6", date: "2026-10-15 22:00" };
+  const VERSION = { numero: "1.7", date: "2026-10-17 19:45" };
   const ORDRE = ["W", "U", "B", "R", "G"];
 
   /* ---------- ordre canonique des combinaisons (usrSortCode) ---------- */
@@ -426,5 +427,66 @@
     return { sections, parFamille, moinsAccessibles: derniers(sections.profils, 1), profil: profil(s, options) };
   }
 
-  return { VERSION, ORDRE, accessibilite, SEUILS, ordonner, codeCanonique, analyser, profil, profilsEgaux, profilClasseur, scoresTypes, fiche, statistiques, classer, FLECHES, MOTIVATIONS, PROJETS, oppose, scoresDepuisTemperaments, positionsDepuisEcarts, ECARTS, coherence, BANDES_COHERENCE, PARAMETRES_TYPES };
+
+  /* ---------- robustesse du profil (méthode de Pierre, 17/10/2026) ----------
+     « Que se passe-t-il quand l'environnement pousse l'individu vers des valeurs qui ne sont pas les siennes ? »
+     Une valeur poussée de ±n points (10 faible, 20 élevé, 30 colossal) ; scores en % (somme 250), conservée.
+     - Bornes : [10, 90] infranchissables ; sous 20 ou au-dessus de 80, une valeur ne bouge que de moitié.
+     - La valeur poussée bouge selon ces règles ; ce qu'elle a réellement bougé est réparti en sens inverse :
+       d'abord sur les valeurs opposées (ennemies) — la plus faible si elles doivent baisser, la plus haute si elles
+       doivent monter —, chacune selon les mêmes règles (ce qu'elle n'absorbe pas passe à la suivante) ;
+       puis sur les alliées — la plus basse si elles doivent baisser, la plus haute si elles doivent monter.
+     - Ce qui ne peut être réparti nulle part est retiré du mouvement de la valeur poussée.
+     Le profil cible est calculé directement sur les % obtenus. */
+  const BORNES_ROBUSTESSE = { min: 10, max: 90, lentBas: 20, lentHaut: 80 };
+  const INTENSITES = [{ points: 10, nom: "faible" }, { points: 20, nom: "élevée" }, { points: 30, nom: "colossale" }];
+  // mouvement réel d'une valeur v sollicitée de r points dans le sens s (+1 / −1)
+  function mouvement(v, r, s){
+    const B = BORNES_ROBUSTESSE; let m = 0, reste = r, x = v;
+    while (reste > 1e-9){
+      if (s > 0){
+        if (x >= B.max - 1e-9) break;
+        if (x < B.lentHaut){ const k = Math.min(reste, B.lentHaut - x); x += k; m += k; reste -= k; }
+        else { const k = Math.min(reste / 2, B.max - x); x += k; m += k; reste -= 2 * k; }
+      } else {
+        if (x <= B.min + 1e-9) break;
+        if (x > B.lentBas){ const k = Math.min(reste, x - B.lentBas); x -= k; m += k; reste -= k; }
+        else { const k = Math.min(reste / 2, x - B.min); x -= k; m += k; reste -= 2 * k; }
+      }
+    }
+    return m;
+  }
+  function pousser(scores, valeur, delta){
+    const S = Object.fromEntries(ORDRE.map(c => [c, +scores[c]]));
+    const s = Math.sign(delta), journal = [];
+    if (!s) return { scores: S, journal, mouvement: 0 };
+    const voulu = mouvement(S[valeur], Math.abs(delta), s);
+    const ennemies = ORDRE.filter(c => c !== valeur && !voisins(c, valeur)), alliees = ORDRE.filter(c => c !== valeur && voisins(c, valeur));
+    // les autres bougent dans le sens contraire : elles baissent si la valeur monte (s > 0)
+    const tri = l => l.slice().sort((a, b) => s > 0 ? S[a] - S[b] || ORDRE.indexOf(a) - ORDRE.indexOf(b) : S[b] - S[a] || ORDRE.indexOf(a) - ORDRE.indexOf(b));
+    let reste = voulu;
+    for (const c of [...tri(ennemies), ...tri(alliees)]){
+      if (reste <= 1e-9) break;
+      const m = mouvement(S[c], reste, -s);
+      if (m > 1e-9){ S[c] -= s * m; reste -= m; journal.push({ code: c, points: -s * m }); }
+    }
+    const reel = voulu - reste;
+    S[valeur] += s * reel;
+    ORDRE.forEach(c => S[c] = Math.round(S[c] * 1e6) / 1e6);
+    return { scores: S, journal, mouvement: s * reel, voulu: s * voulu };
+  }
+  // les 10 poussées × 3 intensités ; scores en %
+  function robustesse(scores){
+    const depart = profil(scores);
+    const lignes = ORDRE.flatMap(c => [1, -1].map(s => ({ valeur: c, sens: s, paliers: INTENSITES.map(i => {
+      const r = pousser(scores, c, s * i.points), p = profil(r.scores);
+      return { points: s * i.points, intensite: i.nom, scores: r.scores, journal: r.journal, mouvement: r.mouvement, code: p.code, codes: p.codes, bascule: !p.codes.includes(depart.code) };
+    }) })));
+    const tous = lignes.flatMap(l => l.paliers), tient = tous.filter(p => !p.bascule).length;
+    const destinations = {}; tous.filter(p => p.bascule).forEach(p => destinations[p.code] = (destinations[p.code] || 0) + 1);
+    return { depart: depart.code, lignes, tient, total: tous.length,
+      destinations: Object.entries(destinations).sort((a, b) => b[1] - a[1]).map(([code, n]) => ({ code, n })) };
+  }
+
+  return { VERSION, ORDRE, pousser, robustesse, BORNES_ROBUSTESSE, INTENSITES, accessibilite, SEUILS, ordonner, codeCanonique, analyser, profil, profilsEgaux, profilClasseur, scoresTypes, fiche, statistiques, classer, FLECHES, MOTIVATIONS, PROJETS, oppose, scoresDepuisTemperaments, positionsDepuisEcarts, ECARTS, coherence, BANDES_COHERENCE, PARAMETRES_TYPES };
 });

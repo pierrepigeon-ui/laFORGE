@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
-<script src="flamme_moteur.js?v=1.6"></script>
+<script src="flamme_moteur.js?v=1.7"></script>
 <script src="flamme_glyphes.js?v=2.4"></script>
 <style>
 :root{--ink:#1B2430;--muted:#5B6573;--line:#DDE1E7;--paper:#F4F6F8;--panel:#FFFFFF;--hover:#EEF1F5;--ok:#1E7A46;--warn:#9A5B00;--err:#B42318;
@@ -68,6 +68,19 @@ table.coh td{padding:3px 8px;border-bottom:1px solid var(--hover);text-align:rig
 table.coh td.g{text-align:left} table.coh td.g .n{margin-left:6px}
 table.coh td.fort{font-weight:600} table.coh tr.loin{background:#FFF4E5;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 table.coh .sep{border-left:1px solid var(--line)}
+/* robustesse du profil */
+.rob-tete{display:flex;gap:18px;align-items:center;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:10px}
+.rob-score{font:600 30px/1 var(--serif)} .rob-score small{font:500 13px var(--sans);color:var(--muted);margin-left:4px}
+.rob-texte{flex:1;min-width:260px;font-size:13.5px;color:var(--muted);line-height:1.5}
+.rob-cadre{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;overflow-x:auto}
+table.rob{border-collapse:collapse;width:100%;font-size:13px}
+table.rob th{font:600 12px var(--sans);color:var(--muted);padding:4px 6px;border-bottom:1px solid var(--line);white-space:nowrap;text-align:center}
+table.rob th.v{text-align:left} table.rob th.mil,table.rob td.mil{border-left:2px solid var(--line)}
+table.rob td{padding:5px 6px;border-bottom:1px solid var(--hover);vertical-align:middle}
+table.rob td.v{white-space:nowrap;font-weight:600} table.rob td.v .pips{margin-right:6px}
+table.rob .cel{display:flex;gap:5px;align-items:center;border-radius:6px;padding:3px 6px;font-size:12.5px;line-height:1.25}
+table.rob .cel svg.g{height:14px;width:auto;flex:none}
+table.rob .tient{color:var(--muted)} table.rob .bascule{background:#FFF1D6;color:var(--ink);font-weight:500;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 /* classements : col. 1 valeurs, motivations, projets ; col. 2 les mêmes polarisés ; col. 3 styles ; col. 4 tempéraments */
 .sections{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:start}
 .sections .colonne{display:flex;flex-direction:column;gap:12px;min-width:0}
@@ -108,7 +121,8 @@ dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);c
   .carte-entete{padding:10px 14px;margin-bottom:8px} .carte-entete h1{font-size:20px} .familles{margin-top:8px;gap:8px} .fam{padding:6px 10px}
   .acces{padding:6px 8px} .flux{column-count:5} .flux .chip{font-size:10.5px;padding-top:1.5px;padding-bottom:1.5px;margin-bottom:1px} .legende{grid-template-columns:repeat(5,minmax(0,1fr))}
   .chip .gl svg.g{height:13px} .legende{font-size:11px;margin:0 0 6px}
-  h2.classements,h2.coherence{break-before:page;margin-top:0}
+  h2.classements,h2.coherence,h2.robustesse{break-before:page;margin-top:0}
+  table.rob{font-size:11px} table.rob td{padding:3px 4px}
   .coh-tete{padding:8px 12px} .coh-rho{font-size:26px} table.coh{font-size:11px} table.coh td,table.coh th{padding:1.5px 6px}
   .sections{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px} .sections .colonne{gap:8px} .sect{padding:6px 8px;break-inside:avoid}
   .sect h3{font-size:13px} .sect .ex{font-size:10px;margin:0 0 4px} .sect table{font-size:10px;line-height:1.15} .sect td{padding:0.5px 3px}
@@ -138,7 +152,7 @@ dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);c
   <div style="display:flex;gap:10px"><button class="btn" type="submit">Se connecter</button><button class="btn ghost" type="button" id="login-fermer">Fermer</button></div>
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 <script>
-const VERSION = { numero:"1.24", date:"2026-10-17 19:20" };
+const VERSION = { numero:"1.25", date:"2026-10-17 19:45" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const ACCES = ["proprietaire"];
@@ -244,6 +258,32 @@ async function lireScores(){
   return { scores: s, date: new Date().toISOString(), qui: "" };
 }
 
+/* ---------- robustesse du profil (méthode de Pierre, moteur 1.7) ---------- */
+const NOMS_VAL = { W: "intégrer", U: "penser", B: "réussir", R: "vibrer", G: "affirmer" };
+function blocRobustesse(src, st){
+  if (!M.robustesse) return `<p class="note large">La robustesse demande le moteur 1.7 : vide le cache du navigateur (Ctrl + F5).</p>`;
+  const R = M.robustesse(src.scores), moi = new Set(st.profil.codes);
+  const cel = p => { const b = !moi.has(p.code);
+    return `<div class="cel ${b ? "bascule" : "tient"}" data-code="${esc(p.code)}" tabindex="0" title="${M.ORDRE.map(c => c + " " + Math.round(p.scores[c])).join(" · ")}">${pips(p.code)}<span>${esc(b ? libelle(p.code) : "inchangé")}</span></div>`; };
+  const tous = R.lignes.flatMap(l => l.paliers), tient = tous.filter(p => moi.has(p.code)).length;
+  const dest = {}; tous.filter(p => !moi.has(p.code)).forEach(p => dest[p.code] = (dest[p.code] || 0) + 1);
+  const top = Object.entries(dest).sort((a, b) => b[1] - a[1]);
+  const fragiles = R.lignes.filter(l => !moi.has(l.paliers[0].code));
+  const ordreCol = [-30, -20, -10, 10, 20, 30];
+  return `<div class="rob-tete"><span class="rob-score">${tient}<small>/ ${tous.length} situations sans changement de profil</small></span>
+    <div class="rob-texte">Que se passe-t-il quand l'environnement pousse vers des valeurs qui ne sont pas les vôtres ? Chaque valeur est poussée vers le haut ou vers le bas,
+      faiblement (10 points), fortement (20) ou de façon colossale (30), et l'on regarde le profil obtenu.
+      ${top.length ? `Quand le profil bascule, c'est le plus souvent vers ${top.slice(0, 3).map(([c, n]) => `<b>${esc(libelle(c))}</b> (${n})`).join(", ")}.` : "Le profil ne bascule jamais."}
+      ${fragiles.length ? ` Bascule dès une poussée faible : ${fragiles.map(l => `${esc(NOMS_VAL[l.valeur])} ${l.sens > 0 ? "en hausse" : "en baisse"}`).join(", ")}.` : ""}</div></div>
+    <div class="rob-cadre"><table class="rob"><thead><tr><th class="v">Valeur poussée</th>${ordreCol.map(n => `<th${n === 10 ? ' class="mil"' : ""}>${n > 0 ? "+" : "−"}${Math.abs(n)}</th>`).join("")}</tr></thead><tbody>
+      ${M.ORDRE.map(c => `<tr><td class="v">${pips(c)}${esc(NOMS_VAL[c])}</td>${ordreCol.map(n => { const l = R.lignes.find(x => x.valeur === c && x.sens === Math.sign(n)); const p = l.paliers.find(x => x.points === n);
+        return `<td${n === 10 ? ' class="mil"' : ""}>${cel(p)}</td>`; }).join("")}</tr>`).join("")}
+    </tbody></table></div>
+    <p class="note">Règles (méthode de Pierre) : la valeur poussée prend ses points aux valeurs opposées — d'abord la plus faible si elles doivent baisser, la plus haute si elles doivent monter —,
+      puis aux valeurs alliées (la plus basse pour baisser, la plus haute pour monter). Sous 20 % ou au-dessus de 80 %, une valeur ne bouge que de moitié ; elle ne franchit jamais 10 % ni 90 %.
+      Ce qui ne peut être réparti n'est pas pris. La somme reste de 250 %. Le profil obtenu est calculé directement sur ces scores ; survolez une case pour lire les scores.</p>`;
+}
+
 function rendre(src){
   const s01 = Object.fromEntries(M.ORDRE.map(c => [c, src.scores[c] / 100]));
   const codesProfils = Object.values(E).filter(e => e.couche === "profil").sort((a, b) => (a.ordre ?? 0) - (b.ordre ?? 0)).map(e => e.code);
@@ -275,7 +315,9 @@ function rendre(src){
       </table></section>`; }).join("")}</div>`).join("")}</div>
     ${NOTE_POLARISE}
     <h2 class="coherence">Cohérence du test</h2>
-    ${blocCoherence(src)}`;
+    ${blocCoherence(src)}
+    <h2 class="robustesse">Robustesse du profil</h2>
+    ${blocRobustesse(src, st)}`;
   document.querySelectorAll("table.coh th button").forEach(b => b.addEventListener("click", ev => {
     ev.stopPropagation(); triCoh = b.dataset.tri;
     document.querySelectorAll("table.coh th button").forEach(x => x.setAttribute("aria-pressed", x.dataset.tri === triCoh));
