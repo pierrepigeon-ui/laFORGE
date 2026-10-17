@@ -39,7 +39,7 @@ main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;padding:14p
 #scene .centre{cursor:pointer} .outils select.appel{outline:3px solid #3B6FE0;outline-offset:2px;transition:outline .2s} #scene .centre:hover circle{filter:brightness(1.07)}
 .bascule{border:1px solid var(--ink);background:var(--ink);color:var(--panel);border-radius:999px;padding:6px 14px;font:500 13.5px var(--sans);cursor:pointer}
 .bascule[aria-pressed="false"]{background:transparent;color:var(--ink);border-color:var(--line)}
-aside{position:sticky;top:12px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
+aside{position:sticky;top:calc(var(--ent-h, 0px) + 12px);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
 aside h2{font:600 22px/1.2 var(--serif);margin:4px 0 2px} aside .code{font:600 13px var(--sans);color:var(--muted)}
 aside .devise{font:italic 15px/1.35 var(--serif);color:var(--muted)} aside .titre{font:italic 15px/1.45 var(--serif);margin-top:8px}
 aside .texte{font:15px/1.6 var(--serif);margin-top:8px;white-space:pre-line} aside .vide{color:var(--muted);font:italic 15px/1.5 var(--serif)}
@@ -87,7 +87,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px} .field{display:block;margi
   <div style="display:flex;gap:10px"><button class="btn" type="submit">Se connecter</button><button class="btn ghost" type="button" id="login-fermer">Fermer</button></div>
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 <script>
-const VERSION = { numero:"1.26", date:"2026-10-15 23:30" };
+const VERSION = { numero:"1.27", date:"2026-10-17 15:20" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const ACCES = ["proprietaire"];   // rôles autorisés (en attendant la table des droits d'accès)
@@ -351,6 +351,6 @@ sb.auth.onAuthStateChange(async (_e, session) => {
   dessiner();
 });
 </script>
-<script src="entete.js?v=1.3"></script>
+<script src="entete.js?v=1.4"></script>
 </body>
 </html>

@@ -265,7 +265,7 @@ table.j td{border-bottom:1px solid var(--line);padding:8px 10px;vertical-align:t
 
 <script>
 /* ================= configuration ================= */
-const VERSION = { numero:"1.31", date:"2026-10-17 15:30" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.32", date:"2026-10-17 15:20" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 
@@ -989,6 +989,6 @@ document.querySelectorAll("nav button").forEach(b => b.addEventListener("click",
 }));
 window.addEventListener("beforeunload", e => { if (estModifie()){ e.preventDefault(); e.returnValue = ""; } });
 </script>
-<script src="entete.js?v=1.3"></script>
+<script src="entete.js?v=1.4"></script>
 </body>
 </html>

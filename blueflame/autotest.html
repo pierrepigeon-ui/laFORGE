@@ -124,7 +124,7 @@ main{display:grid;grid-template-columns:minmax(0,3.6fr) minmax(280px,1.2fr);gap:
 .regle .carte.glisse{z-index:5;box-shadow:0 6px 18px rgba(0,0,0,.25)}
 
 /* colonne résultats */
-aside{display:flex;flex-direction:column;gap:14px;position:sticky;top:12px}
+aside{display:flex;flex-direction:column;gap:14px;position:sticky;top:calc(var(--ent-h, 0px) + 12px)}
 .bloc{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
 .bloc h2{font:600 17px var(--serif);margin:0 0 10px}
 #valeurs{display:flex;gap:5px;margin-bottom:12px}
@@ -260,7 +260,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px}
 </dialog>
 
 <script>
-const VERSION = { numero:"2.4", date:"2026-10-17 15:30" };
+const VERSION = { numero:"2.5", date:"2026-10-17 15:20" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const M = window.FLAMME_MOTEUR;
@@ -749,6 +749,6 @@ async function historique(){
 /* ---------- démarrage ---------- */
 (async () => { if (await pret) rendre(); })();
 </script>
-<script src="entete.js?v=1.3"></script>
+<script src="entete.js?v=1.4"></script>
 </body>
 </html>

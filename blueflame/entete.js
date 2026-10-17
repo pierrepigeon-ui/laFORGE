@@ -1,11 +1,14 @@
 /* =====================================================================
-   Flamme Bleue — en-tête commun (1.3, 15/10/2026)
+   Flamme Bleue — en-tête commun (1.4, 17/10/2026)
    - la couronne de cinq flammes (logo 2026) devant le nom « Flamme Bleue », qui ramène à l'accueil ;
    - un lien « La Forge », avec sa petite enclume, en haut à droite, comme dans PRISME :
      il n'apparaît que si la personne a aussi accès à PRISME (la Forge a alors autre chose à proposer) ;
    - (1.3) le bouton de la console, au même endroit sur toutes les pages, juste avant l'adresse de la personne :
      « Console » pour l'éditeur et le propriétaire, « Le modèle » pour l'invité, rien pour un visiteur anonyme
-     ni sur la console elle-même.
+     ni sur la console elle-même ;
+   - (1.4) la première ligne de chaque écran reste figée en haut quand on fait défiler la page,
+     pour revenir au menu facilement ; sa hauteur est publiée dans --ent-h (ancres, panneaux collants).
+     À l'impression, elle redevient normale.
    À charger APRÈS le script de la page (il réutilise son client Supabase « sb »).
    ===================================================================== */
 (function () {
@@ -28,12 +31,26 @@
     .fb-console:hover{opacity:1;background:rgba(127,127,127,.12)}
     .fb-console.cache{display:none}
     .fb-console svg{width:14px;height:14px;flex:none}
+    .fb-fige{position:sticky!important;top:0;z-index:45}
+    html{scroll-padding-top:calc(var(--ent-h, 0px) + 16px)}
+    @media print{ .fb-fige{position:static!important} }
+    @media (max-width:700px){ .fb-fige{padding-top:6px!important;padding-bottom:6px!important;row-gap:4px!important} .fb-fige .signature{display:none} }
     @media (prefers-color-scheme: dark){ .fb-forge img{background:#F6F5F1;border-radius:3px;padding:1px} }`;
   document.head.appendChild(css);
 
   // icône d'onglet : la couronne seule
   if (!document.querySelector('link[rel="icon"]')){ const ic = document.createElement("link"); ic.rel = "icon"; ic.type = "image/svg+xml";
     ic.href = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 11 100 100"><rect x="6" y="86" width="88" height="8" rx="4" fill="#0B2E8A"/><path fill="#2F6BFF" d="M13 84c-7-7-5-18 9-34-1 14 6 26-1 34zM30 84c-7-9-4-24 13-46-2 18 6 34-1 46zM47 84c-8-10-5-30 15-56-3 22 7 42-1 56zM64 84c-7-9-4-26 13-44-2 18 6 32-1 44zM81 84c-7-7-5-20 10-36-1 14 6 28-1 36z"/></svg>'); document.head.appendChild(ic); }
+
+  // la première ligne figée en haut de l'écran
+  const ligne = document.querySelector("header.bandeau") || document.querySelector("#app > header") || document.querySelector("body > header") || document.querySelector("body > .barre");
+  if (ligne){
+    ligne.classList.add("fb-fige");
+    if (getComputedStyle(ligne).backgroundColor === "rgba(0, 0, 0, 0)") ligne.style.background = getComputedStyle(document.body).backgroundColor;
+    const mesurer = () => document.documentElement.style.setProperty("--ent-h", ligne.offsetHeight + "px");
+    mesurer(); window.addEventListener("resize", mesurer);
+    if (window.ResizeObserver) new ResizeObserver(mesurer).observe(ligne);
+  }
 
   // la flamme devant le nom
   document.querySelectorAll(".wordmark a").forEach(a => { if (!a.querySelector(".fb-flamme")) a.insertAdjacentHTML("afterbegin", FLAMME); });
