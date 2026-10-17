@@ -10,6 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <script src="flamme_moteur.js?v=1.3"></script>
 <script src="flamme_glyphes.js?v=2.4"></script>
+<script src="flamme_experimental.js?v=1.0"></script>
 <style>
 :root{--ink:#1B2430;--muted:#5B6573;--line:#DDE1E7;--paper:#F4F6F8;--panel:#FFFFFF;--hover:#EEF1F5;--ok:#1E7A46;--warn:#9A5B00;--err:#B42318;
   --serif:"Source Serif 4",Georgia,"Times New Roman",serif;--sans:"IBM Plex Sans","Segoe UI",Arial,sans-serif}
@@ -66,6 +67,13 @@ svg.g{vertical-align:middle;display:inline-block;overflow:visible} .bloc h3 svg.
 .pips{display:inline-flex;gap:3px;align-items:center;vertical-align:1px}
 .pip{width:11px;height:11px;border-radius:50%;border:1px solid #8892A0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .pip.sec{width:7px;height:7px} .pip.abs{background:transparent!important;border:1.5px dashed var(--c)} .pip.sep{width:auto;height:auto;border:0;font-size:10px;color:#5B6573}
+.exp{display:inline-block;font:600 10.5px var(--sans);letter-spacing:.06em;text-transform:uppercase;color:#7A4A00;background:#FFF1D6;border:1px solid #F0C878;border-radius:999px;padding:1px 8px;vertical-align:4px;margin-left:8px}
+.exp-note{font:13px/1.5 var(--sans);color:#7A4A00;background:#FFF8E8;border-left:3px solid #F0C878;padding:6px 10px;margin:4px 0 12px}
+.perso{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:10px}
+.perso div{border:1px solid #DDE1E7;border-radius:8px;padding:10px 12px;break-inside:avoid}
+.perso b{font:600 16px var(--serif);display:block} .perso i{font:12.5px var(--sans);color:#5B6573;display:block;margin:1px 0 6px;font-style:normal}
+.perso p{margin:0;font:italic 14.5px/1.5 var(--serif)}
+@media (max-width:760px){ .perso{grid-template-columns:1fr} }
 .pied{margin-top:30px;border-top:1px solid #DDE1E7;padding-top:6px;font-size:11px;color:#5B6573;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 footer{border-top:1px solid var(--line);background:var(--panel);padding:4px 20px;text-align:right;font-size:12px;color:var(--muted)}
 dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);padding:24px;width:min(380px,92vw)} dialog::backdrop{background:rgba(10,15,25,.45)}
@@ -110,7 +118,7 @@ dialog h2{border:0} .field{display:block;margin-bottom:12px} .field span{display
    choisis et ordonnés selon les scores de la personne. Les mêmes scores donnent toujours le même portrait.
    Sources : ?resultat=ID, ?catalogue=ID, ?type=CODE ou ?W=..&U=..&B=..&R=..&G=.. (en %).
    ===================================================================== */
-const VERSION = { numero:"1.0", date:"2026-10-17 15:30" };
+const VERSION = { numero:"1.1", date:"2026-10-17 15:00" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const M = window.FLAMME_MOTEUR;
@@ -259,6 +267,28 @@ function rendre(src){
     ${temps.slice(0, 3).map(x => `<div class="bloc"><h3>${pips(x.code)} ${guil(E[x.code]?.nom || x.code)}</h3><div class="dv">${esc(E[x.code]?.devise || "")}</div>${citation(E[x.code]?.texte1)}</div>`).join("")}
     <div class="etiq">Les plus éloignés de vous</div>
     <div class="court">${temps.slice(-2).reverse().map(x => `<div class="n">${pips(x.code)} ${esc(E[x.code]?.nom || x.code)}</div><div class="d">${esc(E[x.code]?.devise || "")}</div>`).join("")}</div>`;
+
+  /* 5 bis. au travail et personnages (contenus expérimentaux, flamme_experimental.js) */
+  const X = window.FLAMME_EXPERIMENTAL;
+  if (X){
+    const TV = X.travail, tp = TV.profils[code];
+    const topV = vals.filter(x => x.v >= 50).slice(0, 2), basV = vals.filter(x => x.v < 40).slice(-1);
+    const puce = l => `<ul class="liste">${l.map(t => `<li>${t}</li>`).join("")}</ul>`;
+    const note = `<p class="exp-note">Section expérimentale : ces textes sont des propositions en cours de relecture. Ils évolueront.</p>`;
+    if (tp) h += `<h2>Au travail <span class="exp">expérimental</span></h2>${note}
+      <p class="chapeau">Ce que votre profil apporte à une équipe, les environnements où vous donnez le meilleur, et ceux qui vous usent.</p>
+      <div class="bloc"><h3>Votre rôle dans une équipe</h3><div class="citation"><p>${esc(tp.role)}</p></div></div>
+      ${topV.length ? `<div class="bloc"><div class="etiq">Là où vous vous épanouissez</div>${puce(topV.map(x => `<b>${esc(nomV(x.c))}</b> : ${esc(TV.valeurs[x.c].epanouit)}`))}</div>
+      <div class="bloc"><div class="etiq">Ce qui vous use</div>${puce(topV.map(x => `<b>${esc(nomV(x.c))}</b> : ${esc(TV.valeurs[x.c].use)}`))}</div>` : ""}
+      ${basV.length ? `<div class="bloc"><div class="etiq">Ce que permet votre valeur la plus discrète (${esc(nomV(basV[0].c))})</div>${puce([`<b>Atout</b> : ${esc(TV.absentes[basV[0].c].atout)}`, `<b>Vigilance</b> : ${esc(TV.absentes[basV[0].c].vigilance)}`])}</div>` : ""}
+      <div class="bloc"><div class="etiq">En équipe et sous pression</div>${puce([`<b>En équipe</b> : ${esc(TV.valeurs[vals[0].c].equipe)}`, `<b>Sous pression</b> : ${esc(TV.valeurs[vals[0].c].pression)}`])}</div>
+      <div class="bloc"><div class="etiq">Les missions qui vous nourrissent</div>${puce(f.motivationsDominantes.filter(x => TV.motivations[x.code]).map(x => `<b>${esc(E[x.code]?.nom || x.code)}</b> : ${esc(TV.motivations[x.code].pousse)} <i>Par exemple : ${esc(TV.motivations[x.code].missions.replace(/\.$/, "").toLowerCase())}.</i>`))}</div>
+      <div class="bloc"><div class="etiq">Familles de métiers</div><div class="roles">${tp.metiers.map(r => `<span>${esc(r)}</span>`).join("")}</div></div>`;
+    const ps = X.personnalites[code] || [];
+    if (ps.length) h += `<h2>Ils partagent votre profil <span class="exp">expérimental</span></h2>${note}
+      <p class="chapeau">Des personnages de fiction et des figures historiques qui illustrent ${esc(P.nom || code)}.</p>
+      <div class="perso">${ps.map(p => `<div><b>${esc(p.nom)}</b><i>${esc(p.type)} · ${esc(p.source)}</i><p>${esc(p.pourquoi)}</p></div>`).join("")}</div>`;
+  }
 
   /* 6. les profils voisins */
   const voisins = autres.slice(0, 3), loin = st.sections.profils[st.sections.profils.length - 1];
