@@ -72,7 +72,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px} .field{display:block;margi
   <div class="actions">
     <a class="btn visiteur" href="questionnaire.html">Passer le questionnaire du joueur</a>
     <a class="btn ghost visiteur" href="rosace.html">Explorer la rosace</a>
-    <a class="btn ghost" href="encyclopedie.html">Lire l'encyclopédie</a>
+    <a class="btn ghost visiteur" href="encyclopedie.html">L'encyclopédie</a>
     <a class="btn ghost" id="btn-login-2" href="../">Se connecter</a>
   </div>
 </section>
@@ -99,7 +99,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px} .field{display:block;margi
 
 <script src="totems.js?v=4"></script>
 <script>
-const VERSION = { numero:"3.5", date:"2026-10-17 17:15" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.4", date:"2026-10-16 15:44" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -156,11 +156,11 @@ async function afficherEspace(){
   t += tuile("rosace.html", "La rosace", dernier ? "Votre place sur la roue des joueurs" : "Cinq moteurs, vingt tempéraments, vingt styles");
   t += tuile("questionnaire.html", "Questionnaire du joueur", dernier ? "Revoir ou modifier vos réponses" : "Vingt-cinq situations de jeu, dix minutes");
   t += tuile("jeux.html", "Les jeux", dernier ? "Les jeux évalués, leur note pour tous et pour vous" : "Les jeux évalués et ce qu'ils promettent");
-  // l'encyclopédie : bouton permanent sous le logo, plus de tuile
+  t += tuile("encyclopedie.html", "L'encyclopédie", "Le modèle complet : le jeu, le joueur, leurs grilles et leurs exemples");
   // la console : bouton dans le ruban du haut (entete.js 1.4), plus de tuile
   $("#tuiles").innerHTML = t;
 }
 </script>
-<script src="entete.js?v=1.5"></script>
+<script src="entete.js?v=1.4"></script>
 </body>
 </html>

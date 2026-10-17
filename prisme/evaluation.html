@@ -184,6 +184,10 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
 .na-droite:has(input:checked){border-color:var(--warn);color:var(--warn)}
 .axe .titre button.calc{border-radius:12px;padding:0 9px;width:auto}
 .entete-axe{display:flow-root}
+.cfg-nom{font-weight:400;color:var(--muted)}
+.ch-unique .case{display:flex;gap:7px;align-items:center;font-size:13.5px;min-height:34px;white-space:nowrap}
+.ch-unique .case input{width:auto!important;margin:0}
+.ch-configuration input{width:220px!important}
 .ecart-saisi{font:700 16px var(--sans);color:var(--ocre,#B4532A);min-width:2.8em;text-align:left}
 .retenue{font:500 13.5px var(--sans);color:var(--chap);text-align:right;margin-top:2px;min-height:1.2em} .retenue b{font-size:16px}
 @media (max-width:760px){ .chiffres .grille{grid-template-columns:repeat(2,minmax(0,1fr))} }
@@ -217,7 +221,7 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
 <section id="fiche" class="hidden">
   <div id="barre-fiche">
     <button class="btn ghost" id="retour" type="button">← Les fiches</button>
-    <span class="jeu" id="titre-jeu"></span><a class="btn ghost" id="vers-jeu" href="jeux.html" title="La fiche du jeu, telle que la voient les joueurs">Fiche du jeu</a><span class="lecture" id="lecture"></span>
+    <span class="jeu" id="titre-jeu"></span><a class="btn ghost" id="vers-jeu" href="jeux.html" title="La fiche du jeu, telle que la voient les joueurs">Fiche du jeu</a><button class="btn ghost hidden" id="btn-config" type="button" title="Évaluer le jeu avec ses extensions : une fiche liée, qui reprend celle-ci">+ Configuration</button><span class="lecture" id="lecture"></span>
     <span class="prog"><span id="prog"></span></span><span id="prog-txt" style="font-size:13px;color:var(--muted)"></span>
     <button class="btn ghost" id="suivante" type="button">Paire suivante à remplir</button>
     <select id="aller" aria-label="Aller à une paire"><option value="">Aller à…</option></select>
@@ -239,9 +243,9 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
 <dialog id="dlg-recap"><div id="recap"></div><p style="text-align:right;margin:12px 0 0"><button class="btn" id="fermer-recap" type="button">Fermer</button></p></dialog>
 <div class="wrap"><p class="version" id="version"></p></div>
 
-<script src="timeline.js?v=3.5"></script>
+<script src="timeline.js?v=3.6"></script>
 <script>
-const VERSION = { numero:"3.28", date:"2026-10-13 22:07" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.29", date:"2026-10-17 18:54" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -268,7 +272,9 @@ let lectureSeule = false;
 let enAttente = new Set(), ficheModifiee = false, minuteur = null;
 const DONNEES = [["pages","Pages des règles"],["prix","Prix (€)"],["prix_source","Source du prix (enseigne, date)","texte"],["poids_bgg","Poids BGG (1 à 5)"],["joueurs_min","Joueurs min."],
   ["joueurs_max","Joueurs max."],["effectif_reference","Meilleur effectif"],["duree_min","Durée min. (min)"],["duree_max","Durée max. (min)"],["contenu_parties","Parties pour tout exploiter"]];
-const CHAMPS = DONNEES.map(d => d[0]);
+const CHAMPS = [...DONNEES.map(d => d[0]), "configuration", "contenu_unique"];   // (17/10/2026) script 27
+const cfgDe = f => String(f?.configuration ?? "").trim() || null;   // null : la boîte de base
+const titreFiche = f => nomJeu(f.jeu) + (cfgDe(f) ? " — " + cfgDe(f) : "");
 
 function courbeS(x0){ const t = (x0 + 2) / 9; return t <= .5 ? 10 * t * t : 5 * (1 - 2 * (1 - t) * (1 - t)); }
 
@@ -313,11 +319,12 @@ async function demarrer(){
   } catch (e){ $("#accueil").classList.remove("hidden"); $("#msg-accueil").className = "msg err"; $("#msg-accueil").textContent = "Lecture du modèle impossible : " + e.message; return; }
   M.paires.sort((a, b) => M.chapitres.find(c => c.code === a.chapitre).ordre - M.chapitres.find(c => c.code === b.chapitre).ordre || a.ordre - b.ordre);
   remplirJeux(); await chargerFiches(); afficherFiches();
-  const P = new URLSearchParams(location.search), q = P.get("jeu");
+  const P = new URLSearchParams(location.search), q = P.get("jeu"), qc = (P.get("config") || "").trim() || null;
   if (q && M.jeux.some(j => j.code === q)){
-    if (P.has("evaluer") && role !== "lecteur") ouvrirJeu(q);   // « Évaluer » depuis la fiche du jeu : sa propre fiche, nouvelle au besoin
-    else { const f = toutes.find(e => e.jeu === q && e.evaluateur === user.id) || toutes.find(e => e.jeu === q && e.statut === "finale") || toutes.find(e => e.jeu === q);
-      f ? ouvrirFiche(f) : ouvrirJeu(q); }
+    if (P.has("evaluer") && role !== "lecteur") ouvrirJeu(q, qc);   // « Évaluer » depuis la fiche du jeu : sa propre fiche, nouvelle au besoin
+    else { const C = toutes.filter(e => e.jeu === q && cfgDe(e) === qc);
+      const f = C.find(e => e.evaluateur === user.id) || C.find(e => e.statut === "finale") || C[0];
+      f ? ouvrirFiche(f) : ouvrirJeu(q, qc); }
     if ($("#fiche").classList.contains("hidden")) $("#accueil").classList.remove("hidden");   // pas de fiche à ouvrir (lecteur) : la liste
   } else { $("#accueil").classList.remove("hidden"); }
   if (P.has("ajout") && role !== "lecteur") $("#btn-ajout").click();
@@ -338,7 +345,7 @@ function afficherFiches(){
   $("#filtre").classList.toggle("hidden", !toutes.length);
   if (!L.length){ $("#fiches").innerHTML = `<p class="aide">${miennes ? "Tu n'as encore évalué aucun jeu." : "Aucune fiche pour l'instant."}</p>`; return; }
   $("#fiches").innerHTML = `<table class="fiches"><thead><tr><th>Jeu</th><th>Évaluateur</th><th>État</th><th>Paires</th><th>Note finale</th><th>Modifiée</th></tr></thead><tbody>
-    ${L.map(e => { const c = calculer(saisieDe(e.id)); return `<tr class="f" data-id="${esc(e.id)}"><td><b>${esc(nomJeu(e.jeu))}</b></td><td>${esc(nomDe(e.evaluateur))}</td>
+    ${L.map(e => { const c = calculer(saisieDe(e.id)); return `<tr class="f" data-id="${esc(e.id)}"><td><b>${esc(nomJeu(e.jeu))}</b>${cfgDe(e) ? ` <span class="cfg-nom">— ${esc(cfgDe(e))}</span>` : ""}</td><td>${esc(nomDe(e.evaluateur))}</td>
       <td><span class="badge ${esc(e.statut)}">${e.statut === "finale" ? "finale" : "brouillon"}</span></td><td>${c.faites} / ${M.paires.length}</td>
       <td>${c.finale == null ? "—" : fmt(c.finale, 2)}</td><td>${new Date(e.modifie_le).toLocaleString("fr-FR")}</td></tr>`; }).join("")}</tbody></table>`;
   document.querySelectorAll("#fiches tr.f").forEach(tr => tr.addEventListener("click", () => ouvrirFiche(toutes.find(e => e.id === tr.dataset.id))));
@@ -376,10 +383,26 @@ $("#creer").addEventListener("click", async () => {
   ouvrirJeu(code);
 });
 $("#ouvrir").addEventListener("click", () => { const c = $("#sel-jeu").value; if (!c){ $("#msg-accueil").className = "msg err"; $("#msg-accueil").textContent = "Choisis un jeu, ou ajoute-le."; return; } ouvrirJeu(c); });
-function ouvrirJeu(code){
+function ouvrirJeu(code, config = null){
   $("#msg-accueil").textContent = "";
   if (role === "lecteur"){ $("#accueil > .aide").textContent = `« ${nomJeu(code)} » n'a pas encore de fiche d'évaluation. Les autres fiches sont dans la liste ci-dessous.`; return; }
-  ouvrirFiche(toutes.find(e => e.jeu === code && e.evaluateur === user.id) || { id:null, jeu:code, statut:"brouillon", evaluateur:user.id });
+  ouvrirFiche(toutes.find(e => e.jeu === code && e.evaluateur === user.id && cfgDe(e) === config) || { id:null, jeu:code, statut:"brouillon", evaluateur:user.id, configuration:config });
+}
+// une configuration (extensions…) : une nouvelle fiche qui reprend tout de la fiche de base, puis on ne change que ce qui bouge (17/10/2026)
+async function nouvelleConfiguration(){
+  const nom = (prompt("Nom de la configuration (par exemple « toutes extensions », « base + Wessex ») :") || "").trim();
+  if (!nom) return;
+  const deja = toutes.find(e => e.jeu === fiche.jeu && e.evaluateur === user.id && cfgDe(e) === nom);
+  if (deja){ ouvrirFiche(deja); $("#etat").textContent = `Tu as déjà une fiche « ${nom} » : la voici.`; return; }
+  if (enAttente.size || ficheModifiee){ clearTimeout(minuteur); await enregistrer(); }
+  const base = fiche, copie = JSON.parse(JSON.stringify(saisie)), date = new Date().toLocaleDateString("fr-FR");
+  fiche = { ...Object.fromEntries(CHAMPS.map(k => [k, base[k] ?? null])), id:null, jeu:base.jeu, evaluateur:user.id, statut:"brouillon", configuration:nom,
+    notes_article: `[Configuration « ${nom} », reprise de la fiche de base le ${date}] Ne change que ce qui bouge avec cette configuration : matériel, volume de règles, variété, prix, parties pour tout exploiter…`
+      + (base.notes_article ? "\n\n" + base.notes_article : "") };
+  saisie = copie; enAttente = new Set(Object.keys(copie)); ficheModifiee = true; lectureSeule = false;
+  majBarreFiche(); construireGrille(); recalculer(); window.scrollTo(0, 0);
+  await enregistrer(); await chargerFiches();
+  $("#etat").textContent = `Configuration « ${nom} » créée à partir de ta fiche de base.`;
 }
 
 /* ---------------- ouvrir une fiche ---------------- */
@@ -387,19 +410,26 @@ function ouvrirFiche(f){
   fiche = { ...f }; saisie = f.id ? saisieDe(f.id) : {}; enAttente = new Set(); ficheModifiee = false;
   lectureSeule = f.evaluateur !== user.id || role === "lecteur";
   $("#accueil").classList.add("hidden"); $("#fiche").classList.remove("hidden"); $("#pied").classList.remove("hidden");
-  $("#titre-jeu").textContent = nomJeu(f.jeu); $("#vers-jeu").href = "jeu.html?jeu=" + encodeURIComponent(f.jeu);
+  majBarreFiche();
   $("#lecture").textContent = lectureSeule ? `Fiche de ${nomDe(f.evaluateur)}, en lecture seule` : "";
   $("#finale").checked = f.statut === "finale"; $("#finale").disabled = lectureSeule;
   $("#suivante").classList.toggle("hidden", lectureSeule);
   $("#etat").textContent = lectureSeule ? "" : (f.id ? "Fiche reprise." : "Nouvelle fiche : elle sera créée à la première saisie.");
   construireGrille(); recalculer(); window.scrollTo(0, 0);
 }
+function majBarreFiche(){
+  $("#titre-jeu").textContent = titreFiche(fiche);
+  $("#vers-jeu").href = "jeu.html?jeu=" + encodeURIComponent(fiche.jeu) + (cfgDe(fiche) ? "&config=" + encodeURIComponent(cfgDe(fiche)) : "");
+  $("#btn-config").classList.toggle("hidden", lectureSeule || !!cfgDe(fiche) || !fiche.id);   // depuis sa fiche de base, enregistrée
+  $("#finale").checked = fiche.statut === "finale"; $("#finale").disabled = lectureSeule;
+}
+$("#btn-config").addEventListener("click", nouvelleConfiguration);
 $("#retour").addEventListener("click", async () => {
   if (enAttente.size || ficheModifiee){ clearTimeout(minuteur); await enregistrer(); }
   if (ARRIVEE){   // retour à la page d'origine (liste des jeux ou fiche du jeu)
     const ref = document.referrer && new URL(document.referrer, location.href);
     if (ref && ref.origin === location.origin && /\/jeux?\.html/.test(ref.pathname)) history.back();
-    else location.href = "jeu.html?jeu=" + encodeURIComponent(fiche.jeu);
+    else location.href = $("#vers-jeu").href;
     return;
   }
   $("#fiche").classList.add("hidden"); $("#pied").classList.add("hidden"); $("#accueil").classList.remove("hidden");
@@ -533,13 +563,17 @@ function construireGrille(){
   const paire = (a, b, l, u) => `<div class="ch ch-paire"><span>${l}</span><div class="deux">${champ(a, "de", "")}<em>à</em>${champ(b, "", "")}${u ? `<em>${u}</em>` : ""}</div></div>`;
   let ouvert = true; try { ouvert = localStorage.getItem("prisme_assistant") !== "ferme"; } catch (e){}
   let h = `<section class="jeu-tete${lectureSeule ? " ro" : ""}">${jeu.image_url ? `<img src="${esc(jeu.image_url)}" alt="${esc(jeu.nom)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}
-    <div class="jeu-corps"><div class="jeu-titre"><h1>${esc(jeu.nom || d.jeu)}</h1>${jeu.bgg_id ? `<a class="btn ghost bgg" href="https://boardgamegeek.com/boardgame/${esc(jeu.bgg_id)}" target="_blank" rel="noopener">BoardGameGeek ↗</a>` : ""}</div>
+    <div class="jeu-corps"><div class="jeu-titre"><h1>${esc(jeu.nom || d.jeu)}${cfgDe(d) ? ` <span class="cfg-nom">— ${esc(cfgDe(d))}</span>` : ""}</h1>${jeu.bgg_id ? `<a class="btn ghost bgg" href="https://boardgamegeek.com/boardgame/${esc(jeu.bgg_id)}" target="_blank" rel="noopener">BoardGameGeek ↗</a>` : ""}</div>
       ${jeu.bgg_id ? "" : `<p class="aide">Pas encore de lien BoardGameGeek ni d'image : ils s'ajoutent dans la console (onglet Jeux).</p>`}
       <div class="chiffres"><div class="ch-titre">Le jeu en chiffres <button type="button" class="aide-btn" data-panneau="aide-chiffres" aria-expanded="false" title="À quoi servent ces données">?</button></div>
       <div class="panneau hidden" id="aide-chiffres"><p class="aide">Ces données proposent les notes factuelles (POIDS, étendue de LIEN) et servent à la timeline. Prix : le prix public actuel, avec l'enseigne et la date ; il n'entre pas dans la note ; il donne l'élan d'achat de la timeline et le coût par session.
-        Meilleur effectif : le nombre de joueurs auquel le jeu est le meilleur ; c'est l'effectif de référence (RYT1 et la timeline se notent à cet effectif). Parties pour tout exploiter : le nombre minimum de parties pour avoir fait le tour de ce que la boîte propose (circuits, scénarios, modules, factions…) ; pour mémoire, la timeline ne s'en sert plus.</p></div>
+        Meilleur effectif : le nombre de joueurs auquel le jeu est le meilleur ; c'est l'effectif de référence (RYT1 et la timeline se notent à cet effectif). Parties pour tout exploiter : le nombre minimum de parties pour avoir fait le tour de ce que la boîte propose (circuits, scénarios, modules, factions…) ; au-delà de 15, la timeline use la variété d'autant moins vite.
+        Contenu à usage unique : une campagne, des scénarios qu'on ne rejoue pas ; une fois tout joué, le jeu est rangé (sa durée de vie ne dépasse pas ce contenu).
+        Configuration : une fiche peut évaluer le jeu avec ses extensions (bouton « + Configuration » depuis ta fiche de base) ; elle a sa propre courbe, à côté de celle de la boîte de base.</p></div>
       <div class="ch-grille">${champ("pages", "Pages des règles")}${champ("poids_bgg", "Poids BGG")}${champ("prix", "Prix (€)")}${champ("prix_source", "Source du prix (enseigne, date)", "texte")}
-        ${paire("joueurs_min", "joueurs_max", "Joueurs")}${champ("effectif_reference", "Meilleur effectif")}${paire("duree_min", "duree_max", "Durée", "min")}${champ("contenu_parties", "Parties pour tout exploiter")}</div></div></div></section>
+        ${paire("joueurs_min", "joueurs_max", "Joueurs")}${champ("effectif_reference", "Meilleur effectif")}${paire("duree_min", "duree_max", "Durée", "min")}${champ("contenu_parties", "Parties pour tout exploiter")}
+        <label class="ch ch-unique"><span>Contenu</span><span class="case"><input type="checkbox" id="d-contenu_unique" data-donnee="contenu_unique" ${d.contenu_unique ? "checked" : ""} ${lectureSeule ? "disabled" : ""}> à usage unique (campagne)</span></label>
+        ${cfgDe(d) ? champ("configuration", "Configuration évaluée", "texte") : ""}</div></div></div></section>
     <details class="assistant" id="assistant"${ouvert ? " open" : ""}><summary><h2>Assistant de rédaction</h2></summary>
     <p class="aide">Les boutons préparent une demande complète pour Claude (le jeu, tes notes, tes textes, la charte de rédaction) et la copient dans le presse-papiers : colle-la dans une conversation sur claude.ai, puis recolle sa réponse ici. Rien n'est remplacé sans ton accord. Chaque paire a aussi son bouton « Demander à Claude ».
       La charte se règle dans la console (Textes généraux, section « Assistant de rédaction »).</p>
@@ -675,7 +709,7 @@ function recalculer(){
 
 /* ---------------- timeline ---------------- */
 // rassemble les notes utiles à la timeline (calcul partagé : timeline.js)
-function entreesTimeline(){ const e = entreesFiche(saisie, M.paires, M.axes, { contenu_parties:fiche.contenu_parties, prix:fiche.prix }); return { n:e.n, manque:e.manque, absents:e.absents }; }
+function entreesTimeline(){ const e = entreesFiche(saisie, M.paires, M.axes, { contenu_parties:fiche.contenu_parties, contenu_unique:fiche.contenu_unique, prix:fiche.prix }); return { n:e.n, manque:e.manque, absents:e.absents }; }
 // coût par session : prix ÷ durée de vie d'après la timeline (plafonnée à 50 sessions)
 const coutFiche = c => coutParPartie(fiche.prix, c, fiche.duree_min, fiche.duree_max);
 // pied de page : α, puis β et γ s'il y a une chute (sinon « pas de chute »), puis la durée de vie
@@ -766,8 +800,11 @@ $("#grille").addEventListener("input", e => {
   if (e.target.type === "range") poser(e.target.dataset.axe, Number(e.target.value));
   else if (e.target.dataset.justif){ const c = e.target.dataset.justif, s = saisie[c] || { valeur:null, sans_objet:false };
     saisie[c] = { ...s, commentaire: e.target.value.trim() || null }; e.target.rows = Math.min(5, 1 + Math.floor(e.target.value.length / 90)); planifier(c); }
-  else if (e.target.dataset.donnee){ const k = e.target.dataset.donnee; fiche[k] = e.target.value.trim() === "" ? null : (e.target.type === "text" ? e.target.value.trim() : Number(e.target.value)); ficheModifiee = true; planifier();
-    rafraichirSuggestions(); if (["contenu_parties", "prix", "duree_min", "duree_max"].includes(k)) recalculer(); }
+  else if (e.target.dataset.donnee){ const k = e.target.dataset.donnee;
+    fiche[k] = e.target.type === "checkbox" ? e.target.checked : e.target.value.trim() === "" ? null : (e.target.type === "text" ? e.target.value.trim() : Number(e.target.value));
+    if (k === "configuration"){ if (!fiche.configuration){ fiche.configuration = cfgDe(fiche) ?? e.target.defaultValue; return; } majBarreFiche(); }   // une configuration garde un nom
+    ficheModifiee = true; planifier();
+    rafraichirSuggestions(); if (["contenu_parties", "contenu_unique", "prix", "duree_min", "duree_max"].includes(k)) recalculer(); }
   else if (e.target.id === "carnet"){ fiche.notes_article = e.target.value; ficheModifiee = true; planifier(); }
 });
 function rafraichirSuggestions(){
@@ -833,7 +870,7 @@ function planifier(code){
 }
 async function enregistrer(){
   if (lectureSeule) return;
-  const champs = Object.fromEntries(CHAMPS.map(k => [k, fiche[k] ?? null]));
+  const champs = Object.fromEntries(CHAMPS.map(k => [k, fiche[k] ?? null])); champs.contenu_unique = !!fiche.contenu_unique; champs.configuration = cfgDe(fiche);
   if (!fiche.id){
     const { data, error } = await sb.from("prisme_evaluations").insert({ jeu: fiche.jeu, statut: fiche.statut, version_appli: VERSION.numero, notes_article: fiche.notes_article ?? null, ...champs }).select();
     if (error){ $("#etat").textContent = "Création de la fiche refusée : " + error.message; return; }
@@ -1019,6 +1056,6 @@ $("#btn-export").addEventListener("click", () => {
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000);
 });
 </script>
-<script src="entete.js?v=1.5"></script>
+<script src="entete.js?v=1.4"></script>
 </body>
 </html>

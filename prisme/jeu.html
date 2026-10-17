@@ -49,6 +49,10 @@ h3.chap{font:600 17px var(--serif);margin:14px 0 2px;color:var(--c)}
 .btn:hover{border-color:var(--ink)}
 .vide{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:30px 26px;font:italic 18px/1.5 var(--serif);color:var(--muted)}
 .vide a{color:var(--ink)}
+.configs{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0;font-size:13.5px}
+.configs a,.configs b{border:1px solid var(--line);border-radius:999px;padding:3px 11px;text-decoration:none;color:var(--ink)}
+.configs b{background:var(--ink);color:var(--panel);border-color:var(--ink);font-weight:500}
+h1 .cfg{font-weight:400;color:var(--muted)}
 .version{font-size:12px;color:var(--muted);text-align:right;margin-top:24px}
 @media (max-width:640px){ main{padding:8px 12px 30px} .entete{flex-direction:column;padding:18px} .entete img,.entete .sans-image{width:80px;height:80px} section{padding:18px} }
 </style>
@@ -61,9 +65,9 @@ h3.chap{font:600 17px var(--serif);margin:14px 0 2px;color:var(--c)}
   <p class="version" id="version"></p>
 </main>
 
-<script src="timeline.js?v=3.5"></script>
+<script src="timeline.js?v=3.6"></script>
 <script>
-const VERSION = { numero:"1.2", date:"2026-10-13 22:07" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.3", date:"2026-10-17 18:54" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -88,7 +92,7 @@ const vide = html => $("#contenu").innerHTML = `<p class="vide">${html}</p>`;
 const NIVEAUX = { joueur:0, lecteur:1, evaluateur:2, editeur:3, proprietaire:4 };
 
 async function afficher(user){
-  const code = new URLSearchParams(location.search).get("jeu");
+  const P = new URLSearchParams(location.search), code = P.get("jeu"), cfg = (P.get("config") || "").trim() || null;
   if (!code) return vide('Aucun jeu choisi. <a href="jeux.html">Voir tous les jeux</a>.');
   const [{ data: r }, { data: res }, { data: chapitres }, d] = await Promise.all([
     sb.rpc("prisme_mon_role"),
@@ -101,12 +105,18 @@ async function afficher(user){
   if (!jeu) return vide('Ce jeu n\'existe pas. <a href="jeux.html">Voir tous les jeux</a>.');
   document.title = `PRISME — ${jeu.nom}`;
   const profil = codeDeResultat(res?.[0]);
-  const F = d.fiches.filter(f => f.jeu === code), R = resumeJeu(F, d.paires, d.axes, profil);
+  // la boîte de base, ou une configuration (« toutes extensions »…) : ses propres fiches, sa propre courbe (17/10/2026)
+  const noms = [...new Set((d.configurations || []).filter(f => f.jeu === code).map(configDe))].sort((a, b) => a.localeCompare(b, "fr"));
+  const F = cfg ? (d.configurations || []).filter(f => f.jeu === code && configDe(f) === cfg) : d.fiches.filter(f => f.jeu === code), R = resumeJeu(F, d.paires, d.axes, profil);
+  const lienCfg = c => "jeu.html?jeu=" + encodeURIComponent(code) + (c ? "&config=" + encodeURIComponent(c) : "");
+  const liste = [null, ...noms, ...(cfg && !noms.includes(cfg) ? [cfg] : [])];
+  const nav = liste.length > 1 ? `<p class="configs">${liste.map(n => n === cfg ? `<b>${esc(n || "Boîte de base")}</b>` : `<a href="${lienCfg(n)}">${esc(n || "Boîte de base")}</a>`).join("")}</p>` : "";
+  const titre = esc(jeu.nom) + (cfg ? ` <span class="cfg">— ${esc(cfg)}</span>` : "");
   // l'évaluation : « Voir mon évaluation » ou « Évaluer » pour l'évaluateur, « Voir l'évaluation » pour le lecteur s'il en existe une, rien pour le joueur
   let lienEval = "";
   if (NIVEAUX[role] >= NIVEAUX.lecteur){
-    const { data: T } = await sb.from("prisme_evaluations").select("id,evaluateur,statut").eq("jeu", code);
-    const mienne = (T || []).find(f => f.evaluateur === user.id), url = "evaluation.html?jeu=" + encodeURIComponent(code);
+    const { data: T0 } = await sb.from("prisme_evaluations").select("*").eq("jeu", code), T = (T0 || []).filter(f => configDe(f) === cfg);
+    const mienne = T.find(f => f.evaluateur === user.id), url = "evaluation.html?jeu=" + encodeURIComponent(code) + (cfg ? "&config=" + encodeURIComponent(cfg) : "");
     if (NIVEAUX[role] >= NIVEAUX.evaluateur) lienEval = mienne ? `<a class="btn" href="${url}">Voir mon évaluation</a>` : `<a class="btn" href="${url}&evaluer=1">Évaluer</a>`
       + (!mienne && T?.length ? ` <a class="btn" href="${url}">Voir l'évaluation</a>` : "");
     else if (T?.length) lienEval = `<a class="btn" href="${url}">Voir l'évaluation</a>`;
@@ -115,7 +125,7 @@ async function afficher(user){
   const img = jeu.image_url ? `<img src="${esc(jeu.image_url)}" alt="">` : `<span class="sans-image"></span>`;
   const bgg = jeu.bgg_id ? ` · <a href="https://boardgamegeek.com/boardgame/${encodeURIComponent(jeu.bgg_id)}" target="_blank" rel="noopener">BoardGameGeek</a>` : "";
   if (!R){
-    $("#contenu").innerHTML = `<div class="entete">${img}<div><h1>${esc(jeu.nom)}</h1><p class="sous">Pas encore de fiche finale${bgg}</p>${actions}</div></div>
+    $("#contenu").innerHTML = `<div class="entete">${img}<div><h1>${titre}</h1><p class="sous">Pas encore de fiche finale${bgg}</p>${nav}${actions}</div></div>
       <section><p class="discret">Ce jeu n'a pas encore été évalué jusqu'au bout : ses notes paraîtront ici dès qu'une fiche sera déclarée finale.</p></section>`;
     return;
   }
@@ -125,13 +135,14 @@ async function afficher(user){
   if (m.duree_max != null) ch.push(`<span>Durée <b>${m.duree_min != null && Math.round(m.duree_min) !== Math.round(m.duree_max) ? `${Math.round(m.duree_min)} à ${Math.round(m.duree_max)}` : Math.round(m.duree_max)} min</b></span>`);
   if (m.pages != null) ch.push(`<span>Règles <b>${Math.round(m.pages)} pages</b></span>`);
   if (m.prix != null) ch.push(`<span>Prix <b>${fmt(m.prix, 0)} €</b></span>`);
+  if (m.contenu_parties != null) ch.push(`<span>Contenu <b>${Math.round(m.contenu_parties)} parties</b>${m.contenu_unique ? " (usage unique)" : ""}</span>`);
   if (m.poids_bgg != null) ch.push(`<span>Poids BGG <b>${fmt(m.poids_bgg)}</b></span>`);
   const ecart = (a, b) => { if (a == null || b == null) return ""; const v = a - b;
     return `<span class="ecart ${v >= .005 ? "plus" : v <= -.005 ? "moins" : ""}">${Math.abs(v) < .005 ? "±" : v > 0 ? "+" : "−"}${fmt(Math.abs(v))}</span>`; };
 
   // les notes : finale, chapitres, et pour vous
   const nomCh = c => chapitres?.find(x => x.code === c)?.nom || c;
-  let h = `<div class="entete">${img}<div><h1>${esc(jeu.nom)}</h1><p class="sous">${F.length} fiche${F.length > 1 ? "s" : ""} finale${F.length > 1 ? "s" : ""}${F.length > 1 ? " (moyenne)" : ""}${bgg}</p><p class="chiffres">${ch.join("")}</p>${actions}</div></div>
+  let h = `<div class="entete">${img}<div><h1>${titre}</h1><p class="sous">${F.length} fiche${F.length > 1 ? "s" : ""} finale${F.length > 1 ? "s" : ""}${F.length > 1 ? " (moyenne)" : ""}${bgg}</p><p class="chiffres">${ch.join("")}</p>${nav}${actions}</div></div>
   <section><h2>Les notes</h2><p class="question">Sur 5 : chaque chapitre est la moyenne de ses paires, la note finale la moyenne des trois chapitres.</p>
     <div class="notes"><div class="finale"><small>Note PRISME</small><b>${fmt(R.finale)}</b><span class="sur">/5</span></div>
     ${(chapitres || []).filter(c => R.chap[c.code] != null).map(c => `<div style="--c:var(--${esc(c.code)})"><small>${esc(c.nom)}</small><b>${fmt(R.chap[c.code])}</b><span class="sur">/5</span></div>`).join("")}
@@ -170,6 +181,6 @@ async function afficher(user){
   $("#contenu").innerHTML = h;
 }
 </script>
-<script src="entete.js?v=1.5"></script>
+<script src="entete.js?v=1.4"></script>
 </body>
 </html>

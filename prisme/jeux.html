@@ -54,9 +54,9 @@ tr.attente td{color:var(--muted)}
   <p class="version" id="version"></p>
 </main>
 
-<script src="timeline.js?v=3.5"></script>
+<script src="timeline.js?v=3.6"></script>
 <script>
-const VERSION = { numero:"1.2", date:"2026-10-13 22:07" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.3", date:"2026-10-17 18:54" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -93,12 +93,13 @@ async function demarrer(user){
   if (code) profil = code;
   // pour les lecteurs et au-delà : toutes les fiches (brouillons compris) et la sienne
   let toutes = [];
-  if (NIVEAUX[role] >= NIVEAUX.lecteur){ const { data } = await sb.from("prisme_evaluations").select("id,jeu,evaluateur,statut"); toutes = data || []; }
+  if (NIVEAUX[role] >= NIVEAUX.lecteur){ const { data } = await sb.from("prisme_evaluations").select("*"); toutes = (data || []).filter(f => !configDe(f)); }
   const parJeu = {}; d.fiches.forEach(f => (parJeu[f.jeu] ??= []).push(f));
   lignes = d.jeux.map(j => {
     const F = parJeu[j.code] || [], r2 = resumeJeu(F, d.paires, d.axes, profil);
     const T = toutes.filter(f => f.jeu === j.code);
-    return { j, n:F.length, r:r2, toutes:T.length, mienne:T.find(f => f.evaluateur === user.id) };
+    const cfg = new Set((d.configurations || []).filter(f => f.jeu === j.code).map(configDe)).size;
+    return { j, n:F.length, r:r2, toutes:T.length, mienne:T.find(f => f.evaluateur === user.id), cfg };
   }).sort((a, b) => a.j.nom.localeCompare(b.j.nom, "fr", { sensitivity:"base" }));
   $("#liens").innerHTML = (NIVEAUX[role] >= NIVEAUX.evaluateur ? `<a class="btn" href="evaluation.html?ajout=1">Ajouter un jeu</a>` : "")
     + (NIVEAUX[role] >= NIVEAUX.lecteur ? `<a class="btn" href="evaluation.html" title="Toutes les fiches d'évaluation, brouillons compris">Toutes les fiches</a>` : "");
@@ -125,7 +126,7 @@ function afficher(){
     <th class="n col-sec" title="Le flow le plus haut de la timeline">Apogée /10</th><th class="n col-sec" title="∞ : un classique">Durée de vie (sessions)</th><th class="n col-sec">Coût (€/session)</th>${lecteur ? "<th>Évaluation</th>" : ""}</tr></thead><tbody>
     ${L.map(l => {
       const img = l.j.image_url ? `<img src="${esc(l.j.image_url)}" alt="" loading="lazy">` : `<span class="sans-image"></span>`;
-      const nom = `<a class="jeu" href="jeu.html?jeu=${encodeURIComponent(l.j.code)}">${img}<span><b>${esc(l.j.nom)}</b><small>${l.n ? `${l.n} fiche${l.n > 1 ? "s" : ""} finale${l.n > 1 ? "s" : ""}` : "pas encore évalué"}</small></span></a>`;
+      const nom = `<a class="jeu" href="jeu.html?jeu=${encodeURIComponent(l.j.code)}">${img}<span><b>${esc(l.j.nom)}</b><small>${l.n ? `${l.n} fiche${l.n > 1 ? "s" : ""} finale${l.n > 1 ? "s" : ""}` : "pas encore évalué"}${l.cfg ? ` · + ${l.cfg} configuration${l.cfg > 1 ? "s" : ""}` : ""}</small></span></a>`;
       const ev = !lecteur ? "" : `<td class="discret">${l.mienne ? `ma fiche (${l.mienne.statut === "finale" ? "finale" : "brouillon"})` : ""}${l.mienne && l.toutes > 1 ? " · " : ""}${!l.mienne || l.toutes > 1 ? (l.toutes ? `${l.toutes} fiche${l.toutes > 1 ? "s" : ""}` : "") : ""}</td>`;
       if (!l.r || !l.r.complet) return `<tr class="${l.n ? "" : "attente"}"><td>${nom}</td><td class="n">${l.r?.finale != null ? fmt(l.r.finale) : "—"}</td>${profil ? '<td class="n">—</td>' : ""}<td class="n col-sec">—</td><td class="n col-sec">—</td><td class="n col-sec">—</td>${ev}</tr>`;
       return `<tr><td>${nom}</td><td class="n"><b>${fmt(l.r.finale)}</b></td>${profil ? `<td class="n"><b>${fmt(l.r.notePour)}</b>${ecart(l.r.notePour, l.r.finale)}</td>` : ""}
@@ -134,6 +135,6 @@ function afficher(){
     <p class="discret">Notes sur 5, moyenne des fiches finales. Apogée : le flow le plus haut de la timeline, sur 10 (le flow n'est pas une note : il mesure le plaisir net à un moment de la vie du jeu). Durée de vie : en sessions, jusqu'à l'abandon ou jusqu'au jeu rangé ; ∞ pour un classique.</p>`;
 }
 </script>
-<script src="entete.js?v=1.5"></script>
+<script src="entete.js?v=1.4"></script>
 </body>
 </html>

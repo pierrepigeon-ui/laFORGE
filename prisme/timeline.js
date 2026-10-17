@@ -1,7 +1,7 @@
 /* PRISME — timeline du jeu : jalons, durées, flow, α β γ ω, durée de vie.
    Module partagé par l'encyclopédie et l'outil d'évaluation. Méthode arrêtée le 08/10/2026 (jeu d'essai : Heat) ; modèle à 12 paires le 11/10/2026 ;
    formules refaites phase par phase le 12/10/2026 avec trois jeux de référence (Gloomhaven, Heat, Flip 7). L'unité est la session. */
-const TIMELINE_VERSION = { numero:"3.5", date:"2026-10-13 22:07" };   // à incrémenter à chaque livraison
+const TIMELINE_VERSION = { numero:"3.6", date:"2026-10-17 18:54" };   // à incrémenter à chaque livraison
 
 const JALONS = [
   { n:0, nom:"identifié", quoi:"Le jeu est connu de loin : critique, vitrine, recommandation." },
@@ -27,13 +27,17 @@ const PHASES = { I:"Entrée", II:"Apprentissage", III:"Maîtrise et profondeur",
 // coefficient de projection : avant la première session, le joueur se projette dans le jeu au lieu de le vivre (jalons 0 à 7)
 const R_REGIME = [0, .6, .8, 1, 1, 1, 1, 1];
 const ESTOMPE = .95;          // à partir du jalon 4, VAR perd 5 % par session ; la charge (POID1, MAN1) monte sur la même courbe
+// (17/10/2026) l'usure dépend du contenu : 5 % par session pour un jeu de 15 parties à exploiter (ou moins), d'autant moins qu'il y a de contenu
+// (taux × 15 / parties pour tout exploiter). Un contenu à usage unique (campagne) s'épuise : la durée de vie ne dépasse pas ce contenu.
+const CONTENU_REF = 15;
+const usureContenu = c => c > CONTENU_REF ? CONTENU_REF / c : 1;
 const K_FRICTION = 3;         // F = √(somme des carrés / 3) : chaque gêne ajoutée fait monter F
 const TERMES = {
   1:{ s:"MAT, ART2a, promesse = max(THEM1, RYT1, MAN2)", f:"POID1, 5 − ART2b" },
   2:{ s:"MAT, ART2a, promesse, SYS", f:"0,75 × POID1, 0,75 × (5 − ART2b), M / 2 (M = MAN1 × L)" },
   3:{ s:"SYS, PROF, MECA2, VAR × 2, EXP sans parole, EDI sans documentation", f:"apprentissage, 5 − ART2b, manipulation au-delà de l'attendu" },
   4:{ s:"SYS, PROF × 2, MECA2, VAR × 2, EXIG × 2, EXP, EDI", f:"apprentissage, 5 − ART2b, 5 − MAN2" },
-  5:{ s:"MECA, EXIG, THEM, LIEN, MAT, VAR estompé", f:"POID1 × g, MAN1 × g, 5 − VAR, (5 − ART2b) / 2" },
+  5:{ s:"MECA, EXIG, THEM, LIEN, MAT, VAR estompé (selon le contenu)", f:"POID1 × g, MAN1 × g, 5 − VAR, (5 − ART2b) / 2" },
   6:{ s:"les termes du jalon 5 (l'horloge avance)", f:"les termes du jalon 5" },
   7:{ s:"les termes du jalon 5 (l'horloge avance)", f:"les termes du jalon 5" }
 };
@@ -102,7 +106,8 @@ function courbeBrute(n, pr, ctx = {}){
   const ok = ok_, moy = moy_, inv = inv_, q = v => Math.round(v * 4) / 4;
   const k = { W:0, U:0, B:0, R:0, G:0 }; if (pr){ k[pr.dom] = 1; k[pr.second] = .5; }
   const vit = pr && pr.rejet === "U" ? 1 / 1.5 : 1 + .5 * k.U;          // le Décrypteur apprend plus vite ; qui le fuit, plus lentement
-  const tauxVAR = .05 - .02 * k.G;                                      // le Rayonnant use VAR moins vite
+  const usure = usureContenu(n.contenu_parties);                        // beaucoup de contenu : l'usure ralentit d'autant (17/10/2026)
+  const tauxVAR = (.05 - .02 * k.G) * usure;                            // le Rayonnant use VAR moins vite
   const MECA = ok(n.MECA) ? n.MECA : n.MECA2;                           // MÉCANIQUE est indépendante : sa note est MECA2
   const SYS = moy(n.POID, n.PROF, MECA, n.VAR, n.EXIG), EXP = moy(n.RYT, n.MAN, n.THEM, n.LIEN), EDI = moy(n.MAT, n.ART, n.DOC);
   // T, la gêne d'apprentissage (durée des Premiers pas) : ce qu'il y a à apprendre, tempéré par la documentation (DOC2 est un écart)
@@ -121,7 +126,7 @@ function courbeBrute(n, pr, ctx = {}){
   const vieN = ctx.vieNoire == null ? 50 : Math.min(ctx.vieNoire, 50), communaute = 5 * Math.log2(1 + vieN) / Math.log2(51);
   const gene = pr ? geneRejet(n, pr) * 5 : 0;
   const termes = (j, Nj) => {
-    const nS = depuis(Nj, 2), m = depuis(Nj, 4), c = (1 - tauxVAR) ** m, g = 1 - ESTOMPE ** m;
+    const nS = depuis(Nj, 2), m = depuis(Nj, 4), c = (1 - tauxVAR) ** m, g = 1 - (1 - (1 - ESTOMPE) * usure) ** m;
     const app = ok(n.POID1) ? n.POID1 * (1 - (n.DOC2 ?? 0) / 4) / (1 + nS * vit) : null;   // ce qui reste à apprendre ; s'éteint de lui-même
     const VARj = ok(n.VAR) ? (j >= 5 ? n.VAR * c : n.VAR) : null;
     let S, F;
@@ -164,7 +169,8 @@ function courbeBrute(n, pr, ctx = {}){
     det.push(t); brut.push(t.brut);
   }
   const marque = Math.max(0, Math.max(n.THEM ?? 0, MECA ?? 0) - PLANCHER_SEUIL);
-  return { d, N, x, brut, det, marque, brutLoinBrut: Nk => termes(7, Nk).brut, SYS, EXP, EDI, E0, T, vit };
+  const epuise = n.contenu_unique && n.contenu_parties > 0 ? n.contenu_parties : null;   // campagne : le contenu s'épuise
+  return { d, N, x, brut, det, marque, brutLoinBrut: Nk => termes(7, Nk).brut, SYS, EXP, EDI, E0, T, vit, usure, epuise };
 }
 
 // α, β, γ, ω, plancher, durée de vie… d'une courbe brute (noire ou de profil)
@@ -199,9 +205,17 @@ function analyseCourbe(cb){
       vie = b; xVie = xLoin(b);
     }
   }
+  // contenu à usage unique : une fois tout joué, le jeu est rangé (17/10/2026)
+  let epuise = false;
+  if (purge <= 0 && cb.epuise != null && (vie == null || vie > cb.epuise)){
+    epuise = true; vie = cb.epuise;
+    const j = N.findIndex((v, i) => i >= 1 && v >= vie);
+    xVie = j > 0 ? x[j - 1] + (vie - N[j - 1]) / (N[j] - N[j - 1]) * (x[j] - x[j - 1]) : xLoin(vie);
+  }
   const gamma = purge > 0 ? null : vie, sousPhaseGamma = gamma == null ? null : gamma > N[7] ? 7 : Math.max(0, N.findIndex(v => v >= gamma - 1e-9) - 1);
   const classe = vie == null ? "classique" : CLASSES_VIE.find(([s]) => vie < s)[1];
-  return { ...cb, y, alpha, beta, gamma, sousPhaseGamma, omega, purge: purge > 0 ? purge : null, perte, vie, xVie, classe, plancher, yLoin, xLoin };
+  const yLoinF = epuise ? Nk => Nk >= vie ? Math.min(10, Math.max(0, plancher)) : yLoin(Nk) : yLoin;
+  return { ...cb, y, alpha, beta, gamma, sousPhaseGamma, omega, purge: purge > 0 ? purge : null, perte, vie, xVie, classe, plancher, yLoin: yLoinF, xLoin, epuise };
 }
 
 // le centrage d'un jeu : l'écart moyen des 60 profils à la courbe noire, jalon par jalon (mis en cache)
@@ -302,6 +316,7 @@ function syntheseTimeline(c){
   const declin = c.beta == null ? "pas de déclin" : `déclin dès le jalon ${c.beta}, après ${texteSessions(c.N[c.beta])}`;
   const fin = purge ? `abandon au jalon ${c.omega}, après ≈ ${texteSessions(c.vie)} (${c.classe})`
     : c.vie == null ? `jamais rangé : ne descend pas jusqu'à son plancher de nostalgie (${f(c.marque)}/10), un classique`
+    : c.epuise ? `rangé après ≈ ${texteSessions(c.vie)}, une fois tout le contenu joué (usage unique), puis ressorti par nostalgie (${f(c.plancher)}/10)`
     : `rangé après ≈ ${texteSessions(c.vie)}, au plancher de nostalgie (${f(c.plancher)}/10), puis ressorti par nostalgie (${c.classe})`;
   return `${apogee} · ${declin} · ${fin}`;
 }
@@ -499,12 +514,12 @@ function texteCout(k){
   return `${e(k.parPartie)} € par session${k.parHeure != null ? ` (${e(k.parHeure)} € de l'heure)` : ""} sur ${k.plafonne ? PLAFOND_PARTIES_VIE + " sessions et plus" : texteSessions(k.parties)}`;
 }
 // toutes les entrées d'une fiche : n (pour la courbe), paires (pour les notes), manque (paires à remplir), absents (sans objet)
-// extra : { contenu_parties, prix } (ou, comme avant, le seul nombre de parties pour tout exploiter)
+// extra : { contenu_parties, contenu_unique, prix } (ou, comme avant, le seul nombre de parties pour tout exploiter)
 function entreesFiche(s, paires, axes, extra){
   const x = extra != null && typeof extra === "object" ? extra : { contenu_parties: extra };
   const axesDeP = code => axes.filter(a => a.paire === code);
   const etats = Object.fromEntries(paires.map(p => [p.code, noteDePaire(p, s, axesDeP(p.code))]));
-  const n = { contenu_parties: Number(x.contenu_parties) || null, VAL1: palierPrix(x.prix) }, manque = new Set(), absents = new Set();
+  const n = { contenu_parties: Number(x.contenu_parties) || null, contenu_unique: !!x.contenu_unique, VAL1: palierPrix(x.prix) }, manque = new Set(), absents = new Set();
   TIMELINE_PAIRES.forEach(code => { const r = etats[code]; if (!r) return;
     if (!r.complete) manque.add(code); else if (r.note == null) absents.add(code); else n[code] = r.note; });
   TIMELINE_AXES.forEach(code => {
@@ -523,7 +538,7 @@ function jeuxPourJoueurs(fiches, paires, axes, pl, codes){
   const prs = codes.map(prDeStyle);
   const parJeu = {};
   fiches.forEach(f => {
-    const e = entreesFiche(f.saisie, paires, axes, { contenu_parties:f.contenu_parties, prix:f.prix });
+    const e = entreesFiche(f.saisie, paires, axes, { contenu_parties:f.contenu_parties, contenu_unique:f.contenu_unique, prix:f.prix });
     if (e.manque.length) return;                                   // fiche incomplète : pas de calcul
     const base = noteProfil(e.paires, e.n, null), cb = flowJeu(e.n);
     const res = prs.map(pr => ({ note: noteProfil(e.paires, e.n, pr), c: flowJeu(e.n, pr) }));
@@ -540,6 +555,8 @@ function jeuxPourJoueurs(fiches, paires, axes, pl, codes){
 /* ---------------- lecture des jeux évalués et tableau « ses jeux » (partagé : rosace, fiche du joueur) ---------------- */
 // les résultats publiés (fiches finales, sans justification) : les vues du script 25, lisibles par tout compte connecté (rôle joueur) ;
 // à défaut (script 25 pas encore passé), les tables, avec les droits d'avant
+// la configuration évaluée par une fiche (« toutes extensions »…) ; null : la boîte de base
+const configDe = f => String(f?.configuration ?? "").trim() || null;
 async function lireJeuxEvalues(sb){
   const lire = async (t, o) => { const tout = []; for (let d = 0; ; d += 1000){ let q = sb.from(t).select("*"); if (o) q = q.order(o); const { data, error } = await q.range(d, d + 999);
     if (error) throw error; tout.push(...data); if (data.length < 1000) return tout; } };
@@ -550,7 +567,9 @@ async function lireJeuxEvalues(sb){
     try { [evals, vals] = await Promise.all([lire("prisme_resultats_fiches"), lire("prisme_resultats_valeurs")]); evals.forEach(e => e.statut = "finale"); }
     catch (e){ [evals, vals] = await Promise.all([lire("prisme_evaluations"), lire("prisme_evaluation_valeurs")]); }
     const saisies = {}; vals.forEach(v => (saisies[v.evaluation] ??= {})[v.axe] = { valeur: v.valeur == null ? null : Number(v.valeur), sans_objet: v.sans_objet });
-    return { paires, axes, jeux, fiches: evals.map(e => ({ ...e, saisie: saisies[e.id] || {} })) };
+    const tout = evals.map(e => ({ ...e, configuration: configDe(e), saisie: saisies[e.id] || {} }));
+    // fiches : la boîte de base (ce que lisent la liste des jeux, les profils, la rosace) ; configurations : les autres (17/10/2026)
+    return { paires, axes, jeux, fiches: tout.filter(f => !f.configuration), configurations: tout.filter(f => f.configuration) };
   } catch (e){ return { refus:true }; }
 }
 // la moyenne de plusieurs fiches d'un même jeu : axe par axe (une valeur sans objet dans toutes les fiches reste sans objet) ; données du jeu moyennées
@@ -561,12 +580,13 @@ function ficheMoyenne(fiches){
     s[a] = v.length ? { valeur: v.reduce((t, x) => t + x, 0) / v.length, sans_objet:false } : { valeur:null, sans_objet: L.length > 0 && L.every(x => x.sans_objet) }; });
   const d = {}; DONNEES_JEU.forEach(k => { const v = fiches.map(f => f[k]).filter(x => x != null && x !== "").map(Number);
     d[k] = v.length ? (k === "joueurs_min" ? Math.min(...v) : k === "joueurs_max" ? Math.max(...v) : v.reduce((t, x) => t + x, 0) / v.length) : null; });
+  d.contenu_unique = fiches.filter(f => f.contenu_unique).length * 2 > fiches.length;   // usage unique : l'avis de la majorité des fiches
   return { saisie:s, ...d, nb:fiches.length };
 }
 // le résumé d'un jeu (fiches finales moyennées) : notes, courbe, coûts ; code : le profil du joueur (A.b/e), facultatif
 function resumeJeu(fiches, paires, axes, code){
   if (!fiches.length) return null;
-  const m = ficheMoyenne(fiches), e = entreesFiche(m.saisie, paires, axes, { contenu_parties:m.contenu_parties, prix:m.prix });
+  const m = ficheMoyenne(fiches), e = entreesFiche(m.saisie, paires, axes, { contenu_parties:m.contenu_parties, contenu_unique:m.contenu_unique, prix:m.prix });
   const parChap = {}; e.paires.forEach(p => { if (p.note != null) (parChap[p.chap] ??= []).push(p.note); });
   const chap = Object.fromEntries(Object.entries(parChap).map(([k, L]) => [k, L.reduce((t, x) => t + x, 0) / L.length]));
   const finale = Object.keys(chap).length ? Object.values(chap).reduce((t, x) => t + x, 0) / Object.keys(chap).length : null;
