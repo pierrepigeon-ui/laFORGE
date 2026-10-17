@@ -11,7 +11,7 @@
 <script src="flamme_moteur.js?v=1.3"></script>
 <script src="flamme_blason.js?v=1.11"></script>
 <script src="flamme_glyphes.js?v=2.4"></script>
-<script src="flamme_experimental.js?v=1.0"></script>
+<script src="flamme_experimental.js?v=1.1"></script>
 <style>
 :root{--ink:#1B2430;--muted:#5B6573;--line:#DDE1E7;--paper:#F4F6F8;--panel:#FFFFFF;--hover:#EEF1F5;--bleu:#1F4FD1;--or:#C9A227;
   --W:#8892A0;--U:#0055FF;--B:#111111;--R:#E00000;--G:#00A800;
@@ -134,7 +134,7 @@ mark{background:#FFE58A;color:#1B2430;border-radius:2px}
 }
 .exp{display:inline-block;font:600 10.5px var(--sans);letter-spacing:.06em;text-transform:uppercase;color:#7A4A00;background:#FFF1D6;border:1px solid #F0C878;border-radius:999px;padding:1px 8px;margin-bottom:4px}
 .exp-bloc{border-left:3px solid #F0C878;padding:4px 0 2px 10px;margin:10px 0 4px;font-size:14px}
-.exp-bloc p{margin:4px 0} .exp-bloc .metiers{color:var(--muted)} .exp-bloc small{color:var(--muted)} .exp-bloc span[title]{cursor:help;border-bottom:1px dotted var(--muted)}
+.exp-bloc p{margin:4px 0} .exp-u{margin:2px 0 4px;padding-left:16px} .exp-u li{margin:1px 0} .exp-u i{color:var(--muted);font-style:normal;font-size:12.5px} .exp-bloc .metiers{color:var(--muted)} .exp-bloc small{color:var(--muted)} .exp-bloc span[title]{cursor:help;border-bottom:1px dotted var(--muted)}
 </style>
 </head>
 <body>
@@ -156,7 +156,7 @@ mark{background:#FFE58A;color:#1B2430;border-radius:2px}
 <div style="max-width:1240px;margin:0 auto;padding:0 20px 30px"><p class="version"><span id="credit"></span><br><span id="version"></span></p></div>
 
 <script>
-const VERSION = { numero:"1.12", date:"2026-10-17 15:20" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.13", date:"2026-10-17 17:40" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -410,7 +410,7 @@ function experimental(code){
   if (!t && !ps.length) return "";
   return `<div class="exp-bloc"><span class="exp">expérimental</span>
     ${t ? `<p><b>Au travail</b> : ${esc(t.role)} <span class="metiers">${t.metiers.map(esc).join(" · ")}</span></p>` : ""}
-    ${ps.length ? `<p><b>Personnages</b> : ${ps.map(p => `<span title="${esc(p.pourquoi)}">${esc(p.nom)} <small>(${esc(p.source)})</small></span>`).join(" ; ")}</p>` : ""}</div>`;
+    ${ps.length ? `<p><b>Personnages</b> (survolez un nom pour lire pourquoi)</p><ul class="exp-u">${[...new Set(ps.map(p => p.univers))].map(u => `<li><i>${esc(u)}</i> : ${ps.filter(p => p.univers === u).map(p => `<span title="${esc(p.source + " — " + p.pourquoi)}">${esc(p.nom)}</span>`).join(", ")}</li>`).join("")}</ul>` : ""}</div>`;
 }
 function ficheProfil(e){
   const a = M.analyser(e.code), moi = MOI?.code === e.code;
