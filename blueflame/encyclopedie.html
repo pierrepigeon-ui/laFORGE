@@ -156,7 +156,7 @@ mark{background:#FFE58A;color:#1B2430;border-radius:2px}
 <div style="max-width:1240px;margin:0 auto;padding:0 20px 30px"><p class="version"><span id="credit"></span><br><span id="version"></span></p></div>
 
 <script>
-const VERSION = { numero:"1.13", date:"2026-10-17 17:40" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.14", date:"2026-10-17 18:00" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -410,7 +410,7 @@ function experimental(code){
   if (!t && !ps.length) return "";
   return `<div class="exp-bloc"><span class="exp">expérimental</span>
     ${t ? `<p><b>Au travail</b> : ${esc(t.role)} <span class="metiers">${t.metiers.map(esc).join(" · ")}</span></p>` : ""}
-    ${ps.length ? `<p><b>Personnages</b> (survolez un nom pour lire pourquoi)</p><ul class="exp-u">${[...new Set(ps.map(p => p.univers))].map(u => `<li><i>${esc(u)}</i> : ${ps.filter(p => p.univers === u).map(p => `<span title="${esc(p.source + " — " + p.pourquoi)}">${esc(p.nom)}</span>`).join(", ")}</li>`).join("")}</ul>` : ""}</div>`;
+    ${ps.length ? `<p><b>Personnages</b> (survolez un nom pour lire pourquoi · <a href="galerie.html?profil=${encodeURIComponent(code)}">voir dans la galerie</a>)</p><ul class="exp-u">${[...new Set(ps.map(p => p.univers))].map(u => `<li><i>${esc(u)}</i> : ${ps.filter(p => p.univers === u).map(p => `<span title="${esc(p.source + " — " + p.pourquoi)}">${esc(p.nom)}</span>`).join(", ")}</li>`).join("")}</ul>` : ""}</div>`;
 }
 function ficheProfil(e){
   const a = M.analyser(e.code), moi = MOI?.code === e.code;

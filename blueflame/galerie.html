@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flamme Bleue — galerie des personnages</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
+<script src="flamme_moteur.js?v=1.3"></script>
+<script src="flamme_glyphes.js?v=2.4"></script>
+<script src="flamme_experimental.js?v=1.1"></script>
+
+<style>
+:root{--ink:#1B2430;--muted:#5B6573;--line:#DDE1E7;--paper:#F4F6F8;--panel:#FFFFFF;--hover:#EEF1F5;--ok:#1E7A46;--warn:#9A5B00;--err:#B42318;
+  --serif:"Source Serif 4",Georgia,"Times New Roman",serif;--sans:"IBM Plex Sans","Segoe UI",Arial,sans-serif}
+*{box-sizing:border-box} html,body{margin:0} body{background:var(--paper);color:var(--ink);font:15px/1.5 var(--sans)}
+button,input{font:inherit;color:inherit} :focus-visible{outline:2px solid #3B6FE0;outline-offset:2px} .hidden{display:none!important}
+header{display:flex;align-items:baseline;gap:18px;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
+.wordmark a{color:inherit;text-decoration:none} .wordmark a:hover{opacity:.7}
+.wordmark{font:600 24px/1 var(--serif);letter-spacing:.02em;margin:0} .signature{font:italic 14px/1.4 var(--serif);color:var(--muted);margin:0}
+header nav a{color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:5px} header nav a:hover{background:var(--hover);color:var(--ink)}
+.who{margin-left:auto;font-size:13px;color:var(--muted);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.btn{border:1px solid var(--ink);background:var(--ink);color:var(--panel);padding:8px 14px;border-radius:6px;cursor:pointer;font-weight:500}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.msg{font-size:14px;min-height:1.4em;margin:6px 0 0} .msg.err{color:var(--err)}
+.bloque{max-width:560px;margin:60px auto;padding:0 20px;font:italic 17px/1.5 var(--serif);color:var(--muted)}
+.outils{max-width:1000px;margin:16px auto 0;padding:0 20px;display:flex;gap:10px;flex-wrap:wrap}
+
+/* la galerie */
+.app{max-width:1100px;margin:0 auto;padding:18px 20px 40px}
+.app h1{font:600 30px/1.15 var(--serif);margin:4px 0 4px}
+.exp{display:inline-block;font:600 10.5px var(--sans);letter-spacing:.06em;text-transform:uppercase;color:#7A4A00;background:#FFF1D6;border:1px solid #F0C878;border-radius:999px;padding:1px 8px;vertical-align:6px;margin-left:8px}
+.chapo{color:var(--muted);max-width:75ch;margin:0 0 14px}
+.onglets{display:flex;gap:6px;border-bottom:1px solid var(--line);margin:10px 0 14px}
+.onglets button{border:0;background:transparent;padding:8px 14px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;font-weight:500}
+.onglets button[aria-selected="true"]{color:var(--ink);border-bottom-color:#2F6BFF}
+.filtres{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
+.filtres input,.filtres select{padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:var(--panel);font:inherit;min-width:0}
+.filtres input[type=search]{flex:1 1 240px}
+.puces{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.puces button{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:3px 11px;cursor:pointer;font-size:13px}
+.puces button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.compte{font-size:13px;color:var(--muted);margin:0 0 10px}
+.groupe{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin:0 0 12px}
+.groupe h2{font:600 18px var(--serif);margin:0;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.groupe h2 svg.g{height:20px;width:auto}
+.groupe h2 .dv{font:italic 14px var(--serif);color:var(--muted);font-weight:400}
+.groupe h2 a{font:500 12.5px var(--sans);color:var(--muted);margin-left:auto}
+.groupe h2 .moi{font:600 11px var(--sans);background:#DCE8FF;color:#0B2E8A;border-radius:999px;padding:1px 8px}
+.liste{list-style:none;margin:8px 0 0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 24px}
+@media (max-width:760px){ .liste{grid-template-columns:1fr} }
+.liste li{font:15px/1.4 var(--serif);min-width:0}
+.liste b{font-weight:600} .liste .u{font:600 10.5px var(--sans);letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-left:6px}
+.liste .src{display:block;font:12px var(--sans);color:var(--muted)} .liste .pq{display:block;font:italic 14px/1.45 var(--serif);color:var(--ink);opacity:.85}
+.travail td{vertical-align:top;padding:8px 10px;border-bottom:1px solid var(--line)}
+.travail{border-collapse:collapse;width:100%;font-size:14px;background:var(--panel)} .travail th{text-align:left;font-weight:500;color:var(--muted);padding:6px 10px;border-bottom:1px solid var(--line)}
+.travail .n{font:600 15px var(--serif);white-space:nowrap} .travail .n svg.g{height:16px;width:auto;vertical-align:-3px;margin-right:6px}
+.travail .m{color:var(--muted)}
+.tableau{overflow-x:auto}
+mark{background:#FFF1A8;color:inherit;padding:0 1px;border-radius:2px}
+.pips{display:inline-flex;gap:3px;align-items:center;vertical-align:1px} svg.g{vertical-align:middle;display:inline-block;overflow:visible}
+.pip{width:11px;height:11px;border-radius:50%;border:1px solid #8892A0}
+.pip.sec{width:7px;height:7px} .pip.abs{background:transparent!important;border:1.5px dashed var(--c)} .pip.sep{width:auto;height:auto;border:0;font-size:10px;color:var(--muted)}
+footer{border-top:1px solid var(--line);background:var(--panel);padding:4px 20px;text-align:right;font-size:12px;color:var(--muted)}
+dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);padding:24px;width:min(380px,92vw)} dialog::backdrop{background:rgba(10,15,25,.45)}
+.field{display:block;margin-bottom:12px} .field span{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
+.field input{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:6px;background:var(--paper)}
+</style>
+</head>
+<body>
+<header>
+  <h1 class="wordmark"><a href="index.html" title="Accueil de Flamme Bleue">Flamme Bleue</a></h1><p class="signature">Cartographiez votre énergie</p>
+  <nav><a href="autotest.html">Autotest</a><a href="encyclopedie.html">Encyclopédie</a></nav>
+  <div class="who"><span id="who"></span>
+    <button class="btn ghost" id="btn-login" type="button">Se connecter</button>
+    <button class="btn ghost hidden" id="btn-logout" type="button">Se déconnecter</button></div>
+</header>
+<p class="bloque" id="bloque">Chargement…</p>
+<main class="app hidden" id="app">
+  <h1>Galerie des personnages <span class="exp">expérimental</span></h1>
+  <p class="chapo" id="chapo"></p>
+  <div class="onglets" role="tablist"><button role="tab" aria-selected="true" data-onglet="perso" type="button">Personnages</button><button role="tab" aria-selected="false" data-onglet="travail" type="button">Au travail</button></div>
+  <section id="v-perso">
+    <div class="filtres">
+      <input type="search" id="q" placeholder="Chercher un personnage, une œuvre, un profil…" aria-label="Chercher">
+      <select id="f-famille" aria-label="Famille"><option value="">Toutes les familles</option><option value="radical">Radicaux</option><option value="specialiste">Spécialistes</option><option value="generaliste">Généralistes</option></select>
+      <select id="f-profil" aria-label="Profil"></select>
+    </div>
+    <div class="puces" id="f-univers" aria-label="Univers"></div>
+    <p class="compte" id="compte"></p>
+    <div id="liste"></div>
+  </section>
+  <section id="v-travail" class="hidden">
+    <div class="filtres"><input type="search" id="q2" placeholder="Chercher un rôle, un métier, un profil…" aria-label="Chercher"></div>
+    <div class="tableau"><table class="travail"><thead><tr><th>Profil</th><th>Rôle dans une équipe</th><th>Familles de métiers</th></tr></thead><tbody id="t-travail"></tbody></table></div>
+  </section>
+</main>
+<footer id="version"></footer>
+<dialog id="dlg-login"><form id="form-login"><h2 style="font:600 22px var(--serif);margin:0 0 14px">Se connecter</h2>
+  <label class="field"><span>Adresse e-mail</span><input type="email" id="email" autocomplete="username" required></label>
+  <label class="field"><span>Mot de passe</span><input type="password" id="password" autocomplete="current-password" required></label>
+  <div style="display:flex;gap:10px"><button class="btn" type="submit">Se connecter</button><button class="btn ghost" type="button" id="login-fermer">Fermer</button></div>
+  <p class="msg" id="login-msg" role="status"></p></form></dialog>
+<script>
+/* =====================================================================
+   Flamme Bleue — galerie des personnages (contenus expérimentaux)
+   Parcourt flamme_experimental.js dans l'autre sens : par personnage, par univers, par profil.
+   Onglet « Au travail » : le rôle et les métiers des 90 profils.
+   ===================================================================== */
+const VERSION = { numero:"1.0", date:"2026-10-17 18:00" };
+const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
+const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
+const M = window.FLAMME_MOTEUR;
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pct = x => (x * 100).toFixed(1).replace(".", ",") + " %";
+const dateFr = d => new Date(d).toLocaleDateString("fr-FR", { day:"numeric", month:"long", year:"numeric" });
+let user = null, role = null, E = {}, C = {};
+$("#version").textContent = `Galerie ${VERSION.numero}, version du ${VERSION.date.replace(/(\d{4})-(\d\d)-(\d\d) (\d\d):(\d\d)/,"$3/$2/$1 à $4h$5")} — moteur ${M.VERSION.numero}`;
+
+function pips(code){
+  // glyphe (projets, profils, styles, tempéraments) si le code en a un ; sinon les pastilles rondes
+  const g = window.FLAMME_GLYPHES?.glyphe(code, Object.fromEntries(Object.entries(C).map(([k, v]) => [k, v.couleur]))); if (g) return g;
+  let out = "", absent = false;
+  for (const ch of code){
+    if (ch === "/"){ absent = true; out += '<span class="pip sep">/</span>'; continue; }
+    const up = ch.toUpperCase(), c = C[up]; if (!c) continue;
+    const cls = ch === up ? "pip" : (absent ? "pip abs" : "pip sec");
+    out += `<span class="${cls}" style="background:${c.couleur};--c:${c.couleur === '#FFFFFF' ? '#8892A0' : c.couleur}"></span>`;
+  }
+  return `<span class="pips" aria-hidden="true">${out}</span>`;
+}
+
+const FAMILLES = { radical: "radical", specialiste: "spécialiste", generaliste: "généraliste" };
+const ancreEncyclo = code => "encyclopedie.html#e-" + code.replace(/\//g, "_").replace(/\./g, "-");
+const sansAccent = t => String(t || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+let TOUS = [], PROFILS = [], MES = new Set(), MOI = null, filtre = { q: "", famille: "", profil: "", univers: "" };
+
+function surligne(t, q){
+  if (!q) return esc(t);
+  const n = sansAccent(t), i = n.indexOf(q);
+  return i < 0 ? esc(t) : esc(t.slice(0, i)) + "<mark>" + esc(t.slice(i, i + q.length)) + "</mark>" + esc(t.slice(i + q.length));
+}
+async function demarrer(){
+  const X = window.FLAMME_EXPERIMENTAL;
+  if (!X){ throw new Error("Le fichier des contenus expérimentaux (flamme_experimental.js) n'a pas pu être chargé."); }
+  PROFILS = Object.values(E).filter(e => e.couche === "profil").sort((a, b) => (a.ordre ?? 0) - (b.ordre ?? 0));
+  TOUS = PROFILS.flatMap(p => (X.personnalites[p.code] || []).map(x => ({ ...x, code: p.code })));
+  const univers = [...new Set(TOUS.map(x => x.univers))];
+  $("#chapo").textContent = `${TOUS.length} personnages de fiction et figures historiques, rattachés aux 90 profils et rangés en ${univers.length} univers. Ce sont des propositions en cours de relecture : elles évolueront.`;
+  // mon profil et mes voisins (dernier résultat)
+  try {
+    const { data } = await sb.from("flamme_resultats").select("scores,classement").eq("user_id", user.id).order("passe_le", { ascending:false }).limit(1);
+    if (data?.[0]){
+      const s01 = Object.fromEntries(M.ORDRE.map(c => [c, data[0].scores[c] / 100]));
+      const st = M.statistiques(s01, PROFILS.map(p => p.code), { classement: data[0].classement });
+      MOI = st.profil.codes[0];
+      st.sections.profils.slice(0, 4).forEach(p => MES.add(p.code)); st.profil.codes.forEach(c => MES.add(c));
+    }
+  } catch {}
+  $("#f-profil").innerHTML = `<option value="">Tous les profils</option>${MES.size ? `<option value="__moi">Mon profil et mes voisins</option>` : ""}${PROFILS.map(p => `<option value="${esc(p.code)}">${esc(p.nom)} (${esc(p.code)})</option>`).join("")}`;
+  $("#f-univers").innerHTML = [["", "Tous les univers"], ...univers.map(u => [u, `${u} (${TOUS.filter(x => x.univers === u).length})`])]
+    .map(([v, l]) => `<button type="button" data-u="${esc(v)}" aria-pressed="${v === ""}">${esc(l)}</button>`).join("");
+  const q = new URLSearchParams(location.search);
+  if (q.get("profil") && E[q.get("profil")]) filtre.profil = q.get("profil");
+  if (q.get("univers") && univers.includes(q.get("univers"))) filtre.univers = q.get("univers");
+  if (q.get("moi") !== null && MES.size) filtre.profil = "__moi";
+  $("#f-profil").value = filtre.profil;
+  $("#f-univers").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.u === filtre.univers));
+  $("#q").addEventListener("input", e => { filtre.q = sansAccent(e.target.value.trim()); afficher(); });
+  $("#f-famille").addEventListener("change", e => { filtre.famille = e.target.value; afficher(); });
+  $("#f-profil").addEventListener("change", e => { filtre.profil = e.target.value; afficher(); });
+  $("#f-univers").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; filtre.univers = b.dataset.u;
+    $("#f-univers").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); afficher(); });
+  document.querySelectorAll(".onglets button").forEach(b => b.addEventListener("click", () => {
+    document.querySelectorAll(".onglets button").forEach(x => x.setAttribute("aria-selected", x === b));
+    $("#v-perso").classList.toggle("hidden", b.dataset.onglet !== "perso"); $("#v-travail").classList.toggle("hidden", b.dataset.onglet !== "travail");
+  }));
+  $("#q2").addEventListener("input", travail);
+  afficher(); travail();
+}
+function afficher(){
+  const q = filtre.q;
+  const garde = x => {
+    const p = E[x.code];
+    if (filtre.univers && x.univers !== filtre.univers) return false;
+    if (filtre.profil === "__moi" ? !MES.has(x.code) : filtre.profil && x.code !== filtre.profil) return false;
+    if (filtre.famille && M.analyser(x.code).famille !== filtre.famille) return false;
+    if (q && ![x.nom, x.source, x.univers, x.pourquoi, p?.nom, x.code].some(t => sansAccent(t).includes(q))) return false;
+    return true;
+  };
+  const vus = TOUS.filter(garde);
+  const parProfil = PROFILS.map(p => [p, vus.filter(x => x.code === p.code)]).filter(([, l]) => l.length);
+  $("#compte").textContent = vus.length ? `${vus.length} personnage${vus.length > 1 ? "s" : ""}, ${parProfil.length} profil${parProfil.length > 1 ? "s" : ""}` : "Aucun personnage ne correspond à ces filtres.";
+  $("#liste").innerHTML = parProfil.map(([p, l]) => `<section class="groupe"><h2>${pips(p.code)} ${surligne(p.nom, q)} <span class="dv">${esc(p.devise || "")}</span>${p.code === MOI ? '<span class="moi">mon profil</span>' : ""}<a href="${ancreEncyclo(p.code)}">${esc(FAMILLES[M.analyser(p.code).famille] || "")} · ${esc(p.code)} · encyclopédie</a></h2>
+    <ul class="liste">${l.map(x => `<li><b>${surligne(x.nom, q)}</b>${filtre.univers ? "" : `<span class="u">${esc(x.univers)}</span>`}<span class="src">${surligne(x.source, q)}</span><span class="pq">${esc(x.pourquoi)}</span></li>`).join("")}</ul></section>`).join("");
+}
+function travail(){
+  const T = window.FLAMME_EXPERIMENTAL.travail.profils, q = sansAccent($("#q2").value.trim());
+  $("#t-travail").innerHTML = PROFILS.filter(p => T[p.code]).filter(p => !q || [p.nom, p.code, T[p.code].role, ...T[p.code].metiers].some(t => sansAccent(t).includes(q)))
+    .map(p => `<tr><td class="n">${pips(p.code)}<a href="${ancreEncyclo(p.code)}" style="color:inherit">${surligne(p.nom, q)}</a>${p.code === MOI ? ' <span class="exp" style="vertical-align:1px;background:#DCE8FF;color:#0B2E8A;border-color:#B9CDF5">moi</span>' : ""}</td><td>${surligne(T[p.code].role, q)}</td><td class="m">${T[p.code].metiers.map(m => surligne(m, q)).join(" · ")}</td></tr>`).join("");
+}
+
+/* ---------- accès ---------- */
+$("#btn-login").addEventListener("click", () => { location.href = "../?retour=" + encodeURIComponent(location.href); });   // connexion centralisée sur la Forge
+$("#login-fermer").addEventListener("click", () => $("#dlg-login").close());
+$("#btn-logout").addEventListener("click", () => sb.auth.signOut().then(() => location.href = "../"));
+$("#form-login").addEventListener("submit", async e => { e.preventDefault(); const m = $("#login-msg"); m.className = "msg"; m.textContent = "Connexion…";
+  const { error } = await sb.auth.signInWithPassword({ email: $("#email").value.trim(), password: $("#password").value });
+  if (error){ m.className = "msg err"; m.textContent = /invalid/i.test(error.message) ? "Adresse ou mot de passe incorrect." : error.message; } else $("#dlg-login").close(); });
+
+sb.auth.onAuthStateChange(async (_e, session) => {
+  const u = session?.user || null; if (u?.id === user?.id && role !== null) return;
+  user = u; role = null;
+  $("#btn-login").classList.toggle("hidden", !!user); $("#btn-logout").classList.toggle("hidden", !user);
+  $("#who").textContent = user ? user.email : "";
+  $("#app").classList.add("hidden"); $("#bloque").classList.remove("hidden");
+  if (!user){ $("#bloque").textContent = "La galerie est réservée aux personnes qui ont un compte. Connecte-toi pour l'afficher."; return; }
+  const { data: r } = await sb.rpc("flamme_mon_role"); role = r || "";
+  if (!role){ $("#bloque").textContent = "Ton compte n'a pas encore accès à Flamme Bleue."; return; }
+  try {
+    const [{ data: els, error }, { data: cols }] = await Promise.all([sb.from("flamme_elements").select("*"), sb.from("flamme_couleurs").select("*")]);
+    if (error) throw new Error(error.message);
+    E = Object.fromEntries(els.map(e => [e.code, e])); C = Object.fromEntries((cols || []).map(c => [c.code, c]));
+    await demarrer();
+    $("#bloque").classList.add("hidden"); $("#app").classList.remove("hidden");
+  } catch (err){ $("#bloque").textContent = err.message; }
+});
+</script>
+<script src="entete.js?v=1.4"></script>
+</body>
+</html>
