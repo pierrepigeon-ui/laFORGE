@@ -260,7 +260,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px}
 </dialog>
 
 <script>
-const VERSION = { numero:"2.3", date:"2026-10-15 23:30" };
+const VERSION = { numero:"2.4", date:"2026-10-17 15:30" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const M = window.FLAMME_MOTEUR;
@@ -727,6 +727,7 @@ async function historique(){
   $("#historique").innerHTML = data.length
     ? `<ul>${data.map(r => `<li>${new Date(r.passe_le).toLocaleDateString("fr-FR")} — <span class="gh" title="${esc(r.codes[0])}">${pips(r.codes[0])}</span> <b>${esc(E[r.codes[0]]?.nom || r.codes[0])}</b>
         <a class="lien" href="fiche.html?resultat=${r.id}" target="_blank">fiche</a>
+        <a class="lien" href="portrait.html?resultat=${r.id}" target="_blank">portrait</a>
         <a class="lien" href="ecusson.html?resultat=${r.id}" target="_blank">écusson</a>
         <button class="lien reprendre" data-id="${r.id}" type="button">reprendre</button>
         <button class="lien effacer" data-id="${r.id}" type="button">effacer</button></li>`).join("")}</ul>`

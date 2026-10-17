@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flamme Bleue — portrait détaillé</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
+<script src="flamme_moteur.js?v=1.3"></script>
+<script src="flamme_glyphes.js?v=2.4"></script>
+<style>
+:root{--ink:#1B2430;--muted:#5B6573;--line:#DDE1E7;--paper:#F4F6F8;--panel:#FFFFFF;--hover:#EEF1F5;--ok:#1E7A46;--warn:#9A5B00;--err:#B42318;
+  --serif:"Source Serif 4",Georgia,"Times New Roman",serif;--sans:"IBM Plex Sans","Segoe UI",Arial,sans-serif}
+*{box-sizing:border-box} html,body{margin:0} body{background:var(--paper);color:var(--ink);font:15px/1.5 var(--sans)}
+button,input{font:inherit;color:inherit} :focus-visible{outline:2px solid #3B6FE0;outline-offset:2px} .hidden{display:none!important}
+header{display:flex;align-items:baseline;gap:18px;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
+.wordmark a{color:inherit;text-decoration:none} .wordmark a:hover{opacity:.7}
+.wordmark{font:600 24px/1 var(--serif);letter-spacing:.02em;margin:0} .signature{font:italic 14px/1.4 var(--serif);color:var(--muted);margin:0}
+header nav a{color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:5px} header nav a:hover{background:var(--hover);color:var(--ink)}
+.who{margin-left:auto;font-size:13px;color:var(--muted);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.btn{border:1px solid var(--ink);background:var(--ink);color:var(--panel);padding:8px 14px;border-radius:6px;cursor:pointer;font-weight:500}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.msg{font-size:14px;min-height:1.4em;margin:6px 0 0} .msg.err{color:var(--err)}
+.bloque{max-width:560px;margin:60px auto;padding:0 20px;font:italic 17px/1.5 var(--serif);color:var(--muted)}
+.outils{max-width:1000px;margin:16px auto 0;padding:0 20px;display:flex;gap:10px;flex-wrap:wrap}
+
+/* le portrait */
+.feuille{max-width:860px;margin:16px auto 40px;background:#fff;color:#1B2430;border:1px solid var(--line);border-radius:10px;padding:36px 52px}
+.entete{display:flex;justify-content:space-between;align-items:baseline;gap:16px;border-bottom:2px solid #1B2430;padding-bottom:8px;margin-bottom:22px;flex-wrap:wrap}
+.entete .marque{font:600 20px var(--serif);letter-spacing:.02em}
+.entete .marque-logo{width:31px;height:24px;vertical-align:-3px;margin-right:8px}
+.entete .marque i{font:italic 13px var(--serif);color:#5B6573;margin-left:8px}
+.entete .qui{font-size:13px;color:#5B6573;text-align:right}
+.surtitre{font:600 12px var(--sans);letter-spacing:.08em;text-transform:uppercase;color:#5B6573;display:flex;gap:10px;align-items:center}
+h1.nom{font:600 38px/1.1 var(--serif);margin:6px 0 4px}
+.devise{font:italic 19px/1.35 var(--serif);color:#5B6573}
+.totem{font:14px/1.5 var(--sans);color:#5B6573;margin-top:8px}
+.citation{font:italic 17px/1.6 var(--serif);border-left:3px solid #2F6BFF;padding:2px 0 2px 16px;margin:14px 0}
+.citation p{margin:0 0 6px}
+.lecture{font:16.5px/1.65 var(--serif);margin:12px 0}
+.lecture p{margin:0 0 10px}
+.frontiere{font-size:14px;color:var(--warn);border-left:3px solid var(--warn);padding:4px 10px;margin:0 0 16px}
+h2{font:600 22px var(--serif);margin:34px 0 4px;padding-bottom:4px;border-bottom:1px solid #DDE1E7;break-after:avoid}
+.chapeau{font:15px/1.55 var(--sans);color:#5B6573;margin:6px 0 12px}
+.bloc{break-inside:avoid;margin:16px 0 18px}
+.bloc h3{font:600 17px var(--serif);margin:0;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.bloc h3 .sc{font:500 13px var(--sans);color:#5B6573}
+.bloc .dv{font:italic 15.5px var(--serif);color:#5B6573;margin-top:1px}
+.bloc .citation{font-size:16px;margin:8px 0}
+.liste{margin:6px 0 0;padding-left:20px;font:15.5px/1.55 var(--serif)} .liste li{margin:2px 0}
+.etiq{font:600 12px var(--sans);letter-spacing:.04em;text-transform:uppercase;color:#5B6573;margin-top:8px}
+.roles{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.roles span{font:14px var(--sans);border:1px solid #DDE1E7;border-radius:999px;padding:2px 10px;background:#F4F6F8}
+.court{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;align-items:baseline;margin:8px 0}
+.court .n{font:600 15px var(--serif);white-space:nowrap;display:flex;gap:6px;align-items:center} .court .d{font:italic 15px var(--serif);color:#5B6573}
+.voisins{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:10px}
+.voisin{border:1px solid #DDE1E7;border-radius:8px;padding:10px 12px;break-inside:avoid}
+.voisin b{font:600 16px var(--serif);display:block;margin-top:4px} .voisin i{font:italic 14px var(--serif);color:#5B6573;display:block}
+.voisin .pts{font:500 12.5px var(--sans);color:#5B6573;margin-top:6px}
+.histo{display:flex;gap:8px;align-items:flex-end;height:64px;margin:14px 0 4px;max-width:420px}
+.histo div{flex:1;text-align:center;font-size:11.5px}
+.histo span{display:block;border:1px solid #9AA4B2;border-radius:3px 3px 0 0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+svg.g{vertical-align:middle;display:inline-block;overflow:visible} .bloc h3 svg.g,.court svg.g{height:18px;width:auto}
+.pips{display:inline-flex;gap:3px;align-items:center;vertical-align:1px}
+.pip{width:11px;height:11px;border-radius:50%;border:1px solid #8892A0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.pip.sec{width:7px;height:7px} .pip.abs{background:transparent!important;border:1.5px dashed var(--c)} .pip.sep{width:auto;height:auto;border:0;font-size:10px;color:#5B6573}
+.pied{margin-top:30px;border-top:1px solid #DDE1E7;padding-top:6px;font-size:11px;color:#5B6573;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+footer{border-top:1px solid var(--line);background:var(--panel);padding:4px 20px;text-align:right;font-size:12px;color:var(--muted)}
+dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);padding:24px;width:min(380px,92vw)} dialog::backdrop{background:rgba(10,15,25,.45)}
+dialog h2{border:0} .field{display:block;margin-bottom:12px} .field span{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
+.field input{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:6px;background:var(--paper)}
+@media (max-width:760px){ .feuille{padding:22px 18px} h1.nom{font-size:30px} .voisins{grid-template-columns:1fr} }
+@page{size:A4 portrait;margin:14mm}
+@media print{
+  body{background:#fff} header,.outils,footer,dialog{display:none!important}
+  .feuille{border:0;border-radius:0;margin:0;padding:0;max-width:none}
+  h1.nom{font-size:30px} h2{font-size:18px;margin-top:22px} .lecture,.citation{font-size:13.5px} .bloc .citation,.liste{font-size:13px}
+  .voisins{grid-template-columns:repeat(3,1fr)}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1 class="wordmark"><a href="index.html" title="Accueil de Flamme Bleue">Flamme Bleue</a></h1><p class="signature">Cartographiez votre énergie</p>
+  <nav><a href="autotest.html">Autotest</a></nav>
+  <div class="who"><span id="who"></span>
+    <button class="btn ghost" id="btn-login" type="button">Se connecter</button>
+    <button class="btn ghost hidden" id="btn-logout" type="button">Se déconnecter</button></div>
+</header>
+<p class="bloque" id="bloque">Chargement…</p>
+<div class="outils hidden" id="outils">
+  <button class="btn" type="button" onclick="window.print()">Imprimer ou enregistrer en PDF</button>
+  <a class="btn ghost" id="lien-fiche" href="#">Voir la fiche</a>
+  <a class="btn ghost" id="lien-ecusson" href="#">Voir l'écusson</a>
+  <a class="btn ghost hidden" id="lien-detail" href="#">Voir le détail</a>
+</div>
+<article class="feuille hidden" id="feuille"></article>
+<footer id="version"></footer>
+<dialog id="dlg-login"><form id="form-login"><h2 style="font:600 22px var(--serif);margin:0 0 14px">Se connecter</h2>
+  <label class="field"><span>Adresse e-mail</span><input type="email" id="email" autocomplete="username" required></label>
+  <label class="field"><span>Mot de passe</span><input type="password" id="password" autocomplete="current-password" required></label>
+  <div style="display:flex;gap:10px"><button class="btn" type="submit">Se connecter</button><button class="btn ghost" type="button" id="login-fermer">Fermer</button></div>
+  <p class="msg" id="login-msg" role="status"></p></form></dialog>
+<script>
+/* =====================================================================
+   Flamme Bleue — portrait détaillé
+   Un texte suivi, assemblé à partir des textes du modèle (table flamme_elements),
+   choisis et ordonnés selon les scores de la personne. Les mêmes scores donnent toujours le même portrait.
+   Sources : ?resultat=ID, ?catalogue=ID, ?type=CODE ou ?W=..&U=..&B=..&R=..&G=.. (en %).
+   ===================================================================== */
+const VERSION = { numero:"1.0", date:"2026-10-17 15:30" };
+const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
+const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
+const M = window.FLAMME_MOTEUR;
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pct = x => (x * 100).toFixed(1).replace(".", ",") + " %";
+const dateFr = d => new Date(d).toLocaleDateString("fr-FR", { day:"numeric", month:"long", year:"numeric" });
+let user = null, role = null, E = {}, C = {};
+$("#version").textContent = `Portrait ${VERSION.numero}, version du ${VERSION.date.replace(/(\d{4})-(\d\d)-(\d\d) (\d\d):(\d\d)/,"$3/$2/$1 à $4h$5")} — moteur ${M.VERSION.numero}`;
+
+function pips(code){
+  // glyphe (projets, profils, styles, tempéraments) si le code en a un ; sinon les pastilles rondes
+  const g = window.FLAMME_GLYPHES?.glyphe(code, Object.fromEntries(Object.entries(C).map(([k, v]) => [k, v.couleur]))); if (g) return g;
+  let out = "", absent = false;
+  for (const ch of code){
+    if (ch === "/"){ absent = true; out += '<span class="pip sep">/</span>'; continue; }
+    const up = ch.toUpperCase(), c = C[up]; if (!c) continue;
+    const cls = ch === up ? "pip" : (absent ? "pip abs" : "pip sec");
+    out += `<span class="${cls}" style="background:${c.couleur};--c:${c.couleur === '#FFFFFF' ? '#8892A0' : c.couleur}"></span>`;
+  }
+  return `<span class="pips" aria-hidden="true">${out}</span>`;
+}
+const nomMaj = code => esc((E[code]?.nom || code).toLocaleUpperCase("fr-FR"));
+
+/* ---------- source des scores : ?resultat=ID ou ?W=..&U=..&B=..&R=..&G=.. (en %) ---------- */
+async function lireScores(){
+  const q = new URLSearchParams(location.search);
+  if (q.get("type")){
+    const code = q.get("type");
+    if (!M.analyser(code).famille) throw new Error(`« ${code} » n'est pas un code de profil.`);
+    return { scores: M.scoresTypes(code), date: null, qui: "", type: code };
+  }
+  if (q.get("catalogue")){                                                    // fiche du catalogue de profils
+    const { data, error } = await sb.from("flamme_catalogue").select("*").eq("id", q.get("catalogue")).maybeSingle();
+    if (error || !data) throw new Error("Cette fiche du catalogue est introuvable, ou tu n'as pas le droit de la consulter.");
+    return { scores: data.scores, date: data.cree_le, qui: "Catalogue : " + data.nom, classement: data.classement, ecarts: data.ecarts, catalogue: data.id };
+  }
+  if (q.get("resultat")){
+    const { data, error } = await sb.from("flamme_resultats").select("*").eq("id", q.get("resultat")).maybeSingle();
+    if (error || !data) throw new Error("Ce résultat est introuvable, ou tu n'as pas le droit de le consulter.");
+    let qui = "";
+    if (role === "proprietaire" && data.user_id !== user.id){
+      const { data: pers } = await sb.rpc("flamme_personnes"); const p = (pers || []).find(x => x.user_id === data.user_id);
+      qui = p ? (p.nom || p.email) : "";
+    }
+    return { scores: data.scores, date: data.passe_le, qui, id: data.id, classement: data.classement };
+  }
+  const s = {}; for (const c of M.ORDRE){ const v = parseFloat(String(q.get(c) ?? "").replace(",", ".")); if (!isFinite(v)) throw new Error("Il manque des scores : ouvre le portrait depuis la fiche, l'autotest ou la console."); s[c] = v; }
+  return { scores: s, date: new Date().toISOString(), qui: "" };
+}
+
+
+/* ---------- petits outils de rédaction ---------- */
+const lignes = t => String(t || "").split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+const pc = x => String(Math.round(x)) + " %";
+const pts = x => (x > 0.05 ? "+" : x < -0.05 ? "−" : "") + Math.abs(x).toFixed(1).replace(".", ",") + " pts";
+const nomV = c => E[c]?.nom || c;                                          // « penser », « vibrer »…
+const guil = t => `« ${esc(t)} »`;
+const citation = (...ts) => { const p = ts.flat().filter(Boolean); return p.length ? `<div class="citation">${p.map(t => `<p>${esc(t)}</p>`).join("")}</div>` : ""; };
+const intensite = v => v >= 75 ? "très présente" : v >= 60 ? "présente" : v >= 40 ? "modérée" : v >= 25 ? "discrète" : "très discrète";
+const listeEt = l => l.length < 2 ? l.join("") : l.slice(0, -1).join(", ") + " et " + l[l.length - 1];
+const FAMILLES = { radical: "radical", specialiste: "spécialiste", generaliste: "généraliste" };
+const BANDES = { naturel: "naturel", accessible: "accessible", situationnel: "situationnel", difficile: "difficile", inaccessible: "inaccessible" };
+
+function rendre(src){
+  const S = src.scores, s01 = Object.fromEntries(M.ORDRE.map(c => [c, S[c] / 100]));
+  const codesProfils = Object.values(E).filter(e => e.couche === "profil").sort((a, b) => (a.ordre ?? 0) - (b.ordre ?? 0)).map(e => e.code);
+  const f = M.fiche(s01, { classement: src.classement });
+  const st = M.statistiques(s01, codesProfils, { classement: src.classement });
+  const codes = f.profil.codes, code = codes[0], P = E[code] || {}, a = M.analyser(code);
+  const accProfil = c => (st.sections.profils.find(p => p.code === c)?.score ?? 0) * 100;
+
+  /* 1. le profil */
+  const acc = accProfil(code);
+  const lectureFamille = {
+    radical: () => `Votre profil est <b>radical</b> : une valeur domine${acc >= 15 ? " nettement" : ""}, ${guil(nomV(a.principales[0]))}, et ${listeEt([...a.secondaires].map(c => guil(nomV(c))))} l'accompagnent.`,
+    specialiste: () => `Votre profil est <b>spécialiste</b> : deux valeurs le portent, ${guil(nomV(a.principales[0]))} et ${guil(nomV(a.principales[1]))}, soutenues par ${guil(nomV(a.secondaires[0]))}.`,
+    generaliste: () => `Votre profil est <b>généraliste</b> : deux valeurs le portent, ${guil(nomV(a.principales[0]))} et ${guil(nomV(a.principales[1]))}, et ${guil(nomV(a.absentes[a.absentes.length - 1]))} est la grande absente.`
+  }[a.famille]?.() || "";
+  const lectureFam = acc < 5 ? `Le profil retenu pour vous est <b>${FAMILLES[a.famille] || ""}</b>.` : lectureFamille;
+  const autres = st.sections.profils.filter(p => !codes.includes(p.code));
+  const second = autres[0], ecart2 = acc - second.score * 100;
+  const nettete = acc >= 30 ? `Vos scores soutiennent nettement ce profil (${pts(acc)} d'accessibilité) : c'est pour vous un profil <b>naturel</b>.`
+    : acc >= 15 ? `Vos scores soutiennent bien ce profil (${pts(acc)} d'accessibilité).`
+    : acc < 5 ? `Vos scores sont presque équilibrés (${pts(acc)} d'accessibilité) : aucun profil ne s'impose vraiment, et celui-ci est retenu par la règle de départage. Lisez ce portrait comme une piste parmi d'autres.`
+    : `Vos scores ne soutiennent ce profil que de peu (${pts(acc)} d'accessibilité) : votre énergie se répartit, et d'autres profils vous sont presque aussi accessibles.`;
+  const talon = !f.profil.frontiere && acc >= 5 && ecart2 < 3 ? ` Juste derrière vient <b>${esc(E[second.code]?.nom || second.code)}</b> (${pts(second.score * 100)}) : les deux profils vous sont presque aussi naturels l'un que l'autre.` : "";
+  const totem = P.animal_totem ? `<div class="totem">Animal totem : <b>${esc(P.animal_totem)}</b>${P.animal_raison ? ` — ${esc(P.animal_raison)}` : ""}</div>` : "";
+  let h = `
+    <div class="entete"><div class="marque"><svg class="marque-logo" viewBox="2 24 96 74" aria-hidden="true"><rect x="6" y="86" width="88" height="8" rx="4" fill="#0B2E8A"/><path fill="#2F6BFF" d="M13 84c-7-7-5-18 9-34-1 14 6 26-1 34zM30 84c-7-9-4-24 13-46-2 18 6 34-1 46zM47 84c-8-10-5-30 15-56-3 22 7 42-1 56zM64 84c-7-9-4-26 13-44-2 18 6 32-1 44zM81 84c-7-7-5-20 10-36-1 14 6 28-1 36z"/></svg>Flamme Bleue<i>Cartographiez votre énergie</i></div>
+      <div class="qui">${src.type ? "Portrait du profil type<br>scores types de la famille" : `Portrait détaillé${src.qui ? " — " + esc(src.qui) : ""}<br>${dateFr(src.date)}`}</div></div>
+    ${f.profil.frontiere ? `<p class="frontiere">Profil frontière : vos scores vous placent à égalité entre ${listeEt(codes.map(c => guil(E[c]?.nom || c)))}. Le portrait suit le premier ; les autres sont présentés plus bas, parmi vos profils voisins.</p>` : ""}
+    <div class="surtitre">${pips(code)} Profil ${FAMILLES[a.famille] || ""}</div>
+    <h1 class="nom">${esc(P.nom || code)}</h1>
+    <div class="devise">${esc(P.devise || "")}</div>
+    ${totem}
+    ${citation(P.texte1, P.texte2, P.texte3)}
+    <div class="histo">${M.ORDRE.map(c => `<div title="${esc(nomV(c))}"><span style="height:${Math.max(2, S[c] * .52)}px;background:${C[c]?.couleur}"></span>${esc(nomV(c))}<br>${String(Math.round(S[c] * 10) / 10).replace(".", ",")} %</div>`).join("")}</div>
+    <div class="lecture"><p>${lectureFam} ${nettete}${talon}</p></div>`;
+
+  /* 2. les valeurs */
+  const vals = M.ORDRE.map(c => ({ c, v: S[c] })).sort((x, y) => y.v - x.v);
+  const fortes = vals.filter(x => x.v >= 50), faibles = vals.filter(x => x.v < 50).reverse();
+  const pol = st.sections.valeursPolarisees[0];
+  const absenceForte = pol && pol.code.startsWith("/");
+  h += `<h2>Ce qui compte pour vous</h2>
+    <p class="chapeau">Les valeurs disent ce qui est important à vos yeux. Les vôtres, de la plus présente à la plus discrète : ${vals.map(x => `${esc(nomV(x.c))} ${pc(x.v)}`).join(", ")}.</p>
+    ${(fortes.length ? fortes.slice(0, 3) : vals.slice(0, 1)).map(x => `<div class="bloc"><h3>${pips(x.c)} ${guil(nomV(x.c))} <span class="sc">${pc(x.v)} — ${intensite(x.v)}</span></h3>
+      <div class="dv">${esc(E[x.c]?.devise || "")}</div>${citation(E[x.c]?.texte1, E[x.c]?.texte2, E[x.c]?.texte3)}</div>`).join("")}
+    ${faibles.length ? `<h2>Ce qui vous laisse plus indifférent</h2>
+    <p class="chapeau">${absenceForte ? `Chez vous, une absence parle plus fort que vos valeurs fortes : ${guil(nomV(pol.code[1].toUpperCase()))} est la valeur la plus tranchée de vos scores. ` : ""}Une valeur discrète n'est pas forcément un rejet : c'est d'abord ce qui ne vous mobilise pas.</p>
+    ${faibles.filter((x, i) => i === 0 || x.v < 35).map(x => { const anti = E["/" + x.c.toLowerCase()] || {};
+      return `<div class="bloc"><h3>${pips("/" + x.c.toLowerCase())} ${esc(anti.nom || "")} <span class="sc">${esc(nomV(x.c))} ${pc(x.v)} — ${intensite(x.v)}</span></h3>
+      <div class="dv">${esc(anti.devise || "")}</div>${citation(anti.texte1)}</div>`; }).join("")}` : ""}`;
+
+  /* 3. l'énergie : motivations */
+  const atouts = (c, champ) => { const l = lignes(E[c]?.[champ]); return l.length ? `<ul class="liste">${l.map(t => `<li>${esc(t)}</li>`).join("")}</ul>` : ""; };
+  h += `<h2>Ce qui vous donne de l'énergie</h2>
+    <p class="chapeau">Les motivations associent deux valeurs. Les plus fortes chez vous sont vos sources d'énergie ; elles ont leurs atouts, et leurs pièges.</p>
+    ${f.motivationsDominantes.map(x => `<div class="bloc"><h3>${pips(x.code)} ${guil(E[x.code]?.nom || x.code)}</h3><div class="dv">${esc(E[x.code]?.devise || "")}</div>
+      ${citation(E[x.code]?.texte1)}<div class="etiq">Atouts et vigilances</div>${atouts(x.code, "texte_plus")}</div>`).join("")}
+    <h2>Ce qui vous en coûte</h2>
+    <p class="chapeau">À l'inverse, les motivations les plus faibles demandent un effort : ce sont les situations qui vous fatiguent plus vite que d'autres.</p>
+    ${f.motivationsFaibles.map(x => `<div class="bloc"><h3>${pips(x.code)} ${guil(E[x.code]?.nom || x.code)} <span class="sc">peu présente</span></h3><div class="dv">${esc(E[x.code]?.devise || "")}</div>
+      ${atouts(x.code, "texte_moins")}</div>`).join("")}`;
+
+  /* 4. les projets */
+  const roles = c => [...lignes(E[c]?.texte_plus), ...lignes(E[c]?.texte_moins)];
+  h += `<h2>Là où vous mettez votre énergie</h2>
+    <p class="chapeau">Les projets associent trois valeurs : ce sont les terrains où votre énergie trouve à s'employer.</p>
+    ${f.projetFort.map(x => `<div class="bloc"><h3>${pips(x.code)} ${guil(E[x.code]?.nom || x.code)}</h3><div class="dv">${esc(E[x.code]?.devise || "")}</div>
+      ${citation(E[x.code]?.texte1)}<div class="etiq">Rôles et activités qui peuvent vous convenir</div><div class="roles">${roles(x.code).map(r => `<span>${esc(r)}</span>`).join("")}</div></div>`).join("")}
+    ${f.projetFaible.map(x => `<div class="bloc"><h3>${pips(x.code)} ${guil(E[x.code]?.nom || x.code)} <span class="sc">le projet le moins naturel pour vous</span></h3><div class="dv">${esc(E[x.code]?.devise || "")}</div>
+      <div class="etiq">Rôles et activités qui peuvent moins vous convenir</div><div class="roles">${roles(x.code).map(r => `<span>${esc(r)}</span>`).join("")}</div></div>`).join("")}`;
+
+  /* 5. façons d'agir et tempéraments */
+  const dirs = st.sections.directions.slice(0, 3);
+  const temps = src.classement?.length === 20 ? src.classement.map(c => ({ code: c })) : st.sections.temperaments;
+  const parClassement = src.classement?.length === 20;
+  h += `<h2>Vos façons d'agir</h2>
+    <p class="chapeau">Une valeur forte, colorée par une autre : voici les trois manières d'agir qui vous ressemblent le plus.</p>
+    <div class="court">${dirs.map(x => `<div class="n">${pips(x.code)} ${esc(E[x.code]?.nom || x.code)}</div><div class="d">${esc(E[x.code]?.devise || "")}${E[x.code]?.titre && E[x.code].titre !== E[x.code].devise ? ` — ${guil(E[x.code].titre)}` : ""}</div>`).join("")}</div>
+    <h2>Vos tempéraments</h2>
+    <p class="chapeau">Un tempérament associe une valeur présente et une valeur fuie. ${parClassement ? "D'après votre propre classement des vingt tempéraments, voici ceux qui vous ressemblent le plus." : "D'après vos scores, voici ceux qui vous ressemblent le plus."}</p>
+    ${temps.slice(0, 3).map(x => `<div class="bloc"><h3>${pips(x.code)} ${guil(E[x.code]?.nom || x.code)}</h3><div class="dv">${esc(E[x.code]?.devise || "")}</div>${citation(E[x.code]?.texte1)}</div>`).join("")}
+    <div class="etiq">Les plus éloignés de vous</div>
+    <div class="court">${temps.slice(-2).reverse().map(x => `<div class="n">${pips(x.code)} ${esc(E[x.code]?.nom || x.code)}</div><div class="d">${esc(E[x.code]?.devise || "")}</div>`).join("")}</div>`;
+
+  /* 6. les profils voisins */
+  const voisins = autres.slice(0, 3), loin = st.sections.profils[st.sections.profils.length - 1];
+  h += `<h2>Vos profils voisins</h2>
+    <p class="chapeau">Selon les situations, votre énergie peut aussi prendre d'autres formes. Voici les profils qui vous sont les plus accessibles après le vôtre.</p>
+    <div class="voisins">${voisins.map(p => `<div class="voisin">${pips(p.code)}<b>${esc(E[p.code]?.nom || p.code)}</b><i>${esc(E[p.code]?.devise || "")}</i>
+      <div class="pts">${FAMILLES[p.famille]} · ${pts(p.score * 100)} · ${BANDES[p.bande]}</div></div>`).join("")}</div>
+    <p class="chapeau" style="margin-top:14px">Le profil le plus éloigné du vôtre : <b>${esc(E[loin.code]?.nom || loin.code)}</b> (${esc(E[loin.code]?.devise || "")}, ${pts(loin.score * 100)}). C'est le plus coûteux à endosser pour vous.</p>
+    <div class="pied"><span>Flamme Bleue — portrait ${VERSION.numero}, moteur ${M.VERSION.numero}</span><span>Portrait assemblé à partir des textes du modèle, selon vos scores</span></div>`;
+
+  $("#feuille").innerHTML = h;
+  document.title = `Flamme Bleue — portrait ${P.nom || code}`;
+  $("#lien-fiche").href = "fiche.html" + location.search;
+  $("#lien-ecusson").href = "ecusson.html" + location.search;
+  if (role === "proprietaire"){ const l = $("#lien-detail"); l.href = "detail.html" + location.search; l.classList.remove("hidden"); }
+}
+/* ---------- accès ---------- */
+$("#btn-login").addEventListener("click", () => { location.href = "../?retour=" + encodeURIComponent(location.href); });   // connexion centralisée sur la Forge
+$("#login-fermer").addEventListener("click", () => $("#dlg-login").close());
+$("#btn-logout").addEventListener("click", () => sb.auth.signOut().then(() => location.href = "../"));
+$("#form-login").addEventListener("submit", async e => { e.preventDefault(); const m = $("#login-msg"); m.className = "msg"; m.textContent = "Connexion…";
+  const { error } = await sb.auth.signInWithPassword({ email: $("#email").value.trim(), password: $("#password").value });
+  if (error){ m.className = "msg err"; m.textContent = /invalid/i.test(error.message) ? "Adresse ou mot de passe incorrect." : error.message; } else $("#dlg-login").close(); });
+
+sb.auth.onAuthStateChange(async (_e, session) => {
+  const u = session?.user || null; if (u?.id === user?.id && role !== null) return;
+  user = u; role = null;
+  $("#btn-login").classList.toggle("hidden", !!user); $("#btn-logout").classList.toggle("hidden", !user);
+  $("#who").textContent = user ? user.email : "";
+  ["#feuille", "#outils"].forEach(s => $(s).classList.add("hidden")); $("#bloque").classList.remove("hidden");
+  if (!user){ $("#bloque").textContent = "Le portrait détaillé est réservé aux personnes qui ont un compte. Connecte-toi pour l'afficher."; return; }
+  const { data: r } = await sb.rpc("flamme_mon_role"); role = r || "";
+  if (!role){ $("#bloque").textContent = "Ton compte n'a pas encore accès à Flamme Bleue."; return; }
+  try {
+    const [{ data: els, error }, { data: cols }] = await Promise.all([sb.from("flamme_elements").select("*"), sb.from("flamme_couleurs").select("*")]);
+    if (error) throw new Error(error.message);
+    E = Object.fromEntries(els.map(e => [e.code, e])); C = Object.fromEntries((cols || []).map(c => [c.code, c]));
+    rendre(await lireScores());
+    $("#bloque").classList.add("hidden"); ["#feuille", "#outils"].forEach(s => $(s).classList.remove("hidden"));
+  } catch (err){ $("#bloque").textContent = err.message; }
+});
+</script>
+<script src="entete.js?v=1.3"></script>
+</body>
+</html>

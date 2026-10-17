@@ -76,6 +76,7 @@ dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);c
   <button class="btn ghost" type="button" id="dl-svg">Télécharger en SVG</button>
   <button class="btn ghost" type="button" id="dl-png">Télécharger en PNG</button>
   <a class="btn ghost" id="lien-fiche" href="#">Voir la fiche</a>
+  <a class="btn ghost" id="lien-portrait" href="#">Lire le portrait détaillé</a>
 </div>
 <main class="hidden" id="page"></main>
 <footer><span id="credits">Meubles et animaux : icônes de Lorc, Delapouite et contributeurs, <a href="https://game-icons.net" target="_blank" rel="noopener">game-icons.net</a>, licence <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0</a>.</span> <span id="version"></span></footer>
@@ -85,7 +86,7 @@ dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);c
   <div style="display:flex;gap:10px"><button class="btn" type="submit">Se connecter</button><button class="btn ghost" type="button" id="login-fermer">Fermer</button></div>
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 <script>
-const VERSION = { numero:"2.6", date:"2026-10-15 23:30" };
+const VERSION = { numero:"2.7", date:"2026-10-17 15:30" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const M = window.FLAMME_MOTEUR, B = window.FLAMME_BLASON;
@@ -183,6 +184,7 @@ async function rendre(src){
       <div class="planche">${Object.entries(B.MEUBLES).map(([k, m]) => `<div>${BIB.meubles[k] ? `<svg viewBox="0 0 512 512"><g color="#E6B422" fill="#E6B422" stroke="#1B2430" stroke-width="12" paint-order="stroke">${BIB.meubles[k]}</g></svg>` : `<svg viewBox="0 0 100 100"><g fill="#E6B422" stroke="#1B2430" stroke-width="2.6" stroke-linejoin="round">${m.svg}</g></svg>`}${esc(m.nom)}<br><b>${esc(k)}</b> ${esc(E[k]?.nom || "")}</div>`).join("")}</div>
     </details>`;
   $("#lien-fiche").href = "fiche.html" + location.search;
+  $("#lien-portrait").href = "portrait.html" + location.search;
   document.title = `Flamme Bleue — écusson ${codes.join(" / ")}`;
 }
 

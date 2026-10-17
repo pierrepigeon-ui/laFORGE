@@ -265,7 +265,7 @@ table.j td{border-bottom:1px solid var(--line);padding:8px 10px;vertical-align:t
 
 <script>
 /* ================= configuration ================= */
-const VERSION = { numero:"1.30", date:"2026-10-15 23:30" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.31", date:"2026-10-17 15:30" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 
@@ -690,7 +690,7 @@ async function afficherProduction(userId, msg){
       ${res.map(r => `<tr><td>${date(r.passe_le)}</td>
         <td>${r.codes.slice(0, 1).map(c => `${pips(c)} ${esc(c)} <span class="count">${nomEl(c)}</span>`).join("<br>")}${r.origine === "saisie" ? ' <span class="draft">saisie</span>' : ""}</td>
         <td><div class="mini" title="${M_ORDRE.map(c => c + " " + fmt1(r.scores[c])).join(" · ")}">${M_ORDRE.map(c => `<span style="height:${Math.max(2, (r.scores[c] || 0) * .26)}px;background:${state.couleurs[c]?.couleur || "#999"}"></span>`).join("")}</div></td>
-        <td class="row-btn"><a class="btn ghost" href="fiche.html?resultat=${r.id}" target="_blank">Fiche</a>
+        <td class="row-btn"><a class="btn ghost" href="fiche.html?resultat=${r.id}" target="_blank">Fiche</a><a class="btn ghost" href="portrait.html?resultat=${r.id}" target="_blank">Portrait</a>
           <a class="btn ghost" href="ecusson.html?resultat=${r.id}" target="_blank">Écusson</a>
           <a class="btn ghost" href="detail.html?resultat=${r.id}" target="_blank">Détail</a>
           <button class="btn ghost prod-suppr" type="button" data-id="${r.id}">Effacer</button></td></tr>`).join("")}
@@ -762,7 +762,7 @@ function detailResultat(tr){
   d.innerHTML = `<td colspan="5"><div class="detail-res">
     <b>Scores</b> : ${M_ORDRE.map(c => `${c} ${fmt1(r.scores[c])} %`).join(", ")}
     <ol>${r.classement.map(c => `<li>${pips(c)} ${esc(c)} ${esc(state.elements.find(e => e.code === c)?.nom || "")}</li>`).join("")}</ol>
-    <div class="row-btn"><a class="btn ghost" href="fiche.html?resultat=${r.id}" target="_blank">Fiche</a>
+    <div class="row-btn"><a class="btn ghost" href="fiche.html?resultat=${r.id}" target="_blank">Fiche</a><a class="btn ghost" href="portrait.html?resultat=${r.id}" target="_blank">Portrait</a>
     <a class="btn ghost" href="ecusson.html?resultat=${r.id}" target="_blank">Écusson</a>
     <a class="btn ghost" href="detail.html?resultat=${r.id}" target="_blank">Détail</a>
     <button class="btn ghost" type="button" data-copie="${r.id}">Copier dans le catalogue</button>
@@ -828,6 +828,7 @@ function calculerSaisie(){
     <div class="nom">${esc(e.nom || "")}</div><div class="devise">${esc(e.devise_heraldique || e.devise || "")}</div>
     ${r.voisins.length ? `<p class="count">Ex aequo avec ${esc(r.voisins.join(", "))} : ${dep}.</p>` : ""}
     <div class="row-btn" style="margin-top:10px"><a class="btn" href="fiche.html?${q}" target="_blank">Fiche</a>
+      <a class="btn ghost" href="portrait.html?${q}" target="_blank">Portrait</a>
       <a class="btn ghost" href="ecusson.html?${q}" target="_blank">Écusson</a><a class="btn ghost" href="detail.html?${q}" target="_blank">Détail</a></div>
     <div class="row-btn" style="margin-top:14px;align-items:center;flex-wrap:wrap">
       <label class="count" for="saisie-pour">Enregistrer ce résultat pour</label>
@@ -952,6 +953,7 @@ function detailCatalogue(tr){
       <label class="field"><span>Note</span><input data-champ="note" value="${esc(f.note || "")}"></label></div>
       <label class="cat-partage" style="margin-bottom:10px"><input type="checkbox" data-champ="partage"${f.partage ? " checked" : ""}> partagée avec les éditeurs</label>` : ""}
     <div class="row-btn" style="margin-top:8px"><a class="btn ghost" href="fiche.html?catalogue=${f.id}" target="_blank">Fiche</a>
+      <a class="btn ghost" href="portrait.html?catalogue=${f.id}" target="_blank">Portrait</a>
       <a class="btn ghost" href="ecusson.html?catalogue=${f.id}" target="_blank">Écusson</a>
       ${state.role === "proprietaire" ? `<a class="btn ghost" href="detail.html?catalogue=${f.id}" target="_blank">Détail</a>` : ""}
       ${modifiable ? `<button class="btn" type="button" data-act="enregistrer">Enregistrer les changements</button>
