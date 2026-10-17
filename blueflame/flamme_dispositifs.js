@@ -2,7 +2,23 @@
    « personne » = l'autotest ; « organisation » = le profil d'une organisation.
    La console (onglet Éléments, dispositif choisi, « Libellés du dispositif ») peut remplacer chaque libellé ; ce qui est laissé vide garde la valeur d'ici. */
 window.FLAMME_DISPOSITIFS = {
-  VERSION: { numero: "1.0", date: "2026-10-17 19:50" },
+  VERSION: { numero: "1.1", date: "2026-10-17 20:15" },
+  // textes qu'un dispositif peut réécrire, carte par carte et profil par profil (même code que pour « personne »)
+  CHAMPS_TEXTE: ["nom", "devise", "titre", "texte1", "texte2", "texte3", "texte_plus", "texte_moins"],
+  // pose les textes du dispositif sur ceux de « personne » ; un texte vide garde celui de « personne »
+  superposer(E, lignes){
+    let n = 0;
+    (lignes || []).forEach(l => { const e = E[l.code]; if (!e) return; n++;
+      this.CHAMPS_TEXTE.forEach(k => { if (l[k] != null && String(l[k]).trim() !== "") e[k] = l[k]; }); });
+    return n;
+  },
+  // lit les textes du dispositif (comptes seulement : RLS) et les superpose ; rien à faire pour « personne »
+  async charger(sb, E, dispositif){
+    if (!dispositif || dispositif === "personne") return 0;
+    const { data, error } = await sb.from("flamme_dispositif_textes").select("code," + this.CHAMPS_TEXTE.join(",")).eq("dispositif", dispositif);
+    if (error) return 0;
+    return this.superposer(E, data);
+  },
   LIB_DEFAUT: {
   personne: {
     titre: "Autotest",

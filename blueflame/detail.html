@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <script src="flamme_moteur.js?v=1.7"></script>
+<script src="flamme_dispositifs.js?v=1.1"></script>
 <script src="flamme_glyphes.js?v=2.4"></script>
 <style>
 :root{--ink:#1B2430;--muted:#5B6573;--line:#DDE1E7;--paper:#F4F6F8;--panel:#FFFFFF;--hover:#EEF1F5;--ok:#1E7A46;--warn:#9A5B00;--err:#B42318;
@@ -152,7 +153,7 @@ dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);c
   <div style="display:flex;gap:10px"><button class="btn" type="submit">Se connecter</button><button class="btn ghost" type="button" id="login-fermer">Fermer</button></div>
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 <script>
-const VERSION = { numero:"1.25", date:"2026-10-17 19:45" };
+const VERSION = { numero:"1.26", date:"2026-10-17 20:15" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const ACCES = ["proprietaire"];
@@ -236,6 +237,8 @@ const NOTE_ACCES = `<p class="note large">Pour chaque profil, les cinq valeurs s
   Positif : les scores soutiennent la structure du profil, et plus la marge est grande, moins le profil est menacé. Négatif : les scores la contredisent.
   Un profil et son opposé ont des scores exactement opposés. La liste se lit en colonnes, du plus accessible au moins accessible ; votre profil est encadré.</p>`;
 
+// résultat d'un autre dispositif (organisation…) : son nom passe devant celui de la personne qui l'a saisi
+const avecSujet = (d, o) => ({ ...o, dispositif: d.dispositif, qui: d.sujet ? d.sujet + (o.qui ? " — selon " + o.qui : "") : o.qui });
 async function lireScores(){
   const q = new URLSearchParams(location.search);
   if (q.get("type")){
@@ -246,13 +249,13 @@ async function lireScores(){
   if (q.get("catalogue")){                                                    // fiche du catalogue de profils
     const { data, error } = await sb.from("flamme_catalogue").select("*").eq("id", q.get("catalogue")).maybeSingle();
     if (error || !data) throw new Error("Cette fiche du catalogue est introuvable, ou tu n'as pas le droit de la consulter.");
-    return { scores: data.scores, date: data.cree_le, qui: "Catalogue : " + data.nom, classement: data.classement, ecarts: data.ecarts, catalogue: data.id };
+    return { dispositif: data.dispositif, scores: data.scores, date: data.cree_le, qui: "Catalogue : " + data.nom, classement: data.classement, ecarts: data.ecarts, catalogue: data.id };
   }
   if (q.get("resultat")){
     const { data, error } = await sb.from("flamme_resultats").select("*").eq("id", q.get("resultat")).maybeSingle();
     if (error || !data) throw new Error("Ce résultat est introuvable.");
     const { data: pers } = await sb.rpc("flamme_personnes"); const p = (pers || []).find(x => x.user_id === data.user_id);
-    return { scores: data.scores, date: data.passe_le, qui: p ? (p.nom || p.email) : "", classement: data.classement, ecarts: data.ecarts };
+    return avecSujet(data, { scores: data.scores, date: data.passe_le, qui: p ? (p.nom || p.email) : "", classement: data.classement, ecarts: data.ecarts });
   }
   const s = {}; for (const c of M.ORDRE){ const v = parseFloat(String(q.get(c) ?? "").replace(",", ".")); if (!isFinite(v)) throw new Error("Il manque des scores : ouvre les statistiques depuis la console ou depuis une fiche."); s[c] = v; }
   return { scores: s, date: new Date().toISOString(), qui: "" };
@@ -417,7 +420,9 @@ sb.auth.onAuthStateChange(async (_e, session) => {
     if (error) throw new Error(error.message);
     E = Object.fromEntries(els.map(e => [e.code, e])); C = Object.fromEntries((cols || []).map(c => [c.code, c]));
     (voc || []).forEach(v => ((V[v.domaine] ??= {})[v.cle] = v));
-    rendre(await lireScores());
+    const src = await lireScores();
+    await window.FLAMME_DISPOSITIFS.charger(sb, E, src.dispositif || new URLSearchParams(location.search).get("dispositif"));   // textes de l'organisation, s'il y a lieu
+    rendre(src);
     $("#bloque").classList.add("hidden"); ["#page", "#outils"].forEach(s => $(s).classList.remove("hidden"));
   } catch (err){ $("#bloque").textContent = err.message; }
 });

@@ -272,7 +272,7 @@ table.j td{border-bottom:1px solid var(--line);padding:8px 10px;vertical-align:t
 
 <script>
 /* ================= configuration ================= */
-const VERSION = { numero:"1.34", date:"2026-10-17 19:50" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.35", date:"2026-10-17 20:15" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 
@@ -296,7 +296,7 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt
 let state = { user:null, role:null, noms:{}, couleurs:{}, vocab:{}, elements:[], current:null, loaded:null,
               dispositif:"personne", dispositifs:[], textesDisp:{} };
 /* dispositifs : « personne » = flamme_elements ; un autre = flamme_dispositif_textes (les 20 tempéraments, réécrits) */
-const CHAMPS_DISP = ["nom","devise","titre","texte1","texte2","texte3","notes","date_revision","statut"];
+const CHAMPS_DISP = ["nom","devise","titre","texte1","texte2","texte3","texte_plus","texte_moins","notes","date_revision","statut"];
 const LIBELLES_CLE = "__libelles";
 const enDispositif = () => state.dispositif !== "personne";
 const champs = () => state.current === LIBELLES_CLE ? CHAMPS_LIB() : enDispositif() ? CHAMPS_DISP : CHAMPS;
@@ -398,6 +398,9 @@ async function chargerDispositifs(){
   if (error || !d?.length){ $("#f-dispositif").classList.add("hidden"); return; }   // script flamme_dispositifs.sql pas encore passé
   state.dispositifs = d; state.textesDisp = {};
   (t || []).forEach(r => (state.textesDisp[r.dispositif] ??= []).push(r));
+  // cartes d'abord, puis profils, chacun dans son ordre
+  const rangCouche = r => ({ temperament: 0, profil: 1 })[elementDe(r.code).couche] ?? 2;
+  Object.values(state.textesDisp).forEach(l => l.sort((a, b) => rangCouche(a) - rangCouche(b) || (a.ordre ?? 0) - (b.ordre ?? 0)));
   $("#f-dispositif").innerHTML = d.map(x => `<option value="${esc(x.code)}">${esc(x.code === "personne" ? "Dispositif : " + x.nom + " (autotest et modèle)" : "Dispositif : " + x.nom + " (expérimental)")}</option>`).join("");
   $("#f-dispositif").value = state.dispositif;
   $("#f-dispositif").classList.remove("hidden");
@@ -405,12 +408,12 @@ async function chargerDispositifs(){
 $("#f-dispositif").addEventListener("change", () => {
   if (state.current && estModifie() && !confirm("Des modifications n'ont pas été enregistrées. Les abandonner ?")){ $("#f-dispositif").value = state.dispositif; return; }
   state.dispositif = $("#f-dispositif").value; state.current = null; state.loaded = null;
-  $("#f-couche").classList.toggle("hidden", enDispositif());
-  $("#f-famille").classList.toggle("hidden", enDispositif() || $("#f-couche").value !== "profil");
+  if (enDispositif() && !["", "temperament", "profil"].includes($("#f-couche").value)){ $("#f-couche").value = ""; $("#f-famille").value = ""; $("#f-famille").classList.add("hidden"); }
   $("#editor-host").innerHTML = `<p class="empty">${enDispositif() ? "Choisis une carte, ou « Libellés du dispositif » pour les textes de l'interface du test." : "Choisis un élément dans la liste pour lire ou modifier sa fiche."}</p>`;
   $("#band").style.background = "";
   afficherListe();
 });
+const elementDe = code => state.elements.find(e => e.code === code) || {};
 const dispositifCourant = () => state.dispositifs.find(d => d.code === state.dispositif);
 function majLocaleDisp(row){
   const l = state.textesDisp[row.dispositif] || []; const i = l.findIndex(r => r.code === row.code);
@@ -429,6 +432,7 @@ function norm(s){ return String(s ?? "").normalize("NFD").replace(/[\u0300-\u036
 function filtrer(){
   const q = norm($("#q").value.trim()), c = $("#f-couche").value, f = $("#f-famille").value, st = $("#f-statut").value;
   if (enDispositif()) return (state.textesDisp[state.dispositif] || []).filter(e => (!st || e.statut === st) &&
+    (!c || elementDe(e.code).couche === c) && (!f || elementDe(e.code).famille === f) &&
     (!q || norm([e.code,e.nom,e.devise,e.titre,e.texte1,e.texte2,e.texte3,e.notes].join(" ")).includes(q)));
   return state.elements.filter(e =>
     (!c || e.couche === c) && (!f || e.famille === f) && (!st || e.statut === st) &&
@@ -437,7 +441,7 @@ function filtrer(){
 function afficherListe(){
   const items = filtrer();
   const total = enDispositif() ? (state.textesDisp[state.dispositif] || []).length : state.elements.length;
-  $("#count").textContent = `${items.length} ${enDispositif() ? "carte" : "élément"}${items.length > 1 ? "s" : ""} sur ${total}`;
+  $("#count").textContent = `${items.length} élément${items.length > 1 ? "s" : ""} sur ${total}`;
   $("#list").innerHTML = (enDispositif() ? `<li role="option" tabindex="0" class="reglage" data-code="${LIBELLES_CLE}" aria-selected="${state.current === LIBELLES_CLE}">
       <span class="code"><span>⚙</span></span><span class="nom">Libellés du dispositif</span><span class="devise">Titre, consigne, piles, boutons… du test</span></li>` : "") + items.map(e => `
     <li role="option" tabindex="0" data-code="${esc(e.code)}" aria-selected="${state.current === e.code}">
@@ -563,16 +567,18 @@ async function ouvrirCarteDisp(code){
   const t = (k, rows = 3) => `<label class="field"><span>${LIBELLES[k]}</span><textarea data-k="${k}" rows="${rows}" ${ro}>${esc(data[k])}</textarea></label>`;
   const i = (k, type = "text") => `<label class="field"><span>${LIBELLES[k]}</span><input data-k="${k}" type="${type}" value="${esc(data[k])}" ${ro}></label>`;
   const o = state.elements.find(e => e.code === code) || {};
-  const ref = ["nom","devise","titre","texte1","texte2","texte3"].filter(k => o[k]).map(k => `<dt>${LIBELLES[k]}</dt><dd>${esc(o[k])}</dd>`).join("");
+  const ref = ["nom","devise","titre","texte1","texte2","texte3","texte_plus","texte_moins"].filter(k => o[k]).map(k => `<dt>${LIBELLES[k]}</dt><dd>${esc(o[k])}</dd>`).join("");
   $("#editor-host").innerHTML = `
     <div class="editor">
-      <div class="meta">${pips(code)}<span>${esc(code)}</span><span>Tempérament · dispositif ${esc(dispositifCourant()?.nom || state.dispositif)}</span><span class="exp">expérimental</span>
+      <div class="meta">${pips(code)}<span>${esc(code)}</span><span>${esc(maj1(lib("couche", o.couche || "temperament")))}${o.famille ? " " + esc(lib("famille", o.famille)) : ""} · dispositif ${esc(dispositifCourant()?.nom || state.dispositif)}</span><span class="exp">expérimental</span>
         <span>modifié le ${new Date(data.modifie_le).toLocaleString("fr-FR")}${data.modifie_par ? " par " + esc(state.noms[data.modifie_par] || "un éditeur") : ""}</span></div>
       <h2 id="titre-fiche">${esc(data.nom)}</h2>
       ${peutEcrire() ? "" : '<p class="readonly-note">Lecture seule : ton rôle ne permet pas de modifier le contenu.</p>'}
       ${ref ? `<details class="reference"><summary>Voir la carte de l'autotest personnel, pour comparer</summary><dl>${ref}</dl></details>` : ""}
       <div class="grid2">${i("nom")}${i("devise")}</div>
       ${t("titre",2)}${t("texte1",4)}${t("texte2",4)}${t("texte3",4)}
+      ${o.texte_plus || o.texte_moins || data.texte_plus || data.texte_moins ? `<div class="grid2">${t("texte_plus",4)}${t("texte_moins",4)}</div>` : ""}
+      <p class="count">Un texte laissé vide reprend celui de l'autotest personnel.</p>
       <div class="grid2">${i("date_revision","date")}<span></span></div>
       ${t("notes",2)}
       <label class="field" style="max-width:220px"><span>Statut</span>
@@ -1174,7 +1180,7 @@ document.querySelectorAll("nav button").forEach(b => b.addEventListener("click",
 }));
 window.addEventListener("beforeunload", e => { if (estModifie()){ e.preventDefault(); e.returnValue = ""; } });
 </script>
-<script src="flamme_dispositifs.js?v=1.0"></script>
+<script src="flamme_dispositifs.js?v=1.1"></script>
 <script src="entete.js?v=1.4"></script>
 </body>
 </html>

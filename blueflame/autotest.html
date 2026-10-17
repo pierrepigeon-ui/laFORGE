@@ -11,7 +11,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <script src="flamme_moteur.js?v=1.7"></script>
 <script src="flamme_glyphes.js?v=2.4"></script>
-<script src="flamme_dispositifs.js?v=1.0"></script>
+<script src="flamme_dispositifs.js?v=1.1"></script>
 <style>
 :root{
   --ink:#1B2430; --muted:#5B6573; --line:#DDE1E7; --paper:#F4F6F8; --panel:#FFFFFF;
@@ -267,7 +267,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px}
 </dialog>
 
 <script>
-const VERSION = { numero:"2.6", date:"2026-10-17 19:50" };
+const VERSION = { numero:"2.7", date:"2026-10-17 20:15" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const M = window.FLAMME_MOTEUR;
@@ -329,8 +329,8 @@ async function charger(){
       return false;
     }
     LIB = { ...LIB, ...(d.dispositif.libelles || {}) }; appliquerLibelles();
-    // les cartes gardent leur code (le moteur calcule pareil) ; seuls les textes changent
-    d.textes.forEach(t => { if (E[t.code]) Object.assign(E[t.code], { nom: t.nom ?? E[t.code].nom, devise: t.devise ?? E[t.code].devise, titre: t.titre ?? null }); });
+    // cartes et profils gardent leur code (le moteur calcule pareil) ; seuls les textes changent, un texte vide garde celui de l'autotest
+    window.FLAMME_DISPOSITIFS.superposer(E, d.textes);
   }
   if (temperamentsInitiaux.length !== 20){
     $("#vue").innerHTML = `<p class="msg err">Le test attend 20 tempéraments validés, la base en contient ${temperamentsInitiaux.length}.</p>`;
@@ -342,11 +342,8 @@ async function charger(){
 async function chargerTextesComplets(){
   // réservés aux comptes : RLS de la table elements
   const { data } = await sb.from("flamme_elements").select("code,couche,titre,texte1,texte2,texte3").in("couche", ["temperament","profil"]);
-  (data || []).forEach(d => { if (E[d.code] && !(ORGA && d.couche === "temperament")) Object.assign(E[d.code], d); });
-  if (ORGA){
-    const { data: t } = await sb.from("flamme_dispositif_textes").select("code,titre,texte1,texte2,texte3").eq("dispositif", DISPOSITIF);
-    (t || []).forEach(d => { if (E[d.code]) Object.assign(E[d.code], d); });
-  }
+  (data || []).forEach(d => { if (E[d.code]) Object.assign(E[d.code], d); });
+  await window.FLAMME_DISPOSITIFS.charger(sb, E, DISPOSITIF);   // textes du dispositif par-dessus (rien pour « personne »)
   textesComplets = (data || []).length > 0;
 }
 
@@ -757,7 +754,7 @@ $("#btn-fiche").addEventListener("click", () => {
   if (!role || !dernier) return;
   // valeurs exactes : un arrondi casserait les égalités qui font les profils frontière
   const q = M.ORDRE.map(c => `${c}=${encodeURIComponent(String(dernier.p[c]))}`).join("&");
-  window.open("fiche.html?" + q, "_blank");
+  window.open("fiche.html?" + q + (ORGA ? "&dispositif=" + encodeURIComponent(DISPOSITIF) : ""), "_blank");
 });
 $("#btn-reset").addEventListener("click", () => {
   if (!confirm("Tout recommencer ? Les 20 tempéraments reviennent dans les cartes à ranger, et les écarts sont effacés.")) return;
