@@ -109,7 +109,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px} .field{display:block;margi
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 
 <script>
-const VERSION = { numero:"1.26", date:"2026-10-17 20:15" };
+const VERSION = { numero:"1.27", date:"2026-10-17 19:50" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -175,7 +175,7 @@ sb.auth.onAuthStateChange(async (_e, session) => {
   const [{ data: role }, { data: moi }, { data: res }, { data: rolePrisme }] = await Promise.all([
     sb.rpc("flamme_mon_role"),
     sb.from("forge_utilisateurs").select("nom").eq("user_id", user.id).maybeSingle(),
-    sb.from("flamme_resultats").select("id,passe_le,codes").eq("user_id", user.id).order("passe_le", { ascending:false }).limit(1),
+    sb.from("flamme_resultats").select("id,passe_le,codes").eq("user_id", user.id).eq("dispositif", "personne").order("passe_le", { ascending:false }).limit(1),
     sb.rpc("prisme_mon_role")   // rôle PRISME, indépendant de Flamme Bleue
   ]);
   $("#espace").classList.remove("hidden");
@@ -197,6 +197,7 @@ sb.auth.onAuthStateChange(async (_e, session) => {
     t += tuile(`ecusson.html?resultat=${dernier.id}`, "Mes armes", "Votre écusson et sa devise");
   }
   // la console n'a plus de tuile : son bouton est dans le bandeau (entete.js 1.3)
+  t += tuile("autotest.html?dispositif=organisation", "Autotest organisation", "Le profil d'une entreprise, d'une équipe, d'une association (expérimental)");
   t += tuile("comparaison.html", "Comparer", "Deux profils ou une équipe : accords, discordes, profil moyen");
   t += tuile("galerie.html", "Personnages", "Qui partage quel profil ? Des centaines de personnages, par univers (expérimental)");
   if (role === "proprietaire") t += tuile("rosace.html", "Rosace", "La carte complète du modèle");

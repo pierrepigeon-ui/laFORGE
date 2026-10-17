@@ -61,6 +61,12 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(300px,400px) 
 .filters{padding:12px 14px;border-bottom:1px solid var(--line);display:grid;gap:8px}
 .filters input,.filters select{width:100%;padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:var(--paper)}
 .filters .row{display:flex;gap:8px}
+#f-dispositif{font-weight:600}
+.reference{margin:4px 0 14px;background:var(--panel);border:1px dashed var(--line);border-radius:8px;padding:8px 12px;font-size:14px}
+.reference summary{cursor:pointer;color:var(--muted)}
+.reference dl{margin:8px 0 0}.reference dt{font-weight:600;margin-top:6px}.reference dd{margin:2px 0 0;white-space:pre-wrap}
+.exp{display:inline-block;background:#FFF4E0;border:1px solid #E8C27A;color:#7A4A00;border-radius:999px;padding:0 8px;font-size:12px;margin-left:6px;vertical-align:middle}
+li.reglage .nom{font-style:italic}
 .count{font-size:12px;color:var(--muted)}
 #list{overflow:auto;flex:1;list-style:none;margin:0;padding:4px 0}
 #list li{display:grid;grid-template-columns:78px 1fr;gap:2px 10px;padding:8px 14px;cursor:pointer;border-left:3px solid transparent}
@@ -221,6 +227,7 @@ table.j td{border-bottom:1px solid var(--line);padding:8px 10px;vertical-align:t
   <main id="view-elements">
     <aside id="list-pane">
       <div class="filters">
+        <select id="f-dispositif" aria-label="Dispositif" class="hidden" title="Le jeu de textes à lire ou modifier"></select>
         <input type="search" id="q" placeholder="Chercher un code, un nom, un mot du texte" aria-label="Rechercher">
         <div class="row">
           <select id="f-couche" aria-label="Couche"></select>
@@ -265,7 +272,7 @@ table.j td{border-bottom:1px solid var(--line);padding:8px 10px;vertical-align:t
 
 <script>
 /* ================= configuration ================= */
-const VERSION = { numero:"1.33", date:"2026-10-17 19:20" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.34", date:"2026-10-17 19:50" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 
@@ -286,7 +293,14 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
-let state = { user:null, role:null, noms:{}, couleurs:{}, vocab:{}, elements:[], current:null, loaded:null };
+let state = { user:null, role:null, noms:{}, couleurs:{}, vocab:{}, elements:[], current:null, loaded:null,
+              dispositif:"personne", dispositifs:[], textesDisp:{} };
+/* dispositifs : « personne » = flamme_elements ; un autre = flamme_dispositif_textes (les 20 tempéraments, réécrits) */
+const CHAMPS_DISP = ["nom","devise","titre","texte1","texte2","texte3","notes","date_revision","statut"];
+const LIBELLES_CLE = "__libelles";
+const enDispositif = () => state.dispositif !== "personne";
+const champs = () => state.current === LIBELLES_CLE ? CHAMPS_LIB() : enDispositif() ? CHAMPS_DISP : CHAMPS;
+const CHAMPS_LIB = () => ["d_nom", "d_description", ...window.FLAMME_DISPOSITIFS.CLES.map(c => "l_" + c[0])];
 
 /* libellé du vocabulaire du modèle, dans la langue choisie (repli : la clé elle-même) */
 function lib(domaine, cle, pluriel = false){
@@ -357,6 +371,7 @@ async function demarrer(){
   (roles || []).forEach(r => state.noms[r.user_id] = r.nom || r.role);
   (couleurs || []).forEach(c => state.couleurs[c.code] = c);
   state.elements = els || [];
+  await chargerDispositifs();
   const nom = state.noms[state.user.id] || state.user.email;
   $("#who").textContent = `${nom} — ${{proprietaire:"propriétaire",editeur:"éditeur",invite:"invité"}[role] || "aucun rôle"}`;
   $("#tab-journal").classList.toggle("hidden", role !== "proprietaire");
@@ -374,6 +389,34 @@ async function demarrer(){
   afficherListe();
 }
 
+/* ================= dispositifs ================= */
+async function chargerDispositifs(){
+  const [{ data: d, error }, { data: t }] = await Promise.all([
+    sb.from("flamme_dispositifs").select("*").order("ordre"),
+    sb.from("flamme_dispositif_textes").select("*").order("ordre")
+  ]);
+  if (error || !d?.length){ $("#f-dispositif").classList.add("hidden"); return; }   // script flamme_dispositifs.sql pas encore passé
+  state.dispositifs = d; state.textesDisp = {};
+  (t || []).forEach(r => (state.textesDisp[r.dispositif] ??= []).push(r));
+  $("#f-dispositif").innerHTML = d.map(x => `<option value="${esc(x.code)}">${esc(x.code === "personne" ? "Dispositif : " + x.nom + " (autotest et modèle)" : "Dispositif : " + x.nom + " (expérimental)")}</option>`).join("");
+  $("#f-dispositif").value = state.dispositif;
+  $("#f-dispositif").classList.remove("hidden");
+}
+$("#f-dispositif").addEventListener("change", () => {
+  if (state.current && estModifie() && !confirm("Des modifications n'ont pas été enregistrées. Les abandonner ?")){ $("#f-dispositif").value = state.dispositif; return; }
+  state.dispositif = $("#f-dispositif").value; state.current = null; state.loaded = null;
+  $("#f-couche").classList.toggle("hidden", enDispositif());
+  $("#f-famille").classList.toggle("hidden", enDispositif() || $("#f-couche").value !== "profil");
+  $("#editor-host").innerHTML = `<p class="empty">${enDispositif() ? "Choisis une carte, ou « Libellés du dispositif » pour les textes de l'interface du test." : "Choisis un élément dans la liste pour lire ou modifier sa fiche."}</p>`;
+  $("#band").style.background = "";
+  afficherListe();
+});
+const dispositifCourant = () => state.dispositifs.find(d => d.code === state.dispositif);
+function majLocaleDisp(row){
+  const l = state.textesDisp[row.dispositif] || []; const i = l.findIndex(r => r.code === row.code);
+  if (i >= 0) l[i] = row;
+}
+
 /* ================= liste ================= */
 ["#q","#f-couche","#f-famille","#f-statut"].forEach(s => $(s).addEventListener("input", afficherListe));
 $("#f-couche").addEventListener("change", () => {
@@ -385,14 +428,18 @@ $("#f-couche").addEventListener("change", () => {
 function norm(s){ return String(s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase(); }
 function filtrer(){
   const q = norm($("#q").value.trim()), c = $("#f-couche").value, f = $("#f-famille").value, st = $("#f-statut").value;
+  if (enDispositif()) return (state.textesDisp[state.dispositif] || []).filter(e => (!st || e.statut === st) &&
+    (!q || norm([e.code,e.nom,e.devise,e.titre,e.texte1,e.texte2,e.texte3,e.notes].join(" ")).includes(q)));
   return state.elements.filter(e =>
     (!c || e.couche === c) && (!f || e.famille === f) && (!st || e.statut === st) &&
     (!q || norm([e.code,e.nom,e.devise,e.titre,e.texte1,e.texte2,e.texte3,e.texte_plus,e.texte_moins,e.devise_heraldique,e.animal_totem,e.nom_interne,e.notes].join(" ")).includes(q)));
 }
 function afficherListe(){
   const items = filtrer();
-  $("#count").textContent = `${items.length} élément${items.length > 1 ? "s" : ""} sur ${state.elements.length}`;
-  $("#list").innerHTML = items.map(e => `
+  const total = enDispositif() ? (state.textesDisp[state.dispositif] || []).length : state.elements.length;
+  $("#count").textContent = `${items.length} ${enDispositif() ? "carte" : "élément"}${items.length > 1 ? "s" : ""} sur ${total}`;
+  $("#list").innerHTML = (enDispositif() ? `<li role="option" tabindex="0" class="reglage" data-code="${LIBELLES_CLE}" aria-selected="${state.current === LIBELLES_CLE}">
+      <span class="code"><span>⚙</span></span><span class="nom">Libellés du dispositif</span><span class="devise">Titre, consigne, piles, boutons… du test</span></li>` : "") + items.map(e => `
     <li role="option" tabindex="0" data-code="${esc(e.code)}" aria-selected="${state.current === e.code}">
       <span class="code">${pips(e.code)}<span>${esc(e.code)}</span></span>
       <span class="nom">${esc(e.nom)}${e.statut === "brouillon" ? `<span class="draft">${esc(lib("statut","brouillon"))}</span>` : ""}</span>
@@ -408,6 +455,8 @@ const peutEcrire = () => state.role === "proprietaire" || state.role === "editeu
 
 async function ouvrir(code){
   if (state.current && estModifie() && !confirm("Des modifications n'ont pas été enregistrées. Les abandonner ?")) return;
+  if (code === LIBELLES_CLE) return ouvrirLibelles();
+  if (enDispositif()) return ouvrirCarteDisp(code);
   const { data, error } = await sb.from("flamme_elements").select("*").eq("code", code).single();
   if (error){ alert("Lecture impossible : " + error.message); return; }
   state.current = code; state.loaded = data;
@@ -464,17 +513,20 @@ function valeursForm(){
 function estModifie(){
   if (!state.loaded || !document.querySelector("#editor-host [data-k]")) return false;
   const v = valeursForm();
-  return CHAMPS.some(k => (v[k] ?? null) !== (state.loaded[k] ?? null));
+  const ref = state.current === LIBELLES_CLE ? valeursLibelles(state.loaded) : state.loaded;
+  return champs().some(k => (v[k] ?? null) !== (ref[k] ?? null));
 }
 $("#editor-host").addEventListener("input", () => { if (peutEcrire() && $("#save")) surSaisie(); });
 function surSaisie(){
   const m = estModifie();
   $("#save").disabled = !m; $("#cancel").disabled = !m;
   $("#save-msg").textContent = ""; $("#save-msg").className = "msg";
-  $("#titre-fiche").textContent = valeursForm().nom || "";
+  if (state.current !== LIBELLES_CLE) $("#titre-fiche").textContent = valeursForm().nom || "";
 }
 
 async function enregistrer(){
+  if (state.current === LIBELLES_CLE) return enregistrerLibelles();
+  if (enDispositif()) return enregistrerCarteDisp();
   const v = valeursForm(), msg = $("#save-msg");
   if (!v.nom){ msg.className = "msg err"; msg.textContent = "Le nom est obligatoire."; return; }
   const maj = {};
@@ -497,6 +549,139 @@ async function enregistrer(){
 function majLocale(row){
   const i = state.elements.findIndex(e => e.code === row.code);
   if (i >= 0) state.elements[i] = row;
+}
+
+/* ================= cartes d'un dispositif ================= */
+async function ouvrirCarteDisp(code){
+  const { data, error } = await sb.from("flamme_dispositif_textes").select("*").eq("dispositif", state.dispositif).eq("code", code).single();
+  if (error){ alert("Lecture impossible : " + error.message); return; }
+  state.current = code; state.loaded = data; majLocaleDisp(data);
+  afficherListe();
+  $("#edit-pane").classList.remove("closed");
+  $("#band").style.background = bandFor(code);
+  const ro = peutEcrire() ? "" : "readonly", dis = peutEcrire() ? "" : "disabled";
+  const t = (k, rows = 3) => `<label class="field"><span>${LIBELLES[k]}</span><textarea data-k="${k}" rows="${rows}" ${ro}>${esc(data[k])}</textarea></label>`;
+  const i = (k, type = "text") => `<label class="field"><span>${LIBELLES[k]}</span><input data-k="${k}" type="${type}" value="${esc(data[k])}" ${ro}></label>`;
+  const o = state.elements.find(e => e.code === code) || {};
+  const ref = ["nom","devise","titre","texte1","texte2","texte3"].filter(k => o[k]).map(k => `<dt>${LIBELLES[k]}</dt><dd>${esc(o[k])}</dd>`).join("");
+  $("#editor-host").innerHTML = `
+    <div class="editor">
+      <div class="meta">${pips(code)}<span>${esc(code)}</span><span>Tempérament · dispositif ${esc(dispositifCourant()?.nom || state.dispositif)}</span><span class="exp">expérimental</span>
+        <span>modifié le ${new Date(data.modifie_le).toLocaleString("fr-FR")}${data.modifie_par ? " par " + esc(state.noms[data.modifie_par] || "un éditeur") : ""}</span></div>
+      <h2 id="titre-fiche">${esc(data.nom)}</h2>
+      ${peutEcrire() ? "" : '<p class="readonly-note">Lecture seule : ton rôle ne permet pas de modifier le contenu.</p>'}
+      ${ref ? `<details class="reference"><summary>Voir la carte de l'autotest personnel, pour comparer</summary><dl>${ref}</dl></details>` : ""}
+      <div class="grid2">${i("nom")}${i("devise")}</div>
+      ${t("titre",2)}${t("texte1",4)}${t("texte2",4)}${t("texte3",4)}
+      <div class="grid2">${i("date_revision","date")}<span></span></div>
+      ${t("notes",2)}
+      <label class="field" style="max-width:220px"><span>Statut</span>
+        <select data-k="statut" ${dis}>${cles("statut").map(c => `<option value="${esc(c)}">${esc(lib("statut", c))}</option>`).join("")}</select></label>
+      ${peutEcrire() ? `
+      <div class="actions">
+        <button class="btn" id="save" type="button" disabled>Enregistrer les modifications</button>
+        <button class="btn ghost" id="cancel" type="button" disabled>Annuler</button>
+        <label><input type="checkbox" id="bump" checked> Mettre la date de révision à aujourd'hui</label>
+        <span class="msg" id="save-msg" role="status"></span>
+      </div>` : ""}
+      ${state.role === "proprietaire" ? '<div class="hist" id="hist"></div>' : ""}
+    </div>`;
+  $('[data-k="statut"]').value = data.statut;
+  if (peutEcrire()){
+    $("#save").addEventListener("click", enregistrer);
+    $("#cancel").addEventListener("click", () => { state.current = null; ouvrir(code); });
+  }
+  if (state.role === "proprietaire") historiqueDisp(code);
+}
+async function enregistrerCarteDisp(){
+  const v = valeursForm(), msg = $("#save-msg");
+  if (!v.nom){ msg.className = "msg err"; msg.textContent = "Le nom est obligatoire."; return; }
+  const maj = {};
+  CHAMPS_DISP.forEach(k => { if ((v[k] ?? null) !== (state.loaded[k] ?? null)) maj[k] = v[k]; });
+  if ($("#bump").checked) maj.date_revision = new Date().toLocaleDateString("sv-SE");
+  $("#save").disabled = true; msg.className = "msg"; msg.textContent = "Enregistrement…";
+  const { data, error } = await sb.from("flamme_dispositif_textes").update(maj)
+    .eq("dispositif", state.dispositif).eq("code", state.current).eq("modifie_le", state.loaded.modifie_le).select();
+  if (error){ msg.className = "msg err"; msg.textContent = "Enregistrement refusé : " + error.message; $("#save").disabled = false; return; }
+  if (!data.length){ msg.className = "msg warn"; msg.textContent = "Cette carte a été modifiée entre-temps. Annule pour recharger la version à jour, puis refais ta modification."; return; }
+  majLocaleDisp(data[0]);
+  const code = state.current; state.current = null; await ouvrirCarteDisp(code);
+  const m2 = $("#save-msg"); m2.className = "msg ok"; m2.textContent = "Modifications enregistrées.";
+}
+async function historiqueDisp(code){
+  const { data } = await sb.from("forge_journal").select("*").eq("table_nom", "flamme_dispositif_textes").eq("cle", code).order("id", { ascending:false }).limit(100);
+  const host = $("#hist"); if (!host) return;
+  const l = (data || []).filter(j => (j.apres || j.avant || {}).dispositif === state.dispositif).slice(0, 50);
+  host.innerHTML = `<h3>Historique de la carte</h3>
+    <table class="j"><thead><tr><th>Date</th><th>Par</th><th>Changements</th></tr></thead>
+    <tbody>${l.map(j => ligneJournal(j, false)).join("")}</tbody></table>`;
+}
+
+/* ================= libellés d'un dispositif ================= */
+function valeursLibelles(d){
+  const v = { d_nom: d.nom ?? null, d_description: d.description ?? null };
+  window.FLAMME_DISPOSITIFS.CLES.forEach(([k]) => {
+    const x = d.libelles?.[k];
+    v["l_" + k] = x == null || x === "" ? null : Array.isArray(x) ? x.join(" | ") : String(x);
+  });
+  return v;
+}
+async function ouvrirLibelles(){
+  const { data, error } = await sb.from("flamme_dispositifs").select("*").eq("code", state.dispositif).single();
+  if (error){ alert("Lecture impossible : " + error.message); return; }
+  state.current = LIBELLES_CLE; state.loaded = data;
+  afficherListe();
+  $("#edit-pane").classList.remove("closed");
+  $("#band").style.background = "var(--line)";
+  const ro = peutEcrire() ? "" : "readonly";
+  const D = window.FLAMME_DISPOSITIFS, def = { ...D.LIB_DEFAUT.personne, ...(D.LIB_DEFAUT[state.dispositif] || D.LIB_DEFAUT.organisation) };
+  const v = valeursLibelles(data);
+  const champ = (k, lib, long) => {
+    const ph = Array.isArray(def[k]) ? def[k].join(" | ") : def[k] || "";
+    return `<label class="field"><span>${esc(lib)}</span>${long
+      ? `<textarea data-k="l_${k}" rows="3" placeholder="${esc(ph)}" ${ro}>${esc(v["l_" + k])}</textarea>`
+      : `<input data-k="l_${k}" type="text" placeholder="${esc(ph)}" value="${esc(v["l_" + k])}" ${ro}>`}</label>`;
+  };
+  $("#editor-host").innerHTML = `
+    <div class="editor">
+      <div class="meta"><span>Dispositif ${esc(data.code)}</span><span class="exp">expérimental</span>
+        <span>modifié le ${new Date(data.modifie_le).toLocaleString("fr-FR")}${data.modifie_par ? " par " + esc(state.noms[data.modifie_par] || "un éditeur") : ""}</span>
+        <a class="lien" href="autotest.html?dispositif=${encodeURIComponent(data.code)}" target="_blank">ouvrir le test</a></div>
+      <h2 id="titre-fiche">Libellés du dispositif ${esc(data.nom)}</h2>
+      <p class="count">Un champ laissé vide garde le texte proposé, affiché en gris. Les cartes elles-mêmes se modifient dans la liste.</p>
+      ${peutEcrire() ? "" : '<p class="readonly-note">Lecture seule : ton rôle ne permet pas de modifier le contenu.</p>'}
+      <div class="grid2"><label class="field"><span>Nom du dispositif</span><input data-k="d_nom" type="text" value="${esc(data.nom)}" ${ro}></label>
+        <label class="field"><span>Description (console)</span><input data-k="d_description" type="text" value="${esc(data.description)}" ${ro}></label></div>
+      ${D.CLES.map(([k, lib, long]) => champ(k, lib, long)).join("")}
+      ${peutEcrire() ? `
+      <div class="actions">
+        <button class="btn" id="save" type="button" disabled>Enregistrer les libellés</button>
+        <button class="btn ghost" id="cancel" type="button" disabled>Annuler</button>
+        <span class="msg" id="save-msg" role="status"></span>
+      </div>` : ""}
+    </div>`;
+  if (peutEcrire()){
+    $("#save").addEventListener("click", enregistrer);
+    $("#cancel").addEventListener("click", () => { state.current = null; ouvrirLibelles(); });
+  }
+}
+async function enregistrerLibelles(){
+  const v = valeursForm(), msg = $("#save-msg");
+  if (!v.d_nom){ msg.className = "msg err"; msg.textContent = "Le nom du dispositif est obligatoire."; return; }
+  const libelles = {};
+  window.FLAMME_DISPOSITIFS.CLES.forEach(([k]) => { const x = v["l_" + k]; if (x != null) libelles[k] = x; });
+  if (libelles.piles != null){
+    libelles.piles = libelles.piles.split("|").map(x => x.trim()).filter(Boolean);
+    if (libelles.piles.length !== 5){ msg.className = "msg err"; msg.textContent = "Il faut exactement 5 piles, séparées par « | »."; return; }
+  }
+  $("#save").disabled = true; msg.className = "msg"; msg.textContent = "Enregistrement…";
+  const { data, error } = await sb.from("flamme_dispositifs").update({ nom: v.d_nom, description: v.d_description, libelles })
+    .eq("code", state.dispositif).eq("modifie_le", state.loaded.modifie_le).select();
+  if (error){ msg.className = "msg err"; msg.textContent = "Enregistrement refusé : " + error.message; $("#save").disabled = false; return; }
+  if (!data.length){ msg.className = "msg warn"; msg.textContent = "Ces libellés ont été modifiés entre-temps. Annule pour recharger la version à jour."; return; }
+  const i = state.dispositifs.findIndex(d => d.code === data[0].code); if (i >= 0) state.dispositifs[i] = data[0];
+  state.current = null; await ouvrirLibelles();
+  const m2 = $("#save-msg"); m2.className = "msg ok"; m2.textContent = "Libellés enregistrés : ils s'appliquent au prochain chargement du test.";
 }
 
 /* ================= journal ================= */
@@ -532,7 +717,7 @@ async function afficherJournal(){
 
 
 /* ================= sauvegarde ================= */
-const TABLES_SAUVEGARDE = ["flamme_couleurs","flamme_vocabulaire","flamme_elements","flamme_elements_traductions","flamme_resultats","forge_utilisateurs","forge_journal","forge_messages","forge_parametres","flamme_catalogue"];   // Flamme Bleue et parties communes ; PRISME a sa propre sauvegarde
+const TABLES_SAUVEGARDE = ["flamme_couleurs","flamme_vocabulaire","flamme_elements","flamme_elements_traductions","flamme_resultats","forge_utilisateurs","forge_journal","forge_messages","forge_parametres","flamme_catalogue","flamme_dispositifs","flamme_dispositif_textes"];   // Flamme Bleue et parties communes ; PRISME a sa propre sauvegarde
 async function lireTout(table){
   const tout = [], pas = 1000;
   for (let debut = 0; ; debut += pas){
@@ -688,7 +873,7 @@ async function afficherProduction(userId, msg){
     <h3 class="sous-titre">Autotests enregistrés (${res.length})</h3>
     ${res.length ? `<table class="j"><thead><tr><th>Date</th><th>Profil</th><th>Scores W U B R G</th><th></th></tr></thead><tbody>
       ${res.map(r => `<tr><td>${date(r.passe_le)}</td>
-        <td>${r.codes.slice(0, 1).map(c => `${pips(c)} ${esc(c)} <span class="count">${nomEl(c)}</span>`).join("<br>")}${r.origine === "saisie" ? ' <span class="draft">saisie</span>' : ""}</td>
+        <td>${r.codes.slice(0, 1).map(c => `${pips(c)} ${esc(c)} <span class="count">${nomEl(c)}</span>`).join("<br>")}${r.origine === "saisie" ? ' <span class="draft">saisie</span>' : ""}${r.dispositif && r.dispositif !== "personne" ? ` <span class="exp">${esc(r.dispositif)}${r.sujet ? " : " + esc(r.sujet) : ""}</span>` : ""}</td>
         <td><div class="mini" title="${M_ORDRE.map(c => c + " " + fmt1(r.scores[c])).join(" · ")}">${M_ORDRE.map(c => `<span style="height:${Math.max(2, (r.scores[c] || 0) * .26)}px;background:${state.couleurs[c]?.couleur || "#999"}"></span>`).join("")}</div></td>
         <td class="row-btn"><a class="btn ghost" href="fiche.html?resultat=${r.id}" target="_blank">Fiche</a><a class="btn ghost" href="portrait.html?resultat=${r.id}" target="_blank">Portrait</a>
           <a class="btn ghost" href="ecusson.html?resultat=${r.id}" target="_blank">Écusson</a>
@@ -744,7 +929,7 @@ async function afficherResultats(filtre = ""){
     ${lignes.length ? `<table class="j"><thead><tr><th>Date</th><th>Personne</th><th>Profil</th><th>Scores W U B R G</th><th>Versions</th></tr></thead>
     <tbody>${lignes.map(r => `<tr class="res" data-id="${r.id}">
       <td>${new Date(r.passe_le).toLocaleString("fr-FR")}</td><td>${nom(r.user_id)}</td>
-      <td>${r.codes.slice(0, 1).map(c => `${pips(c)} ${esc(c)} <span class="count">${esc(state.elements.find(e => e.code === c)?.nom || "")}</span>`).join("<br>")}${r.origine === "saisie" ? ' <span class="draft">saisie</span>' : ""}</td>
+      <td>${r.codes.slice(0, 1).map(c => `${pips(c)} ${esc(c)} <span class="count">${esc(state.elements.find(e => e.code === c)?.nom || "")}</span>`).join("<br>")}${r.origine === "saisie" ? ' <span class="draft">saisie</span>' : ""}${r.dispositif && r.dispositif !== "personne" ? ` <span class="exp">${esc(r.dispositif)}${r.sujet ? " : " + esc(r.sujet) : ""}</span>` : ""}</td>
       <td><div class="mini" title="${M_ORDRE.map(c => c + " " + fmt1(r.scores[c])).join(" · ")}">${M_ORDRE.map(c => `<span style="height:${Math.max(2, (r.scores[c] || 0) * .26)}px;background:${state.couleurs[c]?.couleur || "#999"}"></span>`).join("")}</div></td>
       <td class="count">moteur ${esc(r.version_moteur || "?")}, test ${esc(r.version_autotest || "?")}</td></tr>`).join("")}</tbody></table>`
     : '<p class="empty">Aucun résultat enregistré. Ils apparaîtront ici dès qu\'une personne connectée enregistrera son autotest.</p>'}`;
@@ -989,6 +1174,7 @@ document.querySelectorAll("nav button").forEach(b => b.addEventListener("click",
 }));
 window.addEventListener("beforeunload", e => { if (estModifie()){ e.preventDefault(); e.returnValue = ""; } });
 </script>
+<script src="flamme_dispositifs.js?v=1.0"></script>
 <script src="entete.js?v=1.4"></script>
 </body>
 </html>

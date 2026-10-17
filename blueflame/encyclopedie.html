@@ -156,7 +156,7 @@ mark{background:#FFE58A;color:#1B2430;border-radius:2px}
 <div style="max-width:1240px;margin:0 auto;padding:0 20px 30px"><p class="version"><span id="credit"></span><br><span id="version"></span></p></div>
 
 <script>
-const VERSION = { numero:"1.14", date:"2026-10-17 18:00" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.15", date:"2026-10-17 19:50" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -210,7 +210,7 @@ async function charger(){
   C = Object.fromEntries(cols.map(c => [c.code, c]));
   V = {}; vocab.forEach(v => ((V[v.domaine] ??= {})[v.cle] = v));
   if (user){
-    try { const { data } = await sb.from("flamme_resultats").select("id,codes").eq("user_id", user.id).order("passe_le", { ascending:false }).limit(1);
+    try { const { data } = await sb.from("flamme_resultats").select("id,codes").eq("user_id", user.id).eq("dispositif", "personne").order("passe_le", { ascending:false }).limit(1);
           if (data?.[0]) MOI = { code: data[0].codes.find(c => E[c]) || null, id: data[0].id }; } catch {}
   }
   rendre();

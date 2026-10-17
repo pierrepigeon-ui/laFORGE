@@ -115,7 +115,7 @@ dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);c
    - profil d'autorité : chacun et la moyenne lui sont comparés de la même façon.
    Sources : ses résultats, profils types, scores saisis ; le catalogue pour éditeurs et propriétaire ; tous les résultats pour le propriétaire.
    ===================================================================== */
-const VERSION = { numero:"1.0", date:"2026-10-17 20:15" };
+const VERSION = { numero:"1.1", date:"2026-10-17 19:50" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const M = window.FLAMME_MOTEUR;
@@ -152,10 +152,14 @@ let MEMBRES = [], AUTORITE = null, SOURCES = {}, uid = 0;
 async function demarrer(){
   const profils = Object.values(E).filter(e => e.couche === "profil").sort((a, b) => (a.ordre ?? 0) - (b.ordre ?? 0));
   const dateCourte = d => new Date(d).toLocaleDateString("fr-FR");
-  const res = (await sb.from("flamme_resultats").select("id,user_id,passe_le,scores,codes").order("passe_le", { ascending:false }).limit(500)).data || [];
+  const res = (await sb.from("flamme_resultats").select("id,user_id,passe_le,scores,codes,dispositif,sujet").order("passe_le", { ascending:false }).limit(500)).data || [];
   let noms = {}; if (role === "proprietaire"){ try { (await sb.rpc("flamme_personnes")).data?.forEach(p => noms[p.user_id] = p.nom || p.email); } catch {} }
-  SOURCES.mes = { lib: "Mes résultats", items: res.filter(r => r.user_id === user.id).map(r => ({ id: "r" + r.id, lib: `${E[r.codes[0]]?.nom || r.codes[0]} — ${dateCourte(r.passe_le)}`, nom: "Moi", scores: r.scores })) };
-  if (role === "proprietaire") SOURCES.tous = { lib: "Tous les résultats", items: res.filter(r => r.user_id !== user.id).map(r => ({ id: "r" + r.id, lib: `${noms[r.user_id] || "?"} — ${E[r.codes[0]]?.nom || r.codes[0]} — ${dateCourte(r.passe_le)}`, nom: noms[r.user_id] || "Résultat", scores: r.scores })) };
+  const orga = r => r.dispositif && r.dispositif !== "personne";
+  const item = (r, qui) => ({ id: "r" + r.id, lib: `${qui ? qui + " — " : ""}${E[r.codes[0]]?.nom || r.codes[0]} — ${dateCourte(r.passe_le)}`, nom: qui || "Moi", scores: r.scores });
+  SOURCES.mes = { lib: "Mes résultats", items: res.filter(r => r.user_id === user.id && !orga(r)).map(r => item(r, "")) };
+  const mesOrgas = res.filter(r => r.user_id === user.id && orga(r));
+  if (mesOrgas.length) SOURCES.orgas = { lib: "Mes profils d'organisation", items: mesOrgas.map(r => item(r, r.sujet || "Organisation")) };
+  if (role === "proprietaire") SOURCES.tous = { lib: "Tous les résultats", items: res.filter(r => r.user_id !== user.id).map(r => item(r, orga(r) ? `${r.sujet || "Organisation"} (selon ${noms[r.user_id] || "?"})` : noms[r.user_id] || "Résultat")) };
   if (role === "proprietaire" || role === "editeur"){
     try { const { data } = await sb.from("flamme_catalogue").select("id,nom,scores,codes").order("nom");
       if (data) SOURCES.cat = { lib: "Catalogue", items: data.map(f => ({ id: "c" + f.id, lib: `${f.nom} — ${E[f.codes?.[0]]?.nom || ""}`, nom: f.nom, scores: f.scores })) }; } catch {}

@@ -109,7 +109,7 @@ dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);c
    Parcourt flamme_experimental.js dans l'autre sens : par personnage, par univers, par profil.
    Onglet « Au travail » : le rôle et les métiers des 90 profils.
    ===================================================================== */
-const VERSION = { numero:"1.0", date:"2026-10-17 18:00" };
+const VERSION = { numero:"1.1", date:"2026-10-17 19:50" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const M = window.FLAMME_MOTEUR;
@@ -153,7 +153,7 @@ async function demarrer(){
   $("#chapo").textContent = `${TOUS.length} personnages de fiction et figures historiques, rattachés aux 90 profils et rangés en ${univers.length} univers. Ce sont des propositions en cours de relecture : elles évolueront.`;
   // mon profil et mes voisins (dernier résultat)
   try {
-    const { data } = await sb.from("flamme_resultats").select("scores,classement").eq("user_id", user.id).order("passe_le", { ascending:false }).limit(1);
+    const { data } = await sb.from("flamme_resultats").select("scores,classement").eq("user_id", user.id).eq("dispositif", "personne").order("passe_le", { ascending:false }).limit(1);
     if (data?.[0]){
       const s01 = Object.fromEntries(M.ORDRE.map(c => [c, data[0].scores[c] / 100]));
       const st = M.statistiques(s01, PROFILS.map(p => p.code), { classement: data[0].classement });

@@ -87,7 +87,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px} .field{display:block;margi
   <div style="display:flex;gap:10px"><button class="btn" type="submit">Se connecter</button><button class="btn ghost" type="button" id="login-fermer">Fermer</button></div>
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 <script>
-const VERSION = { numero:"1.28", date:"2026-10-17 19:20" };
+const VERSION = { numero:"1.29", date:"2026-10-17 19:50" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const ACCES = ["proprietaire"];   // rôles autorisés (en attendant la table des droits d'accès)
@@ -342,7 +342,7 @@ sb.auth.onAuthStateChange(async (_e, session) => {
   $("#profil").innerHTML = '<option value="">aucun</option>' + profils.map(p => `<option value="${esc(p.code)}">${esc(p.code)} — ${esc(p.nom)}</option>`).join("");
   const demande = new URLSearchParams(location.search).get("profil");
   // par défaut : mon profil (dernier autotest enregistré) ; « ?profil= » reste prioritaire
-  const { data: res } = await sb.from("flamme_resultats").select("codes").eq("user_id", user.id).order("passe_le", { ascending:false }).limit(1);
+  const { data: res } = await sb.from("flamme_resultats").select("codes").eq("user_id", user.id).eq("dispositif", "personne").order("passe_le", { ascending:false }).limit(1);
   monProfil = res?.[0]?.codes?.find(c => E[c]) || null;
   if (monProfil){ const o = [...$("#profil").options].find(x => x.value === monProfil); if (o) o.textContent += " (mon profil)"; }
   if (demande && E[demande]) $("#profil").value = demande;

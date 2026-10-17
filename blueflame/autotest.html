@@ -9,8 +9,9 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/3.46.0/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
-<script src="flamme_moteur.js?v=1.6"></script>
+<script src="flamme_moteur.js?v=1.7"></script>
 <script src="flamme_glyphes.js?v=2.4"></script>
+<script src="flamme_dispositifs.js?v=1.0"></script>
 <style>
 :root{
   --ink:#1B2430; --muted:#5B6573; --line:#DDE1E7; --paper:#F4F6F8; --panel:#FFFFFF;
@@ -193,6 +194,10 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px}
   .bandeau .p{font:600 14px var(--serif);text-align:center;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 }
 @media (max-width:760px){ .intro,main{padding-left:12px;padding-right:12px} }
+.experimental{background:#FFF4E0;border:1px solid #E8C27A;color:#7A4A00;border-radius:8px;padding:8px 12px;font-size:14px;max-width:900px}
+.autre-dispositif{font-size:14px;margin:4px 0 0}
+.autre-dispositif a{color:var(--focus)}
+.sujet{font-weight:600}
 </style>
 </head>
 <body>
@@ -206,8 +211,10 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px}
 </header>
 
 <section class="intro">
-  <h1>Autotest</h1>
-  <p>Rangez d'abord les 20 tempéraments en piles, de « tout à fait moi » à « pas du tout moi ». Classez-les ensuite, du plus proche de vous au plus éloigné, en disant entre deux cartes voisines si elles sont inséparables, proches, nettement séparées ou séparées par un fossé. Survolez ou touchez une carte du classement pour lire sa description. Une fois connecté, vous retrouvez votre dernier résultat enregistré.</p>
+  <h1 id="titre-test">Autotest</h1>
+  <p class="experimental hidden" id="avert"></p>
+  <p id="consigne">Rangez d'abord les 20 tempéraments en piles, de « tout à fait moi » à « pas du tout moi ». Classez-les ensuite, du plus proche de vous au plus éloigné, en disant entre deux cartes voisines si elles sont inséparables, proches, nettement séparées ou séparées par un fossé. Survolez ou touchez une carte du classement pour lire sa description. Une fois connecté, vous retrouvez votre dernier résultat enregistré.</p>
+  <p class="autre-dispositif" id="autre-dispositif"></p>
   <div class="actions">
     <button class="btn" id="btn-save" type="button" disabled>Enregistrer mon résultat</button>
     <button class="btn ghost" id="btn-fiche" type="button" disabled>Voir ma fiche</button>
@@ -241,7 +248,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px}
       <div id="coherence"></div>
     </section>
     <section class="bloc historique hidden" id="bloc-historique">
-      <h2>Mes résultats</h2>
+      <h2 id="titre-historique">Mes résultats</h2>
       <div id="historique"></div>
     </section>
   </aside>
@@ -260,7 +267,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px}
 </dialog>
 
 <script>
-const VERSION = { numero:"2.5", date:"2026-10-17 15:20" };
+const VERSION = { numero:"2.6", date:"2026-10-17 19:50" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const M = window.FLAMME_MOTEUR;
@@ -274,7 +281,13 @@ const ICONES = {"W/u":"ti-plant-2","W/b":"ti-badge","W/r":"ti-puzzle","W/g":"ti-
   "U/g":"ti-route-2","U/w":"ti-bulb","B/r":"ti-stairs-up","B/g":"ti-target","B/w":"ti-crown","B/u":"ti-mountain",
   "R/g":"ti-trending-up","R/w":"ti-link-off","R/u":"ti-wave-sine","R/b":"ti-flame","G/w":"ti-seedling","G/u":"ti-sun",
   "G/b":"ti-heart-handshake","G/r":"ti-circles"};
-const PILES = ["Tout à fait moi", "Plutôt moi", "Mitigé", "Plutôt pas moi", "Pas du tout moi"];
+/* ---------- dispositif : « personne » (l'autotest) ou un autre jeu de textes, par exemple « organisation » ----------
+   Les libellés ci-dessous sont les valeurs par défaut ; la colonne « libelles » de flamme_dispositifs (console) les remplace clé par clé. */
+const DISPOSITIF = (new URLSearchParams(location.search).get("dispositif") || "personne").trim() || "personne";
+const ORGA = DISPOSITIF !== "personne";
+const LIB_DEFAUT = window.FLAMME_DISPOSITIFS.LIB_DEFAUT;
+let LIB = { ...LIB_DEFAUT.personne, ...(LIB_DEFAUT[DISPOSITIF] || LIB_DEFAUT.organisation) };
+let PILES = LIB.piles;
 // écarts entre deux cartes voisines (moteur 1.5) : inséparables 1, proches 2, nettement 3, un fossé 4 — jamais d'égalité
 const NIVEAUX = ["inséparables", "proches", "nettement", "un fossé"];
 const PROCHES = M.ECARTS.proches;
@@ -286,7 +299,18 @@ let E = {}, couleurs = {}, temperamentsInitiaux = [], role = null, user = null, 
 let liste = [], ecarts = ecartsSimples(), bac = [], piles = PILES.map(() => []), vue = "piles", classementFait = false, pilesModifiees = false;
 let choisie = null, vGlisse = null, vChoisie = null, textesComplets = false, PROX = {}, AVANT = {};
 
-$("#version").textContent = `Autotest ${VERSION.numero}, version du ${VERSION.date.replace(/(\d{4})-(\d\d)-(\d\d) (\d\d):(\d\d)/,"$3/$2/$1 à $4h$5")} — moteur ${M.VERSION.numero}`;
+function appliquerLibelles(){
+  PILES = Array.isArray(LIB.piles) && LIB.piles.length === 5 ? LIB.piles : LIB_DEFAUT.personne.piles;
+  document.title = "Flamme Bleue — " + LIB.titre.toLowerCase();
+  $("#titre-test").textContent = LIB.titre;
+  $("#avert").textContent = LIB.avertissement || ""; $("#avert").classList.toggle("hidden", !LIB.avertissement);
+  $("#consigne").textContent = LIB.consigne;
+  $("#autre-dispositif").innerHTML = LIB.lienAutre || "";   // texte maison (console éditeur), pas une saisie publique
+  $("#btn-save").textContent = LIB.btnSave; $("#btn-fiche").textContent = LIB.btnFiche;
+  $("#titre-historique").textContent = LIB.historique;
+}
+appliquerLibelles();
+$("#version").textContent = `${LIB.titre} ${VERSION.numero}, version du ${VERSION.date.replace(/(\d{4})-(\d\d)-(\d\d) (\d\d):(\d\d)/,"$3/$2/$1 à $4h$5")} — moteur ${M.VERSION.numero}`;
 
 /* ---------- chargement ---------- */
 async function charger(){
@@ -298,6 +322,16 @@ async function charger(){
   data.couleurs.forEach(c => couleurs[c.code] = c);
   data.elements.forEach(e => E[e.code] = e);
   temperamentsInitiaux = data.elements.filter(e => e.couche === "temperament").map(e => e.code);
+  if (ORGA){
+    const { data: d, error: e2 } = await sb.rpc("flamme_dispositif_contenu", { p_dispositif: DISPOSITIF });
+    if (e2 || !d?.dispositif || !d?.textes?.length){
+      $("#vue").innerHTML = `<p class="msg err">Le dispositif « ${esc(DISPOSITIF)} » n'a pas pu être chargé${e2 ? " : " + esc(e2.message) : " : il n'existe pas encore dans la base (script flamme_dispositifs.sql)"}.</p>`;
+      return false;
+    }
+    LIB = { ...LIB, ...(d.dispositif.libelles || {}) }; appliquerLibelles();
+    // les cartes gardent leur code (le moteur calcule pareil) ; seuls les textes changent
+    d.textes.forEach(t => { if (E[t.code]) Object.assign(E[t.code], { nom: t.nom ?? E[t.code].nom, devise: t.devise ?? E[t.code].devise, titre: t.titre ?? null }); });
+  }
   if (temperamentsInitiaux.length !== 20){
     $("#vue").innerHTML = `<p class="msg err">Le test attend 20 tempéraments validés, la base en contient ${temperamentsInitiaux.length}.</p>`;
     return false;
@@ -307,8 +341,12 @@ async function charger(){
 }
 async function chargerTextesComplets(){
   // réservés aux comptes : RLS de la table elements
-  const { data } = await sb.from("flamme_elements").select("code,titre,texte1,texte2,texte3").in("couche", ["temperament","profil"]);
-  (data || []).forEach(d => { if (E[d.code]) Object.assign(E[d.code], d); });
+  const { data } = await sb.from("flamme_elements").select("code,couche,titre,texte1,texte2,texte3").in("couche", ["temperament","profil"]);
+  (data || []).forEach(d => { if (E[d.code] && !(ORGA && d.couche === "temperament")) Object.assign(E[d.code], d); });
+  if (ORGA){
+    const { data: t } = await sb.from("flamme_dispositif_textes").select("code,titre,texte1,texte2,texte3").eq("dispositif", DISPOSITIF);
+    (t || []).forEach(d => { if (E[d.code]) Object.assign(E[d.code], d); });
+  }
   textesComplets = (data || []).length > 0;
 }
 
@@ -333,8 +371,8 @@ function majSession(){
   $("#btn-logout").classList.toggle("hidden", !user);
   $("#btn-save").disabled = !role;
   $("#btn-fiche").disabled = !role;
-  $("#btn-fiche").title = role ? "" : "Connectez-vous pour afficher votre fiche de profil";
-  $("#btn-save").title = role ? "" : "Connectez-vous pour enregistrer votre résultat";
+  $("#btn-fiche").title = role ? "" : LIB.titreFicheOff;
+  $("#btn-save").title = role ? "" : LIB.titreSaveOff;
   $("#btn-catalogue").classList.toggle("hidden", role !== "proprietaire" && role !== "editeur");
 }
 $("#btn-login").addEventListener("click", () => { location.href = "../?retour=" + encodeURIComponent(location.href); });   // connexion centralisée sur la Forge
@@ -403,7 +441,7 @@ function styleCarte(code){
 function badge(code){
   if (!(code in PROX)) return "";
   const d = code in AVANT ? PROX[code] - AVANT[code] : 0;
-  return `<span class="prox" title="Proximité : 100 % pour la carte la plus proche de vous, 0 % pour la plus éloignée">${Math.round(PROX[code])} %${Math.abs(d) >= 0.5 ? `<span class="delta ${d > 0 ? "haut" : "bas"}">${d > 0 ? "▲" : "▼"}${Math.round(Math.abs(d))}</span>` : ""}</span>`;
+  return `<span class="prox" title="${esc(LIB.proxTitre)}">${Math.round(PROX[code])} %${Math.abs(d) >= 0.5 ? `<span class="delta ${d > 0 ? "haut" : "bas"}">${d > 0 ? "▲" : "▼"}${Math.round(Math.abs(d))}</span>` : ""}</span>`;
 }
 const change = code => code in PROX && code in AVANT && Math.abs(PROX[code] - AVANT[code]) >= 0.5 ? " change" : "";
 function carte(code, { attrs = "", style = "", bulle = false } = {}){
@@ -433,7 +471,7 @@ function rendre(){
 function vuePiles(){
   if (!bac.length && piles.every(p => !p.length)) bac = liste.slice();
   $("#vue").innerHTML = `
-    <p class="aide">Rangez chaque carte dans la pile qui vous correspond, sans quota : une pile peut en recevoir sept et une autre aucune. Glissez une carte, ou touchez-la puis touchez une pile. Les piles donnent l'ordre de départ du classement et ses premiers intercalaires.</p>
+    <p class="aide">${esc(LIB.aidePiles)}</p>
     <div class="bac" data-pile="bac" aria-label="Cartes à ranger">${bac.length ? bac.map(c => carte(c, { attrs: 'draggable="true"' })).join("") : '<span class="vide">Toutes les cartes sont rangées.</span>'}</div>
     <div class="piles">${piles.map((p, k) => `<div class="pile" data-pile="${k}" role="group" aria-label="${PILES[k]}">
       <h3>${PILES[k]} <span>${p.length}</span></h3>${p.map(c => carte(c, { attrs: 'draggable="true"' })).join("") || '<span class="vide">Vide</span>'}</div>`).join("")}</div>
@@ -464,7 +502,7 @@ function vuePiles(){
 function vueClassement(){
   const pos = M.positionsDepuisEcarts(ecarts);
   $("#vue").innerHTML = `
-    <p class="aide">Du plus proche de vous au plus éloigné. Touchez un intercalaire pour dire l'écart entre deux cartes voisines : inséparables, proches, nettement, un fossé. Déplacez une carte en la glissant ou avec les flèches ; les intercalaires restent à leur place. Le pourcentage d'une carte est sa proximité : 100 % pour la plus proche de vous, 0 % pour la plus éloignée.</p>
+    <p class="aide">${esc(LIB.aideClassement)}</p>
     <div class="liste">${liste.map((c, i) => `
       <div class="rang" data-i="${i}">
         <span class="num">${i + 1}<small>pos. ${fmt(pos[i])}</small></span>
@@ -505,10 +543,10 @@ function vueRegle(){
   const couloirs = [], gauche = tops.map(t => { let k = couloirs.findIndex(b => b <= t + 0.5); if (k < 0){ k = couloirs.length; couloirs.push(0); } couloirs[k] = t + CH + 4; return 60 + k * 238; });
   let grad = ""; for (let u = 0; u <= total + 1e-9; u += 1) grad += `<span class="graduation" style="top:${PAD + CH / 2 + u * echelle}px"></span>`;
   $("#vue").innerHTML = `
-    <p class="aide">Faites glisser les cartes de haut en bas : la hauteur, c'est la proximité avec vous, et la distance entre deux cartes, c'est l'écart. Une graduation vaut l'écart « inséparables », deux graduations l'écart « proches ». Deux cartes lâchées l'une sur l'autre restent séparées d'une graduation. Les cartes trop proches se décalent sur le côté pour rester lisibles.</p>
+    <p class="aide">${esc(LIB.aideRegle)}</p>
     <div class="regle-cadre"><div class="regle" id="regle" style="min-width:${80 + couloirs.length * 238}px">
       <span class="axe"></span>${grad}
-      <span class="bout" style="top:2px">plus proche de moi</span><span class="bout" style="bottom:2px">plus éloigné</span>
+      <span class="bout" style="top:2px">${esc(LIB.regleHaut)}</span><span class="bout" style="bottom:2px">plus éloigné</span>
       ${liste.map((c, i) => carte(c, { style: `;top:${tops[i]}px;left:${gauche[i]}px` })).join("")}
     </div></div>`;
   $("#regle").querySelectorAll(".carte").forEach(el => {
@@ -578,8 +616,8 @@ function afficherResultats(){
   if (!etat){
     dernier = null;
     $("#valeurs").innerHTML = ""; $("#histo").innerHTML = `<p class="verrou">Les scores apparaissent dès que les 20 cartes sont rangées dans les piles.</p>`;
-    $("#profil").innerHTML = `<p class="verrou">Votre profil apparaîtra ici.</p>`;
-    $("#bandeau").innerHTML = `<div class="p">Encore ${bac.length} carte${bac.length > 1 ? "s" : ""} à ranger pour voir vos scores</div>`;
+    $("#profil").innerHTML = `<p class="verrou">${esc(LIB.profilAttente)}</p>`;
+    $("#bandeau").innerHTML = `<div class="p">Encore ${bac.length} carte${bac.length > 1 ? "s" : ""} à ranger ${esc(LIB.bandeauAttente)}</div>`;
     afficherCoherence(null);
     return;
   }
@@ -591,7 +629,7 @@ function afficherResultats(){
   afficherCoherence(etat);
   $("#histo").innerHTML = M.ORDRE.map(c => `<div class="barre"><b title="${esc(E[c]?.nom || c)}">${pips(c)}</b><div class="fond"><div class="val" style="width:${p[c]}%;background:${couleurs[c].couleur};${c === "W" ? "border:1px solid #888" : ""}"></div></div><span class="pct">${fmt(p[c])} %</span></div>`).join("");
   $("#profil").innerHTML =
-    (r.frontiere ? `<p class="frontiere">Profil frontière : vos scores vous placent à égalité entre ${r.codes.length} profils.</p>` : "") +
+    (r.frontiere ? `<p class="frontiere">Profil frontière : ${esc(LIB.frontiere)} à égalité entre ${r.codes.length} profils.</p>` : "") +
     r.codes.map(code => {
       const f = E[code] || { nom: "profil non renseigné" };
       const texte = [f.texte1, f.texte2, f.texte3].filter(Boolean).join("\n\n");
@@ -600,8 +638,8 @@ function afficherResultats(){
         ${f.titre && f.titre !== f.devise ? `<div class="titre">« ${esc(f.titre)} »</div>` : ""}
         ${texte ? `<div class="texte">${esc(texte)}</div>` : ""}</div>`;
     }).join("") +
-    (simple.code !== r.code ? `<p class="compare">Sans les écarts (classement simple), votre profil serait <b>${esc(E[simple.code]?.nom || simple.code)}</b> (${esc(simple.code)}).</p>` : "") +
-    (textesComplets ? "" : `<p class="verrou">${user ? "Votre compte n'a pas encore accès aux portraits complets." : "Connectez-vous pour lire le portrait complet et enregistrer votre résultat."}</p>`);
+    (simple.code !== r.code ? `<p class="compare">Sans les écarts (classement simple), ${esc(LIB.compare)} <b>${esc(E[simple.code]?.nom || simple.code)}</b> (${esc(simple.code)}).</p>` : "") +
+    (textesComplets ? "" : `<p class="verrou">${user ? "Votre compte n'a pas encore accès aux portraits complets." : esc(LIB.verrou)}</p>`);
   $("#bandeau").innerHTML = `<div class="ligne">${M.ORDRE.map(c => `<span class="v"><b><i style="background:${couleurs[c].couleur}"></i>${Math.round(p[c])}</b>${esc(E[c]?.nom || c)}</span>`).join("")}</div>
     <div class="p">${esc(E[r.code]?.nom || r.code)} (${esc(r.code)})${simple.code !== r.code ? ` · sans écarts : ${esc(simple.code)}` : ""}</div>`;
 }
@@ -626,7 +664,7 @@ function afficherCoherence(etat){
   const c = M.coherence(etat.ordre, etat.ecarts);
   const cle = triCoh === "rang" ? (l => Math.abs(l.ecartRang) * 1000 + Math.abs(l.ecartProx)) : (l => Math.abs(l.ecartProx) * 1000 + Math.abs(l.ecartRang));
   const lignes = c.lignes.slice().sort((a, b) => cle(b) - cle(a)), vues = cohTout ? lignes : lignes.slice(0, 6);
-  z.innerHTML = `<div class="coh-ligne"><span class="coh-rho" title="Indice ρ : 1 si votre classement est exactement celui que vos scores prévoient">${c.rho.toFixed(2).replace(".", ",")}</span>
+  z.innerHTML = `<div class="coh-ligne"><span class="coh-rho" title="Indice ρ : ${esc(LIB.cohRho)}">${c.rho.toFixed(2).replace(".", ",")}</span>
       <span class="coh-bande ${CLASSE_BANDE[c.bande]}">${c.bande[0].toUpperCase() + c.bande.slice(1)}</span></div>
     <div class="coh-tri">Du plus éloigné au moins éloigné, trié par
       <button type="button" data-tri="rang" aria-pressed="${triCoh === "rang"}">rang</button><button type="button" data-tri="prox" aria-pressed="${triCoh === "prox"}">proximité</button></div>
@@ -635,8 +673,7 @@ function afficherCoherence(etat){
       <td class="${triCoh === "rang" ? "fort" : ""}">${signeN(l.ecartRang)}</td><td class="${triCoh === "prox" ? "fort" : ""}">${signeN(l.ecartProx, " pts")}</td></tr>`).join("")}
     </tbody></table>
     <button type="button" class="lien" id="coh-tout" style="margin-top:6px">${cohTout ? "N'afficher que les 6 premiers" : "Voir les 20 tempéraments"}</button>
-    <p class="coh-aide">ρ compare votre classement à celui que vos propres scores prévoient : au moins 0,90 très cohérent, 0,80 cohérent, 0,70 fragile, en dessous proche du hasard (un classement au hasard obtient déjà 0,44 en moyenne).
-      Écart positif : carte placée plus près de vous que vos scores ne le prévoient. Lignes surlignées : 4 rangs d'écart ou plus.</p>`;
+    <p class="coh-aide">${esc(LIB.cohAide)}</p>`;
   z.querySelectorAll(".coh-tri button").forEach(x => x.addEventListener("click", e => { e.stopPropagation(); triCoh = x.dataset.tri; afficherCoherence(etatCourant()); }));
   $("#coh-tout").addEventListener("click", e => { e.stopPropagation(); cohTout = !cohTout; afficherCoherence(etatCourant()); });
 }
@@ -647,7 +684,7 @@ $("#bascule-coherence").addEventListener("click", e => {
 });
 
 /* ---------- reprise du dernier résultat enregistré ---------- */
-let dernierEnregistre = null;
+let dernierEnregistre = null, dernierSujet = "";
 const cle = (classement, ec) => classement.join() + "|" + (ec || ecartsSimples()).join();
 const dateFr = d => new Date(d).toLocaleDateString("fr-FR");
 const ecartsValides = ec => Array.isArray(ec) && ec.length === 19 && ec.every(x => typeof x === "number" && x > 0) ? ec.slice() : ecartsSimples();
@@ -655,20 +692,22 @@ function restaurer(r){
   // le classement enregistré doit contenir exactement les 20 tempéraments actuels
   const ok = r.classement.length === 20 && [...r.classement].sort().join() === [...temperamentsInitiaux].sort().join();
   if (!ok){ msg(`Le résultat du ${dateFr(r.passe_le)} ne correspond plus aux tempéraments actuels : il n'a pas pu être repris.`, "warn"); return false; }
-  liste = r.classement.slice(); ecarts = ecartsValides(r.ecarts); bac = []; piles = PILES.map(() => []);
+  liste = r.classement.slice(); ecarts = ecartsValides(r.ecarts); bac = []; piles = PILES.map(() => []); if (r.sujet) dernierSujet = r.sujet;
   classementFait = true; pilesModifiees = false; vue = "classement"; choisie = null; PROX = {}; AVANT = {}; rendre();
   msg(`Votre résultat du ${dateFr(r.passe_le)} a été repris. Vous pouvez le modifier et l'enregistrer à nouveau.`, "ok");
   return true;
 }
 async function lireResultats(champs, limite){
-  // la colonne « ecarts » peut ne pas encore exister : on relit alors sans elle
-  let q = await sb.from("flamme_resultats").select(champs + ",ecarts").eq("user_id", user.id).order("passe_le", { ascending:false }).limit(limite);
-  if (q.error && /ecarts/.test(q.error.message)) q = await sb.from("flamme_resultats").select(champs).eq("user_id", user.id).order("passe_le", { ascending:false }).limit(limite);
+  // chaque dispositif ne voit que ses résultats ; tant que la base n'a pas la colonne « dispositif », l'autotest personnel relit sans le filtre
+  const lire = (ch, filtre) => { let r = sb.from("flamme_resultats").select(ch).eq("user_id", user.id); if (filtre) r = r.eq("dispositif", DISPOSITIF); return r.order("passe_le", { ascending:false }).limit(limite); };
+  let q = await lire(champs + ",ecarts" + (ORGA ? ",sujet" : ""), true);
+  if (q.error && !ORGA && /dispositif/.test(q.error.message)) q = await lire(champs + ",ecarts", false);
+  if (q.error && !ORGA && /ecarts/.test(q.error.message)) q = await lire(champs, false);   // la colonne « ecarts » peut ne pas encore exister
   return q;
 }
 async function reprendreDernier(){
   const { data } = await lireResultats("passe_le,classement", 1);
-  const r = data?.[0]; dernierEnregistre = r ? cle(r.classement, ecartsValides(r.ecarts)) : null;
+  const r = data?.[0]; dernierEnregistre = r ? cle(r.classement, ecartsValides(r.ecarts)) : null; dernierSujet = r?.sujet || "";
   if (!r) return;
   const pasEncoreTouche = !classementFait && piles.every(p => !p.length);
   if (pasEncoreTouche || confirm(`Reprendre votre dernier résultat enregistré (${dateFr(r.passe_le)}) ? Votre classement en cours serait remplacé.`)) restaurer(r);
@@ -680,29 +719,36 @@ $("#btn-save").addEventListener("click", async () => {
   if (!role) return;
   if (!dernier){ msg("Rangez d'abord les 20 cartes dans les piles, ou passez au classement.", "warn"); return; }
   if (dernierEnregistre === cle(dernier.classement, dernier.ecarts)){ msg("Ce classement est déjà enregistré : modifiez-le avant d'enregistrer un nouveau résultat.", "warn"); return; }
+  let sujet = null;
+  if (ORGA){
+    sujet = prompt(LIB.demanderSujet || "Nom :", dernierSujet || "");
+    if (!sujet || !sujet.trim()) return;
+    sujet = sujet.trim(); dernierSujet = sujet;
+  }
   $("#btn-save").disabled = true;
   const ligne = {
     classement: dernier.classement, ecarts: dernier.ecarts, scores: dernier.p, codes: [dernier.r.code, ...dernier.r.voisins], frontiere: dernier.r.voisins.length > 0,
     version_moteur: M.VERSION.numero, version_autotest: VERSION.numero
   };
+  if (ORGA) Object.assign(ligne, { dispositif: DISPOSITIF, sujet, origine: "autotest " + DISPOSITIF });
   let { error } = await sb.from("flamme_resultats").insert(ligne);
   let sansEcarts = false;
   if (error && /ecarts/.test(error.message)){ delete ligne.ecarts; sansEcarts = true; ({ error } = await sb.from("flamme_resultats").insert(ligne)); }
   $("#btn-save").disabled = false;
   if (error){ msg("Enregistrement refusé : " + error.message, "err"); return; }
   dernierEnregistre = cle(dernier.classement, dernier.ecarts);
-  msg(`Résultat enregistré : ${dernier.r.code}.${sansEcarts ? " Les écarts n'ont pas pu être enregistrés : la base n'a pas encore la colonne prévue pour eux." : ""}`, sansEcarts ? "warn" : "ok"); historique();
+  msg(`${ORGA ? `Profil de « ${sujet} » enregistré` : "Résultat enregistré"} : ${dernier.r.code}.${sansEcarts ? " Les écarts n'ont pas pu être enregistrés : la base n'a pas encore la colonne prévue pour eux." : ""}`, sansEcarts ? "warn" : "ok"); historique();
 });
 /* catalogue de profils (éditeur, propriétaire) : le test passé pour quelqu'un d'autre, rangé à part */
 $("#btn-catalogue").addEventListener("click", async () => {
   if (role !== "proprietaire" && role !== "editeur") return;
   if (!dernier){ msg("Rangez d'abord les 20 cartes dans les piles, ou passez au classement.", "warn"); return; }
-  const nom = prompt("Nom de la fiche dans le catalogue (privée, à vous seul ; partageable ensuite dans la console) :", "");
+  const nom = prompt("Nom de la fiche dans le catalogue (privée, à vous seul ; partageable ensuite dans la console) :", ORGA ? dernierSujet : "");
   if (!nom || !nom.trim()) return;
   const b = $("#btn-catalogue"); b.disabled = true;
   const { error } = await sb.from("flamme_catalogue").insert({ nom: nom.trim(), classement: dernier.classement, ecarts: dernier.ecarts, scores: dernier.p,
-    codes: [dernier.r.code, ...dernier.r.voisins], frontiere: dernier.r.voisins.length > 0, origine: "autotest",
-    version_moteur: M.VERSION.numero, version_autotest: VERSION.numero });
+    codes: [dernier.r.code, ...dernier.r.voisins], frontiere: dernier.r.voisins.length > 0, origine: ORGA ? "autotest " + DISPOSITIF : "autotest",
+    version_moteur: M.VERSION.numero, version_autotest: VERSION.numero, ...(ORGA ? { dispositif: DISPOSITIF } : {}) });
   b.disabled = false;
   if (error){ msg("Rangement refusé : " + error.message + (/flamme_catalogue/.test(error.message) ? " (le catalogue n'est pas encore installé dans la base)" : ""), "err"); return; }
   msg(`« ${nom.trim()} » est rangé dans le catalogue (${dernier.r.code}). Retrouvez-le dans la console, onglet Catalogue.`, "ok");
@@ -721,17 +767,17 @@ $("#btn-reset").addEventListener("click", () => {
 async function historique(){
   const bloc = $("#bloc-historique");
   if (!role){ bloc.classList.add("hidden"); return; }
-  const { data, error } = await lireResultats("id,passe_le,codes,frontiere,classement", 20);
+  const { data, error } = await lireResultats("id,passe_le,codes,frontiere,classement", ORGA ? 50 : 20);
   if (error){ bloc.classList.add("hidden"); return; }
   bloc.classList.remove("hidden");
   $("#historique").innerHTML = data.length
-    ? `<ul>${data.map(r => `<li>${new Date(r.passe_le).toLocaleDateString("fr-FR")} — <span class="gh" title="${esc(r.codes[0])}">${pips(r.codes[0])}</span> <b>${esc(E[r.codes[0]]?.nom || r.codes[0])}</b>
+    ? `<ul>${data.map(r => `<li>${new Date(r.passe_le).toLocaleDateString("fr-FR")} — ${r.sujet ? `<span class="sujet">${esc(r.sujet)}</span> — ` : ""}<span class="gh" title="${esc(r.codes[0])}">${pips(r.codes[0])}</span> <b>${esc(E[r.codes[0]]?.nom || r.codes[0])}</b>
         <a class="lien" href="fiche.html?resultat=${r.id}" target="_blank">fiche</a>
         <a class="lien" href="portrait.html?resultat=${r.id}" target="_blank">portrait</a>
         <a class="lien" href="ecusson.html?resultat=${r.id}" target="_blank">écusson</a>
         <button class="lien reprendre" data-id="${r.id}" type="button">reprendre</button>
         <button class="lien effacer" data-id="${r.id}" type="button">effacer</button></li>`).join("")}</ul>`
-    : `<p class="verrou">Aucun résultat enregistré pour l'instant.</p>`;
+    : `<p class="verrou">${esc(LIB.historiqueVide)}</p>`;
   $("#historique").querySelectorAll(".reprendre").forEach(b => b.addEventListener("click", e => {
     e.stopPropagation();
     const r = data.find(x => String(x.id) === b.dataset.id);
