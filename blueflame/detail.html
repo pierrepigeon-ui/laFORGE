@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Flamme Bleue — détail</title>
+<title>Flamme Bleue — statistiques</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
@@ -138,7 +138,7 @@ dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);c
   <div style="display:flex;gap:10px"><button class="btn" type="submit">Se connecter</button><button class="btn ghost" type="button" id="login-fermer">Fermer</button></div>
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 <script>
-const VERSION = { numero:"1.23", date:"2026-10-17 15:20" };
+const VERSION = { numero:"1.24", date:"2026-10-17 19:20" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const ACCES = ["proprietaire"];
@@ -149,7 +149,7 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt
 const pct = x => (x * 100).toFixed(1).replace(".", ",") + " %";
 const dateFr = d => new Date(d).toLocaleDateString("fr-FR", { day:"numeric", month:"long", year:"numeric" });
 let user = null, role = null, E = {}, C = {}, V = {};
-$("#version").textContent = `Détail ${VERSION.numero}, version du ${VERSION.date.replace(/(\d{4})-(\d\d)-(\d\d) (\d\d):(\d\d)/,"$3/$2/$1 à $4h$5")} — moteur ${M.VERSION.numero}`;
+$("#version").textContent = `Statistiques ${VERSION.numero}, version du ${VERSION.date.replace(/(\d{4})-(\d\d)-(\d\d) (\d\d):(\d\d)/,"$3/$2/$1 à $4h$5")} — moteur ${M.VERSION.numero}`;
 
 function pips(code){
   // glyphe (projets, profils, styles, tempéraments) si le code en a un ; sinon les pastilles rondes
@@ -197,7 +197,7 @@ function lignesCoherence(){
 }
 function blocCoherence(src){
   if (!Array.isArray(src.classement) || src.classement.length !== 20)
-    return `<p class="note large">La cohérence demande le classement des 20 tempéraments : ouvrez le détail depuis un résultat enregistré${src.type ? " (un profil type n'a pas de classement)" : ""}.</p>`;
+    return `<p class="note large">La cohérence demande le classement des 20 tempéraments : ouvrez les statistiques depuis un résultat enregistré${src.type ? " (un profil type n'a pas de classement)" : ""}.</p>`;
   COH = M.coherence(src.classement, Array.isArray(src.ecarts) && src.ecarts.length === 19 ? src.ecarts.map(Number) : undefined);
   return `<div class="coh-tete"><div class="coh-rho">${COH.rho.toFixed(2).replace(".", ",")}<small>indice ρ</small></div>
       <span class="coh-bande ${CLASSE_BANDE[COH.bande]}">${COH.bande[0].toUpperCase() + COH.bande.slice(1)}</span>
@@ -240,7 +240,7 @@ async function lireScores(){
     const { data: pers } = await sb.rpc("flamme_personnes"); const p = (pers || []).find(x => x.user_id === data.user_id);
     return { scores: data.scores, date: data.passe_le, qui: p ? (p.nom || p.email) : "", classement: data.classement, ecarts: data.ecarts };
   }
-  const s = {}; for (const c of M.ORDRE){ const v = parseFloat(String(q.get(c) ?? "").replace(",", ".")); if (!isFinite(v)) throw new Error("Il manque des scores : ouvre le détail depuis la console ou depuis une fiche."); s[c] = v; }
+  const s = {}; for (const c of M.ORDRE){ const v = parseFloat(String(q.get(c) ?? "").replace(",", ".")); if (!isFinite(v)) throw new Error("Il manque des scores : ouvre les statistiques depuis la console ou depuis une fiche."); s[c] = v; }
   return { scores: s, date: new Date().toISOString(), qui: "" };
 }
 
@@ -282,7 +282,7 @@ function rendre(src){
     $("#coh-corps").innerHTML = lignesCoherence();
   }));
   $("#lien-fiche").href = "fiche.html" + location.search;
-  document.title = `Flamme Bleue — détail ${st.profil.codes.join(" / ")}`;
+  document.title = `Flamme Bleue — statistiques ${st.profil.codes.join(" / ")}`;
 }
 
 /* ---------- aperçu de fiche au survol ----------
@@ -367,9 +367,9 @@ sb.auth.onAuthStateChange(async (_e, session) => {
   $("#btn-login").classList.toggle("hidden", !!user); $("#btn-logout").classList.toggle("hidden", !user);
   $("#who").textContent = user ? user.email : "";
   ["#page", "#outils"].forEach(s => $(s).classList.add("hidden")); $("#bloque").classList.remove("hidden");
-  if (!user){ $("#bloque").textContent = "Le détail est réservé. Connecte-toi pour l'afficher."; return; }
+  if (!user){ $("#bloque").textContent = "Les statistiques sont réservées. Connecte-toi pour les afficher."; return; }
   const { data: r } = await sb.rpc("flamme_mon_role"); role = r || "";
-  if (!ACCES.includes(role)){ $("#bloque").textContent = "Le détail des statistiques est réservé au propriétaire."; return; }
+  if (!ACCES.includes(role)){ $("#bloque").textContent = "Les statistiques sont réservées au propriétaire."; return; }
   try {
     const [{ data: els, error }, { data: cols }, { data: voc }] = await Promise.all([sb.from("flamme_elements").select("*"), sb.from("flamme_couleurs").select("*"), sb.from("flamme_vocabulaire").select("*").eq("langue", "fr")]);
     if (error) throw new Error(error.message);

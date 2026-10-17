@@ -68,7 +68,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px} .field{display:block;margi
     <button type="button" id="bascule" class="bascule" aria-pressed="true" hidden>Surbrillance : activée</button>
     <a class="btn ghost hidden" id="lien-fiche" href="#" target="_blank">Voir sa fiche</a>
     <a class="btn ghost hidden" id="lien-ecusson" href="#" target="_blank">Voir son écusson</a>
-    <a class="btn ghost hidden" id="lien-detail" href="#" target="_blank">Voir le détail</a>
+    <a class="btn ghost hidden" id="lien-detail" href="#" target="_blank">Voir les statistiques</a>
     <button class="btn ghost" id="plein-ecran" type="button" title="La rosace seule, en plein écran (Échap pour revenir)">Plein écran</button>
     <button class="btn ghost hidden" id="zoom-reset" type="button" title="Revenir à la rosace entière">Zoom ×1</button>
     <button class="btn ghost" id="dl-svg" type="button">Télécharger en SVG</button>
@@ -87,7 +87,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px} .field{display:block;margi
   <div style="display:flex;gap:10px"><button class="btn" type="submit">Se connecter</button><button class="btn ghost" type="button" id="login-fermer">Fermer</button></div>
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 <script>
-const VERSION = { numero:"1.27", date:"2026-10-17 15:20" };
+const VERSION = { numero:"1.28", date:"2026-10-17 19:20" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const ACCES = ["proprietaire"];   // rôles autorisés (en attendant la table des droits d'accès)
