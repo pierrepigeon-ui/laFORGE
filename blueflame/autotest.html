@@ -267,7 +267,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px}
 </dialog>
 
 <script>
-const VERSION = { numero:"2.7", date:"2026-10-17 20:15" };
+const VERSION = { numero:"2.8", date:"2026-10-18 00:30" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const M = window.FLAMME_MOTEUR;
@@ -727,7 +727,7 @@ $("#btn-save").addEventListener("click", async () => {
     classement: dernier.classement, ecarts: dernier.ecarts, scores: dernier.p, codes: [dernier.r.code, ...dernier.r.voisins], frontiere: dernier.r.voisins.length > 0,
     version_moteur: M.VERSION.numero, version_autotest: VERSION.numero
   };
-  if (ORGA) Object.assign(ligne, { dispositif: DISPOSITIF, sujet, origine: "autotest " + DISPOSITIF });
+  if (ORGA) Object.assign(ligne, { dispositif: DISPOSITIF, sujet });   // l'origine reste « autotest » (contrainte de la base) ; le dispositif est dans sa propre colonne
   let { error } = await sb.from("flamme_resultats").insert(ligne);
   let sansEcarts = false;
   if (error && /ecarts/.test(error.message)){ delete ligne.ecarts; sansEcarts = true; ({ error } = await sb.from("flamme_resultats").insert(ligne)); }
@@ -744,7 +744,7 @@ $("#btn-catalogue").addEventListener("click", async () => {
   if (!nom || !nom.trim()) return;
   const b = $("#btn-catalogue"); b.disabled = true;
   const { error } = await sb.from("flamme_catalogue").insert({ nom: nom.trim(), classement: dernier.classement, ecarts: dernier.ecarts, scores: dernier.p,
-    codes: [dernier.r.code, ...dernier.r.voisins], frontiere: dernier.r.voisins.length > 0, origine: ORGA ? "autotest " + DISPOSITIF : "autotest",
+    codes: [dernier.r.code, ...dernier.r.voisins], frontiere: dernier.r.voisins.length > 0, origine: "autotest",
     version_moteur: M.VERSION.numero, version_autotest: VERSION.numero, ...(ORGA ? { dispositif: DISPOSITIF } : {}) });
   b.disabled = false;
   if (error){ msg("Rangement refusé : " + error.message + (/flamme_catalogue/.test(error.message) ? " (le catalogue n'est pas encore installé dans la base)" : ""), "err"); return; }
