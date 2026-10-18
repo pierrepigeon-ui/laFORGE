@@ -121,6 +121,14 @@ table.sp-extremes{margin:0 0 10px} table.tl-table tr.choisi td{background:color-
 .carnet h2{font:600 20px var(--serif);margin:0 0 4px}
 .carnet textarea{min-height:220px}
 .lecture{font-size:13px;color:var(--warn)}
+#recherche{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px;font-size:14px}
+#recherche input,#recherche select{font:14px var(--sans);padding:6px 9px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink)}
+#recherche input{min-width:220px} #f-compte{color:var(--muted);font-size:13px;margin-left:auto}
+table.fiches th[data-tri]{cursor:pointer;user-select:none} table.fiches th[data-tri]:hover{color:var(--ink)}
+table.fiches th .sens{font-size:10px;margin-left:3px}
+.zone-danger{margin:40px 0 10px;padding:16px 18px;border:1px solid var(--err,#B42318);border-radius:10px}
+.zone-danger h2{font:600 17px var(--serif);margin:0 0 4px;color:var(--err,#B42318)} .zone-danger p{margin:0 0 10px;font-size:13.5px;color:var(--muted)}
+.btn.danger{border-color:var(--err,#B42318);color:var(--err,#B42318);background:transparent}
 #filtre{display:flex;gap:14px;align-items:center;font-size:14px;margin:18px 0 8px} #filtre h2{font:600 20px var(--serif);margin:0;margin-right:auto}
 .jeu-tete{display:flex;gap:22px;align-items:flex-start;margin:18px 0 10px}
 .jeu-corps{flex:1;min-width:0}
@@ -215,6 +223,13 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
   <div id="filtre" class="hidden"><h2>Les fiches</h2>
     <label><input type="radio" name="qui" value="miennes" checked> Mes fiches</label>
     <label><input type="radio" name="qui" value="toutes"> Toutes les fiches</label></div>
+  <div id="recherche" class="hidden">
+    <input type="search" id="f-texte" placeholder="Chercher un jeu…" aria-label="Chercher un jeu">
+    <select id="f-eval" aria-label="Évaluateur"><option value="">Tous les évaluateurs</option></select>
+    <select id="f-etat" aria-label="État"><option value="">Brouillons et finales</option><option value="brouillon">Brouillons</option><option value="finale">Finales</option></select>
+    <select id="f-cfg" aria-label="Configuration"><option value="">Base et configurations</option><option value="base">Boîte de base</option><option value="cfg">Configurations</option></select>
+    <select id="f-origine" aria-label="Origine"><option value="">Toutes origines</option><option value="claude">Pré-remplies par Claude</option><option value="humain">Saisies à la main</option></select>
+    <span id="f-compte"></span></div>
   <div id="fiches"></div>
 </section>
 
@@ -245,7 +260,7 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
 
 <script src="timeline.js?v=3.6"></script>
 <script>
-const VERSION = { numero:"3.29", date:"2026-10-17 18:54" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.30", date:"2026-10-18 21:10" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -339,16 +354,36 @@ const saisieDe = id => { const s = {}; valeurs.filter(v => v.evaluation === id).
 
 /* ---------------- liste des fiches ---------------- */
 document.querySelectorAll('input[name="qui"]').forEach(r => r.addEventListener("change", afficherFiches));
+const estClaude = e => /^\[Pré-remplie par Claude/.test(e.notes_article || "") || /pilote Claude|Claude/.test(e.version_appli || "");
+let tri = { cle:"modifie", sens:-1 };
+["f-texte","f-eval","f-etat","f-cfg","f-origine"].forEach(id => document.getElementById(id).addEventListener("input", afficherFiches));
 function afficherFiches(){
   const miennes = document.querySelector('input[name="qui"]:checked').value === "miennes";
-  const L = toutes.filter(e => !miennes || e.evaluateur === user.id);
-  $("#filtre").classList.toggle("hidden", !toutes.length);
-  if (!L.length){ $("#fiches").innerHTML = `<p class="aide">${miennes ? "Tu n'as encore évalué aucun jeu." : "Aucune fiche pour l'instant."}</p>`; return; }
-  $("#fiches").innerHTML = `<table class="fiches"><thead><tr><th>Jeu</th><th>Évaluateur</th><th>État</th><th>Paires</th><th>Note finale</th><th>Modifiée</th></tr></thead><tbody>
-    ${L.map(e => { const c = calculer(saisieDe(e.id)); return `<tr class="f" data-id="${esc(e.id)}"><td><b>${esc(nomJeu(e.jeu))}</b>${cfgDe(e) ? ` <span class="cfg-nom">— ${esc(cfgDe(e))}</span>` : ""}</td><td>${esc(nomDe(e.evaluateur))}</td>
-      <td><span class="badge ${esc(e.statut)}">${e.statut === "finale" ? "finale" : "brouillon"}</span></td><td>${c.faites} / ${M.paires.length}</td>
-      <td>${c.finale == null ? "—" : fmt(c.finale, 2)}</td><td>${new Date(e.modifie_le).toLocaleString("fr-FR")}</td></tr>`; }).join("")}</tbody></table>`;
+  $("#filtre").classList.toggle("hidden", !toutes.length); $("#recherche").classList.toggle("hidden", !toutes.length);
+  // la liste des évaluateurs (pour le filtre), gardée à jour
+  const ev = [...new Set(toutes.map(e => e.evaluateur))], selE = $("#f-eval"), choixE = selE.value;
+  selE.innerHTML = `<option value="">Tous les évaluateurs</option>` + ev.map(id => `<option value="${esc(id)}">${esc(nomDe(id))}</option>`).join(""); selE.value = ev.includes(choixE) ? choixE : "";
+  selE.disabled = miennes;
+  const q = norm($("#f-texte").value.trim()), fe = selE.value, st = $("#f-etat").value, fc = $("#f-cfg").value, fo = $("#f-origine").value;
+  let L = toutes.filter(e => (!miennes || e.evaluateur === user.id) && (miennes || !fe || e.evaluateur === fe)
+    && (!q || norm(nomJeu(e.jeu) + " " + (cfgDe(e) || "")).includes(q)) && (!st || e.statut === st)
+    && (!fc || (fc === "base" ? !cfgDe(e) : !!cfgDe(e))) && (!fo || (fo === "claude" ? estClaude(e) : !estClaude(e))));
+  const total = toutes.filter(e => !miennes || e.evaluateur === user.id).length;
+  $("#f-compte").textContent = L.length === total ? `${total} fiche${total > 1 ? "s" : ""}` : `${L.length} sur ${total}`;
+  if (!total){ $("#fiches").innerHTML = `<p class="aide">${miennes ? "Tu n'as encore évalué aucun jeu." : "Aucune fiche pour l'instant."}</p>`; return; }
+  if (!L.length){ $("#fiches").innerHTML = `<p class="aide">Aucune fiche ne correspond à ces critères.</p>`; return; }
+  const R = L.map(e => ({ e, c: calculer(saisieDe(e.id)) }));
+  const cles = { jeu: x => norm(nomJeu(x.e.jeu) + " " + (cfgDe(x.e) || "")), eval: x => norm(nomDe(x.e.evaluateur)), etat: x => x.e.statut,
+    paires: x => x.c.faites, note: x => x.c.finale ?? -1, modifie: x => x.e.modifie_le };
+  const k = cles[tri.cle]; R.sort((a, b) => { const u = k(a), v = k(b); return (u < v ? -1 : u > v ? 1 : 0) * tri.sens; });
+  const th = (cle, t) => `<th data-tri="${cle}">${t}${tri.cle === cle ? `<span class="sens">${tri.sens > 0 ? "▲" : "▼"}</span>` : ""}</th>`;
+  $("#fiches").innerHTML = `<table class="fiches"><thead><tr>${th("jeu","Jeu")}${th("eval","Évaluateur")}${th("etat","État")}${th("paires","Paires")}${th("note","Note finale")}${th("modifie","Modifiée")}</tr></thead><tbody>
+    ${R.map(({ e, c }) => `<tr class="f" data-id="${esc(e.id)}"><td><b>${esc(nomJeu(e.jeu))}</b>${cfgDe(e) ? ` <span class="cfg-nom">— ${esc(cfgDe(e))}</span>` : ""}${estClaude(e) ? ' <span class="badge" title="Pré-remplie par Claude, à revoir">Claude</span>' : ""}</td><td>${esc(nomDe(e.evaluateur))}</td>
+      <td><span class="badge ${esc(e.statut)}">${e.statut === "finale" ? "finale" : "brouillon"}</span></td><td style="white-space:nowrap">${c.faites} / ${M.paires.length}</td>
+      <td>${c.finale == null ? "—" : fmt(c.finale, 2)}</td><td style="white-space:nowrap">${new Date(e.modifie_le).toLocaleString("fr-FR", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" })}</td></tr>`).join("")}</tbody></table>`;
   document.querySelectorAll("#fiches tr.f").forEach(tr => tr.addEventListener("click", () => ouvrirFiche(toutes.find(e => e.id === tr.dataset.id))));
+  document.querySelectorAll("#fiches th[data-tri]").forEach(h => h.addEventListener("click", () => {
+    const c = h.dataset.tri; tri = { cle:c, sens: tri.cle === c ? -tri.sens : (c === "jeu" || c === "eval" ? 1 : -1) }; afficherFiches(); }));
 }
 
 /* ---------------- ajout d'un jeu (contrôle des doublons, lien BGG) ---------------- */
@@ -424,6 +459,21 @@ function majBarreFiche(){
   $("#finale").checked = fiche.statut === "finale"; $("#finale").disabled = lectureSeule;
 }
 $("#btn-config").addEventListener("click", nouvelleConfiguration);
+// suppression sécurisée (18/10/2026, script 28) : propriétaire seulement, confirmation en deux temps, archive avant suppression
+$("#grille").addEventListener("click", async e => {
+  if (e.target.id !== "btn-supprimer" || role !== "proprietaire" || !fiche?.id) return;
+  const nb = Object.values(saisie).filter(v => v.valeur != null || v.sans_objet).length;
+  const quoi = `${titreFiche(fiche)}\nÉvaluateur : ${nomDe(fiche.evaluateur)} · ${fiche.statut === "finale" ? "finale" : "brouillon"} · ${nb} axe${nb > 1 ? "s" : ""} saisi${nb > 1 ? "s" : ""}`;
+  if (!confirm(`Supprimer cette fiche ?\n\n${quoi}\n\nElle sera archivée avant d'être supprimée.`)) return;
+  const motif = prompt(`Pour confirmer, écris SUPPRIMER (en majuscules).\nTu peux ajouter un motif après, par exemple : SUPPRIMER doublon`);
+  if (!motif || !/^SUPPRIMER\b/.test(motif.trim())){ $("#etat").textContent = "Suppression annulée."; return; }
+  clearTimeout(minuteur); enAttente = new Set(); ficheModifiee = false;
+  const { data, error } = await sb.rpc("prisme_supprimer_fiche", { p_fiche: fiche.id, p_motif: motif.trim().replace(/^SUPPRIMER\s*/, "") || null });
+  if (error){ $("#etat").textContent = "Suppression refusée : " + error.message; return; }
+  alert(data || "Fiche archivée puis supprimée.");
+  $("#fiche").classList.add("hidden"); $("#pied").classList.add("hidden"); $("#accueil").classList.remove("hidden");
+  fiche = null; await chargerFiches(); afficherFiches(); window.scrollTo(0, 0);
+});
 $("#retour").addEventListener("click", async () => {
   if (enAttente.size || ficheModifiee){ clearTimeout(minuteur); await enregistrer(); }
   if (ARRIVEE){   // retour à la page d'origine (liste des jeux ou fiche du jeu)
@@ -615,6 +665,9 @@ function construireGrille(){
   h += `<section class="carnet"><h2>Carnet d'article</h2>
     <p class="aide">Idées, anecdotes de partie, citations, plan : tout ce qui servira à écrire un article sur ce jeu. Visible par les autres évaluateurs, comme le reste de la fiche.</p>
     <textarea id="carnet" ${lectureSeule ? "disabled" : ""}>${esc(fiche.notes_article || "")}</textarea></section>`;
+  if (role === "proprietaire" && fiche.id) h += `<section class="zone-danger"><h2>Supprimer cette fiche</h2>
+    <p>Réservé au propriétaire. La fiche et toutes ses notes sont d'abord copiées dans les archives (restaurables par SQL), puis supprimées.</p>
+    <button type="button" class="btn danger" id="btn-supprimer">Supprimer cette fiche…</button></section>`;
   $("#grille").innerHTML = h;
   document.querySelectorAll(".axe").forEach(majPaliers);
   M.paires.forEach(p => { if (estComplete(p, saisie)) document.getElementById("p-" + p.code).classList.add("repliee"); });   // ce qui est fait se replie

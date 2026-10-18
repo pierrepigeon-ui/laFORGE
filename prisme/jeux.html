@@ -23,6 +23,7 @@ h1{font:600 clamp(30px,5vw,44px)/1.1 var(--serif);margin:10px 0 4px}
 .outils{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
 .outils input{font:15px var(--sans);padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);min-width:240px}
 .outils .compte{font-size:13.5px;color:var(--muted)}
+table.jeux th[data-tri]{cursor:pointer;user-select:none} table.jeux th[data-tri]:hover{color:var(--ink)} table.jeux th .sens{font-size:10px;margin-left:3px}
 .cadre{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow-x:auto}
 table.jeux{width:100%;border-collapse:collapse;font-size:15px}
 table.jeux th{font-weight:500;font-size:12.5px;color:var(--muted);text-align:left;border-bottom:1px solid var(--line);padding:10px 12px;white-space:nowrap}
@@ -49,14 +50,14 @@ tr.attente td{color:var(--muted)}
 <main>
   <h1>Les jeux</h1>
   <p class="chapo" id="chapo">Les jeux évalués dans PRISME, et ce qu'ils promettent.</p>
-  <div class="outils"><input type="search" id="cherche" placeholder="Chercher un jeu…" aria-label="Chercher un jeu"><span class="compte" id="compte"></span><span id="liens" style="margin-left:auto;display:flex;gap:8px"></span></div>
+  <div class="outils"><input type="search" id="cherche" placeholder="Chercher un jeu…" aria-label="Chercher un jeu"><label class="compte" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="evalues" style="min-width:0"> évalués seulement</label><span class="compte" id="compte"></span><span id="liens" style="margin-left:auto;display:flex;gap:8px"></span></div>
   <div id="contenu"><p class="vide">Chargement…</p></div>
   <p class="version" id="version"></p>
 </main>
 
 <script src="timeline.js?v=3.6"></script>
 <script>
-const VERSION = { numero:"1.3", date:"2026-10-17 18:54" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.4", date:"2026-10-18 21:10" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -109,11 +110,19 @@ async function demarrer(user){
   afficher();
 }
 
-$("#cherche").addEventListener("input", afficher);
+$("#cherche").addEventListener("input", afficher); $("#evalues").addEventListener("change", afficher);
+// tri par colonne (18/10/2026) : un clic sur l'en-tête trie, un second inverse ; les jeux sans valeur restent en bas
+let tri = { cle:"nom", sens:1 };
+const CLES = { nom: l => sansAccent(l.j.nom), note: l => l.r?.finale, pour: l => l.r?.notePour, apogee: l => l.r?.c ? l.r.c.y[l.r.c.alpha] : null,
+  vie: l => l.r?.c ? (l.r.c.vie ?? 1e9) : null, cout: l => l.r?.cout?.parPartie };
 const sansAccent = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 function afficher(){
   const q = sansAccent($("#cherche").value.trim());
-  const L = lignes.filter(l => !q || sansAccent(l.j.nom).includes(q));
+  const L = lignes.filter(l => (!q || sansAccent(l.j.nom).includes(q)) && (!$("#evalues").checked || l.n));
+  const k = CLES[tri.cle];
+  L.sort((a, b) => { const u = k(a), v = k(b); if (u == null && v == null) return sansAccent(a.j.nom) < sansAccent(b.j.nom) ? -1 : 1;
+    if (u == null) return 1; if (v == null) return -1; return (u < v ? -1 : u > v ? 1 : 0) * tri.sens; });
+  const th = (cle, t, cls = "", titre = "") => `<th class="${cls}" data-tri="${cle}"${titre ? ` title="${titre}"` : ""}>${t}${tri.cle === cle ? `<span class="sens">${tri.sens > 0 ? "▲" : "▼"}</span>` : ""}</th>`;
   const evalues = lignes.filter(l => l.n).length;
   $("#compte").textContent = `${evalues} jeu${evalues > 1 ? "x" : ""} évalué${evalues > 1 ? "s" : ""} sur ${lignes.length}`;
   if (!L.length){ $("#contenu").innerHTML = `<p class="vide">Aucun jeu ne correspond à « ${esc($("#cherche").value)} ».</p>`; return; }
@@ -122,8 +131,8 @@ function afficher(){
     return `<span class="ecart ${v >= .005 ? "plus" : v <= -.005 ? "moins" : ""}">${Math.abs(v) < .005 ? "±" : v > 0 ? "+" : "−"}${fmt(Math.abs(v))}</span>`; };
   const vie = c => !c ? "—" : c.vie == null ? "∞" : Math.round(c.vie);
   const cout = k => !k ? "—" : texteCout(k).replace(/ par session.*/, "");
-  $("#contenu").innerHTML = `<div class="cadre"><table class="jeux"><thead><tr><th>Jeu</th><th class="n">Note PRISME /5</th>${profil ? '<th class="n">Pour vous /5</th>' : ""}
-    <th class="n col-sec" title="Le flow le plus haut de la timeline">Apogée /10</th><th class="n col-sec" title="∞ : un classique">Durée de vie (sessions)</th><th class="n col-sec">Coût (€/session)</th>${lecteur ? "<th>Évaluation</th>" : ""}</tr></thead><tbody>
+  $("#contenu").innerHTML = `<div class="cadre"><table class="jeux"><thead><tr>${th("nom","Jeu")}${th("note","Note PRISME /5","n")}${profil ? th("pour","Pour vous /5","n") : ""}
+    ${th("apogee","Apogée /10","n col-sec","Le flow le plus haut de la timeline")}${th("vie","Durée de vie (sessions)","n col-sec","∞ : un classique")}${th("cout","Coût (€/session)","n col-sec")}${lecteur ? "<th>Évaluation</th>" : ""}</tr></thead><tbody>
     ${L.map(l => {
       const img = l.j.image_url ? `<img src="${esc(l.j.image_url)}" alt="" loading="lazy">` : `<span class="sans-image"></span>`;
       const nom = `<a class="jeu" href="jeu.html?jeu=${encodeURIComponent(l.j.code)}">${img}<span><b>${esc(l.j.nom)}</b><small>${l.n ? `${l.n} fiche${l.n > 1 ? "s" : ""} finale${l.n > 1 ? "s" : ""}` : "pas encore évalué"}${l.cfg ? ` · + ${l.cfg} configuration${l.cfg > 1 ? "s" : ""}` : ""}</small></span></a>`;
@@ -132,7 +141,9 @@ function afficher(){
       return `<tr><td>${nom}</td><td class="n"><b>${fmt(l.r.finale)}</b></td>${profil ? `<td class="n"><b>${fmt(l.r.notePour)}</b>${ecart(l.r.notePour, l.r.finale)}</td>` : ""}
         <td class="n col-sec">${fmt(l.r.c.y[l.r.c.alpha])}</td><td class="n col-sec">${vie(l.r.c)}</td><td class="n col-sec">${cout(l.r.cout)}</td>${ev}</tr>`;
     }).join("")}</tbody></table></div>
-    <p class="discret">Notes sur 5, moyenne des fiches finales. Apogée : le flow le plus haut de la timeline, sur 10 (le flow n'est pas une note : il mesure le plaisir net à un moment de la vie du jeu). Durée de vie : en sessions, jusqu'à l'abandon ou jusqu'au jeu rangé ; ∞ pour un classique.</p>`;
+    <p class="discret">Un clic sur un en-tête trie la colonne. Notes sur 5, moyenne des fiches finales. Apogée : le flow le plus haut de la timeline, sur 10 (le flow n'est pas une note : il mesure le plaisir net à un moment de la vie du jeu). Durée de vie : en sessions, jusqu'à l'abandon ou jusqu'au jeu rangé ; ∞ pour un classique.</p>`;
+  document.querySelectorAll("table.jeux th[data-tri]").forEach(h => h.addEventListener("click", () => {
+    const c = h.dataset.tri; tri = { cle:c, sens: tri.cle === c ? -tri.sens : (c === "nom" || c === "cout" ? 1 : -1) }; afficher(); }));
 }
 </script>
 <script src="entete.js?v=1.4"></script>
