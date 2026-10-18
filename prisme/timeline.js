@@ -1,7 +1,7 @@
 /* PRISME — timeline du jeu : jalons, durées, flow, α β γ ω, durée de vie.
    Module partagé par l'encyclopédie et l'outil d'évaluation. Méthode arrêtée le 08/10/2026 (jeu d'essai : Heat) ; modèle à 12 paires le 11/10/2026 ;
    formules refaites phase par phase le 12/10/2026 avec trois jeux de référence (Gloomhaven, Heat, Flip 7). L'unité est la session. */
-const TIMELINE_VERSION = { numero:"3.7", date:"2026-10-18 21:32" };   // à incrémenter à chaque livraison
+const TIMELINE_VERSION = { numero:"3.8", date:"2026-10-18 22:25" };   // à incrémenter à chaque livraison
 
 const JALONS = [
   { n:0, nom:"identifié", quoi:"Le jeu est connu de loin : critique, vitrine, recommandation." },
@@ -31,6 +31,10 @@ const ESTOMPE = .95;          // à partir du jalon 4, VAR perd 5 % par session 
 // (taux × 15 / parties pour tout exploiter). Un contenu à usage unique (campagne) s'épuise : la durée de vie ne dépasse pas ce contenu.
 const CONTENU_REF = 15;
 const usureContenu = c => c > CONTENU_REF ? CONTENU_REF / c : 1;
+// (18/10/2026) la profondeur multiplie le contenu vécu : plus le jeu est profond, plus il faut de parties pour comprendre une même configuration
+// contenu effectif = contenu × (1 + (PROF1 − 2,5) / 2,5) au-delà de 2,5 (× 1,6 à PROF1 = 4, × 2 à 5). Le plafond d'une campagne garde le contenu brut.
+const facteurProfondeur = prof1 => prof1 > 2.5 ? 1 + (prof1 - 2.5) / 2.5 : 1;
+const contenuEffectif = n => n.contenu_parties > 0 ? n.contenu_parties * facteurProfondeur(n.PROF1 ?? 0) : null;
 const K_FRICTION = 3;         // F = √(somme des carrés / 3) : chaque gêne ajoutée fait monter F
 const TERMES = {
   1:{ s:"MAT, ART2a, promesse = max(THEM1, RYT1, MAN2)", f:"POID1, 5 − ART2b" },
@@ -106,7 +110,7 @@ function courbeBrute(n, pr, ctx = {}){
   const ok = ok_, moy = moy_, inv = inv_, q = v => Math.round(v * 4) / 4;
   const k = { W:0, U:0, B:0, R:0, G:0 }; if (pr){ k[pr.dom] = 1; k[pr.second] = .5; }
   const vit = pr && pr.rejet === "U" ? 1 / 1.5 : 1 + .5 * k.U;          // le Décrypteur apprend plus vite ; qui le fuit, plus lentement
-  const usure = usureContenu(n.contenu_parties);                        // beaucoup de contenu : l'usure ralentit d'autant (17/10/2026)
+  const usure = usureContenu(contenuEffectif(n));                       // beaucoup de contenu (et de profondeur) : l'usure ralentit d'autant
   const tauxVAR = (.05 - .02 * k.G) * usure;                            // le Rayonnant use VAR moins vite
   const MECA = ok(n.MECA) ? n.MECA : n.MECA2;                           // MÉCANIQUE est indépendante : sa note est MECA2
   const SYS = moy(n.POID, n.PROF, MECA, n.VAR, n.EXIG), EXP = moy(n.RYT, n.MAN, n.THEM, n.LIEN), EDI = moy(n.MAT, n.ART, n.DOC);
@@ -557,6 +561,7 @@ function jeuxPourJoueurs(fiches, paires, axes, pl, codes){
 // à défaut (script 25 pas encore passé), les tables, avec les droits d'avant
 // la configuration évaluée par une fiche (« toutes extensions »…) ; null : la boîte de base
 const configDe = f => String(f?.configuration ?? "").trim() || null;
+const estJeuComplet = nom => /toutes?\s+(les\s+)?extensions|jeu\s+complet/i.test(nom || "");
 async function lireJeuxEvalues(sb){
   // (18/10/2026) toutes les lectures partent en même temps ; une table de plus de 1000 lignes est lue par pages, elles aussi en parallèle
   const lire = async (t, o) => {
@@ -575,7 +580,12 @@ async function lireJeuxEvalues(sb){
     const saisies = {}; vals.forEach(v => (saisies[v.evaluation] ??= {})[v.axe] = { valeur: v.valeur == null ? null : Number(v.valeur), sans_objet: v.sans_objet });
     const tout = evals.map(e => ({ ...e, configuration: configDe(e), saisie: saisies[e.id] || {} }));
     // fiches : la boîte de base (ce que lisent la liste des jeux, les profils, la rosace) ; configurations : les autres (17/10/2026)
-    return { paires, axes, jeux, fiches: tout.filter(f => !f.configuration), configurations: tout.filter(f => f.configuration), duree: performance.now() - t0 };
+    const base = tout.filter(f => !f.configuration), configurations = tout.filter(f => f.configuration);
+    // (18/10/2026) le jeu complet est la référence : quand une configuration « toutes extensions » existe, c'est elle que lisent
+    // la liste des jeux, la note pour vous, les profils et la rosace ; sinon, la boîte de base
+    const reference = {}; configurations.forEach(f => { if (estJeuComplet(f.configuration)) reference[f.jeu] ??= f.configuration; });
+    const fiches = [...base.filter(f => !reference[f.jeu]), ...configurations.filter(f => reference[f.jeu] && f.configuration === reference[f.jeu])];
+    return { paires, axes, jeux, fiches, fichesBase: base, configurations, reference, duree: performance.now() - t0 };
   } catch (e){ return { refus:true }; }
 }
 // la moyenne de plusieurs fiches d'un même jeu : axe par axe (une valeur sans objet dans toutes les fiches reste sans objet) ; données du jeu moyennées

@@ -66,9 +66,9 @@ h1 .cfg{font-weight:400;color:var(--muted)}
   <p class="version" id="version"></p>
 </main>
 
-<script src="timeline.js?v=3.7"></script>
+<script src="timeline.js?v=3.8"></script>
 <script>
-const VERSION = { numero:"1.4", date:"2026-10-18 21:10" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.5", date:"2026-10-18 22:25" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -93,7 +93,8 @@ const vide = html => $("#contenu").innerHTML = `<p class="vide">${html}</p>`;
 const NIVEAUX = { joueur:0, lecteur:1, evaluateur:2, editeur:3, proprietaire:4 };
 
 async function afficher(user){
-  const P = new URLSearchParams(location.search), code = P.get("jeu"), cfg = (P.get("config") || "").trim() || null;
+  const P = new URLSearchParams(location.search), code = P.get("jeu");
+  let cfg = (P.get("config") || "").trim() || null;   // config= vide : la boîte de base, demandée explicitement
   if (!code) return vide('Aucun jeu choisi. <a href="jeux.html">Voir tous les jeux</a>.');
   const [{ data: r }, { data: res }, { data: chapitres }, d] = await Promise.all([
     sb.rpc("prisme_mon_role"),
@@ -111,10 +112,13 @@ async function afficher(user){
   const T0 = NIVEAUX[role] >= NIVEAUX.lecteur ? ((await sb.from("prisme_evaluations").select("*").eq("jeu", code)).data || []) : [];
   const finales = new Set((d.configurations || []).filter(f => f.jeu === code).map(configDe));
   const noms = [...new Set([...finales, ...T0.map(configDe).filter(Boolean)])].sort((a, b) => a.localeCompare(b, "fr"));
-  const F = cfg ? (d.configurations || []).filter(f => f.jeu === code && configDe(f) === cfg) : d.fiches.filter(f => f.jeu === code), R = resumeJeu(F, d.paires, d.axes, profil);
-  const lienCfg = c => "jeu.html?jeu=" + encodeURIComponent(code) + (c ? "&config=" + encodeURIComponent(c) : "");
+  // (18/10/2026) sans choix explicite, la configuration de référence : le jeu complet quand il existe
+  const ref = d.reference?.[code] || null;
+  if (!P.has("config") && ref) cfg = ref;
+  const F = cfg ? (d.configurations || []).filter(f => f.jeu === code && configDe(f) === cfg) : (d.fichesBase || d.fiches).filter(f => f.jeu === code), R = resumeJeu(F, d.paires, d.axes, profil);
+  const lienCfg = c => "jeu.html?jeu=" + encodeURIComponent(code) + "&config=" + (c ? encodeURIComponent(c) : "");
   const liste = [null, ...noms, ...(cfg && !noms.includes(cfg) ? [cfg] : [])];
-  const nomCfg = n => esc(n || "Boîte de base") + (n && !finales.has(n) ? ' <small class="brouillon">brouillon</small>' : "");
+  const nomCfg = n => esc(n || "Boîte de base") + (n && !finales.has(n) ? ' <small class="brouillon">brouillon</small>' : "") + (n && n === ref ? ' <small class="brouillon" title="Configuration de référence : celle que lisent la liste des jeux et les profils">référence</small>' : "");
   const nav = liste.length > 1 ? `<p class="configs">${liste.map(n => n === cfg ? `<b>${nomCfg(n)}</b>` : `<a href="${lienCfg(n)}">${nomCfg(n)}</a>`).join("")}</p>` : "";
   const titre = esc(jeu.nom) + (cfg ? ` <span class="cfg">— ${esc(cfg)}</span>` : "");
   // l'évaluation : « Voir mon évaluation » ou « Évaluer » pour l'évaluateur, « Voir l'évaluation » pour le lecteur s'il en existe une, rien pour le joueur
