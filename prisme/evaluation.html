@@ -195,6 +195,12 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
 .cfg-nom{font-weight:400;color:var(--muted)}
 .ch-unique .case{display:flex;gap:7px;align-items:center;font-size:13.5px;min-height:34px;white-space:nowrap}
 .ch-unique .case input{width:auto!important;margin:0}
+/* --- version 3.31 : joueurs et meilleur effectif ensemble ; « Sans objet » sur la première ligne de la paire --- */
+.ch-groupe{display:flex;gap:8px 18px;align-items:flex-end}
+.paire .ligne1{display:flex;gap:12px;align-items:flex-start}
+.paire .ligne1 .mesure{flex:1;min-width:0}
+.paire .ligne1 .na-droite{flex-shrink:0;margin-top:4px}
+@media (max-width:560px){.paire .ligne1{flex-direction:column;gap:4px}.paire .ligne1 .na-droite{margin-left:0}}
 .ch-configuration input{width:220px!important}
 .ecart-saisi{font:700 16px var(--sans);color:var(--ocre,#B4532A);min-width:2.8em;text-align:left}
 .retenue{font:500 13.5px var(--sans);color:var(--chap);text-align:right;margin-top:2px;min-height:1.2em} .retenue b{font-size:16px}
@@ -260,7 +266,7 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
 
 <script src="timeline.js?v=3.9"></script>
 <script>
-const VERSION = { numero:"3.30", date:"2026-10-18 21:10" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.31", date:"2026-10-18 23:55" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -341,6 +347,8 @@ async function demarrer(){
       const f = C.find(e => e.evaluateur === user.id) || C.find(e => e.statut === "finale") || C[0];
       f ? ouvrirFiche(f) : ouvrirJeu(q, qc); }
     if ($("#fiche").classList.contains("hidden")) $("#accueil").classList.remove("hidden");   // pas de fiche à ouvrir (lecteur) : la liste
+  } else if (P.get("fiche") && toutes.some(e => e.id === P.get("fiche"))){   // retour sur une fiche (bouton Précédent, rechargement) : on la rouvre (3.31)
+    ouvrirFiche(toutes.find(e => e.id === P.get("fiche")), false);
   } else { $("#accueil").classList.remove("hidden"); }
   if (P.has("ajout") && role !== "lecteur") $("#btn-ajout").click();
 }
@@ -441,7 +449,24 @@ async function nouvelleConfiguration(){
 }
 
 /* ---------------- ouvrir une fiche ---------------- */
-function ouvrirFiche(f){
+// l'adresse suit la fiche ouverte (3.31) : « Fiche du jeu » puis Précédent ramène sur la fiche, et Précédent depuis la fiche ramène à la liste
+function noterHistorique(f, empiler){
+  if (ARRIVEE || !f.id) return;
+  try { const url = "?fiche=" + f.id;
+    if (empiler && history.state?.fiche !== f.id) history.pushState({ fiche: f.id }, "", url); else history.replaceState({ fiche: f.id }, "", url); } catch (e){}
+}
+function afficherListe(){
+  $("#fiche").classList.add("hidden"); $("#pied").classList.add("hidden"); $("#accueil").classList.remove("hidden");
+}
+window.addEventListener("popstate", async ev => {
+  if (ARRIVEE) return;
+  if (fiche && (enAttente.size || ficheModifiee)){ clearTimeout(minuteur); await enregistrer(); }
+  const id = ev.state?.fiche, f = id && toutes.find(e => e.id === id);
+  if (f) ouvrirFiche(f, false);
+  else { afficherListe(); fiche = null; await chargerFiches(); afficherFiches(); }
+});
+function ouvrirFiche(f, empiler = true){
+  noterHistorique(f, empiler);
   fiche = { ...f }; saisie = f.id ? saisieDe(f.id) : {}; enAttente = new Set(); ficheModifiee = false;
   lectureSeule = f.evaluateur !== user.id || role === "lecteur";
   $("#accueil").classList.add("hidden"); $("#fiche").classList.remove("hidden"); $("#pied").classList.remove("hidden");
@@ -482,7 +507,8 @@ $("#retour").addEventListener("click", async () => {
     else location.href = $("#vers-jeu").href;
     return;
   }
-  $("#fiche").classList.add("hidden"); $("#pied").classList.add("hidden"); $("#accueil").classList.remove("hidden");
+  if (history.state?.fiche){ history.back(); return; }   // la liste est l'entrée précédente : popstate l'affiche (3.31)
+  afficherListe(); try { history.replaceState(null, "", location.pathname); } catch (e){}
   await chargerFiches(); afficherFiches();
 });
 
@@ -581,11 +607,10 @@ function suggestion(axe){
 }
 function reperes(axe){
   const ids = id => toutes.find(e => e.id === id);
-  const miens = valeurs.filter(v => v.axe === axe && v.valeur != null && !v.sans_objet && ids(v.evaluation)?.evaluateur === user.id && ids(v.evaluation)?.jeu !== fiche.jeu)
-    .map(v => `${esc(nomJeu(ids(v.evaluation).jeu))} ${fmt(v.valeur)}`);
+  // « Mes autres jeux » n'est plus affiché (3.31) : avec une base de 240 fiches, la ligne prenait trop de place
   const autres = valeurs.filter(v => v.axe === axe && v.valeur != null && !v.sans_objet && ids(v.evaluation)?.jeu === fiche.jeu && ids(v.evaluation)?.id !== fiche.id)
     .map(v => `${esc(nomDe(ids(v.evaluation).evaluateur))} ${fmt(v.valeur)}`);
-  return [miens.length ? `Mes autres jeux : ${miens.join(", ")}` : "", autres.length ? `Autres fiches sur ce jeu : ${autres.join(", ")}` : ""]
+  return [autres.length ? `Autres fiches sur ce jeu : ${autres.join(", ")}` : ""]
     .filter(Boolean).map(t => `<div class="reperes">${t}</div>`).join("");
 }
 function blocAxe(p, axe){
@@ -621,7 +646,7 @@ function construireGrille(){
         Contenu à usage unique : une campagne, des scénarios qu'on ne rejoue pas ; une fois tout joué, le jeu est rangé (sa durée de vie ne dépasse pas ce contenu).
         Configuration : une fiche peut évaluer le jeu avec ses extensions (bouton « + Configuration » depuis ta fiche de base) ; elle a sa propre courbe, à côté de celle de la boîte de base.</p></div>
       <div class="ch-grille">${champ("pages", "Pages des règles")}${champ("poids_bgg", "Poids BGG")}${champ("prix", "Prix (€)")}${champ("prix_source", "Source du prix (enseigne, date)", "texte")}
-        ${paire("joueurs_min", "joueurs_max", "Joueurs")}${champ("effectif_reference", "Meilleur effectif")}${paire("duree_min", "duree_max", "Durée", "min")}${champ("contenu_parties", "Parties pour tout exploiter")}
+        <div class="ch-groupe">${paire("joueurs_min", "joueurs_max", "Joueurs")}${champ("effectif_reference", "Meilleur effectif")}</div>${paire("duree_min", "duree_max", "Durée", "min")}${champ("contenu_parties", "Parties pour tout exploiter")}
         <label class="ch ch-unique"><span>Contenu</span><span class="case"><input type="checkbox" id="d-contenu_unique" data-donnee="contenu_unique" ${d.contenu_unique ? "checked" : ""} ${lectureSeule ? "disabled" : ""}> à usage unique (campagne)</span></label>
         ${cfgDe(d) ? champ("configuration", "Configuration évaluée", "texte") : ""}</div></div></div></section>
     <details class="assistant" id="assistant"${ouvert ? " open" : ""}><summary><h2>Assistant de rédaction</h2></summary>
@@ -640,9 +665,9 @@ function construireGrille(){
       const corps = colonne(colGauche(p.code)) + colonne(colDroite(p.code));
       h += `<div class="paire${so ? " sans-objet" : ""}${lectureSeule ? " ro" : ""}" id="p-${esc(p.code)}" data-paire="${esc(p.code)}">
         <div class="tete" data-replier="${esc(p.code)}"><h3>${esc(p.nom)}</h3><span class="meca">${MECA[p.mecanisme] || ""}</span><span class="note" id="note-${esc(p.code)}"></span><span class="fleche">▾</span></div>
-        <div class="corps"><p class="mesure">${esc(premierePhrase(p.definition))}</p>
-        <div class="outils"><button type="button" data-panneau="aidep-${esc(p.code)}" aria-expanded="false">? En savoir plus</button>
+        <div class="corps"><div class="ligne1"><p class="mesure">${esc(premierePhrase(p.definition))}</p>
           <label class="na-droite"><input type="checkbox" data-na="${esc(p.code)}" ${so ? "checked" : ""} ${lectureSeule ? "disabled" : ""}> Sans objet pour ce jeu</label></div>
+        <div class="outils"><button type="button" data-panneau="aidep-${esc(p.code)}" aria-expanded="false">? En savoir plus</button></div>
         <div class="panneau hidden" id="aidep-${esc(p.code)}">${aidePaire(p)}</div>
         <div class="axes">${corps}</div><div class="res" id="res-${esc(p.code)}"></div>
         <div class="justif"><label for="j-${esc(p.code)}">Justification (facultative)</label>${boutonModeles(p, ax)}<button type="button" class="btn-modeles" data-prompt="paire" data-paire="${esc(p.code)}" title="Copie une demande à Claude pour rédiger ou améliorer cette justification">Demander à Claude</button>
@@ -928,6 +953,7 @@ async function enregistrer(){
     const { data, error } = await sb.from("prisme_evaluations").insert({ jeu: fiche.jeu, statut: fiche.statut, version_appli: VERSION.numero, notes_article: fiche.notes_article ?? null, ...champs }).select();
     if (error){ $("#etat").textContent = "Création de la fiche refusée : " + error.message; return; }
     fiche.id = data[0].id; fiche.evaluateur = data[0].evaluateur; ficheModifiee = false;
+    if (!ARRIVEE) try { history.pushState({ fiche: fiche.id }, "", "?fiche=" + fiche.id); } catch (e){}   // l'adresse suit la fiche (3.31) ; Précédent ramène d'où l'on vient
   } else if (ficheModifiee || enAttente.size){
     ficheModifiee = false;
     const { error } = await sb.from("prisme_evaluations").update({ statut: fiche.statut, version_appli: VERSION.numero, notes_article: fiche.notes_article ?? null, ...champs }).eq("id", fiche.id);
