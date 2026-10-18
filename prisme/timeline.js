@@ -1,7 +1,7 @@
 /* PRISME — timeline du jeu : jalons, durées, flow, α β γ ω, durée de vie.
    Module partagé par l'encyclopédie et l'outil d'évaluation. Méthode arrêtée le 08/10/2026 (jeu d'essai : Heat) ; modèle à 12 paires le 11/10/2026 ;
    formules refaites phase par phase le 12/10/2026 avec trois jeux de référence (Gloomhaven, Heat, Flip 7). L'unité est la session. */
-const TIMELINE_VERSION = { numero:"3.6", date:"2026-10-17 18:54" };   // à incrémenter à chaque livraison
+const TIMELINE_VERSION = { numero:"3.7", date:"2026-10-18 21:32" };   // à incrémenter à chaque livraison
 
 const JALONS = [
   { n:0, nom:"identifié", quoi:"Le jeu est connu de loin : critique, vitrine, recommandation." },
@@ -558,18 +558,24 @@ function jeuxPourJoueurs(fiches, paires, axes, pl, codes){
 // la configuration évaluée par une fiche (« toutes extensions »…) ; null : la boîte de base
 const configDe = f => String(f?.configuration ?? "").trim() || null;
 async function lireJeuxEvalues(sb){
-  const lire = async (t, o) => { const tout = []; for (let d = 0; ; d += 1000){ let q = sb.from(t).select("*"); if (o) q = q.order(o); const { data, error } = await q.range(d, d + 999);
-    if (error) throw error; tout.push(...data); if (data.length < 1000) return tout; } };
+  // (18/10/2026) toutes les lectures partent en même temps ; une table de plus de 1000 lignes est lue par pages, elles aussi en parallèle
+  const lire = async (t, o) => {
+    const q = (a, b, compte) => { let r = sb.from(t).select("*", compte ? { count:"exact" } : undefined); if (o) r = r.order(o); return r.range(a, b); };
+    const { data, error, count } = await q(0, 999, true); if (error) throw error;
+    if (!count || count <= 1000 || data.length < 1000) return data;
+    const suite = await Promise.all([...Array(Math.ceil(count / 1000) - 1).keys()].map(k => q((k + 1) * 1000, (k + 2) * 1000 - 1)));
+    suite.forEach(r => { if (r.error) throw r.error; }); return data.concat(...suite.map(r => r.data));
+  };
+  const t0 = performance.now();
   try {
-    const [paires, axes, jeux] = await Promise.all([lire("prisme_paires","ordre"), lire("prisme_axes","ordre"), lire("prisme_jeux","nom")]);
+    const vues = Promise.all([lire("prisme_resultats_fiches"), lire("prisme_resultats_valeurs")]).then(r => { r[0].forEach(e => e.statut = "finale"); return r; }, () => null);
+    const [paires, axes, jeux, parVues] = await Promise.all([lire("prisme_paires","ordre"), lire("prisme_axes","ordre"), lire("prisme_jeux","nom"), vues]);
     if (!paires.length) return { refus:true };
-    let evals, vals;
-    try { [evals, vals] = await Promise.all([lire("prisme_resultats_fiches"), lire("prisme_resultats_valeurs")]); evals.forEach(e => e.statut = "finale"); }
-    catch (e){ [evals, vals] = await Promise.all([lire("prisme_evaluations"), lire("prisme_evaluation_valeurs")]); }
+    const [evals, vals] = parVues || await Promise.all([lire("prisme_evaluations"), lire("prisme_evaluation_valeurs")]);
     const saisies = {}; vals.forEach(v => (saisies[v.evaluation] ??= {})[v.axe] = { valeur: v.valeur == null ? null : Number(v.valeur), sans_objet: v.sans_objet });
     const tout = evals.map(e => ({ ...e, configuration: configDe(e), saisie: saisies[e.id] || {} }));
     // fiches : la boîte de base (ce que lisent la liste des jeux, les profils, la rosace) ; configurations : les autres (17/10/2026)
-    return { paires, axes, jeux, fiches: tout.filter(f => !f.configuration), configurations: tout.filter(f => f.configuration) };
+    return { paires, axes, jeux, fiches: tout.filter(f => !f.configuration), configurations: tout.filter(f => f.configuration), duree: performance.now() - t0 };
   } catch (e){ return { refus:true }; }
 }
 // la moyenne de plusieurs fiches d'un même jeu : axe par axe (une valeur sans objet dans toutes les fiches reste sans objet) ; données du jeu moyennées

@@ -51,19 +51,20 @@ tr.attente td{color:var(--muted)}
   <h1>Les jeux</h1>
   <p class="chapo" id="chapo">Les jeux évalués dans PRISME, et ce qu'ils promettent.</p>
   <div class="outils"><input type="search" id="cherche" placeholder="Chercher un jeu…" aria-label="Chercher un jeu"><label class="compte" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="evalues" style="min-width:0"> évalués seulement</label><span class="compte" id="compte"></span><span id="liens" style="margin-left:auto;display:flex;gap:8px"></span></div>
-  <div id="contenu"><p class="vide">Chargement…</p></div>
+  <div id="contenu"><p class="vide" id="etape">Connexion…</p></div>
   <p class="version" id="version"></p>
 </main>
 
-<script src="timeline.js?v=3.6"></script>
+<script src="timeline.js?v=3.7"></script>
 <script>
-const VERSION = { numero:"1.4", date:"2026-10-18 21:10" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.5", date:"2026-10-18 21:32" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fmt = (v, k = 2) => v == null || Number.isNaN(v) ? "—" : Number(v).toFixed(k).replace(".", ",");
+const secondes = ms => (ms / 1000).toFixed(1).replace(".", ",") + " s";
 $("#version").textContent = `Les jeux ${VERSION.numero}, version du ${VERSION.date.replace(/(\d{4})-(\d\d)-(\d\d) (\d\d):(\d\d)/,"$3/$2/$1 à $4h$5")} · timeline ${TIMELINE_VERSION.numero}`;
 
 /* ---- connexion : tout passe par la Forge ---- */
@@ -72,6 +73,8 @@ function afficherCompte(u){
   $("#qui").innerHTML = u ? `<span>${esc(u.email)}</span> <a href="#" id="deconnexion">Se déconnecter</a>` : `<a href="${versForge()}">Se connecter</a>`;
   const d = $("#deconnexion"); if (d) d.addEventListener("click", e => { e.preventDefault(); sb.auth.signOut().then(() => location.href = "../"); });
 }
+const T0 = performance.now(), temps = {};   // (18/10/2026) où passe le temps de chargement : affiché sous la liste
+const etape = t => { const e = document.getElementById("etape"); if (e) e.textContent = t; };
 let demarre = false;
 sb.auth.onAuthStateChange((_e, session) => {
   if (!session?.user){ location.replace(versForge()); return; }   // réservé aux comptes : tout compte connecté est joueur
@@ -84,17 +87,23 @@ const NIVEAUX = { joueur:0, lecteur:1, evaluateur:2, editeur:3, proprietaire:4 }
 let role = "joueur", lignes = [], profil = null;
 
 async function demarrer(user){
-  const [{ data: r }, { data: res }, d] = await Promise.all([
+  temps.connexion = performance.now() - T0; etape("Lecture des jeux et des fiches…");
+  const t1 = performance.now();
+  const [{ data: r }, { data: res }, d, { data: toutesBrutes }] = await Promise.all([
     sb.rpc("prisme_mon_role"),
     sb.from("prisme_player_resultats").select("style,classement").eq("user_id", user.id).order("passe_le", { ascending:false }).limit(1),
-    lireJeuxEvalues(sb)]);
+    lireJeuxEvalues(sb),
+    sb.from("prisme_evaluations").select("*")]);   // le lecteur et au-delà voient toutes les fiches ; le joueur, aucune (droits de la base)
+  temps.base = performance.now() - t1;
   role = r || "joueur";
   if (d.refus){ $("#contenu").innerHTML = `<p class="vide">La liste des jeux n'est pas encore ouverte aux joueurs : le script 25 doit être passé dans la base.</p>`; return; }
   const code = codeDeResultat(res?.[0]);
   if (code) profil = code;
   // pour les lecteurs et au-delà : toutes les fiches (brouillons compris) et la sienne
   let toutes = [];
-  if (NIVEAUX[role] >= NIVEAUX.lecteur){ const { data } = await sb.from("prisme_evaluations").select("*"); toutes = (data || []).filter(f => !configDe(f)); }
+  if (NIVEAUX[role] >= NIVEAUX.lecteur) toutes = (toutesBrutes || []).filter(f => !configDe(f));
+  etape("Calcul des courbes…"); await new Promise(ok => setTimeout(ok, 0));   // laisse le message s'afficher
+  const t2 = performance.now();
   const parJeu = {}; d.fiches.forEach(f => (parJeu[f.jeu] ??= []).push(f));
   lignes = d.jeux.map(j => {
     const F = parJeu[j.code] || [], r2 = resumeJeu(F, d.paires, d.axes, profil);
@@ -102,6 +111,7 @@ async function demarrer(user){
     const cfg = new Set((d.configurations || []).filter(f => f.jeu === j.code).map(configDe)).size;
     return { j, n:F.length, r:r2, toutes:T.length, mienne:T.find(f => f.evaluateur === user.id), cfg };
   }).sort((a, b) => a.j.nom.localeCompare(b.j.nom, "fr", { sensitivity:"base" }));
+  temps.calcul = performance.now() - t2;
   $("#liens").innerHTML = (NIVEAUX[role] >= NIVEAUX.evaluateur ? `<a class="btn" href="evaluation.html?ajout=1">Ajouter un jeu</a>` : "")
     + (NIVEAUX[role] >= NIVEAUX.lecteur ? `<a class="btn" href="evaluation.html" title="Toutes les fiches d'évaluation, brouillons compris">Toutes les fiches</a>` : "");
   $("#chapo").innerHTML = profil
@@ -141,6 +151,7 @@ function afficher(){
       return `<tr><td>${nom}</td><td class="n"><b>${fmt(l.r.finale)}</b></td>${profil ? `<td class="n"><b>${fmt(l.r.notePour)}</b>${ecart(l.r.notePour, l.r.finale)}</td>` : ""}
         <td class="n col-sec">${fmt(l.r.c.y[l.r.c.alpha])}</td><td class="n col-sec">${vie(l.r.c)}</td><td class="n col-sec">${cout(l.r.cout)}</td>${ev}</tr>`;
     }).join("")}</tbody></table></div>
+    <p class="discret" style="font-size:12px">Chargé en ${secondes(performance.now() - T0)} : connexion ${secondes(temps.connexion)}, base ${secondes(temps.base)}, calcul ${secondes(temps.calcul)}.</p>
     <p class="discret">Un clic sur un en-tête trie la colonne. Notes sur 5, moyenne des fiches finales. Apogée : le flow le plus haut de la timeline, sur 10 (le flow n'est pas une note : il mesure le plaisir net à un moment de la vie du jeu). Durée de vie : en sessions, jusqu'à l'abandon ou jusqu'au jeu rangé ; ∞ pour un classique.</p>`;
   document.querySelectorAll("table.jeux th[data-tri]").forEach(h => h.addEventListener("click", () => {
     const c = h.dataset.tri; tri = { cle:c, sens: tri.cle === c ? -tri.sens : (c === "nom" || c === "cout" ? 1 : -1) }; afficher(); }));
