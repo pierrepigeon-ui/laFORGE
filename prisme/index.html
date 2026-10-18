@@ -99,7 +99,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px} .field{display:block;margi
 
 <script src="totems.js?v=4"></script>
 <script>
-const VERSION = { numero:"3.4", date:"2026-10-16 15:44" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.5", date:"2026-10-19 00:10" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -157,6 +157,11 @@ async function afficherEspace(){
   t += tuile("questionnaire.html", "Questionnaire du joueur", dernier ? "Revoir ou modifier vos réponses" : "Vingt-cinq situations de jeu, dix minutes");
   t += tuile("jeux.html", "Les jeux", dernier ? "Les jeux évalués, leur note pour tous et pour vous" : "Les jeux évalués et ce qu'ils promettent");
   t += tuile("encyclopedie.html", "L'encyclopédie", "Le modèle complet : le jeu, le joueur, leurs grilles et leurs exemples");
+  // (3.5, 19/10/2026) les évaluateurs : leurs fiches et leurs articles, et le guide de l'article
+  if (["proprietaire","editeur","evaluateur"].includes(role)){
+    t += tuile("evaluation.html", "Mes évaluations et articles", "Noter un jeu, écrire son article, retrouver ses fiches");
+    t += tuile("guide.html", "Guide : écrire un article", "Cinq étapes, de la fiche à Word");
+  } else if (role === "lecteur") t += tuile("evaluation.html", "Les fiches d'évaluation", "Toutes les fiches, en lecture");
   // la console : bouton dans le ruban du haut (entete.js 1.4), plus de tuile
   $("#tuiles").innerHTML = t;
 }

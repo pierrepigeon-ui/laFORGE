@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PRISME — Écrire un article</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
+<style>
+:root{--ink:#1B2430;--muted:#5B6573;--line:#DDE1E7;--paper:#F6F5F1;--panel:#FFFFFF;--accent:#3D2645;--ocre:#B4532A;
+  --serif:"Source Serif 4",Georgia,"Times New Roman",serif;--sans:"IBM Plex Sans","Segoe UI",Arial,sans-serif}
+@media (prefers-color-scheme: dark){:root{--ink:#E6E9EE;--muted:#9AA4B2;--line:#2C3542;--paper:#11161D;--panel:#171D25;--accent:#C9B4D2;--ocre:#E08A5F}}
+*{box-sizing:border-box} html,body{margin:0} body{background:var(--paper);color:var(--ink);font:16px/1.6 var(--sans)}
+a{color:inherit}
+.marque{font:600 19px/1 "Source Serif 4",Georgia,serif;letter-spacing:.08em;color:inherit!important;text-decoration:none}
+.barre{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:12px 20px;font-size:13px;color:var(--muted)} .barre a{text-decoration:none}
+main{max-width:860px;margin:0 auto;padding:6px 20px 40px}
+h1{font:600 clamp(28px,4vw,40px)/1.15 var(--serif);margin:6px 0 6px}
+.chapo{font:italic 18px/1.5 var(--serif);color:var(--muted);margin:0 0 22px}
+.etape{display:grid;grid-template-columns:48px 1fr;gap:4px 16px;margin:0 0 30px}
+.num{width:44px;height:44px;border-radius:50%;background:var(--accent);color:var(--panel);font:600 20px/44px var(--serif);text-align:center}
+.etape h2{font:600 22px/1.3 var(--serif);margin:6px 0 4px}
+.etape p{margin:0 0 8px}
+.etape figure{grid-column:1 / -1;margin:8px 0 0}
+.etape img{width:100%;height:auto;border:1px solid var(--line);border-radius:10px;display:block}
+.etape figcaption{font-size:13.5px;color:var(--muted);margin-top:4px}
+.astuce{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--ocre);border-radius:8px;padding:10px 14px;font-size:15px;margin:6px 0 0}
+kbd{font:500 13px var(--sans);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;background:var(--panel)}
+.bouton{font:500 14px var(--sans);border:1px solid var(--line);border-radius:6px;padding:0 7px;background:var(--panel);white-space:nowrap}
+.fin{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin-top:10px}
+.fin h2{font:600 20px var(--serif);margin:0 0 6px}
+.fin ul{margin:0;padding-left:20px}
+.version{font-size:12px;color:var(--muted);text-align:right;margin-top:24px}
+@media (max-width:560px){.etape{grid-template-columns:1fr}.num{width:38px;height:38px;font-size:18px;line-height:38px}}
+</style>
+</head>
+<body>
+<div class="barre"><a href="index.html" class="marque" title="Accueil de PRISME">PRISME</a><span></span></div>
+<main>
+  <h1>Écrire un article avec PRISME</h1>
+  <p class="chapo">Cinq étapes, de ta fiche à ton fichier Word. Tu écris comme d'habitude ; PRISME garde tout au même endroit et te prépare le terrain : les chiffres du jeu, sa note, sa durée de vie et son coût à l'heure.</p>
+
+  <section class="etape"><div class="num">1</div><div>
+    <h2>Ouvre tes évaluations</h2>
+    <p>Connecte-toi, puis, sur l'accueil, clique sur la tuile <span class="bouton">Mes évaluations et articles</span>. Tu arrives sur la liste de tes fiches.</p>
+    <p>Pour retrouver un jeu, tape quelques lettres dans <b>Chercher un jeu</b>. Le menu <b>Avec un article</b> ne garde que les fiches où tu as déjà écrit. Pour un jeu dont tu n'as pas encore la fiche : choisis-le dans la liste <b>Jeu</b>, en haut de la page, puis <span class="bouton">Ouvrir ma fiche</span> ; s'il n'est pas dans la liste, <span class="bouton">Ajouter un jeu</span>.</p></div>
+    <figure><img src="guide/g1_liste.png" alt="La liste des fiches, filtrée par une recherche" loading="lazy"><figcaption>La liste de tes fiches : la recherche filtre au fil de la frappe ; le badge « article » montre où tu as déjà écrit.</figcaption></figure>
+  </section>
+
+  <section class="etape"><div class="num">2</div><div>
+    <h2>Va à l'article</h2>
+    <p>Clique sur la fiche du jeu. En haut, le bouton <span class="bouton">Article</span> t'amène à l'éditeur. Les notes du jeu sont plus bas : tu n'as pas besoin d'y toucher pour écrire.</p></div>
+    <figure><img src="guide/g2_fiche.png" alt="Une fiche ouverte, le bouton Article entouré" loading="lazy"><figcaption>La fiche d'un jeu : le bouton « Article » est dans la barre du haut.</figcaption></figure>
+  </section>
+
+  <section class="etape"><div class="num">3</div><div>
+    <h2>Clique sur « Préparer l'article »</h2>
+    <p>PRISME pose dans l'éditeur l'image du jeu, un <b>encadré</b> avec ce qu'il sait (joueurs, durée, prix, note, durée de vie, coût par partie et à l'heure) et un <b>plan</b> : comment on y joue, ce qu'il réussit, ce qu'il rate, et après, pour qui, verdict.</p>
+    <p class="astuce">Le plan est une proposition : change les intertitres, mets les tiens, supprime ce qui ne sert pas. Rien n'est effacé si tu as déjà écrit : le plan s'ajoute à la fin.</p></div>
+    <figure><img src="guide/g3_prepare.png" alt="L'article préparé : titre, image, encadré PRISME et plan" loading="lazy"><figcaption>L'article préparé. Les textes en gris sont des consignes.</figcaption></figure>
+  </section>
+
+  <section class="etape"><div class="num">4</div><div>
+    <h2>Écris</h2>
+    <p>Clique sur un texte gris : il se sélectionne, et ce que tu tapes le remplace. Les boutons font le reste : <span class="bouton">Titre</span>, <span class="bouton">Intertitre</span>, <span class="bouton">Texte</span>, <span class="bouton">G</span> (gras), <span class="bouton">I</span> (italique), <span class="bouton">• Liste</span>.</p>
+    <p>Images : <span class="bouton">Image du jeu</span> pose la boîte à gauche du texte ; <span class="bouton">Image…</span> en ajoute une autre à partir de son adresse (sur le web, clic droit sur l'image, « Copier l'adresse de l'image »). Tu peux aussi coller un texte écrit ailleurs, dans Word par exemple : la mise en forme simple suit.</p>
+    <p class="astuce">Tout s'enregistre tout seul, comme le reste de la fiche. Tu peux fermer la page et revenir quand tu veux.</p></div>
+    <figure><img src="guide/g4_ecrit.png" alt="L'article en cours d'écriture" loading="lazy"><figcaption>Le titre et les premiers paragraphes écrits ; le compteur de mots, à côté de « Article », ne compte que ton texte.</figcaption></figure>
+  </section>
+
+  <section class="etape"><div class="num">5</div><div>
+    <h2>Envoie-le vers Word</h2>
+    <p><span class="bouton">Copier pour Word</span> copie l'article mis en forme : ouvre Word (ou un mail, ou Google Docs) et colle avec <kbd>Ctrl</kbd> + <kbd>V</kbd>.</p>
+    <p><span class="bouton">Télécharger</span> enregistre un fichier que Word ouvre directement. Les images viennent d'Internet : ouvre-le connecté.</p></div>
+    <figure><img src="guide/g5_boutons.png" alt="Les boutons Copier pour Word et Télécharger" loading="lazy"></figure>
+    <figure><img src="guide/g6_word.png" alt="Le fichier téléchargé, ouvert" loading="lazy"><figcaption>Le fichier téléchargé, ouvert : l'image, l'encadré PRISME et ton texte.</figcaption></figure>
+  </section>
+
+  <div class="fin"><h2>Et les notes ?</h2>
+    <ul><li>L'encadré se nourrit des notes de la fiche. Une fiche pré-remplie (beaucoup le sont déjà) donne tout de suite une note, une durée de vie et un coût.</li>
+      <li>Tu peux corriger une note quand tu veux : clique sur le palier qui correspond, dans la paire concernée. L'encadré déjà posé ne bouge pas ; « Préparer l'article » en pose un à jour.</li>
+      <li>Une question, une idée, un bouton qui manque : dis-le à Pierre.</li></ul></div>
+  <p class="version" id="version"></p>
+</main>
+<script>
+const VERSION = { numero:"1.0", date:"2026-10-19 00:10" };   // à incrémenter à chaque livraison
+document.getElementById("version").textContent = `Guide de l'article ${VERSION.numero}, version du ${VERSION.date.replace(/(\d{4})-(\d\d)-(\d\d) (\d\d):(\d\d)/,"$3/$2/$1 à $4h$5")}`;
+</script>
+<script src="entete.js?v=1.4"></script>
+</body>
+</html>

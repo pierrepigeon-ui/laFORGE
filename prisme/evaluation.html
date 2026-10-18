@@ -201,6 +201,27 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
 .paire .ligne1 .mesure{flex:1;min-width:0}
 .paire .ligne1 .na-droite{flex-shrink:0;margin-top:4px}
 @media (max-width:560px){.paire .ligne1{flex-direction:column;gap:4px}.paire .ligne1 .na-droite{margin-left:0}}
+/* --- version 3.32 : l'article --- */
+details.article-bloc{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin:16px 0}
+details.article-bloc > summary{cursor:pointer;list-style:none;display:flex;gap:10px;align-items:baseline}
+details.article-bloc > summary h2{font:600 22px var(--serif);margin:0}
+details.article-bloc > summary .etat-art{font-size:13px;color:var(--muted)}
+.art-outils{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:10px 0 8px;position:sticky;top:calc(var(--ent-h, 0px) + 54px);z-index:5;background:var(--panel);padding:6px 0}
+.art-outils button{font:500 13px var(--sans);padding:4px 10px;border:1px solid var(--line);background:var(--paper);border-radius:6px;cursor:pointer;color:var(--ink)}
+.art-outils button.fort{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.art-outils .sep{width:1px;height:22px;background:var(--line);margin:0 4px}
+.article-ed{min-height:260px;border:1px solid var(--line);border-radius:8px;padding:18px 22px;background:var(--paper);font:16px/1.6 var(--serif);color:var(--ink);outline:none;overflow-wrap:anywhere}
+.article-ed:focus{border-color:var(--accent)}
+.article-ed:empty::before{content:attr(data-vide);color:var(--muted);font-style:italic}
+.article-ed h1{font:600 28px/1.2 var(--serif);margin:0 0 12px} .article-ed h2{font:600 21px/1.3 var(--serif);margin:20px 0 6px} .article-ed h3{font:600 17px var(--serif);margin:16px 0 4px}
+.article-ed p{margin:0 0 10px} .article-ed img{max-width:100%;height:auto;border-radius:4px}
+.article-ed img.flottant{float:left;width:200px;margin:4px 16px 8px 0}
+.article-ed .encadre{clear:both;border:1px solid var(--line);border-left:4px solid var(--accent);background:var(--panel);border-radius:6px;padding:10px 14px;margin:12px 0;font:14px/1.5 var(--sans)}
+.article-ed .encadre p{margin:0 0 4px}
+.article-ed .consigne{color:var(--muted);font-style:italic}
+.article-ed::after{content:"";display:block;clear:both}
+.art-aide{font-size:13px;color:var(--muted);margin:8px 0 0}
+.badge.art{color:var(--accent)}
 .ch-configuration input{width:220px!important}
 .ecart-saisi{font:700 16px var(--sans);color:var(--ocre,#B4532A);min-width:2.8em;text-align:left}
 .retenue{font:500 13.5px var(--sans);color:var(--chap);text-align:right;margin-top:2px;min-height:1.2em} .retenue b{font-size:16px}
@@ -232,7 +253,7 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
   <div id="recherche" class="hidden">
     <input type="search" id="f-texte" placeholder="Chercher un jeu…" aria-label="Chercher un jeu">
     <select id="f-eval" aria-label="Évaluateur"><option value="">Tous les évaluateurs</option></select>
-    <select id="f-etat" aria-label="État"><option value="">Brouillons et finales</option><option value="brouillon">Brouillons</option><option value="finale">Finales</option></select>
+    <select id="f-etat" aria-label="État"><option value="">Brouillons et finales</option><option value="brouillon">Brouillons</option><option value="finale">Finales</option><option value="article">Avec un article</option></select>
     <select id="f-cfg" aria-label="Configuration"><option value="">Base et configurations</option><option value="base">Boîte de base</option><option value="cfg">Configurations</option></select>
     <select id="f-origine" aria-label="Origine"><option value="">Toutes origines</option><option value="claude">Pré-remplies par Claude</option><option value="humain">Saisies à la main</option></select>
     <span id="f-compte"></span></div>
@@ -247,6 +268,7 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
     <button class="btn ghost" id="suivante" type="button">Paire suivante à remplir</button>
     <select id="aller" aria-label="Aller à une paire"><option value="">Aller à…</option></select>
     <button class="btn ghost" id="tout-enrouler" type="button">Tout enrouler</button>
+    <button class="btn ghost" id="btn-article" type="button" title="Aller à l'article">Article</button>
     <button class="btn ghost" id="btn-recap" type="button">Récapitulatif</button>
     <button class="btn ghost" id="btn-export" type="button">Exporter</button>
     <label style="font-size:13px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="finale"> Fiche finale</label>
@@ -266,7 +288,7 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
 
 <script src="timeline.js?v=3.9"></script>
 <script>
-const VERSION = { numero:"3.31", date:"2026-10-18 23:55" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.32", date:"2026-10-19 00:10" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -339,7 +361,9 @@ async function demarrer(){
       lire("prisme_player_styles","ordre")]); } catch (e){ PL.erreur = e.message; }
   } catch (e){ $("#accueil").classList.remove("hidden"); $("#msg-accueil").className = "msg err"; $("#msg-accueil").textContent = "Lecture du modèle impossible : " + e.message; return; }
   M.paires.sort((a, b) => M.chapitres.find(c => c.code === a.chapitre).ordre - M.chapitres.find(c => c.code === b.chapitre).ordre || a.ordre - b.ordre);
-  remplirJeux(); await chargerFiches(); afficherFiches();
+  remplirJeux(); await chargerFiches();
+  ARTICLE_OK = toutes.length ? "article" in toutes[0] : !(await sb.from("prisme_evaluations").select("article").limit(1)).error;
+  afficherFiches();
   const P = new URLSearchParams(location.search), q = P.get("jeu"), qc = (P.get("config") || "").trim() || null;
   if (q && M.jeux.some(j => j.code === q)){
     if (P.has("evaluer") && role !== "lecteur") ouvrirJeu(q, qc);   // « Évaluer » depuis la fiche du jeu : sa propre fiche, nouvelle au besoin
@@ -374,7 +398,7 @@ function afficherFiches(){
   selE.disabled = miennes;
   const q = norm($("#f-texte").value.trim()), fe = selE.value, st = $("#f-etat").value, fc = $("#f-cfg").value, fo = $("#f-origine").value;
   let L = toutes.filter(e => (!miennes || e.evaluateur === user.id) && (miennes || !fe || e.evaluateur === fe)
-    && (!q || norm(nomJeu(e.jeu) + " " + (cfgDe(e) || "")).includes(q)) && (!st || e.statut === st)
+    && (!q || norm(nomJeu(e.jeu) + " " + (cfgDe(e) || "")).includes(q)) && (!st || (st === "article" ? aUnArticle(e) : e.statut === st))
     && (!fc || (fc === "base" ? !cfgDe(e) : !!cfgDe(e))) && (!fo || (fo === "claude" ? estClaude(e) : !estClaude(e))));
   const total = toutes.filter(e => !miennes || e.evaluateur === user.id).length;
   $("#f-compte").textContent = L.length === total ? `${total} fiche${total > 1 ? "s" : ""}` : `${L.length} sur ${total}`;
@@ -386,7 +410,7 @@ function afficherFiches(){
   const k = cles[tri.cle]; R.sort((a, b) => { const u = k(a), v = k(b); return (u < v ? -1 : u > v ? 1 : 0) * tri.sens; });
   const th = (cle, t) => `<th data-tri="${cle}">${t}${tri.cle === cle ? `<span class="sens">${tri.sens > 0 ? "▲" : "▼"}</span>` : ""}</th>`;
   $("#fiches").innerHTML = `<table class="fiches"><thead><tr>${th("jeu","Jeu")}${th("eval","Évaluateur")}${th("etat","État")}${th("paires","Paires")}${th("note","Note finale")}${th("modifie","Modifiée")}</tr></thead><tbody>
-    ${R.map(({ e, c }) => `<tr class="f" data-id="${esc(e.id)}"><td><b>${esc(nomJeu(e.jeu))}</b>${cfgDe(e) ? ` <span class="cfg-nom">— ${esc(cfgDe(e))}</span>` : ""}${estClaude(e) ? ' <span class="badge" title="Pré-remplie par Claude, à revoir">Claude</span>' : ""}</td><td>${esc(nomDe(e.evaluateur))}</td>
+    ${R.map(({ e, c }) => `<tr class="f" data-id="${esc(e.id)}"><td><b>${esc(nomJeu(e.jeu))}</b>${cfgDe(e) ? ` <span class="cfg-nom">— ${esc(cfgDe(e))}</span>` : ""}${estClaude(e) ? ' <span class="badge" title="Pré-remplie par Claude, à revoir">Claude</span>' : ""}${aUnArticle(e) ? ' <span class="badge art" title="Un article est rédigé">article</span>' : ""}</td><td>${esc(nomDe(e.evaluateur))}</td>
       <td><span class="badge ${esc(e.statut)}">${e.statut === "finale" ? "finale" : "brouillon"}</span></td><td style="white-space:nowrap">${c.faites} / ${M.paires.length}</td>
       <td>${c.finale == null ? "—" : fmt(c.finale, 2)}</td><td style="white-space:nowrap">${new Date(e.modifie_le).toLocaleString("fr-FR", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" })}</td></tr>`).join("")}</tbody></table>`;
   document.querySelectorAll("#fiches tr.f").forEach(tr => tr.addEventListener("click", () => ouvrirFiche(toutes.find(e => e.id === tr.dataset.id))));
@@ -649,6 +673,7 @@ function construireGrille(){
         <div class="ch-groupe">${paire("joueurs_min", "joueurs_max", "Joueurs")}${champ("effectif_reference", "Meilleur effectif")}</div>${paire("duree_min", "duree_max", "Durée", "min")}${champ("contenu_parties", "Parties pour tout exploiter")}
         <label class="ch ch-unique"><span>Contenu</span><span class="case"><input type="checkbox" id="d-contenu_unique" data-donnee="contenu_unique" ${d.contenu_unique ? "checked" : ""} ${lectureSeule ? "disabled" : ""}> à usage unique (campagne)</span></label>
         ${cfgDe(d) ? champ("configuration", "Configuration évaluée", "texte") : ""}</div></div></div></section>
+    ${blocArticle(jeu)}
     <details class="assistant" id="assistant"${ouvert ? " open" : ""}><summary><h2>Assistant de rédaction</h2></summary>
     <p class="aide">Les boutons préparent une demande complète pour Claude (le jeu, tes notes, tes textes, la charte de rédaction) et la copient dans le presse-papiers : colle-la dans une conversation sur claude.ai, puis recolle sa réponse ici. Rien n'est remplacé sans ton accord. Chaque paire a aussi son bouton « Demander à Claude ».
       La charte se règle dans la console (Textes généraux, section « Assistant de rédaction »).</p>
@@ -656,7 +681,7 @@ function construireGrille(){
       <button type="button" class="btn ghost" data-prompt="article">Demande : un article</button>
       ${lectureSeule ? "" : `<button type="button" class="btn" id="btn-coller">Coller la réponse de Claude</button>`}</div>
     <p class="msg" id="ass-msg"></p></details>`;
-  $("#aller").innerHTML = '<option value="">Aller à…</option>';
+  $("#aller").innerHTML = '<option value="">Aller à…</option><option value="article">Article</option>';
   M.chapitres.forEach(c => {
     h += `<div class="chapitre" style="--chap:var(--${c.code})" data-chap="${esc(c.code)}"><h2 data-replier-chap="${esc(c.code)}" title="Enrouler ou dérouler toutes les paires du chapitre">${esc(c.nom)}<span class="fleche-chap">▾</span><span class="moy" id="moy-${c.code}"></span></h2>`;
     M.paires.filter(p => p.chapitre === c.code).forEach(p => {
@@ -936,7 +961,7 @@ $("#suivante").addEventListener("click", () => {
   const el = document.getElementById("p-" + p.code); el.classList.remove("repliee"); aligner(); el.scrollIntoView({ behavior:"smooth" });
   el.querySelector('input[type="range"]')?.focus({ preventScroll:true });
 });
-$("#aller").addEventListener("change", e => { if (e.target.value){ const el = document.getElementById(e.target.value); el.classList.remove("repliee"); aligner(); el.scrollIntoView({ behavior:"smooth" }); } e.target.value = ""; });
+$("#aller").addEventListener("change", e => { if (e.target.value){ const el = document.getElementById(e.target.value); if (el.tagName === "DETAILS") el.open = true; el.classList.remove("repliee"); aligner(); el.scrollIntoView({ behavior:"smooth" }); } e.target.value = ""; });
 $("#finale").addEventListener("change", e => { fiche.statut = e.target.checked ? "finale" : "brouillon"; ficheModifiee = true; planifier(); });
 
 /* ---------------- enregistrement automatique ---------------- */
@@ -949,6 +974,7 @@ function planifier(code){
 async function enregistrer(){
   if (lectureSeule) return;
   const champs = Object.fromEntries(CHAMPS.map(k => [k, fiche[k] ?? null])); champs.contenu_unique = !!fiche.contenu_unique; champs.configuration = cfgDe(fiche);
+  if (ARTICLE_OK) champs.article = fiche.article ?? null;   // (3.32) script 40
   if (!fiche.id){
     const { data, error } = await sb.from("prisme_evaluations").insert({ jeu: fiche.jeu, statut: fiche.statut, version_appli: VERSION.numero, notes_article: fiche.notes_article ?? null, ...champs }).select();
     if (error){ $("#etat").textContent = "Création de la fiche refusée : " + error.message; return; }
@@ -1086,6 +1112,185 @@ $("#coller-appliquer").addEventListener("click", () => {
   $("#dlg-coller").close();
   const m = $("#ass-msg"); m.className = "msg ok"; m.textContent = n ? `${n} texte${n > 1 ? "s" : ""} inséré${n > 1 ? "s" : ""} : la fiche s'enregistre comme d'habitude.` : "Rien n'a été inséré.";
 });
+
+/* ---------------- l'article (3.32, 19/10/2026, script 40) ----------------
+   Un éditeur simple dans la fiche : titres, gras, italique, listes, images, liens. « Préparer l'article » pose l'encadré PRISME
+   et un plan modifiable (calé sur l'article de Vincent sur Dragon Eclipse). « Copier pour Word » et « Télécharger » le font sortir. */
+let ARTICLE_OK = false;
+const texteDe = html => String(html || "").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
+const aUnArticle = e => !!texteDe(e.article);
+// nettoyage : seules les balises de mise en forme simple passent ; aucun script, aucun style, aucun attribut d'événement
+const BALISES = new Set(["P","H1","H2","H3","B","STRONG","I","EM","U","UL","OL","LI","BR","IMG","A","BLOCKQUOTE","DIV","TABLE","THEAD","TBODY","TR","TD","TH"]);
+function nettoyer(html){
+  const doc = new DOMParser().parseFromString(`<div>${html || ""}</div>`, "text/html"), racine = doc.body.firstChild;
+  const sur = u => /^https?:\/\//i.test(String(u || "").trim());
+  (function net(n){
+    [...n.childNodes].forEach(c => {
+      if (c.nodeType === 3) return;
+      if (c.nodeType !== 1){ c.remove(); return; }
+      net(c);
+      let t = c.tagName; if (t === "H4" || t === "H5" || t === "H6") t = "H3";
+      if (["SCRIPT","STYLE","IFRAME","OBJECT","EMBED","META","LINK","TITLE","SVG","MATH","FORM","INPUT","BUTTON","TEXTAREA","SELECT"].includes(t)){ c.remove(); return; }
+      if (!BALISES.has(t)){ c.replaceWith(...c.childNodes); return; }   // span, font… : on garde le texte
+      const garde = {};
+      if (t === "IMG"){ if (!sur(c.getAttribute("src"))){ c.remove(); return; } garde.src = c.getAttribute("src"); garde.alt = c.getAttribute("alt") || ""; }
+      if (t === "A" && sur(c.getAttribute("href"))) garde.href = c.getAttribute("href");
+      const cl = (c.getAttribute("class") || "").split(/\s+/).filter(x => ["flottant","encadre","consigne"].includes(x)).join(" ");
+      const neuf = doc.createElement(t === "STRONG" ? "B" : t === "EM" ? "I" : t);
+      Object.entries(garde).forEach(([k, v]) => neuf.setAttribute(k, v)); if (cl) neuf.className = cl;
+      if (t === "A") neuf.setAttribute("target", "_blank"), neuf.setAttribute("rel", "noopener");
+      neuf.append(...c.childNodes); c.replaceWith(neuf);
+    });
+  })(racine);
+  return racine.innerHTML;
+}
+// les mots écrits par l'évaluateur : sans les consignes du plan ni l'encadré PRISME
+function motsArticle(html){
+  const b = document.createElement("div"); b.innerHTML = nettoyer(html); b.querySelectorAll(".consigne, .encadre").forEach(x => x.remove());
+  const n = texteDe(b.innerHTML).split(" ").filter(Boolean).length; return n ? n + " mot" + (n > 1 ? "s" : "") : "à écrire";
+}
+function blocArticle(jeu){
+  let ouvert = true; try { ouvert = localStorage.getItem("prisme_article") !== "ferme"; } catch (e){}
+  if (!ARTICLE_OK) return `<details class="article-bloc" id="article"><summary><h2>Article</h2><span class="etat-art">pas encore disponible</span></summary>
+    <p class="aide">L'article demande le script SQL 40 (une colonne « article » dans la base). Une fois le script passé, recharge la page.</p></details>`;
+  const ro = lectureSeule;
+  const b = (cmd, t, titre, fort) => `<button type="button" data-art="${cmd}" title="${esc(titre)}"${fort ? ' class="fort"' : ""}>${t}</button>`;
+  return `<details class="article-bloc" id="article"${ouvert ? " open" : ""}><summary><h2>Article</h2><span class="etat-art" id="art-mots">${motsArticle(fiche.article)}</span></summary>
+    <div class="art-outils">${ro ? "" : b("preparer", "Préparer l'article", "Pose l'encadré PRISME (chiffres, notes, durée de vie, coût) et un plan à remplir ; rien n'est effacé", true) + '<span class="sep"></span>' +
+      b("h1", "Titre", "Titre de l'article") + b("h2", "Intertitre", "Intertitre") + b("p", "Texte", "Paragraphe normal") + b("bold", "<b>G</b>", "Gras") + b("italic", "<i>I</i>", "Italique") +
+      b("insertUnorderedList", "• Liste", "Liste à puces") + '<span class="sep"></span>' + b("imgjeu", "Image du jeu", "Insère l'image de la boîte, à gauche du texte") +
+      b("img", "Image…", "Insère une image à partir de son adresse (clic droit sur une image du web : « Copier l'adresse de l'image »)") + b("lien", "Lien…", "Transforme le texte sélectionné en lien") +
+      b("removeFormat", "Effacer la forme", "Retire gras, italique… du texte sélectionné") + '<span class="sep"></span>'}
+      ${b("copier", "Copier pour Word", "Copie l'article mis en forme : colle-le dans Word, Google Docs ou un mail")}${b("telecharger", "Télécharger", "Un fichier que Word ouvre directement")}</div>
+    <div class="article-ed" id="article-ed" ${ro ? "" : 'contenteditable="true"'} data-vide="${ro ? "Pas encore d'article." : "Écris ton article ici, ou clique sur « Préparer l'article » pour partir de l'encadré PRISME et d'un plan."}">${nettoyer(fiche.article)}</div>
+    <p class="art-aide">Enregistré automatiquement, comme le reste de la fiche. ${ro ? "" : "Les textes en gris du plan sont des consignes : remplace-les. "}Les intertitres sont libres : mets les tiens. <a href="guide.html" target="_blank" rel="noopener">Le guide en cinq étapes</a>.</p></details>`;
+}
+// l'encadré PRISME : ce que la fiche sait du jeu, en langage de joueur
+// la source de l'encadré : ta fiche si elle est complète ; sinon la meilleure autre fiche du même jeu (finale d'abord), dite dans l'encadré
+function sourceEncadre(){
+  const ext = f => ({ contenu_parties:f.contenu_parties, contenu_unique:f.contenu_unique, prix:f.prix });
+  const complete = x => !entreesFiche(x.s, M.paires, M.axes, ext(x.f)).manque.length && calculer(x.s).finale != null;
+  const propre = { f:fiche, s:saisie, autre:null };
+  if (complete(propre)) return propre;
+  const C = toutes.filter(e => e.jeu === fiche.jeu && cfgDe(e) === cfgDe(fiche) && e.id !== fiche.id).map(e => ({ f:e, s:saisieDe(e.id), autre:e.evaluateur })).filter(complete);
+  return C.find(x => x.f.statut === "finale") || C[0] || propre;
+}
+function encadrePrisme(){
+  const src = sourceEncadre(), d = src.f, c = calculer(src.s);
+  const e = entreesFiche(src.s, M.paires, M.axes, { contenu_parties:d.contenu_parties, contenu_unique:d.contenu_unique, prix:d.prix });
+  const tl = { c: e.manque.length ? null : flowJeu(e.n) }, k = tl.c ? coutParPartie(d.prix, tl.c, d.duree_min, d.duree_max) : null;
+  const L = [];
+  const j = d.joueurs_max ? `${d.joueurs_min && d.joueurs_min !== d.joueurs_max ? d.joueurs_min + " à " : ""}${d.joueurs_max} joueur${d.joueurs_max > 1 ? "s" : ""}${d.effectif_reference ? ` (idéal à ${d.effectif_reference})` : ""}` : "";
+  const du = d.duree_max ? `${d.duree_min && d.duree_min !== d.duree_max ? d.duree_min + " à " : ""}${d.duree_max} min` : "";
+  const ligne1 = [j, du, d.prix ? `environ ${fmt(d.prix, 0)} €` : "", d.pages ? `${d.pages} pages de règles` : ""].filter(Boolean).join(" · ");
+  if (ligne1) L.push(ligne1);
+  if (c.finale != null) L.push(`<b>Note PRISME : ${fmt(c.finale, 1)} / 5</b> (${M.chapitres.map(ch => `${esc(ch.nom)} ${c.chap[ch.code] == null ? "—" : fmt(c.chap[ch.code], 1)}`).join(", ")})`);
+  if (tl.c){
+    const h = [d.duree_min, d.duree_max].map(Number).filter(v => v > 0), hm = h.length ? h.reduce((a, b) => a + b, 0) / h.length / 60 : null;
+    const vie = tl.c.omega != null ? `il lasse vite : abandon vers ${Math.round(tl.c.vie)} parties` : tl.c.vie == null ? "un classique, qu'on ne range pas"
+      : `environ ${Math.round(tl.c.vie)} parties${hm ? `, soit ${Math.round(tl.c.vie * hm / 5) * 5} heures de jeu` : ""}${tl.c.epuise ? " (tout le contenu joué)" : ""}`;
+    L.push(`Durée de vie : ${vie}`);
+  }
+  if (k) L.push(`Coût : ${k.classique ? "moins de " : ""}${fmt(k.parPartie, k.parPartie < 10 ? 1 : 0)} € par partie${k.parHeure != null ? `, ${fmt(k.parHeure, k.parHeure < 10 ? 2 : 0)} € de l'heure` : ""}`);
+  if (!L.length) L.push("Remplis le jeu en chiffres et les notes de la fiche : l'encadré se complétera (clique à nouveau sur « Préparer l'article »).");
+  return `<div class="encadre"><p><b>${esc(titreFiche(fiche))}</b> — l'avis PRISME${src.autre ? (src.autre === user.id ? ", d'après ta fiche" : `, d'après la fiche de ${esc(nomDe(src.autre))}`) : ""}</p>${L.map(x => `<p>${x}</p>`).join("")}</div>`;
+}
+function planArticle(jeu){
+  const cons = t => `<p class="consigne">${t}</p>`;
+  return `<h1>${esc(nomJeu(fiche.jeu))} : <span class="consigne">ton titre accrocheur</span></h1>` +
+    (jeu.image_url ? `<p><img class="flottant" src="${esc(jeu.image_url)}" alt="${esc(jeu.nom || "")}"></p>` : "") +
+    cons("Le chapeau : l'univers, le matériel, l'éditeur, ce qui donne envie d'ouvrir la boîte.") + encadrePrisme() +
+    `<h2>Comment on y joue</h2>` + cons("Le principe, les modes de jeu, ce qu'on fait pendant une partie ; la durée d'une campagne ou d'une partie.") +
+    `<h2>Ce qu'il réussit</h2>` + cons("Ce qui fait plaisir, ce qu'on retient.") +
+    `<h2>Ce qu'il rate</h2>` + cons("Ce qui frustre, ce qui manque de finition.") +
+    `<h2>Et après ?</h2>` + cons("Combien de temps il tiendra : rejouabilité, modes, extensions. (L'encadré donne la durée de vie calculée par PRISME.)") +
+    `<h2>Pour qui ?</h2>` + cons("Le joueur à qui on le conseille, et celui à qui on le déconseille.") +
+    `<h2>Verdict</h2>` + cons("En une ou deux phrases, et le rapport qualité-prix (l'encadré donne le coût par partie et à l'heure).");
+}
+// insère du HTML déjà nettoyé à l'endroit du curseur (sans passer par execCommand, qui ajoute des styles)
+function inserer(html){
+  const ed = $("#article-ed"), sel = getSelection();
+  let r = sel.rangeCount ? sel.getRangeAt(0) : null;
+  if (!r || !ed.contains(r.commonAncestorContainer)){ r = document.createRange(); r.selectNodeContents(ed); r.collapse(false); }
+  r.deleteContents();
+  const frag = r.createContextualFragment(html), dernier = frag.lastChild;
+  r.insertNode(frag);
+  if (dernier){ const r2 = document.createRange(); r2.setStartAfter(dernier); r2.collapse(true); sel.removeAllRanges(); sel.addRange(r2); }
+}
+function majArticle(){
+  const ed = $("#article-ed"); if (!ed || lectureSeule) return;
+  fiche.article = texteDe(ed.innerHTML) || ed.querySelector("img") ? nettoyer(ed.innerHTML) : null;   // ce qui est enregistré est toujours nettoyé
+  $("#art-mots").textContent = motsArticle(fiche.article);
+  ficheModifiee = true; planifier();
+}
+// la version pour Word : styles en ligne, image flottante en « align »
+function articlePourWord(){
+  const box = document.createElement("div"); box.innerHTML = nettoyer(fiche.article);
+  box.querySelectorAll(".consigne").forEach(x => x.style.color = "#777");
+  box.querySelectorAll("img").forEach(i => { i.setAttribute("width", i.classList.contains("flottant") ? "190" : "560"); if (i.classList.contains("flottant")){ i.setAttribute("align", "left"); i.setAttribute("hspace", "12"); } i.removeAttribute("class"); });
+  box.querySelectorAll(".encadre").forEach(x => { x.setAttribute("style", "clear:both;border:1px solid #bbb;border-left:4px solid #3D2645;padding:8px 12px;margin:10px 0;background:#f6f5f1;font-family:Calibri,Arial,sans-serif;font-size:10.5pt");
+    x.insertAdjacentHTML("beforebegin", '<br clear="all">'); });   // l'encadré passe sous l'image flottante, dans Word aussi
+  box.querySelectorAll("p").forEach(x => { x.style.margin = x.closest(".encadre") ? "0 0 3pt" : "0 0 8pt"; });
+  return box.innerHTML;
+}
+async function copierWord(){
+  const html = articlePourWord(), texte = texteDe(fiche.article);
+  if (!texte){ $("#etat").textContent = "L'article est vide."; return; }
+  try { await navigator.clipboard.write([new ClipboardItem({ "text/html": new Blob([html], { type:"text/html" }), "text/plain": new Blob([texte], { type:"text/plain" }) })]);
+    $("#etat").textContent = "Article copié : colle-le dans Word (Ctrl+V)."; }
+  catch (e){   // navigateur sans presse-papiers riche : on sélectionne l'article et on copie
+    const ed = $("#article-ed"), r = document.createRange(); r.selectNodeContents(ed); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    document.execCommand("copy"); sel.removeAllRanges(); $("#etat").textContent = "Article copié : colle-le dans Word (Ctrl+V)."; }
+}
+function telechargerWord(){
+  if (!texteDe(fiche.article)){ $("#etat").textContent = "L'article est vide."; return; }
+  const titre = titreFiche(fiche);
+  const doc = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>${esc(titre)}</title>
+<style>body{font-family:Cambria,Georgia,serif;font-size:12pt;line-height:1.4} h1{font-size:20pt} h2{font-size:14pt;margin-top:14pt} h3{font-size:12pt}</style></head><body>${articlePourWord()}</body></html>`;
+  const url = URL.createObjectURL(new Blob(["﻿" + doc], { type:"application/msword" }));
+  const a = Object.assign(document.createElement("a"), { href:url, download:`${slug(titre)}_article.doc` });
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000);
+  $("#etat").textContent = "Article téléchargé : ouvre-le avec Word.";
+}
+$("#grille").addEventListener("mousedown", e => { if (e.target.closest("[data-art]")) e.preventDefault(); });   // garder la sélection dans l'éditeur
+$("#grille").addEventListener("click", e => {
+  const bt = e.target.closest("[data-art]"); if (!bt) return;
+  const cmd = bt.dataset.art, ed = $("#article-ed");
+  if (cmd === "copier") return copierWord();
+  if (cmd === "telecharger") return telechargerWord();
+  if (!ed || lectureSeule) return;
+  const jeu = M.jeux.find(j => j.code === fiche.jeu) || {};
+  if (cmd === "preparer"){
+    if (texteDe(ed.innerHTML) && !confirm("Ton article a déjà du texte. Ajouter l'encadré PRISME et le plan à la fin ?")) return;
+    ed.insertAdjacentHTML("beforeend", planArticle(jeu)); majArticle(); ed.focus(); return;
+  }
+  ed.focus();
+  if (["h1","h2","p"].includes(cmd)) document.execCommand("formatBlock", false, cmd.toUpperCase());
+  else if (cmd === "imgjeu"){ if (!jeu.image_url){ $("#etat").textContent = "Ce jeu n'a pas encore d'image (elle s'ajoute dans la console)."; return; }
+    inserer(`<img class="flottant" src="${esc(jeu.image_url)}" alt="${esc(jeu.nom || "")}">`); }
+  else if (cmd === "img"){ const u = (prompt("Adresse de l'image (elle commence par https://) :") || "").trim(); if (!u) return;
+    if (!/^https?:\/\//i.test(u)){ $("#etat").textContent = "Adresse d'image illisible : elle doit commencer par https://"; return; }
+    inserer(`<img src="${esc(u)}" alt="">`); }
+  else if (cmd === "lien"){ const u = (prompt("Adresse du lien (https://…) :") || "").trim(); if (u && /^https?:\/\//i.test(u)) document.execCommand("createLink", false, u); }
+  else document.execCommand(cmd, false, null);
+  majArticle();
+});
+// les consignes grises du plan : un clic les sélectionne, ce qu'on tape les remplace et redevient du texte normal
+const consigneSousCurseur = () => { const n = getSelection().anchorNode, el = n && (n.nodeType === 1 ? n : n.parentElement); return el?.closest?.("#article-ed .consigne"); };
+$("#grille").addEventListener("input", e => { if (e.target.id !== "article-ed") return; consigneSousCurseur()?.classList.remove("consigne"); majArticle(); });
+$("#grille").addEventListener("click", e => {
+  const c = e.target.closest?.("#article-ed .consigne"); if (!c || lectureSeule) return;
+  const r = document.createRange(); r.selectNodeContents(c); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+});
+$("#grille").addEventListener("paste", e => {   // collage depuis Word ou le web : la mise en forme simple passe, le reste est nettoyé
+  if (e.target.closest?.("#article-ed") == null) return;
+  const html = e.clipboardData?.getData("text/html"), txt = e.clipboardData?.getData("text/plain");
+  e.preventDefault();
+  inserer(html ? nettoyer(html) : "<p>" + esc(txt || "").replace(/\n{2,}/g, "</p><p>").replace(/\n/g, "<br>") + "</p>");
+  majArticle();
+});
+$("#grille").addEventListener("toggle", e => { if (e.target.id === "article") try { localStorage.setItem("prisme_article", e.target.open ? "ouvert" : "ferme"); } catch (x){} }, true);
+$("#btn-article").addEventListener("click", () => { const a = $("#article"); if (a){ a.open = true; a.scrollIntoView({ behavior:"smooth" }); } });
 
 /* ---------------- récapitulatif et export ---------------- */
 function lignesRecap(){

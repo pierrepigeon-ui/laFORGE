@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PRISME — Le jeu, le joueur, et ce qui se passe entre les deux</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
+<style>
+:root{--ink:#1B2430;--muted:#5B6573;--line:#DDE1E7;--paper:#F6F5F1;--panel:#FFFFFF;--accent:#3D2645;--err:#B42318;--ok:#1E7A46;
+  --serif:"Source Serif 4",Georgia,"Times New Roman",serif;--sans:"IBM Plex Sans","Segoe UI",Arial,sans-serif}
+@media (prefers-color-scheme: dark){:root{--ink:#E6E9EE;--muted:#9AA4B2;--line:#2C3542;--paper:#11161D;--panel:#171D25;--accent:#C9B4D2;--err:#F2837A;--ok:#5CC98A}}
+*{box-sizing:border-box} html,body{margin:0} body{background:var(--paper);color:var(--ink);font:16px/1.6 var(--sans)}
+button,input{font:inherit;color:inherit} :focus-visible{outline:2px solid #3B6FE0;outline-offset:2px} .hidden{display:none!important}
+.barre .zone{margin-left:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.barre{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:12px 20px;font-size:13px;color:var(--muted)}
+.btn{display:inline-block;border:1px solid var(--ink);background:var(--ink);color:var(--panel);padding:11px 20px;border-radius:7px;cursor:pointer;font-weight:500;text-decoration:none}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.petit{padding:6px 12px;font-size:13px}
+
+/* la roue des cinq moteurs : la rosace en miniature */
+.hero{max-width:860px;margin:6px auto 0;padding:20px 24px 10px;text-align:center}
+.roue{width:118px;height:118px;border-radius:50%;margin:0 auto 14px;position:relative;
+  background:conic-gradient(from -36deg,#80796A 0 72deg,#0E8A9C 72deg 144deg,#3D2645 144deg 216deg,#E85D2E 216deg 288deg,#7A9A3C 288deg 360deg)}
+.roue::after{content:"";position:absolute;inset:32%;border-radius:50%;background:#FFFFFF;box-shadow:0 0 0 3px var(--paper)}
+@media (prefers-reduced-motion:no-preference){ .roue{animation:tour 1.6s cubic-bezier(.2,.7,.2,1) 1} @keyframes tour{from{transform:rotate(-72deg)}to{transform:none}} }
+.hero h1{font:600 clamp(42px,7vw,66px)/1 var(--serif);margin:0;letter-spacing:.08em}
+.hero .acrostiche{font:italic clamp(17px,2.3vw,21px)/1.45 var(--serif);color:var(--muted);margin:10px auto 2px;max-width:34ch}
+.hero .acrostiche b{font-style:normal;color:var(--ink);font-weight:600}
+.hero .auteur{font-size:14px;color:var(--muted);margin:6px 0 26px}
+.hero .actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+
+.blocs{max-width:1000px;margin:40px auto 0;padding:0 24px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.bloc{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px 22px}
+.bloc h2{font:600 20px/1.25 var(--serif);margin:0 0 4px}
+.bloc .question{font:italic 15px var(--serif);color:var(--muted);margin:0 0 8px}
+.bloc p{margin:0;font:15.5px/1.6 var(--serif)}
+
+#espace{max-width:1000px;margin:34px auto 0;padding:0 24px}
+#espace .cadre{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px 22px}
+#espace h2{font:600 22px var(--serif);margin:0 0 4px}
+#espace .sous{color:var(--muted);font-size:14.5px;margin:0 0 14px}
+#espace .profil{display:inline-flex;align-items:center;gap:6px;color:var(--ink);text-decoration:none;vertical-align:middle}
+#espace .profil b{font-weight:600} #espace .profil:hover b{text-decoration:underline}
+#espace .ico{width:28px;height:28px;flex:none}
+#espace .sous b{color:var(--ink)}
+.tuiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.tuile{display:block;border:1px solid var(--line);border-radius:10px;padding:14px 16px;text-decoration:none;color:var(--ink);background:var(--paper)}
+.tuile:hover{border-color:var(--accent)}
+.tuile b{display:block;font:600 17px var(--serif)} .tuile span{font-size:13.5px;color:var(--muted)}
+footer .contact{margin-left:14px;color:inherit}
+footer{max-width:1000px;margin:40px auto 0;padding:14px 24px 30px;font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;border-top:1px solid var(--line)}
+dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);padding:24px;width:min(380px,92vw)} dialog::backdrop{background:rgba(10,15,25,.45)}
+dialog h2{font:600 22px var(--serif);margin:0 0 14px} .field{display:block;margin-bottom:12px} .field span{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
+.field input{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:6px;background:var(--paper)}
+.msg{font-size:14px;min-height:1.4em;margin:8px 0 0} .msg.err{color:var(--err)}
+@media (max-width:820px){ .blocs{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<div class="barre"><span class="zone"><span id="who"></span>
+  <a class="btn ghost petit" id="btn-login" href="../">Se connecter</a>
+  <button class="btn ghost petit hidden" id="btn-logout" type="button">Se déconnecter</button></span></div>
+
+<section class="hero">
+  <div class="roue" aria-hidden="true"></div>
+  <h1>PRISME</h1>
+  <p class="acrostiche"><b>P</b>ourquoi <b>R</b>estons-nous <b>I</b>mpliqués, <b>S</b>timulés, <b>M</b>otivés, <b>E</b>ngagés ?</p>
+  <p class="auteur">par l'Arpenteur</p>
+  <div class="actions">
+    <a class="btn visiteur" href="questionnaire.html">Passer le questionnaire du joueur</a>
+    <a class="btn ghost visiteur" href="rosace.html">Explorer la rosace</a>
+    <a class="btn ghost visiteur" href="encyclopedie.html">L'encyclopédie</a>
+    <a class="btn ghost" id="btn-login-2" href="../">Se connecter</a>
+  </div>
+</section>
+
+<section id="espace" class="hidden">
+  <div class="cadre">
+    <h2 id="bonjour"></h2>
+    <p class="sous" id="espace-sous"></p>
+    <div class="tuiles" id="tuiles"></div>
+  </div>
+</section>
+
+<!-- Textes de présentation : à ajuster librement -->
+<section class="blocs">
+  <article class="bloc"><h2>Le joueur</h2><p class="question">Qu'est-ce que je recherche en jouant ?</p>
+    <p>Cinq moteurs pour savoir pourquoi l'on joue, vingt tempéraments pour ce que l'on cherche et ce que l'on fuit, vingt styles pour la façon de le vivre.</p></article>
+  <article class="bloc"><h2>Le jeu</h2><p class="question">Qu'est-ce que ce jeu est, objectivement ?</p>
+    <p>Douze paires d'axes, du système à l'édition, pour décrire un jeu tel qu'il est, avant de se demander à qui il plaira.</p></article>
+  <article class="bloc"><h2>Le temps</h2><p class="question">Comment l'expérience évolue-t-elle ?</p>
+    <p>Une première partie ne ressemble pas à la vingtième : de la découverte à la maîtrise, chaque joueur a son moment d'apogée.</p></article>
+</section>
+
+<footer><span>PRISME — l'Arpenteur <a class="contact" href="../?contact&amp;depuis=prisme">Écrire à l'Arpenteur</a></span><span id="version"></span></footer>
+
+<script src="totems.js?v=4"></script>
+<script>
+const VERSION = { numero:"3.4", date:"2026-10-16 15:44" };   // à incrémenter à chaque livraison
+const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
+const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+$("#version").textContent = `Accueil PRISME ${VERSION.numero}, version du ${VERSION.date.replace(/(\d{4})-(\d\d)-(\d\d) (\d\d):(\d\d)/,"$3/$2/$1 à $4h$5")}`;
+
+/* connexion et déconnexion : par la Forge, qui ramène ici après connexion */
+const versForge = () => "../?retour=" + encodeURIComponent(location.href);
+$("#btn-login").href = versForge(); $("#btn-login-2").href = versForge();
+$("#btn-logout").addEventListener("click", () => sb.auth.signOut().then(() => location.href = "../"));
+
+const tuile = (href, titre, texte) => `<a class="tuile" href="${href}"><b>${esc(titre)}</b><span>${esc(texte)}</span></a>`;
+let user = null;
+sb.auth.onAuthStateChange((_e, session) => {
+  const u = session?.user || null; if (u?.id === user?.id) return; user = u;
+  setTimeout(afficherEspace, 0);
+});
+
+async function afficherEspace(){
+  $("#btn-login").classList.toggle("hidden", !!user); $("#btn-logout").classList.toggle("hidden", !user);
+  $("#btn-login-2").classList.toggle("hidden", !!user);
+  document.querySelectorAll(".actions .visiteur").forEach(b => b.classList.toggle("hidden", !!user));   // connecté : les tuiles prennent le relais
+  $("#who").textContent = user ? user.email : "";
+  if (!user){ $("#espace").classList.add("hidden"); return; }
+  const [{ data: role }, { data: moiP }, { data: moiF }, { data: res }] = await Promise.all([
+    sb.rpc("prisme_mon_role"),
+    sb.from("prisme_roles").select("nom").eq("user_id", user.id).maybeSingle(),
+    sb.from("forge_utilisateurs").select("nom").eq("user_id", user.id).maybeSingle(),
+    sb.from("prisme_player_resultats").select("id,passe_le,style,classement,reponses").eq("user_id", user.id).order("passe_le", { ascending:false }).limit(1)
+  ]);   // le lien « La Forge » est géré par entete.js
+  const nom = moiP?.nom || moiF?.nom;
+  const dernier = res?.[0];
+  let profil = null;
+  if (dernier){
+    const c = dernier.classement, code = dernier.style || (c ? c[0] + "." + c[1].toLowerCase() + "/" + c[4].toLowerCase() : null);
+    if (code){
+      const [{ data: t }, { data: st }, { data: mot }] = await Promise.all([
+        sb.from("prisme_player_temperaments").select("nom").eq("code", code[0] + "/" + code[4]).maybeSingle(),
+        sb.from("prisme_player_styles").select("nom").eq("code", code.slice(0, 3)).maybeSingle(),
+        sb.from("prisme_player_moteurs").select("code,couleur,couleur_sombre"), chargerTotems()]);
+      // le totem du tempérament (couleur du moteur dominant) et l'emblème du style (couleur du second), comme sur la fiche du joueur
+      const sombre = matchMedia("(prefers-color-scheme: dark)").matches, coul = c => { const m = (mot || []).find(x => x.code === c); return m ? (sombre && m.couleur_sombre) || m.couleur : "currentColor"; };
+      if (t && st) profil = { tem: t.nom, style: st.nom, provisoire: Object.keys(dernier.reponses || {}).length < 25,
+        totem: totemSVG(code[0] + "/" + code[4], coul(code[0]), { cls:"ico" }), embleme: emblemeSVG(code.slice(0, 3), coul(code[2].toUpperCase()), { cls:"ico" }) };
+    }
+  }
+  $("#espace").classList.remove("hidden");
+  $("#bonjour").textContent = `Bonjour${nom ? ", " + nom : ""}`;
+  $("#espace-sous").innerHTML = dernier && profil
+    ? `Votre profil de joueur : <a class="profil" href="fiche.html">${profil.totem}<b>${esc(profil.tem.charAt(0).toUpperCase() + profil.tem.slice(1))}</b> (${esc(profil.style)})${profil.embleme}</a>${profil.provisoire ? ", provisoire" : ""}, le ${new Date(dernier.passe_le).toLocaleDateString("fr-FR")}.`
+    : "Vous n'avez pas encore enregistré de profil de joueur : commencez par le questionnaire.";
+  let t = dernier ? tuile("fiche.html", "Mon profil de joueur", "Vos moteurs, vos tempéraments, votre style, votre rival") : "";
+  t += tuile("rosace.html", "La rosace", dernier ? "Votre place sur la roue des joueurs" : "Cinq moteurs, vingt tempéraments, vingt styles");
+  t += tuile("questionnaire.html", "Questionnaire du joueur", dernier ? "Revoir ou modifier vos réponses" : "Vingt-cinq situations de jeu, dix minutes");
+  t += tuile("jeux.html", "Les jeux", dernier ? "Les jeux évalués, leur note pour tous et pour vous" : "Les jeux évalués et ce qu'ils promettent");
+  t += tuile("encyclopedie.html", "L'encyclopédie", "Le modèle complet : le jeu, le joueur, leurs grilles et leurs exemples");
+  // la console : bouton dans le ruban du haut (entete.js 1.4), plus de tuile
+  $("#tuiles").innerHTML = t;
+}
+</script>
+<script src="entete.js?v=1.4"></script>
+</body>
+</html>
