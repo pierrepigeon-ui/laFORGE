@@ -55,7 +55,7 @@ tr.attente td{color:var(--muted)}
   <p class="version" id="version"></p>
 </main>
 
-<script src="timeline.js?v=3.8"></script>
+<script src="timeline.js?v=3.9"></script>
 <script>
 const VERSION = { numero:"1.6", date:"2026-10-18 22:25" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
@@ -140,7 +140,7 @@ function afficher(){
   const ecart = (a, b) => { if (a == null || b == null) return ""; const v = a - b;
     return `<span class="ecart ${v >= .005 ? "plus" : v <= -.005 ? "moins" : ""}">${Math.abs(v) < .005 ? "±" : v > 0 ? "+" : "−"}${fmt(Math.abs(v))}</span>`; };
   const vie = c => !c ? "—" : c.vie == null ? "∞" : Math.round(c.vie);
-  const cout = k => !k ? "—" : texteCout(k).replace(/ par session.*/, "");
+  const cout = k => !k ? "—" : texteCout(k).replace(/ par session.*/, "").replace("moins de ", "< ");
   $("#contenu").innerHTML = `<div class="cadre"><table class="jeux"><thead><tr>${th("nom","Jeu")}${th("note","Note PRISME /5","n")}${profil ? th("pour","Pour vous /5","n") : ""}
     ${th("apogee","Apogée /10","n col-sec","Le flow le plus haut de la timeline")}${th("vie","Durée de vie (sessions)","n col-sec","∞ : un classique")}${th("cout","Coût (€/session)","n col-sec")}${lecteur ? "<th>Évaluation</th>" : ""}</tr></thead><tbody>
     ${L.map(l => {

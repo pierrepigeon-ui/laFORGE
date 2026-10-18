@@ -1,7 +1,7 @@
 /* PRISME — timeline du jeu : jalons, durées, flow, α β γ ω, durée de vie.
    Module partagé par l'encyclopédie et l'outil d'évaluation. Méthode arrêtée le 08/10/2026 (jeu d'essai : Heat) ; modèle à 12 paires le 11/10/2026 ;
    formules refaites phase par phase le 12/10/2026 avec trois jeux de référence (Gloomhaven, Heat, Flip 7). L'unité est la session. */
-const TIMELINE_VERSION = { numero:"3.8", date:"2026-10-18 22:25" };   // à incrémenter à chaque livraison
+const TIMELINE_VERSION = { numero:"3.9", date:"2026-10-18 22:40" };   // à incrémenter à chaque livraison
 
 const JALONS = [
   { n:0, nom:"identifié", quoi:"Le jeu est connu de loin : critique, vitrine, recommandation." },
@@ -502,20 +502,20 @@ function palierPrix(prix){
   if (prix == null || prix === "" || Number.isNaN(Number(prix))) return null;
   const x = Number(prix), seuils = [19.99, 40, 70, 120, 200]; let i = 0; while (i < seuils.length && x > seuils[i]) i++; return i;
 }
-/* Coût par session (12/10/2026) : prix ÷ min(durée de vie, 50). La durée de vie va jusqu'à l'abandon ou jusqu'à l'arrivée au plancher
-   de nostalgie ; il est rarissime de dépasser 50 sessions d'un même jeu. Rien sans prix, ni si le jeu est abandonné avant sa première
-   session (ω au jalon 1, 2 ou 3). Par heure : avec la durée moyenne de la fiche. */
-const PLAFOND_PARTIES_VIE = 50;
+/* Coût par session : prix ÷ durée de vie calculée (18/10/2026 : le plafond de 50 sessions est levé, la durée de vie suit maintenant
+   le contenu et la profondeur). Un classique (jamais rangé) est compté sur un horizon de 1000 sessions. Rien sans prix, ni si le jeu
+   est abandonné avant sa première session (ω au jalon 1, 2 ou 3). Par heure : avec la durée moyenne de la fiche. */
+const HORIZON_CLASSIQUE = 1000;
 function coutParPartie(prix, c, dureeMin, dureeMax){
   if (prix == null || prix === "" || !c || (c.omega != null && c.omega <= 3)) return null;
-  const brut = c.vie ?? Infinity, parties = Math.max(1, Math.min(brut, PLAFOND_PARTIES_VIE));
+  const classique = c.vie == null, parties = Math.max(1, classique ? HORIZON_CLASSIQUE : c.vie);
   const duree = [dureeMin, dureeMax].map(Number).filter(v => v > 0), h = duree.length ? duree.reduce((a, b) => a + b, 0) / duree.length / 60 : null;
-  return { parties, plafonne: brut > PLAFOND_PARTIES_VIE, parPartie: Number(prix) / parties, parHeure: h ? Number(prix) / (parties * h) : null };
+  return { parties, classique, parPartie: Number(prix) / parties, parHeure: h ? Number(prix) / (parties * h) : null };
 }
 function texteCout(k){
   if (!k) return "—";
   const e = v => v < 1 ? v.toFixed(2).replace(".", ",") : v < 10 ? v.toFixed(1).replace(".", ",") : String(Math.round(v));
-  return `${e(k.parPartie)} € par session${k.parHeure != null ? ` (${e(k.parHeure)} € de l'heure)` : ""} sur ${k.plafonne ? PLAFOND_PARTIES_VIE + " sessions et plus" : texteSessions(k.parties)}`;
+  return `${k.classique ? "moins de " : ""}${e(k.parPartie)} € par session${k.parHeure != null ? ` (${e(k.parHeure)} € de l'heure)` : ""} sur ${k.classique ? HORIZON_CLASSIQUE + " sessions et plus (un classique)" : texteSessions(k.parties)}`;
 }
 // toutes les entrées d'une fiche : n (pour la courbe), paires (pour les notes), manque (paires à remplir), absents (sans objet)
 // extra : { contenu_parties, contenu_unique, prix } (ou, comme avant, le seul nombre de parties pour tout exploiter)

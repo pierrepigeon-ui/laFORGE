@@ -134,7 +134,7 @@ mark{background:#FFE58A;color:#1B2430;border-radius:2px}
 </div>
 <div style="max-width:1240px;margin:0 auto;padding:0 20px 30px"><p class="version"><span id="credit"></span><br><span id="version"></span></p></div>
 
-<script src="timeline.js?v=3.8"></script>
+<script src="timeline.js?v=3.9"></script>
 <script src="totems.js?v=4"></script>
 <script>
 const VERSION = { numero:"3.15", date:"2026-10-18 22:25" };   // à incrémenter à chaque livraison
@@ -472,7 +472,7 @@ function sectionTemps(toc){
     <div class="texte"><p>Le seuil de ${PLANCHER_SEUIL} trie les vraies marques : un thème moyen ne laisse aucune nostalgie. Le plancher arrête la chute, il ne relève jamais la courbe.</p>
     <p>La <b>durée de vie</b> est le nombre de sessions jusqu'à ce que le jeu sorte de la vie active du joueur : par <b>abandon</b> (le flow passe sous 0) ou par <b>arrivée au plancher</b> (fini, rangé, ressorti par nostalgie). Un jeu qui n'atteint jamais son plancher est un <b>classique</b>. Moins de 10 sessions : un jeu éphémère ; au-delà, durable.</p>
     <p><b>Contenu à usage unique</b> (campagne, scénarios qu'on ne rejoue pas) : une fois tout joué, le jeu est rangé ; la durée de vie ne dépasse pas les parties pour tout exploiter. <b>Configurations</b> : une fiche peut évaluer le jeu avec ses extensions ; elle a sa propre courbe, à côté de celle de la boîte de base. Quand une configuration « toutes extensions » existe, <b>le jeu complet devient la référence</b> : c'est lui que lisent la liste des jeux, la note pour vous, les profils et la rosace ; la boîte de base reste consultable.</p>
-    <p><b>Coût par session</b> (indicatif) : prix ÷ durée de vie, plafonnée à ${PLAFOND_PARTIES_VIE} sessions (il est rarissime de dépasser 50 sessions d'un même jeu, hors campagnes longues). Pas de coût pour un jeu abandonné avant sa première session. Avec la durée de la fiche, on en tire un coût de l'heure.${(() => { const k = coutParPartie(55, c); return k ? ` Heat, à 55 € : ${esc(texteCout(k))}.` : ""; })()}</p></div>
+    <p><b>Coût par session</b> (indicatif) : prix ÷ durée de vie calculée (le plafond de 50 sessions est levé depuis le 18/10/2026 : la durée de vie suit le contenu et la profondeur) ; un classique, jamais rangé, est compté sur ${HORIZON_CLASSIQUE} sessions. Pas de coût pour un jeu abandonné avant sa première session. Avec la durée de la fiche, on en tire un coût de l'heure.${(() => { const k = coutParPartie(55, c); return k ? ` Heat, à 55 € : ${esc(texteCout(k))}.` : ""; })()}</p></div>
     <div class="defile"><table class="ref"><tr><th>Jeu de référence</th><th>Gloomhaven</th><th>Heat</th><th>Flip 7</th></tr>
       <tr><th>Durée de vie</th><td>≈ 95 sessions : la campagne finie, rangé</td><td>jamais : un classique</td><td>≈ 2 sessions, abandon</td></tr></table></div>
 
