@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>go2games — un jeu évalué</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="vitrine.css?v=1.0">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
+</head>
+<body>
+<header class="haut" id="haut"></header>
+<main>
+  <a class="retour" href="index.html">← Tous les jeux</a>
+  <article id="article"><p class="vide" style="margin-top:20px">Chargement de l'article…</p></article>
+</main>
+<footer class="pied" id="pied"></footer>
+<script src="vitrine.js?v=1.0"></script>
+<script>
+$("#haut").innerHTML = enTete(); $("#pied").innerHTML = piedHTML();
+const moisFr = d => new Date(d).toLocaleDateString("fr-FR", { day:"numeric", month:"long", year:"numeric" });
+function reperesHTML(p){
+  const j = p.jeu || {}, R = [];
+  if (j.joueurs_max) R.push([`${j.joueurs_min && j.joueurs_min !== j.joueurs_max ? j.joueurs_min + " à " : ""}${j.joueurs_max}`, `joueur${j.joueurs_max > 1 ? "s" : ""}${j.effectif ? `, idéal à ${j.effectif}` : ""}`]);
+  if (j.duree_max) R.push([`${j.duree_min && j.duree_min !== j.duree_max ? j.duree_min + " à " : ""}${j.duree_max} min`, "par partie"]);
+  if (j.prix) R.push([`${Math.round(j.prix)} €`, "environ, en boutique"]);
+  const v = p.vie;
+  if (v) R.push(v.classique ? ["Un classique", "on ne le range pas"] : v.abandon ? [`≈ ${v.sessions} parties`, "puis il lasse"] : [`≈ ${v.sessions} parties`, v.heures ? `soit ${v.heures} heures de jeu` : "avant de le ranger"]);
+  if (p.cout) R.push([`${p.cout.classique ? "< " : ""}${euros(p.cout.parPartie)}`, `par partie${p.cout.parHeure != null ? `, ${euros(p.cout.parHeure)} de l'heure` : ""}`]);
+  return R.length ? `<div class="reperes">${R.map(([b, s]) => `<div class="repere"><b>${esc(b)}</b><span>${esc(s)}</span></div>`).join("")}</div>` : "";
+}
+// la vie du jeu : le plaisir (flow, sur 10) d'un jalon à l'autre, de la vitrine à l'étagère
+function courbeHTML(p, nom){
+  const c = p.courbe; if (!c || !c.y?.length) return "";
+  const fin = c.omega != null ? c.omega : c.y.length - 1, W = 720, H = 250, g = 46, d = 18, h = 26, b = 58;
+  const ys = c.y.slice(0, fin + 1).map(v => v ?? 0), lo = Math.min(0, ...ys), hi = Math.max(10, ...ys);
+  const X = i => g + i * (W - g - d) / (c.y.length - 1), Y = v => h + (hi - v) * (H - h - b) / (hi - lo);
+  const pts = ys.map((v, i) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(" ");
+  const aire = `${X(0)},${Y(Math.max(lo, 0))} ${pts} ${X(fin)},${Y(Math.max(lo, 0))}`;
+  const grille = [0, 5, 10].map(v => `<line x1="${g}" x2="${W - d}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--trait)"/><text x="${g - 8}" y="${Y(v) + 4}" text-anchor="end" font-size="12" fill="var(--doux)">${v}</text>`).join("");
+  const etiquettes = c.jalons.map((n, i) => `<text x="${X(i)}" y="${H - b + 20}" text-anchor="middle" font-size="12.5" fill="var(--encre)">${esc(n)}</text>` +
+    (c.N && c.N[i] != null && i >= 3 && i <= fin ? `<text x="${X(i)}" y="${H - b + 37}" text-anchor="middle" font-size="11" fill="var(--doux)">${c.N[i] < 10 ? nombre(c.N[i], 0) : Math.round(c.N[i])} p.</text>` : "")).join("");
+  const a = c.alpha;
+  const apogee = a != null && a <= fin ? `<circle cx="${X(a)}" cy="${Y(ys[a])}" r="7" fill="var(--jeton)" stroke="var(--encre)" stroke-width="2"/>` : "";
+  const v = p.vie, phrase = !v ? "" : `Le plaisir monte jusqu'à son sommet${v.apogee?.sessions ? ` vers la ${Math.max(1, Math.round(v.apogee.sessions))}e partie` : ""}, puis ${v.classique ? "il se maintient : c'est un classique" : v.abandon ? `retombe vite : on le lâche vers ${v.sessions} parties` : `décline : on le range après ${v.sessions} parties environ`}.`;
+  return `<section class="vie-jeu"><h2>La vie du jeu</h2><p>${esc(phrase)} Calcul PRISME, d'après les notes de l'évaluation ; « p. » = parties jouées.</p>
+    <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc("Courbe de vie de " + nom + ". " + phrase)}">${grille}
+      <polygon points="${aire}" fill="var(--table)" opacity=".12"/><polyline points="${pts}" fill="none" stroke="var(--table)" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>${apogee}${etiquettes}
+      <text x="${g}" y="${h - 10}" text-anchor="start" font-size="11" fill="var(--doux)">plaisir, sur 10</text></svg></section>`;
+}
+(async () => {
+  const id = new URLSearchParams(location.search).get("id");
+  const box = $("#article");
+  if (!id){ box.innerHTML = `<p class="vide" style="margin-top:20px">Aucun article choisi. <a href="index.html">Voir tous les jeux</a>.</p>`; return; }
+  try {
+    const [p] = await lirePublications(id);
+    if (!p){ box.innerHTML = `<p class="vide" style="margin-top:20px">Cet article n'est pas (ou plus) publié. <a href="index.html">Voir tous les jeux</a>.</p>`; return; }
+    const a = lireArticle(p.article), pub = p.publication || {}, titre = a.titre || p.nom;
+    document.title = `go2games — ${titre}`;
+    box.innerHTML = `<div class="tete">${p.image_url ? `<img src="${esc(p.image_url)}" alt="La boîte de ${esc(p.nom)}" referrerpolicy="no-referrer">` : ""}
+      <div><h1>${esc(titre)}</h1>
+        <p class="par">${esc(p.nom)}${configTexte(p.configuration) ? ", " + esc(configTexte(p.configuration).toLowerCase()) : ""}. Évalué par ${esc(pub.auteur || "l'équipe")}, le ${esc(moisFr(p.publie_le))}.</p>
+        <div class="notes">${jetonHTML(pub.note)}
+          <div class="chapitres">${(pub.chapitres || []).filter(c => c.note != null).map(c => `<div class="chapitre"><span>${esc(c.nom)}</span><span class="barre"><span style="width:${Math.max(0, Math.min(100, c.note * 20))}%"></span></span><span>${nombre(c.note)}</span></div>`).join("")}</div></div>
+      </div></div>
+      ${reperesHTML(pub)}
+      <div class="texte">${a.corps}</div>
+      ${courbeHTML(pub, p.nom)}`;
+  } catch (e){ box.innerHTML = `<p class="vide" style="margin-top:20px">L'article n'a pas pu être chargé (${esc(e.message)}). Recharge la page dans un instant.</p>`; }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>go2games — des jeux de société évalués à fond</title>
+<meta name="description" content="Des jeux de société évalués à fond : ce qu'ils valent, pour qui, et combien de temps ils tiendront.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="vitrine.css?v=1.0">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
+</head>
+<body>
+<header class="haut" id="haut"></header>
+<main>
+  <p class="demo">Site de démonstration</p>
+  <section class="accroche">
+    <div>
+      <h1>Des jeux de société évalués à fond</h1>
+      <p>Ce qu'ils valent, pour qui, et combien de temps ils tiendront sur votre table. Chaque jeu passe par la même grille, puis par la plume de son évaluateur.</p>
+    </div>
+    <div class="pile" id="pile" aria-hidden="true"></div>
+  </section>
+  <div class="chercher"><input type="search" id="q" placeholder="Chercher un jeu" aria-label="Chercher un jeu"><span id="compte"></span></div>
+  <section class="jeux" id="jeux" aria-live="polite"><p class="vide">Chargement des jeux…</p></section>
+</main>
+<footer class="pied" id="pied"></footer>
+<script src="vitrine.js?v=1.0"></script>
+<script>
+$("#haut").innerHTML = enTete(); $("#pied").innerHTML = piedHTML();
+let JEUX = [];
+function afficher(){
+  const q = norm($("#q").value.trim());
+  const L = JEUX.filter(j => !q || norm(j.nom + " " + j.texte).includes(q));
+  $("#compte").textContent = q ? `${L.length} sur ${JEUX.length}` : `${JEUX.length} jeu${JEUX.length > 1 ? "x" : ""}`;
+  $("#jeux").innerHTML = L.length ? L.map(j => `<a class="jeu" href="article.html?id=${encodeURIComponent(j.id)}">
+      <div class="visuel">${j.image_url ? `<img src="${esc(j.image_url)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ""}${jetonHTML(j.publication?.note)}</div>
+      <div class="corps"><h2>${esc(j.titre || j.nom)}</h2>${configTexte(j.configuration) ? `<span class="config">${esc(configTexte(j.configuration))}</span>` : ""}
+        <p>${esc(j.resume)}</p><span class="vie">${esc(texteVie(j.publication?.vie))}</span></div></a>`).join("")
+    : `<p class="vide">${q ? "Aucun jeu ne correspond à cette recherche." : "Aucun article publié pour l'instant."}</p>`;
+}
+(async () => {
+  try {
+    JEUX = (await lirePublications()).map(j => { const a = lireArticle(j.article); return { ...j, titre: a.titre, texte: a.texte, resume: resume(j.article) }; });
+    $("#pile").innerHTML = JEUX.filter(j => j.image_url).slice(0, 3).map(j => `<img src="${esc(j.image_url)}" alt="" referrerpolicy="no-referrer">`).join("");
+    afficher();
+  } catch (e){ $("#jeux").innerHTML = `<p class="vide">Les jeux n'ont pas pu être chargés (${esc(e.message)}). Recharge la page dans un instant.</p>`; }
+})();
+$("#q").addEventListener("input", afficher);
+</script>
+</body>
+</html>

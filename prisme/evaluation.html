@@ -221,7 +221,10 @@ details.article-bloc > summary .etat-art{font-size:13px;color:var(--muted)}
 .article-ed .consigne{color:var(--muted);font-style:italic}
 .article-ed::after{content:"";display:block;clear:both}
 .art-aide{font-size:13px;color:var(--muted);margin:8px 0 0}
-.badge.art{color:var(--accent)}
+.badge.art{color:var(--accent)} .badge.pub{color:var(--ok)}
+.art-pub{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin:10px 0 0;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--paper);font-size:14px}
+.art-pub label{display:flex;gap:7px;align-items:center;font-weight:500}
+.art-pub .aide{margin:0;font-size:13px}
 .ch-configuration input{width:220px!important}
 .ecart-saisi{font:700 16px var(--sans);color:var(--ocre,#B4532A);min-width:2.8em;text-align:left}
 .retenue{font:500 13.5px var(--sans);color:var(--chap);text-align:right;margin-top:2px;min-height:1.2em} .retenue b{font-size:16px}
@@ -288,7 +291,7 @@ details.article-bloc > summary .etat-art{font-size:13px;color:var(--muted)}
 
 <script src="timeline.js?v=3.9"></script>
 <script>
-const VERSION = { numero:"3.32", date:"2026-10-19 00:10" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.33", date:"2026-10-19 10:30" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -363,6 +366,8 @@ async function demarrer(){
   M.paires.sort((a, b) => M.chapitres.find(c => c.code === a.chapitre).ordre - M.chapitres.find(c => c.code === b.chapitre).ordre || a.ordre - b.ordre);
   remplirJeux(); await chargerFiches();
   ARTICLE_OK = toutes.length ? "article" in toutes[0] : !(await sb.from("prisme_evaluations").select("article").limit(1)).error;
+  PUBLI_OK = toutes.length ? "publie" in toutes[0] : !(await sb.from("prisme_evaluations").select("publie").limit(1)).error;
+  await completerInstantanes();
   afficherFiches();
   const P = new URLSearchParams(location.search), q = P.get("jeu"), qc = (P.get("config") || "").trim() || null;
   if (q && M.jeux.some(j => j.code === q)){
@@ -410,7 +415,7 @@ function afficherFiches(){
   const k = cles[tri.cle]; R.sort((a, b) => { const u = k(a), v = k(b); return (u < v ? -1 : u > v ? 1 : 0) * tri.sens; });
   const th = (cle, t) => `<th data-tri="${cle}">${t}${tri.cle === cle ? `<span class="sens">${tri.sens > 0 ? "▲" : "▼"}</span>` : ""}</th>`;
   $("#fiches").innerHTML = `<table class="fiches"><thead><tr>${th("jeu","Jeu")}${th("eval","Évaluateur")}${th("etat","État")}${th("paires","Paires")}${th("note","Note finale")}${th("modifie","Modifiée")}</tr></thead><tbody>
-    ${R.map(({ e, c }) => `<tr class="f" data-id="${esc(e.id)}"><td><b>${esc(nomJeu(e.jeu))}</b>${cfgDe(e) ? ` <span class="cfg-nom">— ${esc(cfgDe(e))}</span>` : ""}${estClaude(e) ? ' <span class="badge" title="Pré-remplie par Claude, à revoir">Claude</span>' : ""}${aUnArticle(e) ? ' <span class="badge art" title="Un article est rédigé">article</span>' : ""}</td><td>${esc(nomDe(e.evaluateur))}</td>
+    ${R.map(({ e, c }) => `<tr class="f" data-id="${esc(e.id)}"><td><b>${esc(nomJeu(e.jeu))}</b>${cfgDe(e) ? ` <span class="cfg-nom">— ${esc(cfgDe(e))}</span>` : ""}${estClaude(e) ? ' <span class="badge" title="Pré-remplie par Claude, à revoir">Claude</span>' : ""}${aUnArticle(e) ? ' <span class="badge art" title="Un article est rédigé">article</span>' : ""}${e.publie ? ' <span class="badge pub" title="Publiée sur la vitrine go2games">vitrine</span>' : ""}</td><td>${esc(nomDe(e.evaluateur))}</td>
       <td><span class="badge ${esc(e.statut)}">${e.statut === "finale" ? "finale" : "brouillon"}</span></td><td style="white-space:nowrap">${c.faites} / ${M.paires.length}</td>
       <td>${c.finale == null ? "—" : fmt(c.finale, 2)}</td><td style="white-space:nowrap">${new Date(e.modifie_le).toLocaleString("fr-FR", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" })}</td></tr>`).join("")}</tbody></table>`;
   document.querySelectorAll("#fiches tr.f").forEach(tr => tr.addEventListener("click", () => ouvrirFiche(toutes.find(e => e.id === tr.dataset.id))));
@@ -975,6 +980,8 @@ async function enregistrer(){
   if (lectureSeule) return;
   const champs = Object.fromEntries(CHAMPS.map(k => [k, fiche[k] ?? null])); champs.contenu_unique = !!fiche.contenu_unique; champs.configuration = cfgDe(fiche);
   if (ARTICLE_OK) champs.article = fiche.article ?? null;   // (3.32) script 40
+  if (PUBLI_OK){ champs.publie = !!fiche.publie; champs.publie_le = fiche.publie_le ?? null;   // (3.33) script 41 : l'instantané suit chaque enregistrement
+    if (fiche.publie) champs.publication = publicationDe(fiche, saisie); }
   if (!fiche.id){
     const { data, error } = await sb.from("prisme_evaluations").insert({ jeu: fiche.jeu, statut: fiche.statut, version_appli: VERSION.numero, notes_article: fiche.notes_article ?? null, ...champs }).select();
     if (error){ $("#etat").textContent = "Création de la fiche refusée : " + error.message; return; }
@@ -1163,6 +1170,9 @@ function blocArticle(jeu){
       b("removeFormat", "Effacer la forme", "Retire gras, italique… du texte sélectionné") + '<span class="sep"></span>'}
       ${b("copier", "Copier pour Word", "Copie l'article mis en forme : colle-le dans Word, Google Docs ou un mail")}${b("telecharger", "Télécharger", "Un fichier que Word ouvre directement")}</div>
     <div class="article-ed" id="article-ed" ${ro ? "" : 'contenteditable="true"'} data-vide="${ro ? "Pas encore d'article." : "Écris ton article ici, ou clique sur « Préparer l'article » pour partir de l'encadré PRISME et d'un plan."}">${nettoyer(fiche.article)}</div>
+    ${PUBLI_OK ? `<div class="art-pub"><label><input type="checkbox" id="art-publie" ${fiche.publie ? "checked" : ""} ${ro ? "disabled" : ""}> Publié sur la vitrine go2games</label>
+      <a href="../go2games/article.html?id=${esc(fiche.id || "")}" target="_blank" rel="noopener" id="art-voir" class="${fiche.publie && fiche.id ? "" : "hidden"}">Voir sur la vitrine ↗</a>
+      <span class="aide">La vitrine est lisible sans compte : elle montre l'article, l'image du jeu et l'encadré PRISME (note, durée de vie, coût), jamais le carnet ni les justifications.</span></div>` : ""}
     <p class="art-aide">Enregistré automatiquement, comme le reste de la fiche. ${ro ? "" : "Les textes en gris du plan sont des consignes : remplace-les. "}Les intertitres sont libres : mets les tiens. <a href="guide.html" target="_blank" rel="noopener">Le guide en cinq étapes</a>.</p></details>`;
 }
 // l'encadré PRISME : ce que la fiche sait du jeu, en langage de joueur
@@ -1291,6 +1301,42 @@ $("#grille").addEventListener("paste", e => {   // collage depuis Word ou le web
 });
 $("#grille").addEventListener("toggle", e => { if (e.target.id === "article") try { localStorage.setItem("prisme_article", e.target.open ? "ouvert" : "ferme"); } catch (x){} }, true);
 $("#btn-article").addEventListener("click", () => { const a = $("#article"); if (a){ a.open = true; a.scrollIntoView({ behavior:"smooth" }); } });
+
+/* ---------------- la vitrine go2games (3.33, 19/10/2026, script 41) ----------------
+   Publier = la fiche sort dans la vue publique prisme_vitrine, avec un instantané calculé ici : la vitrine ne lit ni les notes
+   des axes ni le modèle, seulement ce résumé. Il est recalculé à chaque enregistrement d'une fiche publiée. */
+let PUBLI_OK = false;
+function publicationDe(f, s){
+  const c = calculer(s), e = entreesFiche(s, M.paires, M.axes, { contenu_parties:f.contenu_parties, contenu_unique:f.contenu_unique, prix:f.prix });
+  const tl = e.manque.length ? null : flowJeu(e.n), k = tl ? coutParPartie(f.prix, tl, f.duree_min, f.duree_max) : null;
+  const h = [f.duree_min, f.duree_max].map(Number).filter(v => v > 0), hm = h.length ? h.reduce((a, b) => a + b, 0) / h.length / 60 : null;
+  const fini = v => Number.isFinite(v) ? Math.round(v * 100) / 100 : null;
+  return { v:1, maj: new Date().toISOString(), auteur: noms[f.evaluateur] || null,
+    jeu: { joueurs_min:f.joueurs_min ?? null, joueurs_max:f.joueurs_max ?? null, effectif:f.effectif_reference ?? null, duree_min:f.duree_min ?? null, duree_max:f.duree_max ?? null, prix:f.prix ?? null, pages:f.pages ?? null },
+    note: fini(c.finale), chapitres: M.chapitres.map(ch => ({ nom:ch.nom, note:fini(c.chap[ch.code]) })),
+    vie: tl ? { sessions: tl.vie == null ? null : Math.round(tl.vie), classique: tl.vie == null, abandon: tl.omega != null, epuise: !!tl.epuise,
+      heures: tl.vie != null && hm ? Math.round(tl.vie * hm) : null, apogee: { jalon: tl.alpha, sessions: fini(tl.N[tl.alpha]), flow: fini(tl.y[tl.alpha]) } } : null,
+    courbe: tl ? { y: tl.y.map(fini), N: tl.N.map(fini), jalons: JALONS.map(j => j.nom), alpha: tl.alpha, omega: tl.omega ?? null } : null,
+    cout: k ? { parPartie: fini(k.parPartie), parHeure: fini(k.parHeure), classique: k.classique } : null };
+}
+// fiches publiées sans instantané (pré-publiées par SQL) : on le calcule à l'ouverture, pour ses propres fiches
+async function completerInstantanes(){
+  if (!PUBLI_OK || !["proprietaire","editeur","evaluateur"].includes(role)) return;
+  const L = toutes.filter(e => e.publie && !e.publication && e.evaluateur === user.id);
+  for (const e of L){
+    const pub = publicationDe(e, saisieDe(e.id));
+    const { error } = await sb.from("prisme_evaluations").update({ publication: pub }).eq("id", e.id);
+    if (!error) e.publication = pub;
+  }
+}
+$("#grille").addEventListener("change", e => {
+  if (e.target.id !== "art-publie" || lectureSeule) return;
+  if (e.target.checked && !aUnArticle(fiche)){ e.target.checked = false; $("#etat").textContent = "Écris d'abord l'article : la vitrine ne publie que des articles."; return; }
+  fiche.publie = e.target.checked; if (fiche.publie && !fiche.publie_le) fiche.publie_le = new Date().toISOString();
+  ficheModifiee = true; planifier();
+  const voir = $("#art-voir"); if (voir){ voir.classList.toggle("hidden", !fiche.publie); if (fiche.id) voir.href = "../go2games/article.html?id=" + fiche.id; }
+  $("#etat").textContent = fiche.publie ? "Publication sur la vitrine…" : "Retirée de la vitrine.";
+});
 
 /* ---------------- récapitulatif et export ---------------- */
 function lignesRecap(){

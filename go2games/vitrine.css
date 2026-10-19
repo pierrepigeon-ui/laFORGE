@@ -1,0 +1,84 @@
+/* go2games — vitrine de démonstration (19/10/2026). Identité provisoire, distincte de PRISME. */
+:root{
+  --encre:#1D2433; --doux:#56607A; --fond:#FFFFFF; --table:#0E5E6F; --table-clair:#E3F0F2;
+  --jeton:#F2B33D; --jeton-encre:#4A3405; --de:#C2364A; --trait:#DDE3E8;
+  --titre:"Bricolage Grotesque","Segoe UI",Arial,sans-serif; --texte:"Literata",Georgia,serif;
+}
+@media (prefers-color-scheme: dark){:root{
+  --encre:#E8ECF3; --doux:#A3ADBF; --fond:#121722; --table:#3FA3B5; --table-clair:#18323A;
+  --jeton:#F2B33D; --jeton-encre:#3A2904; --de:#F07A8A; --trait:#2A3344;
+}}
+*{box-sizing:border-box} html,body{margin:0}
+body{background:var(--fond);color:var(--encre);font:17px/1.65 var(--texte)}
+a{color:inherit} :focus-visible{outline:3px solid var(--jeton);outline-offset:2px}
+img{max-width:100%}
+.haut{background:var(--table);color:#fff}
+.haut .bande{max-width:1080px;margin:0 auto;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.logo{font:800 26px/1 var(--titre);letter-spacing:-.02em;text-decoration:none;color:#fff;display:flex;align-items:center;gap:10px}
+.logo svg{width:30px;height:30px}
+.haut nav a{font:600 15px var(--titre);color:#fff;text-decoration:none;border:2px solid rgba(255,255,255,.55);border-radius:999px;padding:6px 14px}
+.haut nav a:hover{background:rgba(255,255,255,.12)}
+main{max-width:1080px;margin:0 auto;padding:0 20px 40px}
+.demo{font:500 13px var(--titre);color:var(--doux);margin:10px 0 0}
+h1,h2,h3{font-family:var(--titre);letter-spacing:-.015em;line-height:1.15}
+.accroche{display:grid;grid-template-columns:1.3fr 1fr;gap:32px;align-items:center;padding:42px 0 30px}
+.accroche h1{font-size:clamp(34px,5vw,54px);font-weight:800;margin:0 0 14px}
+.accroche p{font-size:19px;color:var(--doux);margin:0;max-width:52ch}
+.pile{position:relative;height:280px}
+.pile img{position:absolute;width:44%;aspect-ratio:1;object-fit:cover;border-radius:10px;box-shadow:0 14px 30px rgba(14,94,111,.28);background:var(--table-clair)}
+.pile img:nth-child(1){left:4%;top:16%;transform:rotate(-8deg)}
+.pile img:nth-child(2){left:28%;top:2%;transform:rotate(3deg)}
+.pile img:nth-child(3){left:52%;top:22%;transform:rotate(10deg)}
+.chercher{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:6px 0 20px}
+.chercher input{flex:1 1 260px;font:16px var(--titre);padding:11px 14px;border:2px solid var(--trait);border-radius:10px;background:var(--fond);color:var(--encre)}
+.chercher span{font:500 14px var(--titre);color:var(--doux)}
+.jeux{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:22px}
+.jeu{display:flex;flex-direction:column;text-decoration:none;border-radius:14px;border:2px solid var(--trait);overflow:hidden;background:var(--fond)}
+.jeu:hover{border-color:var(--table)}
+.jeu .visuel{position:relative;aspect-ratio:4/3;background:var(--table-clair)}
+.jeu .visuel img{width:100%;height:100%;object-fit:cover;display:block}
+.jeu .corps{padding:14px 16px 16px;display:flex;flex-direction:column;gap:6px;flex:1}
+.jeu h2{font-size:21px;margin:0}
+.jeu .config{font:500 14px var(--titre);color:var(--doux)}
+.jeu p{margin:0;font-size:15.5px;color:var(--doux)}
+.jeu .vie{margin-top:auto;font:600 14px var(--titre);color:var(--table)}
+/* le jeton : la note, comme un pion posé sur la boîte */
+.jeton{display:inline-grid;place-items:center;width:64px;height:64px;border-radius:50%;background:var(--jeton);color:var(--jeton-encre);
+  font:800 21px/1 var(--titre);box-shadow:inset 0 -4px 0 rgba(0,0,0,.18),0 4px 10px rgba(0,0,0,.18)}
+.jeton small{display:block;font-size:11px;font-weight:600;margin-top:2px}
+.jeu .jeton{position:absolute;right:12px;top:12px}
+.vide{padding:30px;border:2px dashed var(--trait);border-radius:14px;color:var(--doux);font-family:var(--titre)}
+/* l'article */
+.retour{display:inline-block;margin:22px 0 0;font:600 15px var(--titre);text-decoration:none;color:var(--table)}
+.tete{display:grid;grid-template-columns:260px 1fr;gap:28px;align-items:center;margin:20px 0 26px}
+.tete img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:14px;background:var(--table-clair)}
+.tete h1{font-size:clamp(28px,4.2vw,44px);font-weight:800;margin:0 0 8px}
+.tete .par{font:500 15px var(--titre);color:var(--doux);margin:0 0 16px}
+.notes{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.notes .jeton{width:84px;height:84px;font-size:27px}
+.chapitres{display:grid;gap:6px;min-width:220px;flex:1;max-width:340px;font:500 14px var(--titre)}
+.chapitre{display:grid;grid-template-columns:96px 1fr 34px;gap:8px;align-items:center}
+.chapitre .barre{height:8px;border-radius:4px;background:var(--trait);overflow:hidden}
+.chapitre .barre span{display:block;height:100%;background:var(--table)}
+.reperes{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 30px}
+.repere{flex:1 1 150px;background:var(--fond);padding:12px 16px;border:2px solid var(--trait);border-radius:12px}
+.repere b{display:block;font:700 19px var(--titre)}
+.repere span{font:500 13.5px var(--titre);color:var(--doux)}
+.texte{max-width:68ch}
+.texte h2{font-size:25px;margin:30px 0 8px}
+.texte h3{font-size:20px;margin:24px 0 6px}
+.texte p{margin:0 0 14px}
+.texte img{border-radius:8px;height:auto}
+.texte blockquote{margin:16px 0;padding:4px 18px;border-left:4px solid var(--jeton)}
+.vie-jeu{max-width:760px;margin:36px 0 0}
+.vie-jeu h2{font-size:25px;margin:0 0 4px}
+.vie-jeu p{color:var(--doux);margin:0 0 10px;font-size:15.5px}
+.vie-jeu svg{width:100%;height:auto;display:block}
+.pied{max-width:1080px;margin:0 auto;padding:22px 20px 34px;border-top:2px solid var(--trait);font:500 14px var(--titre);color:var(--doux);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+@media (max-width:760px){
+  .accroche{grid-template-columns:1fr;padding-top:28px}
+  .pile{height:200px}
+  .tete{grid-template-columns:1fr}
+  .tete img{max-width:240px}
+}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
