@@ -83,7 +83,7 @@ dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);c
 <p class="bloque" id="bloque">Chargement…</p>
 <main class="app hidden" id="app">
   <h1>Comparaison de profils</h1>
-  <p class="chapo">Ajoutez deux profils ou plus : ce qui s'accorde, ce qui discorde, le profil moyen du groupe et la distance de chacun à ce profil. Un seul profil peut être désigné comme <b>profil d'autorité</b> (une direction, une entreprise, un responsable) : chacun, et la moyenne du groupe, lui est alors aussi comparé.</p>
+  <p class="chapo">Ajoutez deux profils ou plus : ce qui s'accorde, ce qui discorde, le profil moyen du groupe et la distance de chacun à ce profil. Un seul profil peut être désigné comme <b>profil d'autorité</b> (une direction, une entreprise, un responsable) : chacun, et la moyenne du groupe, lui est alors aussi comparé. Avec une seule personne et un profil d'autorité, la page les compare directement l'une à l'autre.</p>
   <section class="carte" id="choix">
     <h2>Les profils comparés</h2>
     <div class="ajout">
@@ -115,7 +115,7 @@ dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);c
    - profil d'autorité : chacun et la moyenne lui sont comparés de la même façon.
    Sources : ses résultats, profils types, scores saisis ; le catalogue pour éditeurs et propriétaire ; tous les résultats pour le propriétaire.
    ===================================================================== */
-const VERSION = { numero:"1.1", date:"2026-10-17 19:50" };
+const VERSION = { numero:"1.2", date:"2026-10-19 17:20" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const M = window.FLAMME_MOTEUR;
@@ -228,6 +228,45 @@ function ligneDistance(p, ref, nomRef){
     ${Math.abs(pr.top.d) < 5 ? "Aucune pression notable." : `Pression principale : ${sens} <b>${esc(NOMS_VAL[pr.top.c])}</b> (écart de ${Math.round(Math.abs(pr.top.d))} pts) —
     ${Math.abs(pr.top.d) > 30 ? "sous une poussée colossale (30 pts), " : ""}${pr.tient ? '<span class="ok">le profil tient</span>' : `le profil bascule vers <b>${esc(E[pr.apres]?.nom || pr.apres)}</b>`}.`}</li>`;
 }
+// accords et discordes au sein d'une liste de profils (le groupe, ou une personne face à l'autorité)
+// une personne (ou la moyenne) face à l'autorité, en une ligne : valeurs en accord, valeurs en discorde
+function ligneDuel(p, A){
+  const acc = M.ORDRE.filter(c => (p.scores[c] >= SEUILS.accordHaut && A.scores[c] >= SEUILS.accordHaut) || (p.scores[c] <= SEUILS.accordBas && A.scores[c] <= SEUILS.accordBas));
+  const dis = M.ORDRE.map(c => ({ c, d: p.scores[c] - A.scores[c] })).filter(x => Math.abs(x.d) >= SEUILS.discorde).sort((a, b) => Math.abs(b.d) - Math.abs(a.d));
+  const miroir = p.motDom.filter(c => A.motFaib.includes(c)).concat(A.motDom.filter(c => p.motFaib.includes(c)));
+  return `<li><span class="pastille" style="background:${p.teinte};display:inline-grid;width:18px;height:18px;font-size:10px;vertical-align:-3px">${esc(initiales(p.nom))}</span> <b>${esc(p.nom)}</b> :
+    ${acc.length ? `accord sur ${acc.map(c => `<b>${esc(NOMS_VAL[c])}</b>`).join(", ")}` : "aucun accord"} ;
+    ${dis.length ? `discorde sur ${dis.map(x => `<b>${esc(NOMS_VAL[x.c])}</b> (${x.d > 0 ? "+" : "−"}${Math.round(Math.abs(x.d))})`).join(", ")}` : "aucune discorde"}${miroir.length ? ` ; motivations en miroir : ${miroir.map(c => esc(E[c]?.nom || c)).join(", ")}` : ""}.</li>`;
+}
+function confronter(L){
+  const tous = L.length === 2 ? "chez les deux" : "chez tous";
+  // accords et discordes sur les valeurs
+  const accords = [], discordes = [];
+  M.ORDRE.forEach(c => {
+    const v = L.map(p => p.scores[c]), mn = Math.min(...v), mx = Math.max(...v);
+    if (L.length > 1 && mn >= SEUILS.accordHaut) accords.push(`<b>${esc(NOMS_VAL[c])}</b> est présent ${tous} (de ${Math.round(mn)} à ${Math.round(mx)} %).`);
+    else if (L.length > 1 && mx <= SEUILS.accordBas) accords.push(`<b>${esc(NOMS_VAL[c])}</b> est discret ${tous} (de ${Math.round(mn)} à ${Math.round(mx)} %) : un point commun en creux.`);
+    if (mx - mn >= SEUILS.discorde){ const h = L.filter(p => p.scores[c] === mx)[0], b = L.filter(p => p.scores[c] === mn)[0];
+      discordes.push(`<b>${esc(NOMS_VAL[c])}</b> : ${Math.round(mx - mn)} points d'écart, de ${esc(h.nom)} (${Math.round(mx)} %) à ${esc(b.nom)} (${Math.round(mn)} %).`); }
+  });
+  // motivations et projets communs
+  const communs = (k) => L.length ? L[0][k].filter(c => L.every(p => p[k].includes(c))) : [];
+  communs("motDom").forEach(c => accords.push(`Motivation dominante commune : <b>${esc(E[c]?.nom || c)}</b>.`));
+  communs("projet").forEach(c => accords.push(`Projet le plus fort commun : <b>${esc(E[c]?.nom || c)}</b>.`));
+  communs("motFaib").forEach(c => accords.push(`Motivation peu présente ${tous} : <b>${esc(E[c]?.nom || c)}</b>.`));
+  // tensions entre valeurs fortes ennemies, et motivations opposées
+  const paires = [];
+  for (let i = 0; i < L.length; i++) for (let j = i + 1; j < L.length; j++){
+    const p = L[i], q = L[j], items = [];
+    const fp = M.ORDRE.filter(c => p.scores[c] >= SEUILS.accordHaut), fq = M.ORDRE.filter(c => q.scores[c] >= SEUILS.accordHaut);
+    fp.forEach(a => fq.forEach(b => { if (ennemies(a, b) && !(q.scores[a] >= SEUILS.accordHaut) && !(p.scores[b] >= SEUILS.accordHaut))
+      items.push(`<b>${esc(NOMS_VAL[a])}</b> (${esc(p.nom)}) face à <b>${esc(NOMS_VAL[b])}</b> (${esc(q.nom)}), valeurs opposées`); }));
+    p.motDom.filter(c => q.motFaib.includes(c)).forEach(c => items.push(`<b>${esc(E[c]?.nom || c)}</b> anime ${esc(p.nom)} et coûte à ${esc(q.nom)}`));
+    q.motDom.filter(c => p.motFaib.includes(c)).forEach(c => items.push(`<b>${esc(E[c]?.nom || c)}</b> anime ${esc(q.nom)} et coûte à ${esc(p.nom)}`));
+    if (items.length) paires.push(`<li><b>${esc(p.nom)} et ${esc(q.nom)}</b> : ${items.join(" ; ")}.</li>`);
+  }
+  return { accords, discordes, paires };
+}
 function analyser(){
   const R = $("#resultat");
   if (MEMBRES.length < 2){ R.innerHTML = MEMBRES.length ? '<p class="vide">Ajoutez au moins un deuxième profil pour lancer la comparaison.</p>' : ""; return; }
@@ -236,32 +275,8 @@ function analyser(){
   if (G.length < 2 && !A){ R.innerHTML = ""; return; }
   const moyS = Object.fromEntries(M.ORDRE.map(c => [c, G.reduce((t, p) => t + p.scores[c], 0) / G.length]));
   const MOY = infos({ id: 0, nom: "Moyenne du groupe", scores: moyS, teinte: "#1B2430" });
-  const tous = A ? [...G, A] : G;
-  // accords et discordes sur les valeurs
-  const accords = [], discordes = [];
-  M.ORDRE.forEach(c => {
-    const v = G.map(p => p.scores[c]), mn = Math.min(...v), mx = Math.max(...v);
-    if (G.length > 1 && mn >= SEUILS.accordHaut) accords.push(`<b>${esc(NOMS_VAL[c])}</b> est présent chez tous (de ${Math.round(mn)} à ${Math.round(mx)} %).`);
-    else if (G.length > 1 && mx <= SEUILS.accordBas) accords.push(`<b>${esc(NOMS_VAL[c])}</b> est discret chez tous (de ${Math.round(mn)} à ${Math.round(mx)} %) : un point commun en creux.`);
-    if (mx - mn >= SEUILS.discorde){ const h = G.filter(p => p.scores[c] === mx)[0], b = G.filter(p => p.scores[c] === mn)[0];
-      discordes.push(`<b>${esc(NOMS_VAL[c])}</b> : ${Math.round(mx - mn)} points d'écart, de ${esc(h.nom)} (${Math.round(mx)} %) à ${esc(b.nom)} (${Math.round(mn)} %).`); }
-  });
-  // motivations et projets communs
-  const communs = (k) => G.length ? G[0][k].filter(c => G.every(p => p[k].includes(c))) : [];
-  communs("motDom").forEach(c => accords.push(`Motivation dominante commune : <b>${esc(E[c]?.nom || c)}</b>.`));
-  communs("projet").forEach(c => accords.push(`Projet le plus fort commun : <b>${esc(E[c]?.nom || c)}</b>.`));
-  communs("motFaib").forEach(c => accords.push(`Motivation peu présente chez tous : <b>${esc(E[c]?.nom || c)}</b>.`));
-  // tensions entre valeurs fortes ennemies, et motivations opposées
-  const paires = [];
-  for (let i = 0; i < G.length; i++) for (let j = i + 1; j < G.length; j++){
-    const p = G[i], q = G[j], items = [];
-    const fp = M.ORDRE.filter(c => p.scores[c] >= SEUILS.accordHaut), fq = M.ORDRE.filter(c => q.scores[c] >= SEUILS.accordHaut);
-    fp.forEach(a => fq.forEach(b => { if (ennemies(a, b) && !(q.scores[a] >= SEUILS.accordHaut) && !(p.scores[b] >= SEUILS.accordHaut))
-      items.push(`<b>${esc(NOMS_VAL[a])}</b> (${esc(p.nom)}) face à <b>${esc(NOMS_VAL[b])}</b> (${esc(q.nom)}), valeurs opposées`); }));
-    p.motDom.filter(c => q.motFaib.includes(c)).forEach(c => items.push(`<b>${esc(E[c]?.nom || c)}</b> anime ${esc(p.nom)} et coûte à ${esc(q.nom)}`));
-    q.motDom.filter(c => p.motFaib.includes(c)).forEach(c => items.push(`<b>${esc(E[c]?.nom || c)}</b> anime ${esc(q.nom)} et coûte à ${esc(p.nom)}`));
-    if (items.length) paires.push(`<li><b>${esc(p.nom)} et ${esc(q.nom)}</b> : ${items.join(" ; ")}.</li>`);
-  }
+  const SEUL = G.length === 1 && !!A;   // une seule personne face à l'autorité : on les compare directement, sans « groupe » d'un seul
+  const { accords, discordes, paires } = confronter(SEUL ? [G[0], A] : G);
   // angles morts et porteurs uniques
   const morts = M.ORDRE.filter(c => G.every(p => p.scores[c] < 50));
   const uniques = M.ORDRE.map(c => [c, G.filter(p => p.scores[c] >= SEUILS.accordHaut)]).filter(([, l]) => l.length === 1 && G.length > 2);
@@ -273,13 +288,13 @@ function analyser(){
   const qs = s => M.ORDRE.map(c => `${c}=${encodeURIComponent(n1(s[c]).replace(",", "."))}`).join("&");
   R.innerHTML = `
     <section class="carte"><h2>Les scores</h2><div class="tableau"><table class="sc"><thead><tr><th></th>${M.ORDRE.map(c => `<th>${pips(c)} ${esc(NOMS_VAL[c])}</th>`).join("")}<th>Profil</th></tr></thead><tbody>
-      ${G.map(p => ligneSc(p)).join("")}${ligneSc(MOY, "moy")}${A ? ligneSc({ ...A, nom: A.nom + " (autorité)" }, "aut") : ""}</tbody></table></div></section>
+      ${G.map(p => ligneSc(p)).join("")}${SEUL ? "" : ligneSc(MOY, "moy")}${A ? ligneSc({ ...A, nom: A.nom + " (autorité)" }, "aut") : ""}</tbody></table></div></section>
     <div class="deux">
-      <section class="carte"><h2>Ce qui s'accorde</h2>${accords.length ? `<ul class="pts">${accords.map(x => `<li>${x}</li>`).join("")}</ul>` : '<p class="vide">Pas d\'accord net selon les seuils retenus.</p>'}</section>
-      <section class="carte"><h2>Ce qui discorde</h2>${discordes.length || paires.length ? `${discordes.length ? `<ul class="pts">${discordes.map(x => `<li>${x}</li>`).join("")}</ul>` : ""}
-        ${paires.length ? `<div class="etiq" style="font:600 12px var(--sans);letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-top:10px">Entre les personnes</div><ul class="pts">${paires.join("")}</ul>` : ""}` : '<p class="vide">Pas de discorde nette selon les seuils retenus.</p>'}</section>
+      <section class="carte"><h2>Ce qui s'accorde${SEUL ? " avec l'autorité" : ""}</h2>${accords.length ? `<ul class="pts">${accords.map(x => `<li>${x}</li>`).join("")}</ul>` : '<p class="vide">Pas d\'accord net selon les seuils retenus.</p>'}</section>
+      <section class="carte"><h2>Ce qui discorde${SEUL ? " avec l'autorité" : ""}</h2>${discordes.length || paires.length ? `${discordes.length ? `<ul class="pts">${discordes.map(x => `<li>${x}</li>`).join("")}</ul>` : ""}
+        ${paires.length ? `<div class="etiq" style="font:600 12px var(--sans);letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-top:10px">${SEUL ? "Motivations et valeurs en miroir" : "Entre les personnes"}</div><ul class="pts">${paires.join("")}</ul>` : ""}` : '<p class="vide">Pas de discorde nette selon les seuils retenus.</p>'}</section>
     </div>
-    <section class="carte"><h2>Le profil moyen du groupe</h2>
+    ${SEUL ? "" : `<section class="carte"><h2>Le profil moyen du groupe</h2>
       <div class="profil-moy">${pips(MOY.code)}<div><div class="n">${esc(E[MOY.code]?.nom || MOY.code)}</div><div class="d">${esc(E[MOY.code]?.devise || "")}</div></div>
         <span class="bande b-${bande(accMoy)}">${bande(accMoy)} (${pts(accMoy)})</span>
         <a class="btn ghost" href="portrait.html?${qs(MOY.scores)}" target="_blank">Portrait du profil moyen</a></div>
@@ -288,12 +303,14 @@ function analyser(){
       <ul class="pts">${G.map(p => ligneDistance(p, MOY, "le profil moyen")).join("")}</ul>
       ${morts.length ? `<p class="note"><b>Angle mort du groupe :</b> ${morts.map(c => esc(NOMS_VAL[c])).join(", ")} — personne ne porte cette valeur à 50 % ou plus.</p>` : ""}
       ${uniques.length ? `<p class="note"><b>Porté par une seule personne :</b> ${uniques.map(([c, l]) => `${esc(NOMS_VAL[c])} (${esc(l[0].nom)})`).join(", ")}.</p>` : ""}
-    </section>
+    </section>`}
     ${A ? `<section class="carte" style="border-color:#B98A00"><h2>Face au profil d'autorité : ${esc(A.nom)}</h2>
       <div class="profil-moy">${pips(A.code)}<div><div class="n">${esc(E[A.code]?.nom || A.code)}</div><div class="d">${esc(E[A.code]?.devise || "")}</div></div></div>
-      <ul class="pts">${G.map(p => ligneDistance(p, A, "le profil d'autorité")).join("")}${ligneDistance(MOY, A, "le profil d'autorité")}</ul>
-      <p class="note">${(() => { const big = M.ORDRE.map(c => ({ c, d: A.scores[c] - MOY.scores[c] })).filter(x => Math.abs(x.d) >= SEUILS.discorde);
-        return big.length ? `<b>Écarts entre l'autorité et le groupe :</b> ${big.map(x => `${esc(NOMS_VAL[x.c])} ${x.d > 0 ? "plus fort" : "plus faible"} chez l'autorité (${x.d > 0 ? "+" : "−"}${Math.round(Math.abs(x.d))} pts)`).join(" ; ")}.` : "Pas d'écart de 30 points ou plus entre l'autorité et la moyenne du groupe."; })()}</p>
+      <ul class="pts">${G.map(p => ligneDistance(p, A, "le profil d'autorité")).join("")}${SEUL ? "" : ligneDistance(MOY, A, "le profil d'autorité")}</ul>
+      ${SEUL ? "" : `<h2 style="margin-top:14px;font-size:16px">Accords et discordes de chacun avec l'autorité</h2>
+      <ul class="pts">${[...G, MOY].map(p => ligneDuel(p, A)).join("")}</ul>`}
+      ${SEUL ? "" : `<p class="note">${(() => { const big = M.ORDRE.map(c => ({ c, d: A.scores[c] - MOY.scores[c] })).filter(x => Math.abs(x.d) >= SEUILS.discorde);
+        return big.length ? `<b>Écarts entre l'autorité et le groupe :</b> ${big.map(x => `${esc(NOMS_VAL[x.c])} ${x.d > 0 ? "plus fort" : "plus faible"} chez l'autorité (${x.d > 0 ? "+" : "−"}${Math.round(Math.abs(x.d))} pts)`).join(" ; ")}.` : "Pas d'écart de 30 points ou plus entre l'autorité et la moyenne du groupe."; })()}</p>`}
     </section>` : ""}
     <p class="note">Repères : accord = valeur à ${SEUILS.accordHaut} % ou plus chez tous, ou à ${SEUILS.accordBas} % ou moins chez tous ; discorde = ${SEUILS.discorde} points d'écart ou plus.
       L'accessibilité dit à quel point un profil est naturel pour une personne, d'après ses propres scores. La pression applique la plus grande différence de valeur (plafonnée à 30 points) avec les règles de robustesse : la valeur la plus éloignée est poussée, les autres compensent.</p>`;
