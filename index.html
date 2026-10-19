@@ -28,7 +28,7 @@ a{color:inherit}
 .hero h1{font:600 clamp(36px,6vw,58px)/1.08 var(--serif);margin:0}
 .hero .signature{font:italic clamp(18px,2.4vw,22px)/1.45 var(--serif);color:var(--muted);margin:10px auto 0;max-width:40ch}
 .hero .actions{margin-top:22px}
-.portes{max-width:900px;margin:36px auto 0;padding:0 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
+.portes{max-width:900px;margin:36px auto 0;padding:0 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px}
 .porte{display:block;width:100%;max-width:440px;justify-self:center;text-decoration:none;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:28px 26px 24px;text-align:center;transition:border-color .15s,transform .15s}
 .porte:hover{border-color:var(--braise);transform:translateY(-2px)}
 .porte .embleme{width:96px;height:96px;margin:0 auto 12px;display:block}
@@ -42,6 +42,11 @@ a{color:inherit}
 .roue{border-radius:50%;position:relative;
   background:conic-gradient(from -36deg,#80796A 0 72deg,#0E8A9C 72deg 144deg,#3D2645 144deg 216deg,#E85D2E 216deg 288deg,#7A9A3C 288deg 360deg)}
 .roue::after{content:"";position:absolute;inset:32%;border-radius:50%;background:#FFFFFF}
+/* go2games (vitrine de démonstration) : jeton doré sur tapis bleu-vert, rappel de l'identité provisoire du sous-site */
+.porte .jeton{border-radius:50%;background:#0F5C5A;display:grid;place-items:center}
+.jeton::after{content:"2";width:58%;height:58%;border-radius:50%;display:grid;place-items:center;
+  background:radial-gradient(circle at 35% 30%,#F6D77A,#C99A2E 70%);box-shadow:0 0 0 3px #E8C25A inset;color:#0F5C5A;font:700 30px/1 var(--serif)}
+.porte .demo{display:inline-block;font:500 12px var(--sans);letter-spacing:.04em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:1px 9px;margin-left:6px;vertical-align:middle}
 .cadre{max-width:900px;margin:30px auto 0;padding:0 24px}
 .cadre > div{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 26px}
 .cadre h2{font:600 24px/1.2 var(--serif);margin:0 0 4px} .cadre .sous{color:var(--muted);font-size:14.5px;margin:0 0 14px}
@@ -94,6 +99,13 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px}
     <h2>PRISME</h2>
     <p class="devise">Pourquoi restons-nous impliqués, stimulés, motivés, engagés ?</p>
     <p>Le jeu, le joueur, et ce qui se passe entre les deux : profils de joueurs et évaluation des jeux.</p>
+  </a>
+  <!-- go2games : ouvert à tous, connecté ou non ; n'entre pas dans l'aiguillage automatique (aucun droit requis) -->
+  <a class="porte" href="go2games/index.html" id="porte-go2games">
+    <span class="embleme jeton" aria-hidden="true"></span>
+    <h2>go2games<span class="demo">démo</span></h2>
+    <p class="devise">La vitrine</p>
+    <p>Des jeux évalués avec PRISME : la note, la durée de vie, l'article. Ouvert à tous, sans compte.</p>
   </a>
 </section>
 
@@ -153,7 +165,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px}
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 
 <script>
-const VERSION = { numero:"1.7", date:"2026-10-19 00:05" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.8", date:"2026-10-19 11:40" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 
