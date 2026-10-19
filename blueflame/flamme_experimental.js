@@ -9,7 +9,7 @@
    Sources : « personnalites des profils » et « le profil au travail », 17-10-2026 (classeurs Excel).
    Une fois validés, ces contenus iront dans la base, éditables dans la console.
    ===================================================================== */
-window.FLAMME_EXPERIMENTAL = Object.assign({ VERSION: { numero: "1.1", date: "2026-10-17 17:40" } }, {
+window.FLAMME_EXPERIMENTAL = Object.assign({ VERSION: { numero: "1.2", date: "2026-10-19 23:59" } }, {
 "personnalites": {
 "W.rg": [
 {
@@ -6741,7 +6741,7 @@ window.FLAMME_EXPERIMENTAL = Object.assign({ VERSION: { numero: "1.1", date: "20
 ]
 },
 "WU/r": {
-"role": "Le professionnel conforme : il tient son rôle avec compétence.",
+"role": "L'initié : il connaît chaque rôle de la maison et tient le sien avec compétence.",
 "metiers": [
 "Administration",
 "Comptabilité",
@@ -6865,7 +6865,7 @@ window.FLAMME_EXPERIMENTAL = Object.assign({ VERSION: { numero: "1.1", date: "20
 ]
 },
 "BR/g": {
-"role": "Le flamboyant : il saisit les bonnes affaires et brille en le faisant.",
+"role": "Le flamboyant : il brille, et les portes s'ouvrent devant lui.",
 "metiers": [
 "Commerce",
 "Négoce",
@@ -6980,7 +6980,7 @@ window.FLAMME_EXPERIMENTAL = Object.assign({ VERSION: { numero: "1.1", date: "20
 ]
 },
 "GW/r": {
-"role": "L'aligné : il exécute avec empressement et fiabilité.",
+"role": "Le fidèle : il exécute avec empressement et fiabilité.",
 "metiers": [
 "Exécution",
 "Assistanat",
@@ -7017,7 +7017,7 @@ window.FLAMME_EXPERIMENTAL = Object.assign({ VERSION: { numero: "1.1", date: "20
 ]
 },
 "WU.g": {
-"role": "L'appliqué : il diffuse et fait appliquer les méthodes.",
+"role": "Le consciencieux : il connaît les méthodes, s'y tient et les fait appliquer.",
 "metiers": [
 "Formation",
 "Qualité",
@@ -7184,7 +7184,7 @@ window.FLAMME_EXPERIMENTAL = Object.assign({ VERSION: { numero: "1.1", date: "20
 ]
 },
 "RG.b": {
-"role": "Le roublard : il trouve la faille et s'en sort.",
+"role": "Le débrouillard : il trouve la faille et s'en sort.",
 "metiers": [
 "Négoce",
 "Récupération",
