@@ -63,7 +63,7 @@
    "statut": "exact"
   },
   "B/w": {
-   "temperament": "le Caïd",
+   "temperament": "le Compétiteur",
    "nom": "le meeple couronné",
    "fichier": "totems/B_w.svg",
    "icone": "meeple-king",
@@ -112,7 +112,7 @@
    "statut": "exact"
   },
   "R/g": {
-   "temperament": "l'Insatiable",
+   "temperament": "le Dévoreur",
    "nom": "la corne d'abondance",
    "fichier": "totems/R_g.svg",
    "icone": "cornucopia",
