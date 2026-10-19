@@ -50,7 +50,10 @@ svg.g{vertical-align:middle} .pip{width:11px;height:11px;border-radius:50%;borde
 #espace .profil a{color:inherit;text-decoration:none;border-bottom:1px solid var(--line)} #espace .profil a:hover{border-color:var(--bleu)}
 #espace .sous{color:var(--muted);font-size:14px;margin:0 0 14px}
 .tuiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
-.tuile{display:block;border:1px solid var(--line);border-radius:10px;padding:14px 16px;text-decoration:none;color:var(--ink);background:var(--paper)}
+.tuile{display:block;position:relative;border:1px solid var(--line);border-radius:10px;padding:14px 50px 14px 16px;text-decoration:none;color:var(--ink);background:var(--paper)}
+.tuile .ico{position:absolute;top:12px;right:12px;width:26px;height:26px;color:var(--bleu);opacity:.8;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.tuile:hover .ico{opacity:1}
+.btn .ico{width:18px;height:18px;vertical-align:-3px;margin-right:6px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 .tuile:hover{border-color:var(--bleu)}
 .tuile b{display:block;font:600 17px var(--serif)} .tuile span{font-size:13.5px;color:var(--muted)}
 footer{max-width:1000px;margin:40px auto 0;padding:14px 24px 30px;font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;border-top:1px solid var(--line)}
@@ -73,7 +76,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px} .field{display:block;margi
   <div class="actions">
     <a class="btn" id="btn-autotest" href="autotest.html">Passer l'autotest</a>
     <button class="btn ghost" id="btn-login-2" type="button">Se connecter</button>
-    <a class="btn ghost" href="encyclopedie.html">Lire l'encyclopédie</a>
+    <a class="btn ghost" href="encyclopedie.html" id="btn-encyclo"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5M8 7h7M8 11h5"/></svg>Lire l'encyclopédie</a>
   </div>
   <div class="couleurs" aria-hidden="true">
     <span style="background:#FFFFFF"></span><span style="background:#0055FF"></span><span style="background:#111111"></span><span style="background:#F00000"></span><span style="background:#00D900"></span>
@@ -109,7 +112,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px} .field{display:block;margi
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 
 <script>
-const VERSION = { numero:"1.27", date:"2026-10-17 19:50" };
+const VERSION = { numero:"1.28", date:"2026-10-20 00:10" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -125,7 +128,20 @@ $("#form-login").addEventListener("submit", async e => { e.preventDefault(); con
   const { error } = await sb.auth.signInWithPassword({ email: $("#email").value.trim(), password: $("#password").value });
   if (error){ m.className = "msg err"; m.textContent = /invalid/i.test(error.message) ? "Adresse ou mot de passe incorrect." : error.message; } else $("#dlg-login").close(); });
 
-const tuile = (href, titre, texte) => `<a class="tuile" href="${href}"><b>${esc(titre)}</b><span>${esc(texte)}</span></a>`;
+/* petits pictogrammes des tuiles (traits, couleur du thème) : ce que fait chaque entrée, d'un coup d'œil */
+const ICONES = {
+  autotest:     '<rect x="3.5" y="6" width="9" height="13" rx="1.5" transform="rotate(-12 8 12.5)"/><rect x="11.5" y="5" width="9" height="13" rx="1.5" transform="rotate(10 16 11.5)"/>',
+  fiche:        '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/>',
+  portrait:     '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/>',
+  armes:        '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M12 7v10M8 11h8"/>',
+  organisation: '<path d="M4 21V5l8-2v18M12 8l8 2v11M3 21h18M7 8h2M7 12h2M7 16h2M15 13h2M15 17h2"/>',
+  comparer:     '<circle cx="9" cy="12" r="6"/><circle cx="15" cy="12" r="6"/>',
+  personnages:  '<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6M15.5 14.5c3 0 5.5 2 5.5 5"/>',
+  rosace:       '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v6M20.6 9.2l-5.7 1.9M17.3 19.3l-3.5-4.9M6.7 19.3l3.5-4.9M3.4 9.2l5.7 1.9"/>',
+  encyclopedie: '<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5M8 7h7M8 11h5"/>'
+};
+const ico = k => ICONES[k] ? `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">${ICONES[k]}</svg>` : "";
+const tuile = (href, titre, texte, icone) => `<a class="tuile" href="${href}">${ico(icone)}<b>${esc(titre)}</b><span>${esc(texte)}</span></a>`;
 let user = null;
 
 /* mon profil en cours : son nom, et son écusson en petit (même calcul que la page Écusson) */
@@ -190,17 +206,17 @@ sb.auth.onAuthStateChange(async (_e, session) => {
     ? `Votre profil en cours, d'après votre autotest du ${new Date(dernier.passe_le).toLocaleDateString("fr-FR", { day:"numeric", month:"long", year:"numeric" })}.`
     : "Vous n'avez pas encore enregistré de résultat : commencez par l'autotest.";
   if (dernier) monProfil(dernier).catch(e => console.warn("Profil ou écusson indisponible :", e));
-  let t = tuile("autotest.html", "Autotest", dernier ? "Reprendre ou refaire votre classement" : "Classer les vingt tempéraments");
+  let t = tuile("autotest.html", "Autotest", dernier ? "Reprendre ou refaire votre classement" : "Classer les vingt tempéraments", "autotest");
   if (dernier){
-    t += tuile(`fiche.html?resultat=${dernier.id}`, "Ma fiche", "L'essentiel sur une page : profil, valeurs, motivations");
-    t += tuile(`portrait.html?resultat=${dernier.id}`, "Mon portrait", "Le portrait détaillé, à lire tranquillement");
-    t += tuile(`ecusson.html?resultat=${dernier.id}`, "Mes armes", "Votre écusson et sa devise");
+    t += tuile(`fiche.html?resultat=${dernier.id}`, "Ma fiche", "L'essentiel sur une page : profil, valeurs, motivations", "fiche");
+    t += tuile(`portrait.html?resultat=${dernier.id}`, "Mon portrait", "Le portrait détaillé, à lire tranquillement", "portrait");
+    t += tuile(`ecusson.html?resultat=${dernier.id}`, "Mes armes", "Votre écusson et sa devise", "armes");
   }
   // la console n'a plus de tuile : son bouton est dans le bandeau (entete.js 1.3)
-  t += tuile("autotest.html?dispositif=organisation", "Autotest organisation", "Le profil d'une entreprise, d'une équipe, d'une association (expérimental)");
-  t += tuile("comparaison.html", "Comparer", "Deux profils ou une équipe : accords, discordes, profil moyen");
-  t += tuile("galerie.html", "Personnages", "Qui partage quel profil ? Des centaines de personnages, par univers (expérimental)");
-  if (role === "proprietaire") t += tuile("rosace.html", "Rosace", "La carte complète du modèle");
+  t += tuile("autotest.html?dispositif=organisation", "Autotest organisation", "Le profil d'une entreprise, d'une équipe, d'une association", "organisation");
+  t += tuile("comparaison.html", "Comparer", "Deux profils ou une équipe : accords, discordes, profil moyen", "comparer");
+  t += tuile("galerie.html", "Personnages", "Qui partage quel profil ? Des centaines de personnages, par univers (expérimental)", "personnages");
+  if (role === "proprietaire") t += tuile("rosace.html", "Rosace", "La carte complète du modèle", "rosace");
   $("#tuiles").innerHTML = t;
 });
 </script>

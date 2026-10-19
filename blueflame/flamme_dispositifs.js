@@ -2,7 +2,7 @@
    « personne » = l'autotest ; « organisation » = le profil d'une organisation.
    La console (onglet Éléments, dispositif choisi, « Libellés du dispositif ») peut remplacer chaque libellé ; ce qui est laissé vide garde la valeur d'ici. */
 window.FLAMME_DISPOSITIFS = {
-  VERSION: { numero: "1.1", date: "2026-10-17 20:15" },
+  VERSION: { numero: "1.2", date: "2026-10-20 00:10" },
   // textes qu'un dispositif peut réécrire, carte par carte et profil par profil (même code que pour « personne »)
   CHAMPS_TEXTE: ["nom", "devise", "titre", "texte1", "texte2", "texte3", "texte_plus", "texte_moins"],
   // pose les textes du dispositif sur ceux de « personne » ; un texte vide garde celui de « personne »
@@ -39,11 +39,11 @@ window.FLAMME_DISPOSITIFS = {
     cohRho: "1 si votre classement est exactement celui que vos scores prévoient",
     cohAide: "ρ compare votre classement à celui que vos propres scores prévoient : au moins 0,90 très cohérent, 0,80 cohérent, 0,70 fragile, en dessous proche du hasard (un classement au hasard obtient déjà 0,44 en moyenne). Écart positif : carte placée plus près de vous que vos scores ne le prévoient. Lignes surlignées : 4 rangs d'écart ou plus.",
     demanderSujet: "",
-    lienAutre: "Pour décrire une organisation (entreprise, équipe, association) : <a href=\"autotest.html?dispositif=organisation\">autotest organisation</a>, expérimental."
+    lienAutre: "Pour décrire une organisation (entreprise, équipe, association) : <a href=\"autotest.html?dispositif=organisation\">autotest organisation</a>."
   },
   organisation: {
     titre: "Autotest organisation",
-    avertissement: "Expérimental. Ce test décrit une organisation (entreprise, équipe, association), pas vous. Les textes des cartes sont en cours de réécriture : certains parlent encore à la première personne.",
+    avertissement: "",
     consigne: "Pensez à une organisation précise. Rangez d'abord les 20 tempéraments en piles, de « tout à fait elle » à « pas du tout elle », d'après ce qu'elle valorise, récompense et attend vraiment, plutôt que ce qu'elle affiche. Classez-les ensuite, du plus proche de l'organisation au plus éloigné, en disant entre deux cartes voisines si elles sont inséparables, proches, nettement séparées ou séparées par un fossé. Le résultat est enregistré parmi vos profils d'organisation, sous le nom que vous lui donnez.",
     piles: ["Tout à fait elle", "Plutôt elle", "Mitigé", "Plutôt pas elle", "Pas du tout elle"],
     aidePiles: "Rangez chaque carte dans la pile qui correspond à l'organisation, sans quota : une pile peut en recevoir sept et une autre aucune. Glissez une carte, ou touchez-la puis touchez une pile. Les piles donnent l'ordre de départ du classement et ses premiers intercalaires.",

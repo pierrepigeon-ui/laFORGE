@@ -272,7 +272,7 @@ table.j td{border-bottom:1px solid var(--line);padding:8px 10px;vertical-align:t
 
 <script>
 /* ================= configuration ================= */
-const VERSION = { numero:"1.35", date:"2026-10-17 20:15" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.36", date:"2026-10-20 00:10" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 
@@ -401,7 +401,7 @@ async function chargerDispositifs(){
   // cartes d'abord, puis profils, chacun dans son ordre
   const rangCouche = r => ({ temperament: 0, profil: 1 })[elementDe(r.code).couche] ?? 2;
   Object.values(state.textesDisp).forEach(l => l.sort((a, b) => rangCouche(a) - rangCouche(b) || (a.ordre ?? 0) - (b.ordre ?? 0)));
-  $("#f-dispositif").innerHTML = d.map(x => `<option value="${esc(x.code)}">${esc(x.code === "personne" ? "Dispositif : " + x.nom + " (autotest et modèle)" : "Dispositif : " + x.nom + " (expérimental)")}</option>`).join("");
+  $("#f-dispositif").innerHTML = d.map(x => `<option value="${esc(x.code)}">${esc(x.code === "personne" ? "Dispositif : " + x.nom + " (autotest et modèle)" : "Dispositif : " + x.nom)}</option>`).join("");
   $("#f-dispositif").value = state.dispositif;
   $("#f-dispositif").classList.remove("hidden");
 }
@@ -570,7 +570,7 @@ async function ouvrirCarteDisp(code){
   const ref = ["nom","devise","titre","texte1","texte2","texte3","texte_plus","texte_moins"].filter(k => o[k]).map(k => `<dt>${LIBELLES[k]}</dt><dd>${esc(o[k])}</dd>`).join("");
   $("#editor-host").innerHTML = `
     <div class="editor">
-      <div class="meta">${pips(code)}<span>${esc(code)}</span><span>${esc(maj1(lib("couche", o.couche || "temperament")))}${o.famille ? " " + esc(lib("famille", o.famille)) : ""} · dispositif ${esc(dispositifCourant()?.nom || state.dispositif)}</span><span class="exp">expérimental</span>
+      <div class="meta">${pips(code)}<span>${esc(code)}</span><span>${esc(maj1(lib("couche", o.couche || "temperament")))}${o.famille ? " " + esc(lib("famille", o.famille)) : ""} · dispositif ${esc(dispositifCourant()?.nom || state.dispositif)}</span>
         <span>modifié le ${new Date(data.modifie_le).toLocaleString("fr-FR")}${data.modifie_par ? " par " + esc(state.noms[data.modifie_par] || "un éditeur") : ""}</span></div>
       <h2 id="titre-fiche">${esc(data.nom)}</h2>
       ${peutEcrire() ? "" : '<p class="readonly-note">Lecture seule : ton rôle ne permet pas de modifier le contenu.</p>'}
@@ -650,7 +650,7 @@ async function ouvrirLibelles(){
   };
   $("#editor-host").innerHTML = `
     <div class="editor">
-      <div class="meta"><span>Dispositif ${esc(data.code)}</span><span class="exp">expérimental</span>
+      <div class="meta"><span>Dispositif ${esc(data.code)}</span>
         <span>modifié le ${new Date(data.modifie_le).toLocaleString("fr-FR")}${data.modifie_par ? " par " + esc(state.noms[data.modifie_par] || "un éditeur") : ""}</span>
         <a class="lien" href="autotest.html?dispositif=${encodeURIComponent(data.code)}" target="_blank">ouvrir le test</a></div>
       <h2 id="titre-fiche">Libellés du dispositif ${esc(data.nom)}</h2>
@@ -1180,7 +1180,7 @@ document.querySelectorAll("nav button").forEach(b => b.addEventListener("click",
 }));
 window.addEventListener("beforeunload", e => { if (estModifie()){ e.preventDefault(); e.returnValue = ""; } });
 </script>
-<script src="flamme_dispositifs.js?v=1.1"></script>
+<script src="flamme_dispositifs.js?v=1.2"></script>
 <script src="entete.js?v=1.4"></script>
 </body>
 </html>
