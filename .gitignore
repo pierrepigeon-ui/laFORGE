@@ -1,0 +1,21 @@
+# La Forge de l'Arpenteur — fichiers qui ne doivent JAMAIS partir sur GitHub (dépôt public)
+# Version 1.0 — 25/10/2026
+
+# Sauvegardes produites par les consoles (comptes, noms, résultats)
+*.sql
+*.csv
+flamme_sauvegarde_*.json
+prisme_sauvegarde_*.json
+
+# Dossiers de travail privés, au cas où l'un d'eux atterrirait ici par erreur
+prive/
+special/
+sauvegardes/
+
+# Fichiers Office et temporaires
+*.xlsx
+*.xlsm
+*.docx
+~$*
+Thumbs.db
+desktop.ini
