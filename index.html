@@ -22,6 +22,10 @@ a{color:inherit}
 .barre{display:flex;justify-content:flex-end;gap:10px;align-items:center;padding:12px 20px;font-size:13px;color:var(--muted)}
 .btn{display:inline-block;border:1px solid var(--ink);background:var(--ink);color:var(--panel);padding:11px 20px;border-radius:7px;cursor:pointer;font-weight:500;text-decoration:none}
 .btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)} .btn.petit{padding:6px 12px;font-size:13px}
+/* pastille « messages non lus » (propriétaire) */
+.pastille{border:1px solid var(--braise);background:transparent;color:var(--braise);border-radius:999px;padding:5px 12px;font-size:13px;font-weight:500;cursor:pointer}
+.pastille:hover{background:var(--braise);color:var(--panel)}
+.pastille,.barre .btn{white-space:nowrap} .barre{flex-wrap:wrap}
 #attente{position:fixed;inset:0;display:grid;place-items:center;background:var(--paper);color:var(--muted);font:italic 17px var(--serif);z-index:5}
 .hero{max-width:860px;margin:10px auto 0;padding:24px 24px 6px;text-align:center}
 .enclume{width:84px;height:84px;display:block;margin:0 auto 10px;color:var(--ink)}
@@ -68,7 +72,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px}
 <body>
 <div id="attente">La Forge s'allume…</div>
 
-<div class="barre"><span id="who"></span>
+<div class="barre"><button class="pastille hidden" id="pastille-messages" type="button"></button><span id="who"></span>
   <button class="btn ghost petit hidden" id="btn-login" type="button">Se connecter</button>
   <button class="btn ghost petit hidden" id="btn-logout" type="button">Se déconnecter</button></div>
 
@@ -144,7 +148,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px}
   </div>
 </section>
 
-<footer><span>La Forge de l'Arpenteur</span><span><a href="#" id="ouvrir-reglages" class="hidden">Réglages</a></span><span id="version"></span></footer>
+<footer><span>La Forge de l'Arpenteur · © 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" rel="license">conditions</a></span><span><a href="#" id="ouvrir-reglages" class="hidden">Réglages</a></span><span id="version"></span></footer>
 
 <dialog id="dlg-login"><form id="form-login"><h2>Se connecter</h2>
   <label class="field"><span>Adresse e-mail</span><input type="email" id="email" autocomplete="username" required></label>
@@ -153,7 +157,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px}
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 
 <script>
-const VERSION = { numero:"1.9", date:"2026-10-25 21:05" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.11", date:"2026-10-26 15:40" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 
@@ -221,7 +225,7 @@ function afficher(sites){
   $("#ouvrir-reglages").classList.toggle("hidden", roleFlamme !== "proprietaire");
   if (roleFlamme !== "proprietaire") $("#reglages").classList.add("hidden");
   if (roleFlamme === "proprietaire") chargerMessages(P.has("messages"));
-  else $("#messages").classList.add("hidden");
+  else { $("#messages").classList.add("hidden"); $("#pastille-messages").classList.add("hidden"); }
   $("#attente").classList.add("hidden");
   if (!user && retourSur()) ouvrirConnexion();   // arrivé ici depuis une page qui demande la connexion
 }
@@ -297,6 +301,9 @@ async function chargerMessages(deplier){
   const zone = $("#messages");
   if (error){ zone.classList.remove("hidden"); $("#messages-sous").textContent = "Lecture impossible : " + error.message; $("#messages-liste").innerHTML = ""; return; }
   const nonLus = data.filter(x => !x.lu).length;
+  const pastille = $("#pastille-messages");
+  pastille.textContent = `${nonLus} message${nonLus > 1 ? "s" : ""} non lu${nonLus > 1 ? "s" : ""}`;
+  pastille.classList.toggle("hidden", !nonLus);
   $("#messages-sous").textContent = data.length ? `${data.length} message${data.length > 1 ? "s" : ""}, dont ${nonLus} non lu${nonLus > 1 ? "s" : ""}.` : "Aucun message pour l'instant.";
   $("#messages-liste").innerHTML = data.map(x => `
     <div class="message${x.lu ? "" : " nonlu"}" data-id="${x.id}">
@@ -309,6 +316,10 @@ async function chargerMessages(deplier){
   // la boîte reste discrète tant qu'elle est vide, sauf si on l'a demandée (?messages)
   zone.classList.toggle("hidden", !(deplier || nonLus));
 }
+$("#pastille-messages").addEventListener("click", () => {
+  $("#messages").classList.remove("hidden");
+  $("#messages").scrollIntoView({ behavior:"smooth", block:"start" });
+});
 $("#messages-liste").addEventListener("click", async e => {
   const b = e.target.closest("button[data-act]"); if (!b) return;
   const carte = b.closest(".message"), id = carte.dataset.id;
