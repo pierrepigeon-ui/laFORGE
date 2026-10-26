@@ -52,12 +52,12 @@ tr.attente td{color:var(--muted)}
   <p class="chapo" id="chapo">Les jeux évalués dans PRISME, et ce qu'ils promettent.</p>
   <div class="outils"><input type="search" id="cherche" placeholder="Chercher un jeu…" aria-label="Chercher un jeu"><label class="compte" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="evalues" style="min-width:0"> évalués seulement</label><span class="compte" id="compte"></span><span id="liens" style="margin-left:auto;display:flex;gap:8px"></span></div>
   <div id="contenu"><p class="vide" id="etape">Connexion…</p></div>
-  <p class="version" id="version"></p>
+  <p class="version"><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p>
 </main>
 
 <script src="timeline.js?v=3.9"></script>
 <script>
-const VERSION = { numero:"1.6", date:"2026-10-18 22:25" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.7", date:"2026-10-26 21:40" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);

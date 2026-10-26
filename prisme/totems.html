@@ -45,11 +45,11 @@ h1{font:600 clamp(28px,4vw,40px)/1.15 var(--serif);margin:6px 0 4px}
     <button type="button" data-rendu="couleur" aria-pressed="true">couleurs des moteurs</button>
     <button type="button" data-rendu="or" aria-pressed="false">or sur fond sombre</button></div>
   <div id="planche"><p>Chargement…</p></div>
-  <p class="version"><span id="credit"></span><br><span id="version"></span></p>
+  <p class="version"><span id="credit"></span><br><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p>
 </main>
 <script src="totems.js?v=4"></script>
 <script>
-const VERSION = { numero:"1.1", date:"2026-10-11 18:15" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.2", date:"2026-10-26 21:40" };   // à incrémenter à chaque livraison
 const sb = supabase.createClient("https://gugdfpbkscudzkgysteb.supabase.co", "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P");
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const maj = s => { s = String(s ?? ""); return s.charAt(0).toUpperCase() + s.slice(1); };

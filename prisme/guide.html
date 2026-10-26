@@ -82,10 +82,10 @@ kbd{font:500 13px var(--sans);border:1px solid var(--line);border-bottom-width:2
     <ul><li>L'encadré se nourrit des notes de la fiche. Une fiche pré-remplie (beaucoup le sont déjà) donne tout de suite une note, une durée de vie et un coût.</li>
       <li>Tu peux corriger une note quand tu veux : clique sur le palier qui correspond, dans la paire concernée. L'encadré déjà posé ne bouge pas ; « Préparer l'article » en pose un à jour.</li>
       <li>Une question, une idée, un bouton qui manque : dis-le à Pierre.</li></ul></div>
-  <p class="version" id="version"></p>
+  <p class="version"><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p>
 </main>
 <script>
-const VERSION = { numero:"1.0", date:"2026-10-19 00:10" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.1", date:"2026-10-26 21:40" };   // à incrémenter à chaque livraison
 document.getElementById("version").textContent = `Guide de l'article ${VERSION.numero}, version du ${VERSION.date.replace(/(\d{4})-(\d\d)-(\d\d) (\d\d):(\d\d)/,"$3/$2/$1 à $4h$5")}`;
 </script>
 <script src="entete.js?v=1.4"></script>
