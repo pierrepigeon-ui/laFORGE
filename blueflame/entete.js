@@ -1,5 +1,5 @@
 /* =====================================================================
-   Flamme Bleue — en-tête commun (1.4, 17/10/2026)
+   Flamme Bleue — en-tête commun (1.5, 26/10/2026 21h40)
    - la couronne de cinq flammes (logo 2026) devant le nom « Flamme Bleue », qui ramène à l'accueil ;
    - un lien « La Forge », avec sa petite enclume, en haut à droite, comme dans PRISME :
      il n'apparaît que si la personne a aussi accès à PRISME (la Forge a alors autre chose à proposer) ;
@@ -9,6 +9,8 @@
    - (1.4) la première ligne de chaque écran reste figée en haut quand on fait défiler la page,
      pour revenir au menu facilement ; sa hauteur est publiée dans --ent-h (ancres, panneaux collants).
      À l'impression, elle redevient normale.
+   - (1.5) la mention « © 2026 Pierre Pigeon, tous droits réservés » et un lien « conditions » vers la LICENSE du dépôt,
+     sur sa propre ligne en bas du pied de page de chaque page (ou sous la ligne de version là où il n'y a pas de pied de page).
    À charger APRÈS le script de la page (il réutilise son client Supabase « sb »).
    ===================================================================== */
 (function () {
@@ -35,7 +37,9 @@
     html{scroll-padding-top:calc(var(--ent-h, 0px) + 16px)}
     @media print{ .fb-fige{position:static!important} }
     @media (max-width:700px){ .fb-fige{padding-top:6px!important;padding-bottom:6px!important;row-gap:4px!important} .fb-fige .signature{display:none} }
-    @media (prefers-color-scheme: dark){ .fb-forge img{background:#F6F5F1;border-radius:3px;padding:1px} }`;
+    @media (prefers-color-scheme: dark){ .fb-forge img{background:#F6F5F1;border-radius:3px;padding:1px} }
+    .fb-droits{display:block;flex-basis:100%;margin-top:2px;text-align:right}
+    .fb-droits a{color:inherit;text-decoration:underline}`;
   document.head.appendChild(css);
 
   // icône d'onglet : la couronne seule
@@ -50,6 +54,19 @@
     const mesurer = () => document.documentElement.style.setProperty("--ent-h", ligne.offsetHeight + "px");
     mesurer(); window.addEventListener("resize", mesurer);
     if (window.ResizeObserver) new ResizeObserver(mesurer).observe(ligne);
+  }
+
+  // (1.5) les droits d'auteur, en bas du pied de page
+  const droits = document.createElement("span");
+  droits.className = "fb-droits";
+  droits.innerHTML = '© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener">conditions</a>';
+  const pied = document.querySelector("footer") || document.getElementById("version")?.parentNode;
+  if (pied){
+    if (pied.id === "version"){                                   // le pied de page EST la ligne de version : on la loge dans un span
+      const v = document.createElement("span"); v.id = "version"; v.textContent = pied.textContent;
+      pied.removeAttribute("id"); pied.textContent = ""; pied.appendChild(v);
+    }
+    pied.appendChild(droits);
   }
 
   // la flamme devant le nom
