@@ -62,10 +62,10 @@ nav .navlink:hover{background:var(--hover);color:var(--ink)}
 #backup-info.late{color:var(--warn)}
 
 main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(260px,330px) 1fr}
-#list-pane,#p-list-pane{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0;background:var(--panel)}
+#list-pane,#p-list-pane,#m-list-pane{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0;background:var(--panel)}
 .filters{padding:12px 14px;border-bottom:1px solid var(--line)}
 .filters input{width:100%;padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:var(--paper)}
-#list,#p-list{overflow:auto;flex:1;margin:0;padding:4px 0}
+#list,#p-list,#m-list{overflow:auto;flex:1;margin:0;padding:4px 0}
 .chap-title{font:600 13px var(--sans);color:var(--chap);padding:12px 14px 4px;border-top:1px solid var(--line)}
 .chap-title:first-child{border-top:0}
 .item{display:grid;grid-template-columns:52px 1fr;gap:0 8px;padding:7px 14px;cursor:pointer;border-left:3px solid transparent}
@@ -77,8 +77,18 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(260px,330px) 
 .badge{font:500 11px var(--sans);border:1px solid currentColor;border-radius:3px;padding:0 4px;margin-left:6px;vertical-align:2px;white-space:nowrap}
 .badge.provisoire,.badge.en_attente{color:var(--warn)}
 .badge.ballotage{color:var(--err)}
+.badge.a_discuter{color:var(--warn)}
+.badge.ecarter{color:var(--muted)}
+/* PRISMEmécanismes : filtres et cases D, M, L */
+.item.meca{grid-template-columns:64px 1fr}
+.filtres-m{display:grid;gap:8px;margin-top:8px}
+.filtres-m select{width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--paper)}
+.cases{display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:14px}
+.cases label{display:flex;gap:5px;align-items:center}
+.cases input{width:auto}
+.compteur{font-size:12.5px;color:var(--muted)}
 
-#edit-pane,#p-edit-pane{overflow:auto;min-height:0}
+#edit-pane,#p-edit-pane,#m-edit-pane{overflow:auto;min-height:0}
 .band{height:10px;background:var(--line)}
 .editor{max-width:860px;padding:22px 32px 64px}
 .editor h2{font:600 30px/1.2 var(--serif);margin:10px 0 2px}
@@ -150,8 +160,8 @@ dialog h2{font:600 22px var(--serif);margin:0 0 16px}
 
 @media (max-width:760px){
   main{grid-template-columns:1fr}
-  #edit-pane,#p-edit-pane{position:fixed;inset:0;background:var(--paper);z-index:45}
-  #edit-pane.closed,#p-edit-pane.closed{display:none}
+  #edit-pane,#p-edit-pane,#m-edit-pane{position:fixed;inset:0;background:var(--paper);z-index:45}
+  #edit-pane.closed,#p-edit-pane.closed,#m-edit-pane.closed{display:none}
   .grid2,.grid3{grid-template-columns:1fr}
   .editor{padding:16px}
   .back{display:inline-block!important}
@@ -182,6 +192,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 16px}
     <nav role="tablist">
       <button role="tab" aria-selected="false" data-tab="player">PRISMEplayer</button>
       <button role="tab" aria-selected="true" data-tab="modele">PRISMEgame</button>
+      <button role="tab" aria-selected="false" data-tab="mecanismes">PRISMEmécanismes</button>
       <button role="tab" aria-selected="false" data-tab="textes">Textes généraux</button>
       <button role="tab" aria-selected="false" data-tab="jeux">Jeux</button>
       <button role="tab" aria-selected="false" data-tab="journal" id="tab-journal" class="hidden">Journal</button>
@@ -214,6 +225,27 @@ dialog h2{font:600 22px var(--serif);margin:0 0 16px}
       <div id="editor-host"><p class="empty">Choisis une paire dans la liste pour lire ou modifier sa définition, ses deux axes, leurs grilles et leurs exemples.</p></div>
     </section>
   </main>
+  <main id="view-mecanismes" class="hidden">
+    <aside id="m-list-pane">
+      <div class="filters">
+        <input type="search" id="m-q" placeholder="Chercher un code, un nom, une lecture" aria-label="Rechercher un mécanisme">
+        <div class="filtres-m">
+          <select id="m-niveau" aria-label="Niveau"></select>
+          <select id="m-statut" aria-label="Statut"></select>
+          <select id="m-famille" aria-label="Famille d'origine"></select>
+          <div class="cases"><span class="compteur">Catégorie</span><label><input type="checkbox" data-mf="D"> D</label><label><input type="checkbox" data-mf="M"> M</label><label><input type="checkbox" data-mf="L"> L</label></div>
+          <div class="compteur" id="m-compte" role="status"></div>
+          <div><button class="btn ghost small" id="m-nouveau" type="button">Ajouter un mécanisme</button></div>
+        </div>
+      </div>
+      <div id="m-list" role="listbox" aria-label="Mécanismes"></div>
+    </aside>
+    <section id="m-edit-pane" class="closed">
+      <button class="btn ghost back" id="m-back" type="button">Retour à la liste</button>
+      <div class="band" id="m-band"></div>
+      <div id="m-editor-host"></div>
+    </section>
+  </main>
   <main id="view-textes" class="hidden"><section class="full" id="textes-pane"></section></main>
   <main id="view-jeux" class="hidden"><section class="full" id="jeux-pane"></section></main>
   <main id="view-journal" class="hidden"><section class="full" id="journal-pane"></section></main>
@@ -224,7 +256,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 16px}
 
 <script>
 /* ================= configuration ================= */
-const VERSION = { numero:"3.5", date:"2026-10-26 21:40" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.6", date:"2026-10-27 19:05" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 
@@ -243,11 +275,16 @@ const OPTIONS = {
   mecanisme:{ liee:"liée (courbe en S)", independante:"indépendante", crans5:"indépendante, 5 crans", composite:"composite (ancien THÈME)", moyenne:"moyenne de 2a et 2b (ART)", theme:"thème : incarnation pesée, l'abstrait vaut 2,5 (THÈME)", lien:"lien : justesse et parole, prime à l'étendue (LIEN)" },
   nature:   { descriptif:"descriptif", evaluatif:"évaluatif" },
   echelle:  { "0-5":"0 à 5", ecart:"écart −− à ++", crans5:"5 crans −− à ++", calcule:"calculée" },
-  type:     { statut:"statut", solo:"volet solo", absorption:"absorption", consigne:"consigne de rédaction", historique:"historique", reserve:"en réserve", regle:"règle", note:"note" }
+  type:     { statut:"statut", solo:"volet solo", absorption:"absorption", consigne:"consigne de rédaction", historique:"historique", reserve:"en réserve", regle:"règle", note:"note" },
+  niveau:   { mecanisme:"mécanisme", aspect:"aspect", support:"support", parametre:"paramètre", assemblage:"assemblage", parole:"parole", structure:"structure", mise_en_place:"mise en place", hors_modele:"hors modèle" },
+  statut_meca:{ garder:"garder", fusionner:"fusionner", scinder:"scinder", ecarter:"écarter", a_discuter:"à discuter" }
 };
+const CATEGORIES = { D:"déplacement", M:"modification", L:"lecture" };
+// « L+D » se lit « D+L » : toujours dans l'ordre D, M, L ; aucune lettre = vide
+const canonCat = s => Object.keys(CATEGORIES).filter(l => String(s ?? "").includes(l)).join("+") || null;
 const TABLES = { prisme_player_moteurs:"moteur", prisme_player_temperaments:"tempérament", prisme_player_styles:"style", prisme_player_styles_60:"profil (archive)", prisme_player_archetypes:"archétype", prisme_player_profils:"profil",
                  prisme_player_sous_profils:"sous-profil", prisme_player_questions:"question", prisme_chapitres:"chapitre", prisme_paires:"paire", prisme_axes:"axe", prisme_paliers:"palier",
-                 prisme_notes:"encadré", prisme_jeux:"jeu", prisme_exemples:"exemple", prisme_textes:"texte", prisme_roles:"rôle" };
+                 prisme_notes:"encadré", prisme_jeux:"jeu", prisme_exemples:"exemple", prisme_textes:"texte", prisme_roles:"rôle", prisme_mecanismes:"mécanisme" };
 const LIBELLES = { devise:"Devise", a_la_table:"À la table, il peut (un comportement par ligne)", phase_cle:"Phase clé", qui_il_est:"Qui il est", quand_decroche:"Quand il décroche", fb_verbe:"Flamme Bleue : verbe", fb_devise:"Flamme Bleue : devise", totem:"Totem (l'image est dans prisme/bibliotheque/)", totem_raison:"Raison du totem (une phrase)",
   devise1:"Devise (1re partie)", devise2:"Devise (2e partie)", citation:"Citation",
   couleur:"Couleur (fond clair)", couleur_sombre:"Couleur (fond sombre)", climax_phase:"Phase du climax (si dominant)",
@@ -257,9 +294,11 @@ const LIBELLES = { devise:"Devise", a_la_table:"À la table, il peut (un comport
   ancien_nom:"Ancien nom", definition:"Définition", nature:"Nature", nature_detail:"Nature (précision)", echelle:"Échelle",
   question:"Question centrale", methode:"Méthode de notation", libelle:"Libellé", type:"Type", texte:"Texte", axe:"Rattaché à",
   jeu:"Jeu", valeur:"Valeur chiffrée", symbole:"Symbole", valeur_texte:"Valeur affichée", remarque:"Remarque",
-  justification:"Justification", amorce:"Amorce littéraire", titre:"Titre", contenu:"Contenu", bgg_id:"Identifiant BGG", image_url:"Image de la boîte", notes:"Notes", role:"Rôle" };
+  justification:"Justification", amorce:"Amorce littéraire", titre:"Titre", contenu:"Contenu", bgg_id:"Identifiant BGG", image_url:"Image de la boîte", notes:"Notes", role:"Rôle",
+  nom_en:"Nom anglais", famille_recolte:"Famille d'origine (récolte)", niveau:"Niveau", categorie:"Catégorie", lecture:"Lecture dans le modèle",
+  parametres:"Paramètres", exemples:"Exemples", sources:"Sources", axe_prisme:"Axe PRISME", fusion_vers:"Fusionné vers", remarques:"Remarques" };
 
-let state = { user:null, role:null, noms:{}, chapitres:[], paires:[], axes:[], paliers:[], notes:[], jeux:[], exemples:[], textes:[], current:null };
+let state = { user:null, role:null, noms:{}, chapitres:[], paires:[], axes:[], paliers:[], notes:[], jeux:[], exemples:[], textes:[], mecanismes:[], current:null };
 const peutEcrire = () => state.role === "proprietaire" || state.role === "editeur";
 const peutAjouterJeu = () => peutEcrire() || state.role === "evaluateur";
 
@@ -283,10 +322,10 @@ async function chargerModele(){
   const r = await Promise.all([
     lire("prisme_chapitres").order("ordre"), lire("prisme_paires").order("ordre"), lire("prisme_axes").order("ordre"),
     lire("prisme_paliers").order("valeur"), lire("prisme_notes").order("ordre"), lire("prisme_jeux").order("nom"),
-    lire("prisme_exemples").order("ordre"), lire("prisme_textes").order("ordre")
+    lire("prisme_exemples").order("ordre"), lire("prisme_textes").order("ordre"), lire("prisme_mecanismes").order("ordre")
   ]);
   const err = r.find(x => x.error); if (err) throw err.error;
-  [state.chapitres, state.paires, state.axes, state.paliers, state.notes, state.jeux, state.exemples, state.textes] = r.map(x => x.data);
+  [state.chapitres, state.paires, state.axes, state.paliers, state.notes, state.jeux, state.exemples, state.textes, state.mecanismes] = r.map(x => x.data);
   state.paires.sort((a,b) => chap(a.chapitre).ordre - chap(b.chapitre).ordre || a.ordre - b.ordre);
 }
 const chap = code => state.chapitres.find(c => c.code === code) || { ordre:99, nom:code };
@@ -314,8 +353,8 @@ async function demarrer(){
 document.querySelectorAll("nav [role=tab]").forEach(b => b.addEventListener("click", () => {
   if (blocsModifies() && !confirm("Des modifications n'ont pas été enregistrées. Les abandonner ?")) return;
   document.querySelectorAll("nav [role=tab]").forEach(x => x.setAttribute("aria-selected", x === b));
-  ["player","modele","textes","jeux","journal","personnes","resultats"].forEach(t => $("#view-" + t).classList.toggle("hidden", t !== b.dataset.tab));
-  ({ player:afficherListeP, textes:afficherTextes, jeux:afficherJeux, journal:afficherJournal, personnes:afficherPersonnes, resultats:afficherResultats })[b.dataset.tab]?.();
+  ["player","modele","mecanismes","textes","jeux","journal","personnes","resultats"].forEach(t => $("#view-" + t).classList.toggle("hidden", t !== b.dataset.tab));
+  ({ player:afficherListeP, mecanismes:afficherMecanismes, textes:afficherTextes, jeux:afficherJeux, journal:afficherJournal, personnes:afficherPersonnes, resultats:afficherResultats })[b.dataset.tab]?.();
 }));
 
 /* ================= liste des paires ================= */
@@ -390,11 +429,14 @@ function lireBloc(el){
     else if (f.type === "number") v[f.dataset.k] = f.value === "" ? null : Number(f.value);
     else { const s = f.value.trim(); v[f.dataset.k] = s === "" ? null : s; }
   });
+  const cats = el.querySelectorAll("[data-cat]");   // catégorie d'un mécanisme : trois cases D, M, L recomposées en « D+M »
+  if (cats.length) v.categorie = canonCat([...cats].filter(c => c.checked).map(c => c.dataset.cat).join(""));
   return v;
 }
 function changements(id, el){
   const b = blocs[id], v = lireBloc(el), maj = {};
-  Object.keys(v).forEach(k => { if ((v[k] ?? null) !== (b.row[k] ?? null)) maj[k] = v[k]; });
+  // une catégorie rangée dans un autre ordre en base (L+D) n'est pas une modification
+  Object.keys(v).forEach(k => { const avant = k === "categorie" ? canonCat(b.row[k]) : b.row[k]; if ((v[k] ?? null) !== (avant ?? null)) maj[k] = v[k]; });
   return maj;
 }
 function blocsModifies(){
@@ -416,6 +458,7 @@ document.addEventListener("click", async e => {
       const v = b.row[f.dataset.k];
       if (f.type === "checkbox") f.checked = !!v; else f.value = v ?? "";
     });
+    el.querySelectorAll("[data-cat]").forEach(c => c.checked = String(b.row.categorie ?? "").includes(c.dataset.cat));
     el.classList.remove("dirty"); el.querySelector('[data-act="save"]').disabled = true; btn.disabled = true;
     m.textContent = ""; return;
   }
@@ -427,6 +470,8 @@ document.addEventListener("click", async e => {
   }
   const maj = changements(id, el);
   if (!Object.keys(maj).length) return;
+  // on profite de l'enregistrement de la fiche pour réécrire la catégorie dans l'ordre D, M, L
+  if (b.table === "prisme_mecanismes" && !("categorie" in maj) && b.row.categorie && b.row.categorie !== canonCat(b.row.categorie)) maj.categorie = canonCat(b.row.categorie);
   if (maj.bgg_id === "illisible"){ m.className = "msg err"; m.textContent = "Lien BoardGameGeek illisible : colle l'adresse de la page du jeu, ou son numéro."; return; }
   btn.disabled = true; m.className = "msg"; m.textContent = "Enregistrement…";
   const { data, error } = await sb.from(b.table).update(maj).eq("code", b.row.code).eq("modifie_le", b.row.modifie_le).select();
@@ -439,13 +484,15 @@ document.addEventListener("click", async e => {
   m.className = "msg ok"; m.textContent = "Enregistré.";
   if (b.table === "prisme_paires") afficherListe();
   if (b.table.startsWith("prisme_player")) afficherListeP();
+  if (b.table === "prisme_mecanismes") afficherListeM();
 });
-const LISTE = { prisme_player_moteurs:"p_moteurs", prisme_player_temperaments:"p_temperaments", prisme_player_styles:"p_styles", prisme_player_questions:"p_questions", prisme_paires:"paires", prisme_axes:"axes", prisme_paliers:"paliers", prisme_notes:"notes", prisme_jeux:"jeux", prisme_exemples:"exemples", prisme_textes:"textes" };
+const LISTE = { prisme_player_moteurs:"p_moteurs", prisme_player_temperaments:"p_temperaments", prisme_player_styles:"p_styles", prisme_player_questions:"p_questions", prisme_paires:"paires", prisme_axes:"axes", prisme_paliers:"paliers", prisme_notes:"notes", prisme_jeux:"jeux", prisme_exemples:"exemples", prisme_textes:"textes", prisme_mecanismes:"mecanismes" };
 function majLocal(table, row){ const L = state[LISTE[table]]; const i = L.findIndex(x => x.code === row.code); if (i >= 0) L[i] = row; else L.push(row); }
 function retirerLocal(table, code){ const L = state[LISTE[table]]; const i = L.findIndex(x => x.code === code); if (i >= 0) L.splice(i, 1); }
 function rafraichir(){
   if (!$("#view-player").classList.contains("hidden")){ if (state.currentP){ const c = state.currentP; state.currentP = null; ouvrirP(c, true); } return; }
   if (!$("#view-modele").classList.contains("hidden") && state.current){ const c = state.current; state.current = null; ouvrir(c, true); }
+  else if (!$("#view-mecanismes").classList.contains("hidden") && state.currentM){ const c = state.currentM; state.currentM = null; ouvrirM(c, true); }
   else if (!$("#view-textes").classList.contains("hidden")) afficherTextes();
   else if (!$("#view-jeux").classList.contains("hidden")) afficherJeux();
 }
@@ -606,6 +653,100 @@ function ouvrirP(code, force){
   }
   $("#p-band").style.background = coul;
   $("#p-editor-host").innerHTML = `<div class="editor" style="--chap:${coul}">${peutEcrire() ? "" : '<p class="readonly-note">Lecture seule : ton rôle ne permet pas de modifier le modèle.</p>'}${h}</div>`;
+}
+
+/* ================= PRISMEmécanismes ================= */
+// la nomenclature des mécanismes (table prisme_mecanismes) : liste filtrable, une fiche par ligne, pas de suppression
+function afficherMecanismes(){
+  afficherListeM();
+  if (!state.currentM) accueilM();
+}
+function filtresM(){
+  const q = norm($("#m-q").value.trim()), niv = $("#m-niveau").value, st = $("#m-statut").value, fa = $("#m-famille").value;
+  const lettres = [...document.querySelectorAll("[data-mf]:checked")].map(c => c.dataset.mf);
+  return state.mecanismes.filter(m => (!q || norm([m.code, m.nom, m.nom_en, m.lecture, m.remarques].join(" ")).includes(q))
+    && (!niv || m.niveau === niv) && (!st || m.statut === st) && (!fa || m.famille_recolte === fa)
+    && lettres.every(l => String(m.categorie ?? "").includes(l)));
+}
+function afficherListeM(){
+  const choix = (o, tous) => `<option value="">${esc(tous)}</option>` + Object.entries(o).map(([c,l]) => `<option value="${esc(c)}">${esc(l)}</option>`).join("");
+  if (!$("#m-niveau").options.length){
+    $("#m-niveau").innerHTML = choix(OPTIONS.niveau, "Tous les niveaux");
+    $("#m-statut").innerHTML = choix(OPTIONS.statut_meca, "Tous les statuts");
+  }
+  // les familles d'origine suivent les données (une ligne ajoutée peut en apporter une)
+  const fam = $("#m-famille"), f0 = fam.value;
+  const familles = [...new Set(state.mecanismes.map(m => m.famille_recolte).filter(Boolean))].sort((a,b) => a.localeCompare(b, "fr"));
+  fam.innerHTML = choix(Object.fromEntries(familles.map(f => [f, f])), "Toutes les familles d'origine");
+  fam.value = familles.includes(f0) ? f0 : "";
+  const ms = filtresM(), nd = ms.filter(m => m.statut === "a_discuter").length, s = ms.length > 1 ? "s" : "";
+  $("#m-compte").textContent = `${ms.length} ligne${s} affichée${s} sur ${state.mecanismes.length} · ${nd} à discuter`;
+  $("#m-list").innerHTML = ms.map(m => `<div class="item meca" role="option" tabindex="0" data-mcode="${esc(m.code)}" style="--chap:var(--muted)" aria-selected="${state.currentM === m.code}">
+      <span class="code">${esc(m.code)}</span>
+      <span><span class="nom">${esc(m.nom)}</span><span class="badge ${esc(m.statut)}">${esc(OPTIONS.statut_meca[m.statut] || m.statut)}</span><br>
+      <span class="sous">${[OPTIONS.niveau[m.niveau] || m.niveau, m.categorie, m.fusion_vers && "→ " + m.fusion_vers].filter(Boolean).map(esc).join(" · ")}</span></span></div>`).join("")
+    || '<p class="empty">Aucun mécanisme ne correspond à ces filtres.</p>';
+}
+["#m-q","#m-niveau","#m-statut","#m-famille"].forEach(s => $(s).addEventListener("input", afficherListeM));
+document.querySelectorAll("[data-mf]").forEach(c => c.addEventListener("change", afficherListeM));
+$("#m-list").addEventListener("click", e => { const it = e.target.closest(".item"); if (it) ouvrirM(it.dataset.mcode); });
+$("#m-list").addEventListener("keydown", e => { if (e.key === "Enter"){ const it = e.target.closest(".item"); if (it) ouvrirM(it.dataset.mcode); } });
+$("#m-back").addEventListener("click", () => $("#m-edit-pane").classList.add("closed"));
+$("#m-nouveau").addEventListener("click", () => accueilM(true));
+
+// volet d'accueil : l'aide de l'onglet et l'ajout d'une ligne
+function accueilM(ouvrirVolet){
+  if (state.currentM && blocsModifies() && !confirm("Des modifications n'ont pas été enregistrées. Les abandonner ?")) return;
+  state.currentM = null; afficherListeM();
+  if (ouvrirVolet) $("#m-edit-pane").classList.remove("closed");
+  $("#m-band").style.background = "var(--line)";
+  $("#m-editor-host").innerHTML = `<div class="editor"><h2>PRISMEmécanismes</h2>
+    <p class="aide">La nomenclature des mécanismes, lue dans le modèle (D déplacement, M modification, L lecture). On écarte une ligne par son statut, on ne la supprime pas.</p>
+    ${peutEcrire() ? `<h4>Ajouter un mécanisme</h4><div class="ajout">
+      <label class="field"><span>Code</span><input id="m-new-code" type="text" placeholder="ex. STR-12"></label>
+      <label class="field"><span>Nom</span><input id="m-new-nom" type="text"></label>
+      <label class="field"><span>Niveau</span><select id="m-new-niveau">${Object.entries(OPTIONS.niveau).map(([c,l]) => `<option value="${c}">${esc(l)}</option>`).join("")}</select></label>
+      <button class="btn" id="m-add" type="button">Ajouter le mécanisme</button><span class="msg" id="m-add-msg"></span></div>
+      <p class="aide">La nouvelle ligne arrive « à discuter », en fin de liste ; sa fiche s'ouvre pour la compléter.</p>` : ""}
+    <p class="aide">Choisis une ligne dans la liste pour lire ou modifier sa fiche.</p></div>`;
+  $("#m-add")?.addEventListener("click", async () => {
+    const m = $("#m-add-msg"), code = $("#m-new-code").value.trim(), nom = $("#m-new-nom").value.trim(), niveau = $("#m-new-niveau").value;
+    if (!code || !nom){ m.className = "msg err"; m.textContent = "Indique le code et le nom."; return; }
+    const pris = state.mecanismes.find(x => x.code.toLowerCase() === code.toLowerCase());
+    if (pris){ m.className = "msg warn"; m.textContent = `Le code ${pris.code} est déjà pris (${pris.nom}).`; return; }
+    const ordre = 1 + Math.max(0, ...state.mecanismes.map(x => x.ordre || 0));
+    const { data, error } = await sb.from("prisme_mecanismes").insert({ code, nom, niveau, statut:"a_discuter", ordre }).select();
+    if (error){ m.className = "msg err"; m.textContent = "Refusé : " + error.message; return; }
+    state.mecanismes.push(data[0]); ouvrirM(data[0].code, true);
+  });
+}
+
+function ouvrirM(code, force){
+  if (!force && state.currentM && blocsModifies() && !confirm("Des modifications n'ont pas été enregistrées. Les abandonner ?")) return;
+  const x = state.mecanismes.find(m => m.code === code); if (!x) return;
+  state.currentM = code; afficherListeM();
+  $("#m-edit-pane").classList.remove("closed");
+  $("#m-band").style.background = "var(--muted)";
+  const autres = Object.fromEntries(state.mecanismes.filter(m => m.code !== code).map(m => [m.code, `${m.code} — ${m.nom}`]));
+  if (x.fusion_vers && !autres[x.fusion_vers]) autres[x.fusion_vers] = `${x.fusion_vers} (code introuvable)`;
+  const ro = peutEcrire() ? "" : "disabled";
+  $("#m-editor-host").innerHTML = `<div class="editor">
+    <div class="meta"><span>${esc(x.code)}</span><span>${esc(OPTIONS.niveau[x.niveau] || x.niveau)}</span>${x.famille_recolte ? `<span>${esc(x.famille_recolte)}</span>` : ""}</div>
+    <h2>${esc(x.nom)}</h2>
+    ${peutEcrire() ? "" : '<p class="readonly-note">Lecture seule : ton rôle ne permet pas de modifier le modèle.</p>'}
+    ${bloc("prisme_mecanismes", x, r => `
+      <div class="grid2">${champ("nom", r.nom)}${champ("nom_en", r.nom_en)}</div>
+      <div class="grid3">${champ("niveau", r.niveau, { type:"select", options:OPTIONS.niveau })}${champ("statut", r.statut, { type:"select", options:OPTIONS.statut_meca })}${champ("fusion_vers", r.fusion_vers, { type:"select", options:autres, vide:"aucune" })}</div>
+      <div class="grid3"><div class="field"><span>${esc(LIBELLES.categorie)}</span><div class="cases">${Object.entries(CATEGORIES).map(([l, n]) =>
+          `<label><input type="checkbox" data-cat="${l}"${String(r.categorie ?? "").includes(l) ? " checked" : ""} ${ro}> ${l} ${esc(n)}</label>`).join("")}</div></div>
+        ${champ("famille_recolte", r.famille_recolte)}${champ("axe_prisme", r.axe_prisme)}</div>
+      ${champ("lecture", r.lecture, { type:"area", rows:3 })}
+      ${champ("parametres", r.parametres, { type:"area" })}
+      ${champ("definition", r.definition, { type:"area", rows:3 })}
+      ${champ("exemples", r.exemples, { type:"area" })}
+      ${champ("remarques", r.remarques, { type:"area" })}
+      ${champ("sources", r.sources)}`)}
+  </div>`;
 }
 
 /* ================= textes généraux ================= */
@@ -838,7 +979,7 @@ function exporterResultats(nomDe){
 /* ================= sauvegarde (propriétaire) ================= */
 const TABLES_SAUVEGARDE = ["prisme_player_moteurs","prisme_player_temperaments","prisme_player_styles","prisme_player_styles_60","prisme_player_archetypes","prisme_player_profils","prisme_player_sous_profils",
                            "prisme_player_questions","prisme_player_resultats","prisme_chapitres","prisme_paires","prisme_axes","prisme_paliers","prisme_notes","prisme_jeux",
-                           "prisme_exemples","prisme_textes","prisme_roles","prisme_evaluations","prisme_evaluation_valeurs"];
+                           "prisme_exemples","prisme_textes","prisme_roles","prisme_evaluations","prisme_evaluation_valeurs","prisme_mecanismes"];
 // anciennes fiches archivées par le script 09 (lecture réservée au propriétaire) : sauvegardées si elles existent
 const TABLES_SAUVEGARDE_ARCHIVES = ["prisme_evaluations_archive","prisme_evaluation_valeurs_archive"];
 async function lireTout(table, filtre){
