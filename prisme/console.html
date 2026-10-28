@@ -62,10 +62,10 @@ nav .navlink:hover{background:var(--hover);color:var(--ink)}
 #backup-info.late{color:var(--warn)}
 
 main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(260px,330px) 1fr}
-#list-pane,#p-list-pane,#m-list-pane{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0;background:var(--panel)}
+#list-pane,#p-list-pane,#m-list-pane,#t-list-pane{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0;background:var(--panel)}
 .filters{padding:12px 14px;border-bottom:1px solid var(--line)}
 .filters input{width:100%;padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:var(--paper)}
-#list,#p-list,#m-list{overflow:auto;flex:1;margin:0;padding:4px 0}
+#list,#p-list,#m-list,#t-list{overflow:auto;flex:1;margin:0;padding:4px 0}
 .chap-title{font:600 13px var(--sans);color:var(--chap);padding:12px 14px 4px;border-top:1px solid var(--line)}
 .chap-title:first-child{border-top:0}
 .item{display:grid;grid-template-columns:52px 1fr;gap:0 8px;padding:7px 14px;cursor:pointer;border-left:3px solid transparent}
@@ -87,8 +87,13 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(260px,330px) 
 .cases label{display:flex;gap:5px;align-items:center}
 .cases input{width:auto}
 .compteur{font-size:12.5px;color:var(--muted)}
+/* PRISMEthèmes : valeurs groupées par facette, sous-items indentés */
+.item.theme{grid-template-columns:1fr}
+.item.theme.sous-item{padding-left:34px}
+.item.theme .code{padding-top:0}
+.chap-title .compteur{font-weight:400;margin-left:6px}
 
-#edit-pane,#p-edit-pane,#m-edit-pane{overflow:auto;min-height:0}
+#edit-pane,#p-edit-pane,#m-edit-pane,#t-edit-pane{overflow:auto;min-height:0}
 .band{height:10px;background:var(--line)}
 .editor{max-width:860px;padding:22px 32px 64px}
 .editor h2{font:600 30px/1.2 var(--serif);margin:10px 0 2px}
@@ -167,8 +172,8 @@ dialog h2{font:600 22px var(--serif);margin:0 0 16px}
 
 @media (max-width:760px){
   main{grid-template-columns:1fr}
-  #edit-pane,#p-edit-pane,#m-edit-pane{position:fixed;inset:0;background:var(--paper);z-index:45}
-  #edit-pane.closed,#p-edit-pane.closed,#m-edit-pane.closed{display:none}
+  #edit-pane,#p-edit-pane,#m-edit-pane,#t-edit-pane{position:fixed;inset:0;background:var(--paper);z-index:45}
+  #edit-pane.closed,#p-edit-pane.closed,#m-edit-pane.closed,#t-edit-pane.closed{display:none}
   .grid2,.grid3{grid-template-columns:1fr}
   .editor{padding:16px}
   .back{display:inline-block!important}
@@ -200,6 +205,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 16px}
       <button role="tab" aria-selected="false" data-tab="player">PRISMEplayer</button>
       <button role="tab" aria-selected="true" data-tab="modele">PRISMEgame</button>
       <button role="tab" aria-selected="false" data-tab="mecanismes">PRISMEmécanismes</button>
+      <button role="tab" aria-selected="false" data-tab="themes">PRISMEthèmes</button>
       <button role="tab" aria-selected="false" data-tab="textes">Textes généraux</button>
       <button role="tab" aria-selected="false" data-tab="jeux">Jeux</button>
       <button role="tab" aria-selected="false" data-tab="journal" id="tab-journal" class="hidden">Journal</button>
@@ -254,6 +260,23 @@ dialog h2{font:600 22px var(--serif);margin:0 0 16px}
       <div id="m-editor-host"></div>
     </section>
   </main>
+  <main id="view-themes" class="hidden">
+    <aside id="t-list-pane">
+      <div class="filters">
+        <input type="search" id="t-q" placeholder="Chercher un code, un libellé, une définition" aria-label="Rechercher un thème">
+        <div class="filtres-m">
+          <div class="compteur" id="t-compte" role="status"></div>
+          <div><button class="btn ghost small" id="t-nouveau" type="button">Ajouter un tag ou une référence</button></div>
+        </div>
+      </div>
+      <div id="t-list" role="listbox" aria-label="Thèmes"></div>
+    </aside>
+    <section id="t-edit-pane" class="closed">
+      <button class="btn ghost back" id="t-back" type="button">Retour à la liste</button>
+      <div class="band" id="t-band"></div>
+      <div id="t-editor-host"></div>
+    </section>
+  </main>
   <main id="view-textes" class="hidden"><section class="full" id="textes-pane"></section></main>
   <main id="view-jeux" class="hidden"><section class="full" id="jeux-pane"></section></main>
   <main id="view-journal" class="hidden"><section class="full" id="journal-pane"></section></main>
@@ -265,7 +288,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 16px}
 
 <script>
 /* ================= configuration ================= */
-const VERSION = { numero:"3.7", date:"2026-10-28 18:10" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.8", date:"2026-10-29 00:08" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 
@@ -293,7 +316,7 @@ const CATEGORIES = { D:"déplacement", M:"modification", L:"lecture" };
 const canonCat = s => Object.keys(CATEGORIES).filter(l => String(s ?? "").includes(l)).join("+") || null;
 const TABLES = { prisme_player_moteurs:"moteur", prisme_player_temperaments:"tempérament", prisme_player_styles:"style", prisme_player_styles_60:"profil (archive)", prisme_player_archetypes:"archétype", prisme_player_profils:"profil",
                  prisme_player_sous_profils:"sous-profil", prisme_player_questions:"question", prisme_chapitres:"chapitre", prisme_paires:"paire", prisme_axes:"axe", prisme_paliers:"palier",
-                 prisme_notes:"encadré", prisme_jeux:"jeu", prisme_exemples:"exemple", prisme_textes:"texte", prisme_roles:"rôle", prisme_mecanismes:"mécanisme", prisme_reglages:"réglage" };
+                 prisme_notes:"encadré", prisme_jeux:"jeu", prisme_exemples:"exemple", prisme_textes:"texte", prisme_roles:"rôle", prisme_mecanismes:"mécanisme", prisme_reglages:"réglage", prisme_themes:"thème" };
 // clé d'une ligne pour l'enregistrement : « code » partout, sauf les réglages
 const CLES = { prisme_reglages:"cle" };
 const cleDe = table => CLES[table] || "code";
@@ -308,9 +331,9 @@ const LIBELLES = { devise:"Devise", a_la_table:"À la table, il peut (un comport
   jeu:"Jeu", valeur:"Valeur chiffrée", symbole:"Symbole", valeur_texte:"Valeur affichée", remarque:"Remarque",
   justification:"Justification", amorce:"Amorce littéraire", titre:"Titre", contenu:"Contenu", bgg_id:"Identifiant BGG", image_url:"Image de la boîte", notes:"Notes", role:"Rôle",
   nom_en:"Nom anglais", famille_recolte:"Famille d'origine (récolte)", niveau:"Niveau", categorie:"Catégorie", lecture:"Lecture dans le modèle",
-  parametres:"Paramètres", exemples:"Exemples", sources:"Sources", axe_prisme:"Axe PRISME", fusion_vers:"Fusionné vers", remarques:"Remarques" };
+  parametres:"Paramètres", exemples:"Exemples", sources:"Sources", axe_prisme:"Axe PRISME", fusion_vers:"Fusionné vers", remarques:"Remarques", parent:"Valeur parente" };
 
-let state = { user:null, role:null, noms:{}, chapitres:[], paires:[], axes:[], paliers:[], notes:[], jeux:[], exemples:[], textes:[], mecanismes:[], reglages:[], current:null };
+let state = { user:null, role:null, noms:{}, chapitres:[], paires:[], axes:[], paliers:[], notes:[], jeux:[], exemples:[], textes:[], mecanismes:[], reglages:[], themes:[], current:null };
 const peutEcrire = () => state.role === "proprietaire" || state.role === "editeur";
 const peutAjouterJeu = () => peutEcrire() || state.role === "evaluateur";
 
@@ -335,10 +358,10 @@ async function chargerModele(){
     lire("prisme_chapitres").order("ordre"), lire("prisme_paires").order("ordre"), lire("prisme_axes").order("ordre"),
     lire("prisme_paliers").order("valeur"), lire("prisme_notes").order("ordre"), lire("prisme_jeux").order("nom"),
     lire("prisme_exemples").order("ordre"), lire("prisme_textes").order("ordre"), lire("prisme_mecanismes").order("ordre"),
-    lire("prisme_reglages").order("ordre")
+    lire("prisme_reglages").order("ordre"), lire("prisme_themes").order("ordre")
   ]);
   const err = r.find(x => x.error); if (err) throw err.error;
-  [state.chapitres, state.paires, state.axes, state.paliers, state.notes, state.jeux, state.exemples, state.textes, state.mecanismes, state.reglages] = r.map(x => x.data);
+  [state.chapitres, state.paires, state.axes, state.paliers, state.notes, state.jeux, state.exemples, state.textes, state.mecanismes, state.reglages, state.themes] = r.map(x => x.data);
   state.paires.sort((a,b) => chap(a.chapitre).ordre - chap(b.chapitre).ordre || a.ordre - b.ordre);
 }
 const chap = code => state.chapitres.find(c => c.code === code) || { ordre:99, nom:code };
@@ -366,8 +389,8 @@ async function demarrer(){
 document.querySelectorAll("nav [role=tab]").forEach(b => b.addEventListener("click", () => {
   if (blocsModifies() && !confirm("Des modifications n'ont pas été enregistrées. Les abandonner ?")) return;
   document.querySelectorAll("nav [role=tab]").forEach(x => x.setAttribute("aria-selected", x === b));
-  ["player","modele","mecanismes","textes","jeux","journal","personnes","resultats","reglages"].forEach(t => $("#view-" + t).classList.toggle("hidden", t !== b.dataset.tab));
-  ({ player:afficherListeP, mecanismes:afficherMecanismes, textes:afficherTextes, jeux:afficherJeux, journal:afficherJournal, personnes:afficherPersonnes, resultats:afficherResultats, reglages:afficherReglages })[b.dataset.tab]?.();
+  ["player","modele","mecanismes","themes","textes","jeux","journal","personnes","resultats","reglages"].forEach(t => $("#view-" + t).classList.toggle("hidden", t !== b.dataset.tab));
+  ({ player:afficherListeP, mecanismes:afficherMecanismes, themes:afficherThemes, textes:afficherTextes, jeux:afficherJeux, journal:afficherJournal, personnes:afficherPersonnes, resultats:afficherResultats, reglages:afficherReglages })[b.dataset.tab]?.();
 }));
 
 /* ================= liste des paires ================= */
@@ -500,14 +523,16 @@ document.addEventListener("click", async e => {
   if (b.table === "prisme_paires") afficherListe();
   if (b.table.startsWith("prisme_player")) afficherListeP();
   if (b.table === "prisme_mecanismes") afficherListeM();
+  if (b.table === "prisme_themes") afficherListeT();
 });
-const LISTE = { prisme_player_moteurs:"p_moteurs", prisme_player_temperaments:"p_temperaments", prisme_player_styles:"p_styles", prisme_player_questions:"p_questions", prisme_paires:"paires", prisme_axes:"axes", prisme_paliers:"paliers", prisme_notes:"notes", prisme_jeux:"jeux", prisme_exemples:"exemples", prisme_textes:"textes", prisme_mecanismes:"mecanismes", prisme_reglages:"reglages" };
+const LISTE = { prisme_player_moteurs:"p_moteurs", prisme_player_temperaments:"p_temperaments", prisme_player_styles:"p_styles", prisme_player_questions:"p_questions", prisme_paires:"paires", prisme_axes:"axes", prisme_paliers:"paliers", prisme_notes:"notes", prisme_jeux:"jeux", prisme_exemples:"exemples", prisme_textes:"textes", prisme_mecanismes:"mecanismes", prisme_reglages:"reglages", prisme_themes:"themes" };
 function majLocal(table, row){ const L = state[LISTE[table]], k = cleDe(table); const i = L.findIndex(x => x[k] === row[k]); if (i >= 0) L[i] = row; else L.push(row); }
 function retirerLocal(table, code){ const L = state[LISTE[table]]; const i = L.findIndex(x => x.code === code); if (i >= 0) L.splice(i, 1); }
 function rafraichir(){
   if (!$("#view-player").classList.contains("hidden")){ if (state.currentP){ const c = state.currentP; state.currentP = null; ouvrirP(c, true); } return; }
   if (!$("#view-modele").classList.contains("hidden") && state.current){ const c = state.current; state.current = null; ouvrir(c, true); }
   else if (!$("#view-mecanismes").classList.contains("hidden") && state.currentM){ const c = state.currentM; state.currentM = null; ouvrirM(c, true); }
+  else if (!$("#view-themes").classList.contains("hidden") && state.currentT){ const c = state.currentT; state.currentT = null; ouvrirT(c, true); }
   else if (!$("#view-textes").classList.contains("hidden")) afficherTextes();
   else if (!$("#view-jeux").classList.contains("hidden")) afficherJeux();
   else if (!$("#view-reglages").classList.contains("hidden")) afficherReglages();
@@ -762,6 +787,94 @@ function ouvrirM(code, force){
       ${champ("exemples", r.exemples, { type:"area" })}
       ${champ("remarques", r.remarques, { type:"area" })}
       ${champ("sources", r.sources)}`)}
+  </div>`;
+}
+
+/* ================= PRISMEthèmes (29/10/2026) ================= */
+// la nomenclature des thèmes, en facettes ; seules les facettes enrichissables reçoivent de nouvelles valeurs ; pas de suppression
+const FACETTES = { cadre:"Cadre", periode:"Période", realisme:"Réalisme", sujet:"Sujet", role:"Rôle", lieu:"Lieu", ton:"Ton", tag:"Tags du fantastique", reference:"Référence culturelle et géographique" };
+const FACETTES_OUVERTES = { tag:"TAG-", reference:"REF-" };
+const codeTheme = (facette, libelle) => FACETTES_OUVERTES[facette] + norm(libelle).toUpperCase().replace(/[^A-Z0-9]+/g, "-").replace(/^-|-$/g, "");
+function afficherThemes(){
+  afficherListeT();
+  if (!state.currentT) accueilT();
+}
+// les valeurs d'une facette, chaque parent suivi de ses sous-items
+function themesRanges(facette){
+  const L = state.themes.filter(x => x.facette === facette), codes = new Set(L.map(x => x.code));
+  const racines = L.filter(x => !x.parent || !codes.has(x.parent));
+  return racines.flatMap(x => [x, ...L.filter(y => y.parent === x.code)]);
+}
+function afficherListeT(){
+  const q = norm($("#t-q").value.trim());
+  const voit = x => !q || norm([x.code, x.libelle, x.definition, x.remarques].join(" ")).includes(q);
+  let html = "", n = 0;
+  Object.entries(FACETTES).forEach(([f, nom]) => {
+    const tous = themesRanges(f), L = tous.filter(voit); if (!L.length) return; n += L.length;
+    html += `<div class="chap-title" style="--chap:var(--muted)">${esc(nom)}<span class="compteur">${q ? `${L.length} sur ${tous.length}` : tous.length}</span></div>` + L.map(x =>
+      `<div class="item theme${x.parent ? " sous-item" : ""}" role="option" tabindex="0" data-tcode="${esc(x.code)}" style="--chap:var(--muted)" aria-selected="${state.currentT === x.code}">
+        <span><span class="nom">${esc(x.libelle)}</span><br><span class="sous">${esc(x.code)}</span></span></div>`).join("");
+  });
+  $("#t-compte").textContent = `${n} valeur${n > 1 ? "s" : ""} affichée${n > 1 ? "s" : ""} sur ${state.themes.length}`;
+  $("#t-list").innerHTML = html || '<p class="empty">Aucun thème ne correspond à cette recherche.</p>';
+}
+$("#t-q").addEventListener("input", afficherListeT);
+$("#t-list").addEventListener("click", e => { const it = e.target.closest(".item"); if (it) ouvrirT(it.dataset.tcode); });
+$("#t-list").addEventListener("keydown", e => { if (e.key === "Enter"){ const it = e.target.closest(".item"); if (it) ouvrirT(it.dataset.tcode); } });
+$("#t-back").addEventListener("click", () => $("#t-edit-pane").classList.add("closed"));
+$("#t-nouveau").addEventListener("click", () => accueilT(true));
+
+// volet d'accueil : l'aide de l'onglet et l'ajout d'un tag ou d'une référence
+function accueilT(ouvrirVolet){
+  if (state.currentT && blocsModifies() && !confirm("Des modifications n'ont pas été enregistrées. Les abandonner ?")) return;
+  state.currentT = null; afficherListeT();
+  if (ouvrirVolet) $("#t-edit-pane").classList.remove("closed");
+  $("#t-band").style.background = "var(--line)";
+  $("#t-editor-host").innerHTML = `<div class="editor"><h2>PRISMEthèmes</h2>
+    <p class="aide">La nomenclature des thèmes, en facettes. Les tags et les références s'enrichissent ici au fil des jeux.</p>
+    ${peutEcrire() ? `<h4>Ajouter un tag ou une référence</h4><div class="ajout">
+      <label class="field"><span>Facette</span><select id="t-new-facette">${Object.keys(FACETTES_OUVERTES).map(f => `<option value="${f}">${esc(FACETTES[f])}</option>`).join("")}</select></label>
+      <label class="field"><span>Libellé</span><input id="t-new-libelle" type="text"></label>
+      <label class="field"><span>Code (proposé, modifiable)</span><input id="t-new-code" type="text"></label>
+      <button class="btn" id="t-add" type="button">Ajouter</button><span class="msg" id="t-add-msg"></span></div>
+      <p class="aide">Les autres facettes sont fermées : on y modifie les valeurs, on n'en ajoute pas. La nouvelle valeur arrive en fin de liste ; sa fiche s'ouvre pour la compléter.</p>` : ""}
+    <p class="aide">Choisis une valeur dans la liste pour lire ou modifier sa fiche.</p></div>`;
+  if (!peutEcrire()) return;
+  // le code suit le libellé tant qu'on ne l'a pas retouché à la main
+  let codeManuel = false;
+  const proposer = () => { if (!codeManuel) $("#t-new-code").value = $("#t-new-libelle").value.trim() ? codeTheme($("#t-new-facette").value, $("#t-new-libelle").value) : ""; };
+  $("#t-new-libelle").addEventListener("input", proposer);
+  $("#t-new-facette").addEventListener("change", proposer);
+  $("#t-new-code").addEventListener("input", () => codeManuel = $("#t-new-code").value.trim() !== "");
+  $("#t-add").addEventListener("click", async () => {
+    const m = $("#t-add-msg"), facette = $("#t-new-facette").value, libelle = $("#t-new-libelle").value.trim(), code = $("#t-new-code").value.trim();
+    if (!libelle || !code){ m.className = "msg err"; m.textContent = "Indique le libellé et le code."; return; }
+    const pris = state.themes.find(x => x.code.toLowerCase() === code.toLowerCase());
+    if (pris){ m.className = "msg warn"; m.textContent = `Le code ${pris.code} est déjà pris (${pris.libelle}).`; return; }
+    const ordre = 1 + Math.max(0, ...state.themes.map(x => x.ordre || 0));
+    const { data, error } = await sb.from("prisme_themes").insert({ code, facette, libelle, ordre }).select();
+    if (error){ m.className = "msg err"; m.textContent = "Refusé : " + error.message; return; }
+    state.themes.push(data[0]); ouvrirT(data[0].code, true);
+  });
+}
+
+function ouvrirT(code, force){
+  if (!force && state.currentT && blocsModifies() && !confirm("Des modifications n'ont pas été enregistrées. Les abandonner ?")) return;
+  const x = state.themes.find(t => t.code === code); if (!x) return;
+  state.currentT = code; afficherListeT();
+  $("#t-edit-pane").classList.remove("closed");
+  $("#t-band").style.background = "var(--muted)";
+  // parent : une valeur de la même facette, sans parent elle-même (un seul niveau de sous-items)
+  const parents = Object.fromEntries(state.themes.filter(t => t.facette === x.facette && t.code !== code && !t.parent).map(t => [t.code, `${t.libelle} (${t.code})`]));
+  if (x.parent && !parents[x.parent]) parents[x.parent] = `${x.parent} (code introuvable)`;
+  $("#t-editor-host").innerHTML = `<div class="editor">
+    <div class="meta"><span>${esc(x.code)}</span><span>${esc(FACETTES[x.facette] || x.facette)}</span></div>
+    <h2>${esc(x.libelle)}</h2>
+    ${peutEcrire() ? "" : '<p class="readonly-note">Lecture seule : ton rôle ne permet pas de modifier le modèle.</p>'}
+    ${bloc("prisme_themes", x, r => `
+      <div class="grid2">${champ("libelle", r.libelle)}${champ("parent", r.parent, { type:"select", options:parents, vide:"aucune" })}</div>
+      ${champ("definition", r.definition, { type:"area", rows:3 })}
+      ${champ("remarques", r.remarques, { type:"area" })}`)}
   </div>`;
 }
 
@@ -1026,7 +1139,7 @@ function exporterResultats(nomDe){
 /* ================= sauvegarde (propriétaire) ================= */
 const TABLES_SAUVEGARDE = ["prisme_player_moteurs","prisme_player_temperaments","prisme_player_styles","prisme_player_styles_60","prisme_player_archetypes","prisme_player_profils","prisme_player_sous_profils",
                            "prisme_player_questions","prisme_player_resultats","prisme_chapitres","prisme_paires","prisme_axes","prisme_paliers","prisme_notes","prisme_jeux",
-                           "prisme_exemples","prisme_textes","prisme_roles","prisme_evaluations","prisme_evaluation_valeurs","prisme_mecanismes","prisme_jeux_mecanismes","prisme_reglages"];
+                           "prisme_exemples","prisme_textes","prisme_roles","prisme_evaluations","prisme_evaluation_valeurs","prisme_mecanismes","prisme_jeux_mecanismes","prisme_reglages","prisme_themes","prisme_jeux_themes"];
 // anciennes fiches archivées par le script 09 (lecture réservée au propriétaire) : sauvegardées si elles existent
 const TABLES_SAUVEGARDE_ARCHIVES = ["prisme_evaluations_archive","prisme_evaluation_valeurs_archive"];
 async function lireTout(table, filtre){

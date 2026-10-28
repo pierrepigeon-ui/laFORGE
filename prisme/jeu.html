@@ -126,6 +126,12 @@ ul.m-liste li{border-bottom:1px solid var(--line);padding:7px 0}
 .m-def{display:block;font-size:13.5px;color:var(--muted)}
 .m-rem-lue{display:block;font-size:13.5px;font-style:italic;color:var(--muted)}
 dialog.fenetre{width:min(780px,94vw);max-height:90vh;border:1px solid var(--line);border-radius:16px;padding:22px;background:var(--panel);color:var(--ink)}
+/* thèmes (2.1) : facettes dépliables dans le sélecteur, sous-items indentés, Période et Réalisme grisées pour un jeu abstrait */
+details.t-facette{border-bottom:1px solid var(--line)}
+details.t-facette > summary{cursor:pointer;padding:9px 2px;font-size:14.5px}
+details.t-facette .t-ignore{display:none} details.t-facette.grise .t-ignore{display:inline}
+details.t-facette.grise > .m-ligne{opacity:.45}
+.m-ligne.t-sous > div:first-child{padding-left:22px}
 dialog.fenetre::backdrop{background:rgba(15,20,30,.45)}
 dialog.fenetre h2{font:600 22px/1.25 var(--serif);margin:0 0 4px}
 .question{font:italic 15px var(--serif);color:var(--muted);margin:0 0 12px}
@@ -164,10 +170,11 @@ dialog.fenetre h2{font:600 22px/1.25 var(--serif);margin:0 0 4px}
   <p class="version"><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p>
 </main>
 <dialog class="fenetre" id="m-dialogue" aria-labelledby="m-dialogue-titre"><div id="m-dialogue-corps"></div></dialog>
+<dialog class="fenetre" id="t-dialogue" aria-labelledby="t-dialogue-titre"><div id="t-dialogue-corps"></div></dialog>
 
 <script src="timeline.js?v=3.9"></script>
 <script>
-const VERSION = { numero:"2.0", date:"2026-10-28 23:06" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"2.1", date:"2026-10-29 00:08" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -359,7 +366,7 @@ async function afficher(user){
   h += `<div class="poles">
     <div class="carte pole">${pourQui}</div>
     <div class="carte pole" id="carte-meca"><div class="surtitre">Mécanique</div><p class="discret">Chargement…</p></div>
-    <div class="carte pole theme"><div class="surtitre">Thème</div><p class="discret" style="margin:0">La cartographie des thèmes viendra.</p></div>
+    <div class="carte pole theme" id="carte-theme"><div class="surtitre">Thème</div><p class="discret" style="margin:0">Chargement…</p></div>
   </div>`;
 
   // 3. sa vie dans le temps, en petit
@@ -397,11 +404,13 @@ async function afficher(user){
     ${pli("Les notes, paire par paire", R ? `${nbPaires} paires, ce que le jeu réussit et ce qu'il rate` : "pas encore de fiche finale", paires)}
     ${pli("Pour chaque profil", "les 20 tempéraments, du mieux au moins servi", profils)}
     ${pli("Tous les mécanismes", "avec leur définition", `<div id="detail-meca"><p class="discret">Chargement…</p></div>`)}
+    ${pli("Tous les thèmes", "par facette, avec leur définition", `<div id="detail-themes"><p class="discret">Chargement…</p></div>`)}
     ${pli("La timeline complète", "sessions, usure, coût par partie", timeline)}
     ${article ? pli("L'article", "la critique complète", `<div class="article">${articlePropre(article)}</div>`) : ""}
   </div>`;
   $("#contenu").innerHTML = h;
   chargerMecanismes(code, user, role);
+  chargerThemes(code, user, role);
 }
 
 /* ---- les mécanismes du jeu (nomenclature PRISMEmécanismes, 28/10/2026) ---- */
@@ -523,6 +532,157 @@ async function enregistrerMecanismes(){
   dialogue.close();
   // relire la base : la page montre ce qui y est vraiment
   await chargerMecanismes(M.jeu, M.user, M.role);
+}
+
+/* ---- les thèmes du jeu (nomenclature PRISMEthèmes, 29/10/2026) : même modèle que les mécanismes ---- */
+// facettes, dans l'ordre d'affichage ; la carte montre le cadre en tête, puis les facettes descriptives
+const FACETTES = { cadre:"Cadre", periode:"Période", realisme:"Réalisme", sujet:"Sujet", role:"Rôle", lieu:"Lieu", ton:"Ton", tag:"Tags du fantastique", reference:"Référence culturelle et géographique" };
+const FACETTES_CARTE = ["sujet", "role", "lieu", "ton", "tag", "reference"];
+const ABSTRAIT = "CAD-ABSTRAIT", FACETTES_TEMPS = ["periode", "realisme"];   // un jeu abstrait n'a ni période ni réalisme
+const TH = { jeu:null, user:null, role:null, ecrit:false, lignes:[], affectes:{}, brouillon:null };
+
+async function chargerThemes(code, user, role){
+  Object.assign(TH, { jeu:code, user, role, ecrit: NIVEAUX[role] >= NIVEAUX.evaluateur, brouillon:null });
+  const [l, a] = await Promise.all([
+    sb.from("prisme_themes").select("code,facette,libelle,parent,definition,ordre").order("ordre"),
+    sb.from("prisme_jeux_themes").select("theme,poids,remarque").eq("jeu", code)]);
+  if (l.error || a.error){
+    const msg = `<p class="discret">Les thèmes n'ont pas pu être lus (${esc((l.error || a.error).message)}).</p>`;
+    $("#carte-theme").innerHTML = `<div class="surtitre">Thème</div>` + msg; $("#detail-themes").innerHTML = msg; return;
+  }
+  TH.lignes = l.data || [];
+  TH.affectes = Object.fromEntries((a.data || []).map(x => [x.theme, { poids:x.poids, remarque:x.remarque || "" }]));
+  afficherThemes();
+}
+const ligneTheme = c => TH.lignes.find(l => l.code === c);
+// les valeurs d'une facette, chaque parent suivi de ses sous-items
+function themesRanges(facette){
+  const L = TH.lignes.filter(x => x.facette === facette), codes = new Set(L.map(x => x.code));
+  return L.filter(x => !x.parent || !codes.has(x.parent)).flatMap(x => [x, ...L.filter(y => y.parent === x.code)]);
+}
+// les valeurs affectées d'une facette, de la plus lourde à la plus légère, puis dans l'ordre de la nomenclature
+const affectesDe = facette => TH.lignes.filter(l => l.facette === facette && TH.affectes[l.code]).sort((x, y) => TH.affectes[y.code].poids - TH.affectes[x.code].poids || x.ordre - y.ordre);
+
+// la carte Thème et la liste complète du détail, pour tous
+function afficherThemes(){
+  const carte = $("#carte-theme"), det = $("#detail-themes"); if (!carte) return;
+  const rien = !Object.keys(TH.affectes).length;
+  carte.classList.toggle("theme", rien);   // la bordure pointillée disparaît dès qu'un thème est affecté
+  const bouton = TH.ecrit ? `<button class="lien-btn" type="button" id="t-modifier">Modifier les thèmes</button>` : "";
+  const puce = (l, cls) => `<span class="${cls} info" tabindex="0">${esc(l.libelle)}<span class="bulle">${esc(l.definition || "Pas encore de définition.")}${TH.affectes[l.code]?.remarque ? `<br><i>${esc(TH.affectes[l.code].remarque)}</i>` : ""}</span></span>`;
+  let h = `<div class="surtitre">Thème</div>`;
+  if (rien) h += `<p class="discret" style="margin:0">Aucun thème n'est encore affecté à ce jeu.</p>`;
+  else {
+    // la ligne de cadre : « Abstrait », ou la ou les périodes et le réalisme
+    const cadre = TH.affectes[ABSTRAIT] ? ["Abstrait"] : [...affectesDe("periode").map(l => l.libelle), ...affectesDe("realisme").map(l => l.libelle.toLowerCase())];
+    if (cadre.length) h += `<p class="titre-carte">${esc(cadre.join(" · "))}</p>`;
+    let nMarg = 0;
+    FACETTES_CARTE.forEach(f => {
+      const L = affectesDe(f); if (!L.length) return;
+      const marg = L.filter(l => TH.affectes[l.code].poids === 1); nMarg += marg.length;
+      const pleins = L.length > marg.length;
+      h += `<div class="groupe"${pleins ? "" : " data-t-marg hidden"}><span class="etiq">${esc(FACETTES[f])}</span><div class="puces">${L.map(l => {
+        const p = TH.affectes[l.code].poids;
+        return p === 1 ? (pleins ? puce(l, "mg").replace('<span class="mg info"', '<span class="mg info" data-t-marg hidden') : puce(l, "mg")) : puce(l, p === 3 ? "mj" : "pr"); }).join("")}</div></div>`;
+    });
+    if (nMarg) h += `<button class="lien-btn" type="button" id="t-deplier" aria-expanded="false">+ ${nMarg} ${nMarg > 1 ? POIDS_PLURIEL[1] : POIDS[1]}</button>`;
+  }
+  carte.innerHTML = h + bouton;
+  $("#t-deplier")?.addEventListener("click", e => {
+    const ouvrir = e.currentTarget.getAttribute("aria-expanded") !== "true", n = carte.querySelectorAll(".mg").length;
+    carte.querySelectorAll("[data-t-marg]").forEach(el => el.hidden = !ouvrir);
+    e.currentTarget.setAttribute("aria-expanded", ouvrir);
+    e.currentTarget.textContent = ouvrir ? `− replier les ${POIDS_PLURIEL[1]}` : `+ ${n} ${n > 1 ? POIDS_PLURIEL[1] : POIDS[1]}`;
+  });
+  $("#t-modifier")?.addEventListener("click", ouvrirSelecteurThemes);
+  // la liste complète, groupée par facette, avec la définition et la remarque
+  let dh = `<p class="question">De quoi parle le jeu, selon la nomenclature PRISMEthèmes, en facettes : majeur, présent, marginal.</p>`;
+  const facettes = Object.keys(FACETTES).filter(f => affectesDe(f).length);
+  if (!facettes.length) dh += `<p class="discret">Aucun thème n'est encore affecté à ce jeu.</p>`;
+  facettes.forEach(f => {
+    dh += `<h3 class="m-groupe">${esc(FACETTES[f])}</h3><ul class="m-liste">${affectesDe(f).map(l => { const v = TH.affectes[l.code];
+      return `<li>${esc(l.libelle)}<span class="m-code">${esc(l.code)}</span><span class="m-niv">${esc(POIDS[v.poids])}</span>${l.definition ? `<span class="m-def">${esc(l.definition)}</span>` : ""}${v.remarque ? `<span class="m-rem-lue">${esc(v.remarque)}</span>` : ""}</li>`; }).join("")}</ul>`;
+  });
+  det.innerHTML = dh;
+}
+
+// le sélecteur, pour l'évaluateur, l'éditeur et le propriétaire : en fenêtre, comme celui des mécanismes
+const dialogueThemes = $("#t-dialogue");
+dialogueThemes.addEventListener("cancel", () => { TH.brouillon = null; });   // Échap : comme « Annuler »
+function ouvrirSelecteurThemes(){
+  TH.brouillon = Object.fromEntries(Object.entries(TH.affectes).map(([c, v]) => [c, { ...v }]));
+  $("#t-dialogue-corps").innerHTML = `<h2 id="t-dialogue-titre">Thèmes</h2>
+    <p class="question">Décrire de quoi parle le jeu, pas le juger : la qualité du thème se note dans l'évaluation (axe THÈME).</p>
+    <p class="m-compteur" id="t-compteur"></p>
+    <div class="m-filtres"><input type="search" id="t-q" placeholder="Chercher un code ou un libellé" aria-label="Chercher un code ou un libellé">
+      <label><input type="checkbox" id="t-seuls"> n'afficher que les thèmes affectés</label></div>
+    <div class="m-choix" id="t-choix"></div>
+    <p class="m-actions"><button class="btn plein" type="button" id="t-enregistrer">Enregistrer</button><button class="btn" type="button" id="t-annuler">Annuler</button><span class="m-etat" id="t-etat"></span></p>`;
+  const ouverts = new Set(Object.keys(TH.affectes).map(c => ligneTheme(c)?.facette));
+  const lister = () => {
+    const q = norm($("#t-q").value.trim()), seuls = $("#t-seuls").checked;
+    $("#t-choix").innerHTML = Object.entries(FACETTES).map(([f, nom]) => {
+      const tous = themesRanges(f), L = tous.filter(l => (!q || norm(l.code + " " + l.libelle).includes(q)) && (!seuls || TH.brouillon[l.code]));
+      if (!L.length) return "";
+      const n = tous.filter(l => TH.brouillon[l.code]).length;
+      return `<details class="t-facette" data-facette="${f}"${q || seuls || ouverts.has(f) ? " open" : ""}><summary><b>${esc(nom)}</b> <span class="discret">${tous.length} valeur${tous.length > 1 ? "s" : ""}<span data-nb>${n ? ` · ${n} choisi${n > 1 ? "s" : ""}` : ""}</span></span><span class="t-ignore discret"> · ignoré : le jeu est abstrait</span></summary>${L.map(ligneChoixTheme).join("")}</details>`;
+    }).join("") || `<p class="discret">Aucun thème ne correspond à cette recherche.</p>`;
+    griser();
+  };
+  $("#t-choix").addEventListener("toggle", e => { if (e.target.matches?.("details")) e.target.open ? ouverts.add(e.target.dataset.facette) : ouverts.delete(e.target.dataset.facette); }, true);
+  ["#t-q", "#t-seuls"].forEach(s => $(s).addEventListener("input", lister));
+  $("#t-choix").addEventListener("click", e => {
+    const b = e.target.closest("[data-p]"); if (!b) return;
+    const ligne = b.closest(".m-ligne"), c = ligne.dataset.code, p = +b.dataset.p;
+    if (p) TH.brouillon[c] = { poids:p, remarque: TH.brouillon[c]?.remarque || "" }; else delete TH.brouillon[c];
+    ligne.outerHTML = ligneChoixTheme(ligneTheme(c));
+    compterThemes(); griser();
+  });
+  $("#t-choix").addEventListener("input", e => { if (e.target.matches(".m-rem")) TH.brouillon[e.target.closest(".m-ligne").dataset.code].remarque = e.target.value; });
+  $("#t-annuler").addEventListener("click", () => { TH.brouillon = null; dialogueThemes.close(); });
+  $("#t-enregistrer").addEventListener("click", enregistrerThemes);
+  lister(); compterThemes();
+  dialogueThemes.showModal();
+}
+function ligneChoixTheme(l){
+  const v = TH.brouillon[l.code], p = v?.poids || 0;
+  return `<div class="m-ligne${p ? " affecte" : ""}${l.parent ? " t-sous" : ""}" data-code="${esc(l.code)}"><div>${esc(l.libelle)}<span class="m-code">${esc(l.code)}</span></div>
+    <div class="m-poids" role="group" aria-label="Poids de ${esc(l.libelle)}">${[[0, "—"], [1, POIDS[1]], [2, POIDS[2]], [3, POIDS[3]]].map(([n, t]) =>
+      `<button type="button" data-p="${n}" aria-pressed="${p === n}"${n ? "" : ' title="absent"'}>${esc(t)}</button>`).join("")}</div>
+    ${p ? `<input class="m-rem" type="text" placeholder="Remarque (facultative)" aria-label="Remarque" value="${esc(v.remarque)}">` : ""}</div>`;
+}
+// Abstrait coché (poids quelconque) : Période et Réalisme grisées, leurs choix ignorés à l'enregistrement
+function griser(){
+  const abstrait = !!TH.brouillon[ABSTRAIT];
+  document.querySelectorAll("#t-choix details.t-facette").forEach(d => {
+    const off = abstrait && FACETTES_TEMPS.includes(d.dataset.facette);
+    d.classList.toggle("grise", off); d.querySelectorAll("button, input").forEach(x => x.disabled = off);
+    const n = themesRanges(d.dataset.facette).filter(l => TH.brouillon[l.code]).length;
+    d.querySelector("[data-nb]").textContent = n ? ` · ${n} choisi${n > 1 ? "s" : ""}` : "";
+  });
+}
+function compterThemes(){
+  const n = { 3:0, 2:0, 1:0 }, abstrait = !!TH.brouillon[ABSTRAIT];
+  Object.entries(TH.brouillon).forEach(([c, v]) => { if (!(abstrait && FACETTES_TEMPS.includes(ligneTheme(c)?.facette))) n[v.poids]++; });
+  $("#t-compteur").textContent = [3, 2, 1].map(p => `${n[p]} ${n[p] > 1 ? POIDS_PLURIEL[p] : POIDS[p]}`).join(" · ");
+}
+async function enregistrerThemes(){
+  const avant = TH.affectes, apres = { ...TH.brouillon }, etat = $("#t-etat");
+  // un jeu abstrait : les périodes et le réalisme sont retirés (supprimés en base s'il y en avait)
+  if (apres[ABSTRAIT]) Object.keys(apres).forEach(c => { if (FACETTES_TEMPS.includes(ligneTheme(c)?.facette)) delete apres[c]; });
+  // l'horodatage (modifie_le, modifie_par) est tenu par la base
+  const majs = Object.entries(apres).filter(([c, v]) => !avant[c] || avant[c].poids !== v.poids || avant[c].remarque.trim() !== v.remarque.trim())
+    .map(([c, v]) => ({ jeu:TH.jeu, theme:c, poids:v.poids, remarque: v.remarque.trim() || null }));
+  const sup = Object.keys(avant).filter(c => !apres[c]);
+  if (!majs.length && !sup.length){ TH.brouillon = null; dialogueThemes.close(); return; }
+  $("#t-enregistrer").disabled = true; etat.className = "m-etat discret"; etat.textContent = "Enregistrement…";
+  const r1 = majs.length ? await sb.from("prisme_jeux_themes").upsert(majs, { onConflict:"jeu,theme" }) : {};
+  const r2 = !r1.error && sup.length ? await sb.from("prisme_jeux_themes").delete().eq("jeu", TH.jeu).in("theme", sup) : {};
+  const err = r1.error || r2.error;
+  if (err){ $("#t-enregistrer").disabled = false; etat.className = "m-etat err"; etat.textContent = "Rien n'a pu être enregistré : " + err.message; return; }
+  dialogueThemes.close();
+  // relire la base : la page montre ce qui y est vraiment
+  await chargerThemes(TH.jeu, TH.user, TH.role);
 }
 </script>
 <script src="entete.js?v=1.4"></script>
