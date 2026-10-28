@@ -1,9 +1,9 @@
 # CLAUDE.md — Charte du site de la Forge de l'Arpenteur
 
-**Version 0.5 — 25/10/2026 à 21h45**
+**Version 0.6 — 28/10/2026 à 23h18**
 Ce fichier est lu automatiquement par Claude Code au début de chaque séance. Il sert aussi de charte commune aux conversations du projet claude.ai « La Forge de l'Arpenteur ».
 **Le dépôt est public** (GitHub Pages) : rien de personnel ni de secret dans ce fichier.
-Dépôt de référence : GitHub `pierrepigeon-ui/laFORGE`, branche `main` (Forge 1.9 du 25/10/2026).
+Dépôt de référence : GitHub `pierrepigeon-ui/laFORGE`, branche `main` (Forge 1.11 du 26/10/2026).
 Base : Supabase, projet unique dont Pierre est propriétaire.
 Copie de travail locale : `C:\LA_FORGE\laFORGE\` (clone du dépôt, utilisé par Claude Code). Le dossier parent `C:\LA_FORGE\` contient un second `CLAUDE.md`, privé et jamais publié (façon de travailler avec Pierre, détails de PRISME), et les sauvegardes de la base dans `C:\LA_FORGE\sauvegardes\`.
 
@@ -50,7 +50,7 @@ Les conversations claude.ai conçoivent ; Claude Code range, vérifie et envoie 
 
 | Conversation | Dossiers du dépôt | Tables de la base |
 |---|---|---|
-| **Site web** | racine (`index.html`, `favicon.svg`, futurs fichiers communs), future console de la Forge | `forge_*`, fonctions communes (rôles, export) |
+| **Supervision** | racine (`index.html`, `favicon.svg`, futurs fichiers communs), future console de la Forge | `forge_*`, fonctions communes (rôles, export) |
 | **Flamme Bleue** | `blueflame/` | `flamme_*` |
 | **PRISME** | `prisme/` | `prisme_*` |
 | *(go2games)* | `go2games/` — démonstration terminée, retirée du menu de la Forge en 1.9 ; dossier encore en ligne | lit une vue de PRISME |
@@ -59,12 +59,12 @@ Règles :
 
 1. Une conversation ne modifie que ses dossiers et ses tables. Si un changement en touche d'autres, elle prévient Pierre d'abord et écrit une **consigne** au § 9.
 2. Au début de chaque séance de travail sur le code, la conversation relit le dépôt en ligne (téléchargement de `main`) plutôt que la copie du projet, qui peut dater. La structure complète de la base est dans le fichier `forge_base_complete_…sql` produit par la console ; la copie `structure_base` du projet est tronquée après `forge_export_base`.
-3. Les fonctions de la base dont dépendent les règles de sécurité des sous-sites (`flamme_mon_role()`, `prisme_mon_role()`…) gardent leur nom et leur réponse : seule la conversation Site web peut changer ce qu'elles lisent, et sans changer ce qu'elles renvoient.
+3. Les fonctions de la base dont dépendent les règles de sécurité des sous-sites (`flamme_mon_role()`, `prisme_mon_role()`…) gardent leur nom et leur réponse : seule la conversation Supervision peut changer ce qu'elles lisent, et sans changer ce qu'elles renvoient.
 
 ## 3. Dépôt GitHub
 
 ```
-/                  accueil de la Forge (index.html, favicon.svg), CLAUDE.md, .gitignore
+/                  accueil de la Forge (index.html, favicon.svg), CLAUDE.md, LICENSE, .gitignore
 /blueflame/        Flamme Bleue
 /prisme/           PRISME
 /go2games/         ancienne vitrine de démonstration (hors menu)
@@ -73,13 +73,64 @@ Règles :
 - Chaque page livrée affiche visiblement son numéro et sa date/heure de version (`const VERSION = { numero, date }`), à incrémenter à chaque livraison.
 - Les conversations claude.ai livrent des **fichiers complets**, prêts à déposer dans `C:\LA_FORGE\laFORGE\` ; Claude Code les envoie (§ 0).
 - `.gitignore` à la racine : garde-fou contre l'envoi de sauvegardes et de fichiers personnels.
-- Un fichier commun aux sous-sites (style, en-tête, connexion) vit à la racine et appartient à la conversation Site web.
+- Un fichier commun aux sous-sites (style, en-tête, connexion) vit à la racine et appartient à la conversation Supervision.
+- `LICENSE` « tous droits réservés » depuis le 26/10/2026 ; chaque page porte en pied de page « © 2026 Pierre Pigeon, tous droits réservés » avec un lien « conditions » vers la licence.
 
 ## 4. Base Supabase
 
 **Préfixes** : `forge_` (commun), `flamme_` (Flamme Bleue), `prisme_` (PRISME). Tout nouveau sous-site reçoit son préfixe.
 
 **Tables communes actuelles** : `forge_utilisateurs` (rôles, utilisée de fait par Flamme Bleue), `forge_journal`, `forge_messages`, `forge_parametres`. PRISME a sa propre table de rôles `prisme_roles`.
+
+### Créer une table : modèle commun (version 1.0 — 28/10/2026)
+
+Toute nouvelle table de la Forge est créée **complète, en un seul script** : sécurité, horodatage, journal. La conversation du chantier le prépare d'après ce modèle ; Pierre le passe dans l'éditeur SQL de Supabase ; aucun aller-retour avec Supervision n'est nécessaire si le modèle est suivi.
+
+Règles :
+- **Préfixe** du chantier (`flamme_`, `prisme_`… ; `forge_` est réservé à Supervision).
+- **Clé primaire obligatoire.** Le journal nomme chaque ligne par sa colonne `code`, `cle`, `nom` ou `user_id`, sinon par les valeurs de sa clé primaire (ex. `jeu/mecanisme`).
+- **Jamais de colonne calculée** (`generated always`) : les sauvegardes réinsèrent toutes les colonnes et la restauration échouerait.
+- **Colonnes d'horodatage** `modifie_le` et `modifie_par`, tenues par la fonction commune `forge_horodater()` (ne pas en créer une par chantier). Le journal ignore une modification qui ne touche qu'elles.
+- **Sécurité (RLS) toujours active** : sans règle, une table est lisible et modifiable par n'importe qui. Les droits s'appuient sur la fonction de rôle du chantier (`flamme_mon_role()`, `prisme_mon_role()`).
+- **Sauvegarde** : la sauvegarde complète de la base prend toute nouvelle table d'office. Si la console du sous-site a sa propre sauvegarde, y ajouter la table.
+- **Données personnelles** : jamais dans une table lisible sans compte.
+
+```sql
+-- <chantier> — création de <prefixe>_<nom>, <date>, conversation « <nom> »
+begin;
+
+create table public.<prefixe>_<nom> (
+  code        text primary key,          -- ou : primary key (col_a, col_b) pour une table de liaison
+  -- … colonnes propres …
+  modifie_le  timestamptz not null default now(),
+  modifie_par uuid default auth.uid()
+);
+
+alter table public.<prefixe>_<nom> enable row level security;
+
+create policy <prefixe>_<nom>_lecture on public.<prefixe>_<nom>
+  for select to public using (<prefixe>_mon_role() is not null);       -- ou using (true) si lecture publique voulue
+create policy <prefixe>_<nom>_ecriture on public.<prefixe>_<nom>
+  for all to public
+  using      (<prefixe>_mon_role() in ('proprietaire', 'editeur'))
+  with check (<prefixe>_mon_role() in ('proprietaire', 'editeur'));
+
+create trigger <prefixe>_<nom>_horodatage before update on public.<prefixe>_<nom>
+  for each row execute function forge_horodater();
+create trigger <prefixe>_<nom>_journal after insert or delete or update on public.<prefixe>_<nom>
+  for each row execute function forge_journaliser();
+
+commit;
+
+-- Contrôle : une ligne ; securite_active = true, nb_regles ≥ 1, nb_declencheurs = 2, cle_primaire remplie
+select
+  (select relrowsecurity from pg_class where oid = 'public.<prefixe>_<nom>'::regclass) as securite_active,
+  (select count(*) from pg_policies where tablename = '<prefixe>_<nom>') as nb_regles,
+  (select count(*) from pg_trigger where tgrelid = 'public.<prefixe>_<nom>'::regclass and not tgisinternal) as nb_declencheurs,
+  (select string_agg(a.attname, ' + ') from pg_index i
+     join pg_attribute a on a.attrelid = i.indrelid and a.attnum = any(i.indkey::int2[])
+    where i.indrelid = 'public.<prefixe>_<nom>'::regclass and i.indisprimary) as cle_primaire;
+```
 
 ### Accès : schéma cible (validé le 25/10/2026)
 
@@ -114,7 +165,7 @@ Le tout s'exécute en une seule transaction, avec un script de retour arrière e
 | Connexion | portail de la Forge, seule porte d'entrée | inchangé |
 | Aiguillage | l'accueil interroge les rôles de chaque sous-site ; un seul accès → envoi direct | une requête sur `forge_acces` |
 | Contact | formulaire → `forge_messages` ; aucun e-mail envoyé | ajouter l'envoi d'un e-mail à l'adresse de contact des réglages |
-| Messages reçus | lus dans l'accueil (propriétaire) | console de la Forge |
+| Messages reçus | lus dans l'accueil (propriétaire) ; pastille « messages non lus » en haut de l'accueil depuis la 1.10 | console de la Forge |
 | Réglages | accueil : adresse de contact, ouverture de PRISME | console de la Forge |
 | Comptes et rôles | onglet Personnes de la console Flamme Bleue (Flamme seule) ; rôles PRISME à part | console de la Forge, tous sous-sites |
 | Journal | onglet Journal de la console Flamme Bleue, sans PRISME | console de la Forge, filtrable par sous-site |
@@ -145,4 +196,5 @@ Le tout s'exécute en une seule transaction, avec un script de retour arrière e
 
 *(Chaque consigne : date, conversation destinataire, ce qui change pour elle, ce qu'elle doit faire ou ne plus faire.)*
 
-- **25/10/2026 — Flamme Bleue et PRISME** : les comptes, rôles, journal, sauvegarde et mot de passe passent progressivement à la Forge. Ne plus faire évoluer ces fonctions dans vos consoles ; les signaler à la conversation Site web. Vos fonctions `*_mon_role()` restent disponibles et inchangées pour vous.
+- **25/10/2026 — Flamme Bleue et PRISME** : les comptes, rôles, journal, sauvegarde et mot de passe passent progressivement à la Forge. Ne plus faire évoluer ces fonctions dans vos consoles ; les signaler à la conversation Supervision. Vos fonctions `*_mon_role()` restent disponibles et inchangées pour vous.
+- **28/10/2026 — tous les chantiers** : toute nouvelle table suit le modèle commun du § 4. Une console de sous-site garde à jour la sauvegarde de ses propres tables (c'est de l'entretien), sans y ajouter de fonction commune à la Forge.
