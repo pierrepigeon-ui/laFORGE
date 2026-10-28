@@ -9,32 +9,98 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <style>
-:root{--ink:#1B2430;--muted:#5B6573;--line:#DDE1E7;--paper:#F6F5F1;--panel:#FFFFFF;--accent:#3D2645;--ok:#1E7A46;--warn:#B7791F;--err:#B42318;--plus:#1E7A46;--moins:#B42318;
-  --SYS:#4f6b8f;--EXP:#7a5c8f;--EDI:#6b8f5c;
+/* 2.0 (28/10/2026) : les couleurs de la maquette validée ; les noms de variables restent ceux de PRISME (timeline.js les lit) */
+:root{--ink:#15171C;--muted:#4B5160;--line:#E2E4E9;--trait:#C9CEDB;--paper:#F4F5F7;--panel:#FFFFFF;--neutre:#E8EAF0;
+  --accent:#2346C8;--accent-fonce:#16308F;--sur-accent:#FFFFFF;--bleu-fond:#E6EBFB;--bleu-texte:#16308F;--orange-fond:#FBEDE4;--orange-texte:#8A3108;
+  --ok:#1E7A46;--warn:#B7791F;--err:#B42318;--plus:#1E7A46;--moins:#B42318;--SYS:#4f6b8f;--EXP:#7a5c8f;--EDI:#6b8f5c;
   --serif:"Source Serif 4",Georgia,"Times New Roman",serif;--sans:"IBM Plex Sans","Segoe UI",Arial,sans-serif}
-@media (prefers-color-scheme: dark){:root{--ink:#E6E9EE;--muted:#9AA4B2;--line:#2C3542;--paper:#11161D;--panel:#171D25;--accent:#C9B4D2;--ok:#5CC98A;--warn:#E0A84A;--err:#F2837A;--plus:#5CC98A;--moins:#F2837A;--SYS:#8aa6cc;--EXP:#b49ccc;--EDI:#9cc58c}}
-*{box-sizing:border-box} html,body{margin:0} body{background:var(--paper);color:var(--ink);font:16px/1.6 var(--sans)}
-a{color:inherit}
-.marque{font:600 19px/1 "Source Serif 4",Georgia,serif;letter-spacing:.08em;color:inherit!important;text-decoration:none}
+@media (prefers-color-scheme: dark){:root{--ink:#E6E9EE;--muted:#A3ADBB;--line:#2C3542;--trait:#3A4555;--paper:#11161D;--panel:#171D25;--neutre:#252D38;
+  --accent:#7C9BFF;--accent-fonce:#A9BDFF;--sur-accent:#0B1020;--bleu-fond:#1F2A4D;--bleu-texte:#C9D6FF;--orange-fond:#3D2618;--orange-texte:#F5C3A3;
+  --ok:#5CC98A;--warn:#E0A84A;--err:#F2837A;--plus:#5CC98A;--moins:#F2837A;--SYS:#8aa6cc;--EXP:#b49ccc;--EDI:#9cc58c}}
+*{box-sizing:border-box} html,body{margin:0} [hidden]{display:none!important} body{background:var(--paper);color:var(--ink);font:15px/1.5 var(--sans)}
+a{color:var(--accent)} a:hover{color:var(--accent-fonce)}
+.marque{font:600 19px/1 "Source Serif 4",Georgia,serif;letter-spacing:.08em;color:var(--ink)!important;text-decoration:none}
 .barre{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:12px 20px;font-size:13px;color:var(--muted)}
-.barre a{text-decoration:none} #qui a{margin-left:10px}
-main{max-width:920px;margin:0 auto;padding:10px 24px 40px}
-.retour{font-size:13.5px;color:var(--muted);text-decoration:none} .retour:hover{text-decoration:underline}
-.entete{display:flex;gap:22px;align-items:flex-start;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px 26px;margin-top:8px}
-.entete img,.entete .sans-image{width:120px;height:120px;border-radius:12px;object-fit:cover;flex:none;background:var(--paper);border:1px solid var(--line)}
-.entete h1{font:600 clamp(28px,5vw,42px)/1.1 var(--serif);margin:0 0 4px}
-.entete .sous{font-size:13.5px;color:var(--muted);margin:0 0 10px}
-.chiffres{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;margin:0}
-.chiffres span b{font-weight:600}
-.actions-eval{margin:12px 0 0;display:flex;gap:8px;flex-wrap:wrap}
-section{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px 26px;margin-top:16px}
-section h2{font:600 22px/1.25 var(--serif);margin:0 0 4px}
-section .question{font:italic 15px var(--serif);color:var(--muted);margin:0 0 14px}
-.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
-.notes div{border:1px solid var(--line);border-radius:10px;padding:10px 14px;border-top:4px solid var(--c, var(--ink))}
-.notes small{display:block;font-size:12.5px;color:var(--muted)} .notes b{font:600 26px/1.2 var(--serif);font-variant-numeric:tabular-nums}
-.notes .finale b{font-size:32px} .notes .sur{font-size:13px;color:var(--muted);margin-left:2px}
-.ecart{font-size:13px;color:var(--muted);margin-left:6px} .ecart.plus{color:var(--plus)} .ecart.moins{color:var(--moins)}
+.barre a{text-decoration:none;color:var(--muted)} #qui a{margin-left:10px}
+main{max-width:1180px;margin:0 auto;padding:8px 24px 48px;display:flex;flex-direction:column;gap:24px}
+.retour{font-size:13.5px;color:var(--muted);text-decoration:none;align-self:flex-start} .retour:hover{text-decoration:underline}
+#contenu{display:flex;flex-direction:column;gap:24px}
+.carte{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px}
+.surtitre{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.titre-carte{font:600 20px/1.25 var(--sans);margin:0}
+.discret{color:var(--muted);font-size:13.5px}
+.vide{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:30px 26px;font:italic 18px/1.5 var(--serif);color:var(--muted);margin:0}
+.vide a{color:var(--ink)}
+.btn{display:inline-flex;align-items:center;min-height:40px;font:500 14px var(--sans);padding:7px 14px;border-radius:10px;border:1px solid var(--trait);background:var(--panel);color:var(--ink);text-decoration:none;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--ink);color:var(--ink)}
+.btn.plein{background:var(--accent);border-color:var(--accent);color:var(--sur-accent)} .btn.plein:hover{background:var(--accent-fonce);border-color:var(--accent-fonce);color:var(--sur-accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* infobulle : au survol et au focus (clavier), pas seulement à la souris */
+.info{position:relative;cursor:default}
+.info .bulle{display:none;position:absolute;left:0;top:calc(100% + 6px);z-index:20;background:var(--ink);color:var(--panel);font:400 12.5px/1.45 var(--sans);padding:7px 10px;border-radius:8px;width:max-content;max-width:min(340px,80vw);white-space:normal;text-align:left;box-shadow:0 4px 14px rgba(0,0,0,.15)}
+.info:hover .bulle,.info:focus .bulle,.info:focus-within .bulle{display:block}
+
+/* 1. carte d'identité */
+.identite{display:grid;grid-template-columns:200px minmax(0,1fr) auto;gap:28px;padding:28px}
+.visuel{width:200px;height:250px;border-radius:12px;background:var(--neutre);object-fit:cover;display:block}
+.id-corps{display:flex;flex-direction:column;gap:16px;min-width:0}
+.id-corps h1{font:600 clamp(28px,4.5vw,40px)/1.1 var(--serif);margin:2px 0 4px}
+.id-corps h1 .cfg{font-weight:400;color:var(--muted)}
+.technique{color:var(--muted)}
+.actions{display:flex;flex-direction:column;gap:8px;align-items:stretch}
+.configs{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0;font-size:13.5px}
+.configs a,.configs b{border:1px solid var(--line);border-radius:999px;padding:3px 11px;text-decoration:none;color:var(--ink)}
+.configs b{background:var(--ink);color:var(--panel);border-color:var(--ink);font-weight:500}
+.configs small.brouillon{font-size:11px;opacity:.75;margin-left:3px}
+.notation{display:flex;flex-wrap:wrap;gap:28px;align-items:center}
+.note-g{display:flex;align-items:baseline;gap:4px}
+.note-g b{font:600 64px/1 var(--serif);color:var(--accent);font-variant-numeric:tabular-nums}
+.note-g span{font-size:18px;color:var(--muted)}
+.pour-vous{font-size:13.5px;color:var(--muted);margin-top:4px}
+.ecart{font-size:13px;color:var(--muted);margin-left:4px} .ecart.plus{color:var(--plus)} .ecart.moins{color:var(--moins)}
+.barres{flex:1 1 280px;display:flex;flex-direction:column;gap:8px;max-width:420px}
+.barre-ch{display:grid;grid-template-columns:96px minmax(0,1fr) 40px;gap:10px;align-items:center;border-radius:6px}
+.barre-ch > span:first-child{font-size:13px;color:var(--muted)}
+.piste{height:8px;border-radius:4px;background:var(--neutre)} .piste > div{height:8px;border-radius:4px;background:var(--accent)}
+.barre-ch b{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+.pastilles{display:flex;flex-wrap:wrap;gap:8px}
+.pastille{display:inline-block;padding:6px 12px;border-radius:999px;background:var(--neutre);color:var(--ink);font-size:13px}
+.pastille.forte{background:var(--ink);color:var(--panel);font-weight:600}
+.verdict{margin:0;font:500 19px/1.4 var(--serif)}
+
+/* 2. les trois pôles */
+.poles{display:flex;flex-wrap:wrap;gap:16px}
+.pole{flex:1 1 320px;min-width:0;display:flex;flex-direction:column;gap:12px}
+.pole.theme{border-style:dashed;border-color:var(--trait)}
+.groupe{display:flex;flex-direction:column;gap:6px}
+.groupe > .etiq{font-size:13px;color:var(--muted)}
+.puces{display:flex;flex-wrap:wrap;gap:6px}
+.tp{display:inline-block;padding:4px 10px;border-radius:999px;font-size:13px}
+.tp.bleu{background:var(--bleu-fond);color:var(--bleu-texte);font-weight:600}
+.tp.orange{background:var(--orange-fond);color:var(--orange-texte)}
+ul.forts{margin:0;padding-left:18px;font-size:14px;display:flex;flex-direction:column;gap:2px}
+.mj{display:inline-block;padding:7px 14px;border-radius:10px;background:var(--accent);color:var(--sur-accent);font-size:15px;font-weight:600}
+.pr{display:inline-block;padding:4px 10px;border-radius:8px;border:1px solid var(--trait);font-size:13px}
+.mg{display:inline-block;padding:3px 9px;border-radius:8px;border:1px dashed var(--trait);font-size:12.5px;color:var(--muted)}
+.lien-btn{align-self:flex-start;min-height:44px;padding:0 4px;border:0;background:none;color:var(--accent);font:600 14px var(--sans);cursor:pointer}
+.lien-btn:hover{color:var(--accent-fonce)}
+
+/* 3. sa vie dans le temps */
+.vie{display:flex;flex-direction:column;gap:12px}
+.vie .entete-vie{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px}
+.defile{overflow-x:auto}
+svg.petite{display:block;width:100%;max-width:760px;min-width:480px}
+
+/* 4. le détail */
+.detail{display:flex;flex-direction:column;gap:8px}
+.detail > .surtitre{padding:8px 4px 0}
+details.pli{background:var(--panel);border:1px solid var(--line);border-radius:12px}
+details.pli > summary{min-height:56px;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 20px;cursor:pointer;list-style:none}
+details.pli > summary::-webkit-details-marker{display:none}
+details.pli > summary strong{font-weight:600}
+details.pli > summary svg{flex:none;transition:transform .15s} details.pli[open] > summary svg{transform:rotate(90deg)}
+details.pli > .contenu{padding:4px 20px 18px;border-top:1px solid var(--line)}
 table.paires{width:100%;border-collapse:collapse;font-size:14.5px;margin:4px 0 14px}
 table.paires th{font-weight:500;font-size:12.5px;color:var(--muted);text-align:left;border-bottom:1px solid var(--line);padding:6px 8px}
 table.paires td{border-bottom:1px solid var(--line);padding:7px 8px;vertical-align:top}
@@ -43,41 +109,51 @@ table.paires .axes{color:var(--muted);font-size:13.5px}
 table.paires .axes span{white-space:nowrap;margin-right:12px}
 h3.chap{font:600 17px var(--serif);margin:14px 0 2px;color:var(--c)}
 .bandeau{font-size:14.5px;background:var(--paper);border-radius:8px;padding:10px 14px;margin:8px 0}
-.discret{color:var(--muted);font-size:13.5px}
 .proto{font-size:10px;text-transform:uppercase;letter-spacing:.04em;border:1px solid var(--line);border-radius:4px;padding:0 3px;color:var(--muted);vertical-align:2px}
-.btn{display:inline-block;font:500 14px var(--sans);padding:7px 14px;border-radius:8px;border:1px solid var(--line);background:var(--paper);color:var(--ink);text-decoration:none}
-.btn:hover{border-color:var(--ink)}
-.vide{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:30px 26px;font:italic 18px/1.5 var(--serif);color:var(--muted)}
-.vide a{color:var(--ink)}
-.configs{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0;font-size:13.5px}
-.configs a,.configs b{border:1px solid var(--line);border-radius:999px;padding:3px 11px;text-decoration:none;color:var(--ink)}
-.configs b{background:var(--ink);color:var(--panel);border-color:var(--ink);font-weight:500}
-h1 .cfg{font-weight:400;color:var(--muted)}
-.configs small.brouillon{font-size:11px;opacity:.75;margin-left:3px}
-.version{font-size:12px;color:var(--muted);text-align:right;margin-top:24px}
-/* mécanismes (28/10/2026) */
-.m-titre{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.article{font:16px/1.6 var(--serif);max-width:720px}
+.article h1{font:600 26px/1.2 var(--serif);margin:12px 0} .article h2{font:600 20px/1.3 var(--serif);margin:18px 0 6px} .article h3{font:600 17px var(--serif);margin:14px 0 4px}
+.article img{max-width:100%;height:auto;border-radius:6px} .article img.flottant{float:left;width:200px;margin:4px 16px 8px 0}
+.article .encadre{clear:both;border:1px solid var(--line);border-left:4px solid var(--accent);background:var(--paper);border-radius:6px;padding:10px 14px;margin:12px 0;font:14px/1.5 var(--sans)}
+.article::after{content:"";display:block;clear:both}
+
+/* mécanismes : liste complète et sélecteur (1.7), le sélecteur dans une fenêtre (2.0) */
 h3.m-groupe{font:600 16px var(--serif);margin:12px 0 2px}
 ul.m-liste{list-style:none;margin:0;padding:0}
-ul.m-liste li{border-bottom:1px solid var(--line);padding:6px 0}
+ul.m-liste li{border-bottom:1px solid var(--line);padding:7px 0}
 .m-code{font-size:12px;color:var(--muted);margin-left:6px;font-variant-numeric:tabular-nums}
 .m-niv{font-size:11px;border:1px solid var(--line);border-radius:999px;padding:0 7px;color:var(--muted);margin-left:6px;white-space:nowrap}
 .m-fusion{font-size:13px;color:var(--warn);margin-left:6px}
-.m-rem-lue{display:block;font-size:13.5px;color:var(--muted)}
+.m-def{display:block;font-size:13.5px;color:var(--muted)}
+.m-rem-lue{display:block;font-size:13.5px;font-style:italic;color:var(--muted)}
+dialog.fenetre{width:min(780px,94vw);max-height:90vh;border:1px solid var(--line);border-radius:16px;padding:22px;background:var(--panel);color:var(--ink)}
+dialog.fenetre::backdrop{background:rgba(15,20,30,.45)}
+dialog.fenetre h2{font:600 22px/1.25 var(--serif);margin:0 0 4px}
+.question{font:italic 15px var(--serif);color:var(--muted);margin:0 0 12px}
 .m-compteur{font-size:14px;margin:0 0 10px}
 .m-filtres{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px;font-size:14px}
 .m-filtres input[type=search],.m-filtres select{font:14px var(--sans);padding:6px 9px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink)}
 .m-filtres input[type=search]{flex:1 1 200px}
-.m-choix{max-height:60vh;overflow:auto;border-top:1px solid var(--line)}
+.m-choix{max-height:50vh;overflow:auto;border-top:1px solid var(--line)}
 .m-ligne{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;border-bottom:1px solid var(--line);padding:7px 2px}
 .m-ligne.affecte{background:var(--paper)}
 .m-poids{display:flex;gap:3px}
 .m-poids button{font:500 12.5px var(--sans);padding:4px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);cursor:pointer;white-space:nowrap}
 .m-poids button[aria-pressed=true]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
 .m-rem{grid-column:1 / -1;font:13.5px var(--sans);padding:4px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink)}
+.m-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0 0}
 .m-etat{font-size:13.5px} .m-etat.err{color:var(--err)}
-@media (max-width:640px){ main{padding:8px 12px 30px} .entete{flex-direction:column;padding:18px} .entete img,.entete .sans-image{width:80px;height:80px} section{padding:18px}
-  .m-ligne{grid-template-columns:1fr} .m-poids button{flex:1;padding:5px 2px} }
+
+.version{font-size:12px;color:var(--muted);text-align:right;margin:0}
+@media (max-width:760px){
+  main{padding:8px 12px 30px;gap:16px} #contenu{gap:16px}
+  .identite{grid-template-columns:1fr;gap:18px;padding:18px}
+  .visuel{width:120px;height:150px}
+  .actions{order:3;flex-direction:row;flex-wrap:wrap}
+  .note-g b{font-size:52px}
+  .carte{padding:18px}
+  .m-ligne{grid-template-columns:1fr} .m-poids button{flex:1;padding:5px 2px}
+  details.pli > summary{padding:8px 14px} details.pli > .contenu{padding:4px 14px 16px}
+}
 </style>
 </head>
 <body>
@@ -87,16 +163,18 @@ ul.m-liste li{border-bottom:1px solid var(--line);padding:6px 0}
   <div id="contenu"><p class="vide">Chargement…</p></div>
   <p class="version"><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p>
 </main>
+<dialog class="fenetre" id="m-dialogue" aria-labelledby="m-dialogue-titre"><div id="m-dialogue-corps"></div></dialog>
 
 <script src="timeline.js?v=3.9"></script>
 <script>
-const VERSION = { numero:"1.7", date:"2026-10-28 15:26" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"2.0", date:"2026-10-28 23:06" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fmt = (v, k = 2) => v == null || Number.isNaN(v) ? "—" : Number(v).toFixed(k).replace(".", ",").replace("-", "−");
+const maj = t => { t = String(t ?? ""); return t.charAt(0).toUpperCase() + t.slice(1); };
 $("#version").textContent = `Fiche du jeu ${VERSION.numero}, version du ${VERSION.date.replace(/(\d{4})-(\d\d)-(\d\d) (\d\d):(\d\d)/,"$3/$2/$1 à $4h$5")} · timeline ${TIMELINE_VERSION.numero}`;
 
 /* ---- connexion : tout passe par la Forge ---- */
@@ -114,21 +192,81 @@ sb.auth.onAuthStateChange((_e, session) => {
 const vide = html => $("#contenu").innerHTML = `<p class="vide">${html}</p>`;
 const NIVEAUX = { joueur:0, lecteur:1, evaluateur:2, editeur:3, proprietaire:4 };
 
+/* ---- réglages (console, onglet Réglages) : seuils de l'écart entre profils et de l'usure ---- */
+const REGLAGES_DEFAUT = { ecart_profils_net:.3, ecart_profils_fort:.8, usure_moderee:.3, usure_rapide:.8 };
+async function lireReglages(){
+  const { data, error } = await sb.from("prisme_reglages").select("cle,valeur");
+  const R = { ...REGLAGES_DEFAUT };
+  if (error || !data?.length){ console.warn("PRISME : réglages illisibles ou vides, valeurs par défaut 0,3 / 0,8 / 0,3 / 0,8", error?.message || ""); return R; }
+  data.forEach(r => { if (r.cle in R && r.valeur != null) R[r.cle] = Number(r.valeur); });
+  return R;
+}
+// l'usure : la baisse de la note (sur 5) par doublement du nombre de parties, de l'apogée au dernier jalon calculé (le flow est sur 10)
+function usureDe(c){
+  const fin = c.omega ?? 7, a = c.alpha;
+  if (a >= fin || c.x[fin] <= c.x[a]) return 0;
+  return Math.max(0, (c.y[a] - c.y[fin]) / (c.x[fin] - c.x[a])) / 2;
+}
+const texteUsure = (u, S) => u < S.usure_moderee ? "S'use à peine" : u > S.usure_rapide ? "S'use vite" : "Usure modérée";
+const texteEcart = (e, S) => e < S.ecart_profils_net ? "Plaît largement : peu d'écart d'un profil à l'autre"
+  : e > S.ecart_profils_fort ? "Divise : fort écart entre profils" : "Plaît davantage à certains profils : écart net";
+// le coût en court, pour la pastille : « 0,06 € la partie »
+function coutCourt(k){
+  if (!k) return null;
+  const e = v => v < 1 ? v.toFixed(2).replace(".", ",") : v < 10 ? v.toFixed(1).replace(".", ",") : String(Math.round(v));
+  return `${k.classique ? "moins de " : ""}${e(k.parPartie)} € la partie`;
+}
+// le verdict : la première phrase du paragraphe qui suit le titre « Verdict » de l'article publié
+function verdictDe(html){
+  if (!html) return null;
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const h = [...doc.querySelectorAll("h1,h2,h3,h4")].find(x => /^\s*verdict\s*$/i.test(x.textContent));
+  let p = h?.nextElementSibling; while (p && p.tagName !== "P") p = p.nextElementSibling;
+  const t = p?.textContent.trim(); if (!t) return null;
+  return (t.match(/^.+?[.!?…](?=\s|$)/) || [t])[0];
+}
+// l'article publié, nettoyé : ni script, ni attribut actif, ni consigne de rédaction
+function articlePropre(html){
+  const doc = new DOMParser().parseFromString(html || "", "text/html");
+  doc.querySelectorAll("script,style,iframe,object,embed,.consigne").forEach(x => x.remove());
+  doc.querySelectorAll("*").forEach(el => [...el.attributes].forEach(a => { if (/^on/i.test(a.name) || /^\s*javascript:/i.test(a.value)) el.removeAttribute(a.name); }));
+  return doc.body.innerHTML;
+}
+// la courbe en petit : les huit jalons à intervalles réguliers, l'apogée marquée
+function courbePetite(c, nom){
+  const W = 560, H = 170, g = 24, dr = 24, haut = 18, bas = 40, fin = c.omega ?? 7;
+  const yMax = Math.max(5, Math.ceil(Math.max(...c.y)));
+  const X = j => g + j * (W - g - dr) / 7, Y = v => H - bas - v / yMax * (H - bas - haut);
+  let s = `<svg class="petite" viewBox="0 0 ${W} ${H}" role="img" aria-label="Courbe du flow de ${esc(nom)} au fil des jalons">`;
+  s += `<line x1="${g}" y1="${H - bas}" x2="${W - dr}" y2="${H - bas}" stroke="var(--trait)" stroke-width="1"/>`;
+  s += `<path d="${[...Array(fin + 1).keys()].map(j => `${j ? "L" : "M"}${X(j).toFixed(1)} ${Y(c.y[j]).toFixed(1)}`).join(" ")}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`;
+  s += `<circle cx="${X(c.alpha)}" cy="${Y(c.y[c.alpha])}" r="5" fill="var(--accent)"><title>Apogée : ${fmt(c.y[c.alpha])}/10</title></circle>`;
+  JALONS.forEach((J, j) => s += `<text x="${X(j)}" y="${H - bas + 22}" font-size="11" text-anchor="middle" fill="${j === c.alpha ? "var(--ink)" : "var(--muted)"}"${j === c.alpha ? ' font-weight="600"' : ""}><title>${esc(J.quoi)}</title>${esc(J.nom)}</text>`);
+  return s + `</svg>`;
+}
+const flecheSVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>`;
+const pli = (titre, sous, corps, id) => `<details class="pli"${id ? ` id="${id}"` : ""}><summary><span><strong>${esc(titre)}</strong> <span class="discret">· ${esc(sous)}</span></span>${flecheSVG}</summary><div class="contenu">${corps}</div></details>`;
+
 async function afficher(user){
   const P = new URLSearchParams(location.search), code = P.get("jeu");
   let cfg = (P.get("config") || "").trim() || null;   // config= vide : la boîte de base, demandée explicitement
   if (!code) return vide('Aucun jeu choisi. <a href="jeux.html">Voir tous les jeux</a>.');
-  const [{ data: r }, { data: res }, { data: chapitres }, d] = await Promise.all([
+  const lirePL = t => sb.from(t).select("*").order("ordre");
+  const [{ data: r }, { data: res }, { data: chapitres }, d, S, pm, pt, ps, art] = await Promise.all([
     sb.rpc("prisme_mon_role"),
     sb.from("prisme_player_resultats").select("style,classement").eq("user_id", user.id).order("passe_le", { ascending:false }).limit(1),
     sb.from("prisme_chapitres").select("code,nom,ordre").order("ordre"),
-    lireJeuxEvalues(sb)]);
+    lireJeuxEvalues(sb), lireReglages(),
+    lirePL("prisme_player_moteurs"), lirePL("prisme_player_temperaments"), lirePL("prisme_player_styles"),
+    sb.from("prisme_vitrine").select("article,configuration,publie_le").eq("jeu", code).order("publie_le", { ascending:false }).limit(1)]);
   const role = r || "joueur";
   if (d.refus) return vide("La fiche des jeux n'est pas encore ouverte aux joueurs : le script 25 doit être passé dans la base.");
   const jeu = d.jeux.find(j => j.code === code);
   if (!jeu) return vide('Ce jeu n\'existe pas. <a href="jeux.html">Voir tous les jeux</a>.');
   document.title = `PRISME — ${jeu.nom}`;
   const profil = codeDeResultat(res?.[0]);
+  const PL = { moteurs: pm.data || [], temperaments: pt.data || [], styles: ps.data || [] };
+  const article = art.data?.[0]?.article || null;
   // la boîte de base, ou une configuration (« toutes extensions »…) : ses propres fiches, sa propre courbe (17/10/2026)
   // lecteurs et au-delà : toutes les fiches du jeu, brouillons compris (une configuration en cours de saisie doit se retrouver ici)
   const T0 = NIVEAUX[role] >= NIVEAUX.lecteur ? ((await sb.from("prisme_evaluations").select("*").eq("jeu", code)).data || []) : [];
@@ -143,75 +281,125 @@ async function afficher(user){
   const nomCfg = n => esc(n || "Boîte de base") + (n && !finales.has(n) ? ' <small class="brouillon">brouillon</small>' : "") + (n && n === ref ? ' <small class="brouillon" title="Configuration de référence : celle que lisent la liste des jeux et les profils">référence</small>' : "");
   const nav = liste.length > 1 ? `<p class="configs">${liste.map(n => n === cfg ? `<b>${nomCfg(n)}</b>` : `<a href="${lienCfg(n)}">${nomCfg(n)}</a>`).join("")}</p>` : "";
   const titre = esc(jeu.nom) + (cfg ? ` <span class="cfg">— ${esc(cfg)}</span>` : "");
-  // l'évaluation : « Voir mon évaluation » ou « Évaluer » pour l'évaluateur, « Voir l'évaluation » pour le lecteur s'il en existe une, rien pour le joueur
-  let lienEval = "";
+
+  // les boutons d'action : l'évaluation (mêmes rôles qu'en 1.7), les informations du jeu (éditeur et propriétaire)
+  const boutons = [];
   if (NIVEAUX[role] >= NIVEAUX.lecteur){
     const T = T0.filter(f => configDe(f) === cfg);
     const mienne = T.find(f => f.evaluateur === user.id), url = "evaluation.html?jeu=" + encodeURIComponent(code) + (cfg ? "&config=" + encodeURIComponent(cfg) : "");
-    if (NIVEAUX[role] >= NIVEAUX.evaluateur) lienEval = mienne ? `<a class="btn" href="${url}">Voir mon évaluation</a>` : `<a class="btn" href="${url}&evaluer=1">Évaluer</a>`
-      + (!mienne && T.length ? ` <a class="btn" href="${url}">Voir l'évaluation</a>` : "");
-    else if (T.length) lienEval = `<a class="btn" href="${url}">Voir l'évaluation</a>`;
+    if (NIVEAUX[role] >= NIVEAUX.evaluateur){
+      boutons.push(mienne ? `<a class="btn plein" href="${url}">Mon évaluation</a>` : `<a class="btn plein" href="${url}&evaluer=1">Évaluer ce jeu</a>`);
+      if (!mienne && T.length) boutons.push(`<a class="btn" href="${url}">Voir l'évaluation</a>`);
+    } else if (T.length) boutons.push(`<a class="btn" href="${url}">Voir l'évaluation</a>`);
   }
-  const actions = lienEval ? `<p class="actions-eval">${lienEval}</p>` : "";
-  const img = jeu.image_url ? `<img src="${esc(jeu.image_url)}" alt="">` : `<span class="sans-image"></span>`;
-  const bgg = jeu.bgg_id ? ` · <a href="https://boardgamegeek.com/boardgame/${encodeURIComponent(jeu.bgg_id)}" target="_blank" rel="noopener">BoardGameGeek</a>` : "";
-  if (!R){
-    $("#contenu").innerHTML = `<div class="entete">${img}<div><h1>${titre}</h1><p class="sous">Pas encore de fiche finale${bgg}</p>${nav}${actions}</div></div>
-      <section><p class="discret">Ce jeu n'a pas encore été évalué jusqu'au bout : ses notes paraîtront ici dès qu'une fiche sera déclarée finale.</p></section>
-      <section id="mecanismes"><h2>Mécanismes</h2><p class="discret">Chargement…</p></section>`;
-    chargerMecanismes(code, user, role);
-    return;
-  }
-  const m = R.m, ch = [];
-  if (m.joueurs_min != null) ch.push(`<span>Joueurs <b>${m.joueurs_min === m.joueurs_max ? m.joueurs_min : `${m.joueurs_min} à ${m.joueurs_max}`}</b></span>`);
-  if (m.effectif_reference != null) ch.push(`<span>Meilleur à <b>${Math.round(m.effectif_reference)}</b></span>`);
-  if (m.duree_max != null) ch.push(`<span>Durée <b>${m.duree_min != null && Math.round(m.duree_min) !== Math.round(m.duree_max) ? `${Math.round(m.duree_min)} à ${Math.round(m.duree_max)}` : Math.round(m.duree_max)} min</b></span>`);
-  if (m.pages != null) ch.push(`<span>Règles <b>${Math.round(m.pages)} pages</b></span>`);
-  if (m.prix != null) ch.push(`<span>Prix <b>${fmt(m.prix, 0)} €</b></span>`);
-  if (m.contenu_parties != null) ch.push(`<span>Contenu <b>${Math.round(m.contenu_parties)} parties</b>${m.contenu_unique ? " (usage unique)" : ""}</span>`);
-  if (m.poids_bgg != null) ch.push(`<span>Poids BGG <b>${fmt(m.poids_bgg)}</b></span>`);
+  // la console ne sait pas ouvrir un jeu par l'adresse : un simple lien (onglet Jeux)
+  if (NIVEAUX[role] >= NIVEAUX.editeur) boutons.push(`<a class="btn" href="console.html" title="La console, onglet Jeux">Modifier les informations du jeu</a>`);
+
+  // la fiche technique (moyennes des fiches finales)
+  const m = R?.m, ch = [];
+  if (m){
+    if (m.joueurs_min != null) ch.push(`${m.joueurs_min === m.joueurs_max ? m.joueurs_min : `${m.joueurs_min} à ${m.joueurs_max}`} joueur${(m.joueurs_max ?? m.joueurs_min) > 1 ? "s" : ""}${m.effectif_reference != null ? `, meilleur à ${Math.round(m.effectif_reference)}` : ""}`);
+    if (m.duree_max != null) ch.push(`${m.duree_min != null && Math.round(m.duree_min) !== Math.round(m.duree_max) ? `${Math.round(m.duree_min)} à ${Math.round(m.duree_max)}` : Math.round(m.duree_max)} min`);
+    if (m.pages != null) ch.push(`${Math.round(m.pages)} pages de règles`);
+    if (m.prix != null) ch.push(`${fmt(m.prix, 0)} €`);
+  } else ch.push("Pas encore de fiche finale");
+  if (jeu.bgg_id) ch.push(`<a href="https://boardgamegeek.com/boardgame/${encodeURIComponent(jeu.bgg_id)}" target="_blank" rel="noopener">BoardGameGeek</a>`);
   const ecart = (a, b) => { if (a == null || b == null) return ""; const v = a - b;
     return `<span class="ecart ${v >= .005 ? "plus" : v <= -.005 ? "moins" : ""}">${Math.abs(v) < .005 ? "±" : v > 0 ? "+" : "−"}${fmt(Math.abs(v))}</span>`; };
+  const nomPaire = c => d.paires.find(x => x.code === c)?.nom || c;
 
-  // les notes : finale, chapitres, et pour vous
-  const nomCh = c => chapitres?.find(x => x.code === c)?.nom || c;
-  let h = `<div class="entete">${img}<div><h1>${titre}</h1><p class="sous">${F.length} fiche${F.length > 1 ? "s" : ""} finale${F.length > 1 ? "s" : ""}${F.length > 1 ? " (moyenne)" : ""}${bgg}</p><p class="chiffres">${ch.join("")}</p>${nav}${actions}</div></div>
-  <section><h2>Les notes</h2><p class="question">Sur 5 : chaque chapitre est la moyenne de ses paires, la note finale la moyenne des trois chapitres.</p>
-    <div class="notes"><div class="finale"><small>Note PRISME</small><b>${fmt(R.finale)}</b><span class="sur">/5</span></div>
-    ${(chapitres || []).filter(c => R.chap[c.code] != null).map(c => `<div style="--c:var(--${esc(c.code)})"><small>${esc(c.nom)}</small><b>${fmt(R.chap[c.code])}</b><span class="sur">/5</span></div>`).join("")}
-    ${R.notePour != null ? `<div style="--c:var(--accent)"><small>Pour vous</small><b>${fmt(R.notePour)}</b><span class="sur">/5</span>${ecart(R.notePour, R.finale)}</div>` : ""}</div>
-    ${!profil ? `<p class="discret" style="margin-top:10px"><a href="questionnaire.html">Passez le questionnaire du joueur</a> pour voir la note et la courbe de ce jeu pour vous.</p>` : ""}
-  </section>
-  <section id="mecanismes"><h2>Mécanismes</h2><p class="discret">Chargement…</p></section>`;
+  // la note, les chapitres en barres (au survol ou au focus : les notes des paires du chapitre)
+  let notation = "";
+  if (R && R.finale != null){
+    const barres = (chapitres || []).filter(c => R.chap[c.code] != null).map(c => {
+      const det = R.e.paires.filter(p => p.chap === c.code).map(p => `${nomPaire(p.code)} ${p.note == null ? "s. o." : fmt(p.note)}`).join(" · ");
+      return `<div class="barre-ch info" tabindex="0" aria-label="${esc(c.nom)} : ${fmt(R.chap[c.code])} sur 5. ${esc(det)}"><span>${esc(c.nom)}</span><div class="piste"><div style="width:${Math.max(0, Math.min(100, R.chap[c.code] / 5 * 100)).toFixed(1)}%"></div></div><b>${fmt(R.chap[c.code])}</b><span class="bulle" aria-hidden="true">${esc(det)}</span></div>`; }).join("");
+    notation = `<div class="notation"><div><div class="note-g"><b>${fmt(R.finale, 1)}</b><span>/ 5</span></div>
+        ${R.notePour != null ? `<div class="pour-vous">Pour vous : <b>${fmt(R.notePour)}</b>${ecart(R.notePour, R.finale)}</div>` : ""}</div>
+      <div class="barres">${barres}</div></div>
+      ${!profil ? `<p class="discret" style="margin:0"><a href="questionnaire.html">Passez le questionnaire du joueur</a> pour voir la note et la courbe de ce jeu pour vous.</p>` : ""}`;
+  }
+  // les pastilles : classe de vie, coût par partie, usure (seulement quand la courbe est calculable)
+  const c = R?.complet ? R.c : null, pastilles = [];
+  if (c){
+    pastilles.push(c.vie == null ? `<span class="pastille forte">Un classique : un jeu qu'on garde</span>`
+      : `<span class="pastille forte info" tabindex="0">${esc(maj(c.classe))}<span class="bulle">Durée de vie ≈ ${esc(texteSessions(c.vie))}</span></span>`);
+    const cc = coutCourt(R.cout); if (cc) pastilles.push(`<span class="pastille info" tabindex="0">${esc(cc)}<span class="bulle">${esc(texteCout(R.cout))}</span></span>`);
+    const u = usureDe(c);
+    pastilles.push(`<span class="pastille info" tabindex="0">${texteUsure(u, S)}<span class="bulle">Baisse de ${fmt(u)} point de note par doublement du nombre de parties, après l'apogée (seuils : ${fmt(S.usure_moderee)} et ${fmt(S.usure_rapide)}).</span></span>`);
+  }
+  const verdict = verdictDe(article);
 
-  // la timeline
-  if (R.complet){
-    const c = R.c;
-    h += `<section><h2>Sa vie dans le temps</h2><p class="question">La timeline : le plaisir net (le flow) de l'ouverture de la boîte jusqu'au jeu rangé, session après session.</p>
-      <div class="bandeau">${esc(syntheseTimeline(c))}</div>
+  let h = `<div class="carte identite">
+    ${jeu.image_url ? `<img class="visuel" src="${esc(jeu.image_url)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'), { className:'visuel' }))">` : `<span class="visuel" aria-hidden="true"></span>`}
+    <div class="id-corps">
+      <div><div class="surtitre">Fiche du jeu</div><h1>${titre}</h1><div class="technique">${ch.join(" · ")}</div>${nav}</div>
+      ${notation}
+      ${pastilles.length ? `<div class="pastilles">${pastilles.join("")}</div>` : ""}
+      ${verdict ? `<p class="verdict">« ${esc(verdict)} »</p>` : ""}
+    </div>
+    ${boutons.length ? `<div class="actions">${boutons.join("")}</div>` : ""}
+  </div>`;
+
+  // 2. les trois pôles
+  let pourQui = `<div class="surtitre">Pour qui</div>`, T20 = null;
+  if (c && PL.temperaments.length){
+    const sp = spectrometre(R.e.n, R.e.paires, PL);
+    T20 = sp.moteurs.flatMap(g => g.temperaments).sort((x, y) => y.note - x.note);
+    const ec = T20[0].note - T20.at(-1).note;
+    const puce = (x, cls) => `<span class="tp ${cls} info" tabindex="0">${esc(x.t.nom)}<span class="bulle">${esc(maj(x.t.nom))} : ${fmt(x.note)} / 5</span></span>`;
+    const notees = R.e.paires.filter(p => p.note != null).sort((a, b) => b.note - a.note);
+    pourQui += `<p class="titre-carte">${texteEcart(ec, S)}</p>
+      <div class="discret">${fmt(ec, 1)} point d'écart entre le mieux et le moins servi</div>
+      <div class="groupe"><span class="etiq">Les mieux servis</span><div class="puces">${T20.slice(0, 3).map(x => puce(x, "bleu")).join("")}</div></div>
+      <div class="groupe"><span class="etiq">Moins servis</span><div class="puces">${T20.slice(-3).reverse().map(x => puce(x, "orange")).join("")}</div></div>
+      ${notees.length >= 3 ? `<div class="groupe"><span class="etiq">Ses points forts</span><ul class="forts">${notees.slice(0, 2).map(p => `<li>${esc(nomPaire(p.code))} <span class="discret">${fmt(p.note)}</span></li>`).join("")}</ul></div>
+      <div class="groupe"><span class="etiq">Son point faible</span><ul class="forts"><li>${esc(nomPaire(notees.at(-1).code))} <span class="discret">${fmt(notees.at(-1).note)}</span></li></ul></div>` : ""}`;
+  } else pourQui += `<p class="discret" style="margin:0">${!R ? "Pour qui ce jeu est fait paraîtra dès qu'une fiche sera déclarée finale." : !c ? "Le détail par profil paraîtra quand toutes les paires utiles seront notées." : "Le modèle PRISMEplayer n'a pas pu être lu."}</p>`;
+  h += `<div class="poles">
+    <div class="carte pole">${pourQui}</div>
+    <div class="carte pole" id="carte-meca"><div class="surtitre">Mécanique</div><p class="discret">Chargement…</p></div>
+    <div class="carte pole theme"><div class="surtitre">Thème</div><p class="discret" style="margin:0">La cartographie des thèmes viendra.</p></div>
+  </div>`;
+
+  // 3. sa vie dans le temps, en petit
+  h += `<div class="carte vie"><div class="surtitre">Sa vie dans le temps</div>
+    ${c ? `<div class="defile">${courbePetite(c, jeu.nom)}</div><p class="discret" style="margin:0">${esc(syntheseTimeline(c))}</p>`
+      : `<p class="discret" style="margin:0">${R ? "La timeline paraîtra quand toutes les paires utiles seront notées." : "La timeline paraîtra dès qu'une fiche sera déclarée finale."}</p>`}</div>`;
+
+  // 4. le détail, dépliable
+  let paires = "";
+  if (R){
+    const val = a => { const v = m.saisie[a.code]; if (!v) return null; if (v.sans_objet) return "sans objet"; if (v.valeur == null) return null;
+      return a.echelle === "ecart" ? (v.valeur > 0 ? "+" : "") + fmt(v.valeur, 1) : fmt(v.valeur, 1); };
+    paires = `<p class="discret">Pour chaque paire, sa note et les axes qui la composent. Les écarts (+ / −) disent ce que le jeu réussit au-delà ou en deçà de ce qu'on attendait.</p>`;
+    (chapitres || []).forEach(ch2 => {
+      const Pa = R.e.paires.filter(p => p.chap === ch2.code); if (!Pa.length) return;
+      paires += `<h3 class="chap" style="--c:var(--${esc(ch2.code)})">${esc(ch2.nom)}</h3><table class="paires"><thead><tr><th>Paire</th><th class="n">Note /5</th><th>Axes (sur 5 ; écarts de −2 à +2)</th></tr></thead><tbody>
+        ${Pa.map(p => { const A = d.axes.filter(a => a.paire === p.code && a.echelle !== "calcule");
+          return `<tr><td>${esc(nomPaire(p.code))}</td><td class="n"><b>${p.note == null ? (R.e.absents.includes(p.code) ? "s. o." : "—") : fmt(p.note)}</b></td>
+            <td class="axes">${A.map(a => { const v = val(a); return v == null ? "" : `<span>${esc(a.nom)} : <b>${esc(v)}</b></span>`; }).join(" ")}</td></tr>`; }).join("")}
+      </tbody></table>`;
+    });
+  } else paires = `<p class="discret">Les notes paraîtront ici dès qu'une fiche sera déclarée finale.</p>`;
+  const profils = T20 ? `<table class="paires"><thead><tr><th></th><th>Tempérament</th><th class="n">Note /5</th></tr></thead><tbody>${T20.map((x, i) =>
+      `<tr><td class="n discret">${i + 1}</td><td>${esc(maj(x.t.nom))} <span class="m-code">${esc(x.t.code)}</span></td><td class="n"><b>${fmt(x.note)}</b></td></tr>`).join("")}</tbody></table>
+      <p class="discret">Chaque note est la moyenne des trois profils du tempérament.</p>`
+    : `<p class="discret">Les notes par profil paraîtront quand toutes les paires utiles seront notées.</p>`;
+  const timeline = c ? `<div class="bandeau">${esc(syntheseTimeline(c))}</div>
       <figure class="courbe-box" style="margin:10px 0">${courbeSVG(c, jeu.nom)}<figcaption>En haut, les jalons ; en bas, les sessions cumulées. Pointillés : le Souvenir, qui descend jusqu'au plancher de nostalgie.</figcaption></figure>
       ${R.cPour ? `<h3 style="font:600 18px var(--serif);margin:16px 0 4px">Pour vous</h3><div class="bandeau">${esc(syntheseTimeline(R.cPour))}</div>
         <figure class="courbe-box" style="margin:10px 0">${courbeSVG(R.cPour, jeu.nom, c)}<figcaption>Votre courbe, d'après votre profil de joueur ; en pointillé gris, la courbe pour tous.</figcaption></figure>` : ""}
-      <p class="discret">Coût par session : <b>${esc(texteCout(R.cout))}</b> · Coût d'effort <span class="proto">proto</span> : <b>${fmt(R.effort)}/5</b> (règles, manuels, logistique, hasard, renouvellement, attente).</p>
-    </section>`;
-  } else {
-    h += `<section><h2>Sa vie dans le temps</h2><p class="discret">La timeline paraîtra quand toutes les paires utiles seront notées.</p></section>`;
-  }
-
-  // les paires : notes et axes (sans les justifications)
-  const ax = code2 => d.axes.find(a => a.code === code2);
-  const val = a => { const v = m.saisie[a.code]; if (!v) return null; if (v.sans_objet) return "sans objet"; if (v.valeur == null) return null;
-    return a.echelle === "ecart" ? (v.valeur > 0 ? "+" : "") + fmt(v.valeur, 1) : fmt(v.valeur, 1); };
-  h += `<section><h2>Les paires</h2><p class="question">Pour chaque paire, sa note et les axes qui la composent. Les écarts (+ / −) disent ce que le jeu réussit au-delà ou en deçà de ce qu'on attendait.</p>`;
-  (chapitres || []).forEach(c => {
-    const P = R.e.paires.filter(p => p.chap === c.code); if (!P.length) return;
-    h += `<h3 class="chap" style="--c:var(--${esc(c.code)})">${esc(c.nom)}</h3><table class="paires"><thead><tr><th>Paire</th><th class="n">Note /5</th><th>Axes (sur 5 ; écarts de −2 à +2)</th></tr></thead><tbody>
-      ${P.map(p => { const pn = d.paires.find(x => x.code === p.code), A = d.axes.filter(a => a.paire === p.code && a.echelle !== "calcule");
-        return `<tr><td>${esc(pn?.nom || p.code)}</td><td class="n"><b>${p.note == null ? (R.e.absents.includes(p.code) ? "s. o." : "—") : fmt(p.note)}</b></td>
-          <td class="axes">${A.map(a => { const v = val(a); return v == null ? "" : `<span>${esc(a.nom)} : <b>${esc(v)}</b></span>`; }).join(" ")}</td></tr>`; }).join("")}
-    </tbody></table>`;
-  });
-  h += `</section>`;
+      <p class="discret">Coût par session : <b>${esc(texteCout(R.cout))}</b> · Coût d'effort <span class="proto">proto</span> : <b>${fmt(R.effort)}/5</b> (règles, manuels, logistique, hasard, renouvellement, attente).</p>`
+    : `<p class="discret">La timeline paraîtra quand toutes les paires utiles seront notées.</p>`;
+  const nbPaires = R ? R.e.paires.length : 0;
+  h += `<div class="detail"><div class="surtitre">Le détail</div>
+    ${pli("Les notes, paire par paire", R ? `${nbPaires} paires, ce que le jeu réussit et ce qu'il rate` : "pas encore de fiche finale", paires)}
+    ${pli("Pour chaque profil", "les 20 tempéraments, du mieux au moins servi", profils)}
+    ${pli("Tous les mécanismes", "avec leur définition", `<div id="detail-meca"><p class="discret">Chargement…</p></div>`)}
+    ${pli("La timeline complète", "sessions, usure, coût par partie", timeline)}
+    ${article ? pli("L'article", "la critique complète", `<div class="article">${articlePropre(article)}</div>`) : ""}
+  </div>`;
   $("#contenu").innerHTML = h;
   chargerMecanismes(code, user, role);
 }
@@ -227,9 +415,12 @@ const M = { jeu:null, user:null, role:null, ecrit:false, lignes:[], affectes:{},
 async function chargerMecanismes(code, user, role){
   Object.assign(M, { jeu:code, user, role, ecrit: NIVEAUX[role] >= NIVEAUX.evaluateur, brouillon:null });
   const [l, a] = await Promise.all([
-    sb.from("prisme_mecanismes").select("code,nom,niveau,categorie,statut,fusion_vers,famille_recolte,ordre").order("ordre"),
+    sb.from("prisme_mecanismes").select("code,nom,niveau,categorie,statut,fusion_vers,famille_recolte,ordre,definition").order("ordre"),
     sb.from("prisme_jeux_mecanismes").select("mecanisme,poids,remarque").eq("jeu", code)]);
-  if (l.error || a.error){ $("#mecanismes").innerHTML = `<h2>Mécanismes</h2><p class="discret">Les mécanismes n'ont pas pu être lus (${esc((l.error || a.error).message)}).</p>`; return; }
+  if (l.error || a.error){
+    const msg = `<p class="discret">Les mécanismes n'ont pas pu être lus (${esc((l.error || a.error).message)}).</p>`;
+    $("#carte-meca").innerHTML = `<div class="surtitre">Mécanique</div>` + msg; $("#detail-meca").innerHTML = msg; return;
+  }
   M.lignes = l.data || [];
   M.affectes = Object.fromEntries((a.data || []).map(x => [x.mecanisme, { poids:x.poids, remarque:x.remarque || "" }]));
   afficherMecanismes();
@@ -237,24 +428,41 @@ async function chargerMecanismes(code, user, role){
 const aideMeca = `<p class="question">Ce dont le jeu est fait, selon la nomenclature PRISMEmécanismes : majeur (le jeu repose dessus), présent, marginal.</p>`;
 const ligneMeca = c => M.lignes.find(l => l.code === c);
 const badgesMeca = l => `<span class="m-code">${esc(l.code)}</span>${l.niveau ? `<span class="m-niv">${esc(NIVEAUX_MECA[l.niveau] || l.niveau)}</span>` : ""}`;
+const fusionMeca = l => { if (l.statut !== "fusionner") return ""; const cible = l.fusion_vers ? ligneMeca(l.fusion_vers) : null;
+  return `<span class="m-fusion">→ ${esc(cible?.nom || l.fusion_vers || "ligne fusionnée")}</span>`; };
+const parPoids = p => M.lignes.filter(l => M.affectes[l.code]?.poids === p);
 
-// la lecture, pour tous
+// la carte Mécanique et la liste complète du détail, pour tous
 function afficherMecanismes(){
-  const S = $("#mecanismes"); if (!S) return;
-  const bouton = M.ecrit ? `<button class="btn" id="m-modifier">Modifier les mécanismes</button>` : "";
-  let h = `<div class="m-titre"><h2>Mécanismes</h2>${bouton}</div>${aideMeca}`;
-  const groupes = [3, 2, 1].map(p => [p, M.lignes.filter(l => M.affectes[l.code]?.poids === p)]).filter(([, L]) => L.length);
-  if (!groupes.length) h += `<p class="discret">Aucun mécanisme n'est encore affecté à ce jeu.</p>`;
-  groupes.forEach(([p, L]) => {
-    h += `<h3 class="m-groupe">${esc(POIDS[p][0].toUpperCase() + POIDS[p].slice(1))}</h3><ul class="m-liste">${L.map(l => {
-      const cible = l.statut === "fusionner" && l.fusion_vers ? ligneMeca(l.fusion_vers) : null, rem = M.affectes[l.code].remarque;
-      return `<li>${esc(l.nom)}${badgesMeca(l)}${l.statut === "fusionner" ? `<span class="m-fusion">→ ${esc(cible?.nom || l.fusion_vers || "ligne fusionnée")}</span>` : ""}${rem ? `<span class="m-rem-lue">${esc(rem)}</span>` : ""}</li>`; }).join("")}</ul>`;
-  });
-  S.innerHTML = h;
+  const carte = $("#carte-meca"), det = $("#detail-meca"); if (!carte) return;
+  const bouton = M.ecrit ? `<button class="lien-btn" type="button" id="m-modifier">Modifier les mécanismes</button>` : "";
+  const puce = (l, cls) => { const def = l.definition || "Pas encore de définition.";
+    return `<span class="${cls} info" tabindex="0">${esc(l.nom)}<span class="bulle">${esc(def)}${M.affectes[l.code]?.remarque ? `<br><i>${esc(M.affectes[l.code].remarque)}</i>` : ""}</span></span>`; };
+  const [L3, L2, L1] = [3, 2, 1].map(parPoids);
+  let h = `<div class="surtitre">Mécanique</div><p class="titre-carte">Ce dont il est fait</p>`;
+  if (!L3.length && !L2.length && !L1.length) h += `<p class="discret" style="margin:0">Aucun mécanisme n'est encore affecté à ce jeu.</p>`;
+  if (L3.length) h += `<div class="groupe"><span class="etiq">Majeurs</span><div class="puces" style="gap:8px">${L3.map(l => puce(l, "mj")).join("")}</div></div>`;
+  if (L2.length) h += `<div class="groupe"><span class="etiq">Présents</span><div class="puces">${L2.map(l => puce(l, "pr")).join("")}</div></div>`;
+  if (L1.length) h += `<div class="groupe" id="m-marginaux" hidden><span class="etiq">Marginaux</span><div class="puces">${L1.map(l => puce(l, "mg")).join("")}</div></div>
+    <button class="lien-btn" type="button" id="m-deplier" aria-expanded="false" aria-controls="m-marginaux">+ ${L1.length} ${L1.length > 1 ? POIDS_PLURIEL[1] : POIDS[1]}</button>`;
+  carte.innerHTML = h + bouton;
+  $("#m-deplier")?.addEventListener("click", e => { const g = $("#m-marginaux"), ouvert = g.hidden; g.hidden = !ouvert;
+    e.currentTarget.setAttribute("aria-expanded", ouvert); e.currentTarget.textContent = ouvert ? `− replier les ${POIDS_PLURIEL[1]}` : `+ ${L1.length} ${L1.length > 1 ? POIDS_PLURIEL[1] : POIDS[1]}`; });
   $("#m-modifier")?.addEventListener("click", ouvrirSelecteur);
+  // la liste complète, groupée par poids, avec la définition et la remarque
+  let dh = aideMeca;
+  const groupes = [3, 2, 1].map(p => [p, parPoids(p)]).filter(([, L]) => L.length);
+  if (!groupes.length) dh += `<p class="discret">Aucun mécanisme n'est encore affecté à ce jeu.</p>`;
+  groupes.forEach(([p, L]) => {
+    dh += `<h3 class="m-groupe">${esc(maj(POIDS_PLURIEL[p]))}</h3><ul class="m-liste">${L.map(l => { const rem = M.affectes[l.code].remarque;
+      return `<li>${esc(l.nom)}${badgesMeca(l)}${fusionMeca(l)}${l.definition ? `<span class="m-def">${esc(l.definition)}</span>` : ""}${rem ? `<span class="m-rem-lue">${esc(rem)}</span>` : ""}</li>`; }).join("")}</ul>`;
+  });
+  det.innerHTML = dh;
 }
 
-// le sélecteur, pour l'évaluateur, l'éditeur et le propriétaire
+// le sélecteur, pour l'évaluateur, l'éditeur et le propriétaire : dans une fenêtre (2.0)
+const dialogue = $("#m-dialogue");
+dialogue.addEventListener("cancel", () => { M.brouillon = null; });   // Échap : comme « Annuler »
 function ouvrirSelecteur(){
   M.brouillon = Object.fromEntries(Object.entries(M.affectes).map(([c, v]) => [c, { ...v }]));
   // proposées : tout sauf hors modèle, écartées et fusionnées ; une ligne déjà affectée reste proposée pour pouvoir la retirer
@@ -262,14 +470,14 @@ function ouvrirSelecteur(){
   const opt = (o, tous) => `<option value="">${esc(tous)}</option>` + Object.entries(o).map(([c, t]) => `<option value="${esc(c)}">${esc(t)}</option>`).join("");
   const niveaux = Object.fromEntries(Object.entries(NIVEAUX_MECA).filter(([c]) => proposees.some(l => l.niveau === c)));
   const familles = [...new Set(proposees.map(l => l.famille_recolte).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr"));
-  $("#mecanismes").innerHTML = `<h2>Mécanismes</h2>${aideMeca}
+  $("#m-dialogue-corps").innerHTML = `<h2 id="m-dialogue-titre">Mécanismes</h2>${aideMeca}
     <p class="m-compteur" id="m-compteur"></p>
     <div class="m-filtres"><input type="search" id="m-q" placeholder="Chercher un code ou un nom" aria-label="Chercher un code ou un nom">
       <select id="m-niv" aria-label="Niveau">${opt(niveaux, "Tous les niveaux")}</select>
       <select id="m-fam" aria-label="Famille d'origine">${opt(Object.fromEntries(familles.map(f => [f, f])), "Toutes les familles d'origine")}</select>
       <label><input type="checkbox" id="m-seuls"> n'afficher que les mécanismes affectés</label></div>
     <div class="m-choix" id="m-choix"></div>
-    <p class="actions-eval"><button class="btn" id="m-enregistrer">Enregistrer</button><button class="btn" id="m-annuler">Annuler</button><span class="m-etat" id="m-etat"></span></p>`;
+    <p class="m-actions"><button class="btn plein" type="button" id="m-enregistrer">Enregistrer</button><button class="btn" type="button" id="m-annuler">Annuler</button><span class="m-etat" id="m-etat"></span></p>`;
   const lister = () => {
     const q = norm($("#m-q").value.trim()), niv = $("#m-niv").value, fam = $("#m-fam").value, seuls = $("#m-seuls").checked;
     const L = proposees.filter(l => (!q || norm(l.code + " " + l.nom).includes(q)) && (!niv || l.niveau === niv) && (!fam || l.famille_recolte === fam) && (!seuls || M.brouillon[l.code]));
@@ -284,9 +492,10 @@ function ouvrirSelecteur(){
     compter();
   });
   $("#m-choix").addEventListener("input", e => { if (e.target.matches(".m-rem")) M.brouillon[e.target.closest(".m-ligne").dataset.code].remarque = e.target.value; });
-  $("#m-annuler").addEventListener("click", () => { M.brouillon = null; afficherMecanismes(); });
+  $("#m-annuler").addEventListener("click", () => { M.brouillon = null; dialogue.close(); });
   $("#m-enregistrer").addEventListener("click", enregistrerMecanismes);
   lister(); compter();
+  dialogue.showModal();
 }
 function ligneChoix(l){
   const v = M.brouillon[l.code], p = v?.poids || 0;
@@ -302,16 +511,17 @@ function compter(){
 async function enregistrerMecanismes(){
   const avant = M.affectes, apres = M.brouillon, etat = $("#m-etat");
   const maintenant = new Date().toISOString();
-  const maj = Object.entries(apres).filter(([c, v]) => !avant[c] || avant[c].poids !== v.poids || avant[c].remarque.trim() !== v.remarque.trim())
+  const majs = Object.entries(apres).filter(([c, v]) => !avant[c] || avant[c].poids !== v.poids || avant[c].remarque.trim() !== v.remarque.trim())
     .map(([c, v]) => ({ jeu:M.jeu, mecanisme:c, poids:v.poids, remarque: v.remarque.trim() || null, modifie_le:maintenant, modifie_par:M.user.id }));
   const sup = Object.keys(avant).filter(c => !apres[c]);
-  if (!maj.length && !sup.length){ M.brouillon = null; afficherMecanismes(); return; }
+  if (!majs.length && !sup.length){ M.brouillon = null; dialogue.close(); return; }
   $("#m-enregistrer").disabled = true; etat.className = "m-etat discret"; etat.textContent = "Enregistrement…";
-  const r1 = maj.length ? await sb.from("prisme_jeux_mecanismes").upsert(maj, { onConflict:"jeu,mecanisme" }) : {};
+  const r1 = majs.length ? await sb.from("prisme_jeux_mecanismes").upsert(majs, { onConflict:"jeu,mecanisme" }) : {};
   const r2 = !r1.error && sup.length ? await sb.from("prisme_jeux_mecanismes").delete().eq("jeu", M.jeu).in("mecanisme", sup) : {};
   const err = r1.error || r2.error;
   if (err){ $("#m-enregistrer").disabled = false; etat.className = "m-etat err"; etat.textContent = "Rien n'a pu être enregistré : " + err.message; return; }
-  // relire la base : la section montre ce qui y est vraiment
+  dialogue.close();
+  // relire la base : la page montre ce qui y est vraiment
   await chargerMecanismes(M.jeu, M.user, M.role);
 }
 </script>
