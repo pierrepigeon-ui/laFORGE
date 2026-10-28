@@ -122,6 +122,13 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(260px,330px) 
 .qgrille{border-collapse:collapse;margin:4px 0 10px;font-size:14px}.qgrille th,.qgrille td{border:1px solid var(--line);padding:4px 10px;text-align:center;min-width:44px}.qgrille a{text-decoration:none;font-weight:600;color:inherit}
 .ajout{display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin:6px 0 14px}
 .ajout .field{margin:0;min-width:180px}
+/* un réglage : le libellé sur toute la ligne, puis la valeur et son unité côte à côte */
+.reglage{display:grid;grid-template-columns:120px auto;gap:0 10px;align-items:center;justify-content:start;margin-top:14px}
+.reglage .field{display:contents}
+.reglage .field span{grid-column:1 / -1;font-size:15px;font-weight:500;color:var(--ink)}
+.reglage input{width:120px}
+.reglage .unite{color:var(--muted);font-size:14px}
+.reglage-bloc .aide{margin:4px 0 8px}
 
 /* volets pleine largeur */
 .full{grid-column:1 / -1;overflow:auto;padding:20px 28px}
@@ -198,6 +205,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 16px}
       <button role="tab" aria-selected="false" data-tab="journal" id="tab-journal" class="hidden">Journal</button>
       <button role="tab" aria-selected="false" data-tab="resultats" id="tab-resultats" class="hidden">Résultats</button>
       <button role="tab" aria-selected="false" data-tab="personnes" id="tab-personnes" class="hidden">Personnes</button>
+      <button role="tab" aria-selected="false" data-tab="reglages">Réglages</button>
       <a class="navlink" href="questionnaire.html">Questionnaire</a>
       <a class="navlink" href="rosace.html">Rosace</a>
       <a class="navlink" href="totems.html">Totems</a>
@@ -251,12 +259,13 @@ dialog h2{font:600 22px var(--serif);margin:0 0 16px}
   <main id="view-journal" class="hidden"><section class="full" id="journal-pane"></section></main>
   <main id="view-personnes" class="hidden"><section class="full" id="personnes-pane"></section></main>
   <main id="view-resultats" class="hidden"><section class="full" id="resultats-pane"></section></main>
+  <main id="view-reglages" class="hidden"><section class="full" id="reglages-pane"></section></main>
   <footer><span class="version" data-version></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></footer>
 </section>
 
 <script>
 /* ================= configuration ================= */
-const VERSION = { numero:"3.6", date:"2026-10-27 19:05" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.7", date:"2026-10-28 18:10" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 
@@ -284,7 +293,10 @@ const CATEGORIES = { D:"déplacement", M:"modification", L:"lecture" };
 const canonCat = s => Object.keys(CATEGORIES).filter(l => String(s ?? "").includes(l)).join("+") || null;
 const TABLES = { prisme_player_moteurs:"moteur", prisme_player_temperaments:"tempérament", prisme_player_styles:"style", prisme_player_styles_60:"profil (archive)", prisme_player_archetypes:"archétype", prisme_player_profils:"profil",
                  prisme_player_sous_profils:"sous-profil", prisme_player_questions:"question", prisme_chapitres:"chapitre", prisme_paires:"paire", prisme_axes:"axe", prisme_paliers:"palier",
-                 prisme_notes:"encadré", prisme_jeux:"jeu", prisme_exemples:"exemple", prisme_textes:"texte", prisme_roles:"rôle", prisme_mecanismes:"mécanisme" };
+                 prisme_notes:"encadré", prisme_jeux:"jeu", prisme_exemples:"exemple", prisme_textes:"texte", prisme_roles:"rôle", prisme_mecanismes:"mécanisme", prisme_reglages:"réglage" };
+// clé d'une ligne pour l'enregistrement : « code » partout, sauf les réglages
+const CLES = { prisme_reglages:"cle" };
+const cleDe = table => CLES[table] || "code";
 const LIBELLES = { devise:"Devise", a_la_table:"À la table, il peut (un comportement par ligne)", phase_cle:"Phase clé", qui_il_est:"Qui il est", quand_decroche:"Quand il décroche", fb_verbe:"Flamme Bleue : verbe", fb_devise:"Flamme Bleue : devise", totem:"Totem (l'image est dans prisme/bibliotheque/)", totem_raison:"Raison du totem (une phrase)",
   devise1:"Devise (1re partie)", devise2:"Devise (2e partie)", citation:"Citation",
   couleur:"Couleur (fond clair)", couleur_sombre:"Couleur (fond sombre)", climax_phase:"Phase du climax (si dominant)",
@@ -298,7 +310,7 @@ const LIBELLES = { devise:"Devise", a_la_table:"À la table, il peut (un comport
   nom_en:"Nom anglais", famille_recolte:"Famille d'origine (récolte)", niveau:"Niveau", categorie:"Catégorie", lecture:"Lecture dans le modèle",
   parametres:"Paramètres", exemples:"Exemples", sources:"Sources", axe_prisme:"Axe PRISME", fusion_vers:"Fusionné vers", remarques:"Remarques" };
 
-let state = { user:null, role:null, noms:{}, chapitres:[], paires:[], axes:[], paliers:[], notes:[], jeux:[], exemples:[], textes:[], mecanismes:[], current:null };
+let state = { user:null, role:null, noms:{}, chapitres:[], paires:[], axes:[], paliers:[], notes:[], jeux:[], exemples:[], textes:[], mecanismes:[], reglages:[], current:null };
 const peutEcrire = () => state.role === "proprietaire" || state.role === "editeur";
 const peutAjouterJeu = () => peutEcrire() || state.role === "evaluateur";
 
@@ -322,10 +334,11 @@ async function chargerModele(){
   const r = await Promise.all([
     lire("prisme_chapitres").order("ordre"), lire("prisme_paires").order("ordre"), lire("prisme_axes").order("ordre"),
     lire("prisme_paliers").order("valeur"), lire("prisme_notes").order("ordre"), lire("prisme_jeux").order("nom"),
-    lire("prisme_exemples").order("ordre"), lire("prisme_textes").order("ordre"), lire("prisme_mecanismes").order("ordre")
+    lire("prisme_exemples").order("ordre"), lire("prisme_textes").order("ordre"), lire("prisme_mecanismes").order("ordre"),
+    lire("prisme_reglages").order("ordre")
   ]);
   const err = r.find(x => x.error); if (err) throw err.error;
-  [state.chapitres, state.paires, state.axes, state.paliers, state.notes, state.jeux, state.exemples, state.textes, state.mecanismes] = r.map(x => x.data);
+  [state.chapitres, state.paires, state.axes, state.paliers, state.notes, state.jeux, state.exemples, state.textes, state.mecanismes, state.reglages] = r.map(x => x.data);
   state.paires.sort((a,b) => chap(a.chapitre).ordre - chap(b.chapitre).ordre || a.ordre - b.ordre);
 }
 const chap = code => state.chapitres.find(c => c.code === code) || { ordre:99, nom:code };
@@ -353,8 +366,8 @@ async function demarrer(){
 document.querySelectorAll("nav [role=tab]").forEach(b => b.addEventListener("click", () => {
   if (blocsModifies() && !confirm("Des modifications n'ont pas été enregistrées. Les abandonner ?")) return;
   document.querySelectorAll("nav [role=tab]").forEach(x => x.setAttribute("aria-selected", x === b));
-  ["player","modele","mecanismes","textes","jeux","journal","personnes","resultats"].forEach(t => $("#view-" + t).classList.toggle("hidden", t !== b.dataset.tab));
-  ({ player:afficherListeP, mecanismes:afficherMecanismes, textes:afficherTextes, jeux:afficherJeux, journal:afficherJournal, personnes:afficherPersonnes, resultats:afficherResultats })[b.dataset.tab]?.();
+  ["player","modele","mecanismes","textes","jeux","journal","personnes","resultats","reglages"].forEach(t => $("#view-" + t).classList.toggle("hidden", t !== b.dataset.tab));
+  ({ player:afficherListeP, mecanismes:afficherMecanismes, textes:afficherTextes, jeux:afficherJeux, journal:afficherJournal, personnes:afficherPersonnes, resultats:afficherResultats, reglages:afficherReglages })[b.dataset.tab]?.();
 }));
 
 /* ================= liste des paires ================= */
@@ -404,7 +417,7 @@ function champ(k, v, opts = {}){
     return `<label class="field"><span>${esc(lab)}</span><select data-k="${k}" ${ro}>${vide}${Object.entries(o).map(([c,l]) => `<option value="${esc(c)}"${c === (v ?? "") ? " selected" : ""}>${esc(l)}</option>`).join("")}</select></label>`;
   }
   if (opts.type === "check") return `<label class="field check"><input type="checkbox" data-k="${k}" ${v ? "checked" : ""} ${ro}><span>${esc(lab)}</span></label>`;
-  return `<label class="field"><span>${esc(lab)}</span><input data-k="${k}" type="${opts.type || "text"}" value="${esc(v)}" ${ro}></label>`;
+  return `<label class="field"><span>${esc(lab)}</span><input data-k="${k}" type="${opts.type || "text"}" value="${esc(v)}"${opts.step ? ` step="${opts.step}"` : ""} ${ro}></label>`;
 }
 function stamp(row){
   return `modifié le ${new Date(row.modifie_le).toLocaleString("fr-FR")}${row.modifie_par ? " par " + esc(state.noms[row.modifie_par] || "un éditeur") : ""}`;
@@ -473,8 +486,10 @@ document.addEventListener("click", async e => {
   // on profite de l'enregistrement de la fiche pour réécrire la catégorie dans l'ordre D, M, L
   if (b.table === "prisme_mecanismes" && !("categorie" in maj) && b.row.categorie && b.row.categorie !== canonCat(b.row.categorie)) maj.categorie = canonCat(b.row.categorie);
   if (maj.bgg_id === "illisible"){ m.className = "msg err"; m.textContent = "Lien BoardGameGeek illisible : colle l'adresse de la page du jeu, ou son numéro."; return; }
+  if (b.table === "prisme_reglages" && "valeur" in maj){ const refus = controleReglage(b.row.cle, maj.valeur); if (refus){ m.className = "msg err"; m.textContent = refus; return; } }
   btn.disabled = true; m.className = "msg"; m.textContent = "Enregistrement…";
-  const { data, error } = await sb.from(b.table).update(maj).eq("code", b.row.code).eq("modifie_le", b.row.modifie_le).select();
+  const cle = cleDe(b.table);
+  const { data, error } = await sb.from(b.table).update(maj).eq(cle, b.row[cle]).eq("modifie_le", b.row.modifie_le).select();
   if (error){ m.className = "msg err"; m.textContent = "Enregistrement refusé : " + error.message; btn.disabled = false; return; }
   if (!data.length){ m.className = "msg warn"; m.textContent = "Modifié entre-temps par quelqu'un d'autre : annule pour recharger, puis refais ta modification."; return; }
   majLocal(b.table, data[0]); b.row = { ...data[0] };
@@ -486,8 +501,8 @@ document.addEventListener("click", async e => {
   if (b.table.startsWith("prisme_player")) afficherListeP();
   if (b.table === "prisme_mecanismes") afficherListeM();
 });
-const LISTE = { prisme_player_moteurs:"p_moteurs", prisme_player_temperaments:"p_temperaments", prisme_player_styles:"p_styles", prisme_player_questions:"p_questions", prisme_paires:"paires", prisme_axes:"axes", prisme_paliers:"paliers", prisme_notes:"notes", prisme_jeux:"jeux", prisme_exemples:"exemples", prisme_textes:"textes", prisme_mecanismes:"mecanismes" };
-function majLocal(table, row){ const L = state[LISTE[table]]; const i = L.findIndex(x => x.code === row.code); if (i >= 0) L[i] = row; else L.push(row); }
+const LISTE = { prisme_player_moteurs:"p_moteurs", prisme_player_temperaments:"p_temperaments", prisme_player_styles:"p_styles", prisme_player_questions:"p_questions", prisme_paires:"paires", prisme_axes:"axes", prisme_paliers:"paliers", prisme_notes:"notes", prisme_jeux:"jeux", prisme_exemples:"exemples", prisme_textes:"textes", prisme_mecanismes:"mecanismes", prisme_reglages:"reglages" };
+function majLocal(table, row){ const L = state[LISTE[table]], k = cleDe(table); const i = L.findIndex(x => x[k] === row[k]); if (i >= 0) L[i] = row; else L.push(row); }
 function retirerLocal(table, code){ const L = state[LISTE[table]]; const i = L.findIndex(x => x.code === code); if (i >= 0) L.splice(i, 1); }
 function rafraichir(){
   if (!$("#view-player").classList.contains("hidden")){ if (state.currentP){ const c = state.currentP; state.currentP = null; ouvrirP(c, true); } return; }
@@ -495,6 +510,7 @@ function rafraichir(){
   else if (!$("#view-mecanismes").classList.contains("hidden") && state.currentM){ const c = state.currentM; state.currentM = null; ouvrirM(c, true); }
   else if (!$("#view-textes").classList.contains("hidden")) afficherTextes();
   else if (!$("#view-jeux").classList.contains("hidden")) afficherJeux();
+  else if (!$("#view-reglages").classList.contains("hidden")) afficherReglages();
 }
 
 /* ================= fiche d'une paire ================= */
@@ -761,6 +777,37 @@ function afficherTextes(){
   $("#textes-pane").innerHTML = h + "</div>";
 }
 
+/* ================= réglages (28/10/2026) ================= */
+// les seuils chiffrés de la fiche du jeu ; ni ajout ni suppression depuis l'interface
+function afficherReglages(){
+  let h = `<div class="editor"><h2>Réglages</h2>
+    <p class="aide">Les seuils qui servent à qualifier un jeu sur sa fiche. Les valeurs de départ sont provisoires.</p>
+    ${peutEcrire() ? "" : '<p class="readonly-note">Lecture seule : ton rôle ne permet pas de modifier les réglages.</p>'}`;
+  state.reglages.forEach(r0 => {
+    h += bloc("prisme_reglages", r0, r => `<div class="reglage">${champ("valeur", r.valeur, { type:"number", step:"0.05", label:r.libelle })}${r.unite ? `<span class="unite">${esc(r.unite)}</span>` : ""}</div>
+      ${r.explication ? `<p class="aide">${esc(r.explication)}</p>` : ""}`, { cls:"reglage-bloc" });
+  });
+  if (!state.reglages.length) h += '<p class="empty">Aucun réglage en base : le script prisme_reglages a-t-il été passé ?</p>';
+  $("#reglages-pane").innerHTML = h + "</div>";
+}
+// dans chaque paire, le premier seuil reste inférieur au second
+const PAIRES_REGLAGES = [["ecart_profils_net", "ecart_profils_fort"], ["usure_moderee", "usure_rapide"]];
+function controleReglage(cle, valeur){
+  if (valeur == null || Number.isNaN(valeur)) return "Indique une valeur.";
+  const reg = c => state.reglages.find(r => r.cle === c);
+  const val = c => c === cle ? valeur : reg(c)?.valeur;
+  const nb = v => String(v).replace(".", ",");
+  for (const [bas, haut] of PAIRES_REGLAGES){
+    if (cle !== bas && cle !== haut) continue;
+    if (val(bas) == null || val(haut) == null) continue;
+    if (Number(val(bas)) < Number(val(haut))) continue;
+    return cle === bas
+      ? `Refusé : ${nb(valeur)} doit rester inférieur à ${nb(val(haut))}, la valeur du réglage suivant (${reg(haut)?.libelle || haut}).`
+      : `Refusé : ${nb(valeur)} doit rester supérieur à ${nb(val(bas))}, la valeur du réglage précédent (${reg(bas)?.libelle || bas}).`;
+  }
+  return null;
+}
+
 /* ================= jeux ================= */
 const slug = s => norm(s).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 /* ---- jeux : repérer un doublon, lire un lien BoardGameGeek ---- */
@@ -979,7 +1026,7 @@ function exporterResultats(nomDe){
 /* ================= sauvegarde (propriétaire) ================= */
 const TABLES_SAUVEGARDE = ["prisme_player_moteurs","prisme_player_temperaments","prisme_player_styles","prisme_player_styles_60","prisme_player_archetypes","prisme_player_profils","prisme_player_sous_profils",
                            "prisme_player_questions","prisme_player_resultats","prisme_chapitres","prisme_paires","prisme_axes","prisme_paliers","prisme_notes","prisme_jeux",
-                           "prisme_exemples","prisme_textes","prisme_roles","prisme_evaluations","prisme_evaluation_valeurs","prisme_mecanismes"];
+                           "prisme_exemples","prisme_textes","prisme_roles","prisme_evaluations","prisme_evaluation_valeurs","prisme_mecanismes","prisme_jeux_mecanismes","prisme_reglages"];
 // anciennes fiches archivées par le script 09 (lecture réservée au propriétaire) : sauvegardées si elles existent
 const TABLES_SAUVEGARDE_ARCHIVES = ["prisme_evaluations_archive","prisme_evaluation_valeurs_archive"];
 async function lireTout(table, filtre){
