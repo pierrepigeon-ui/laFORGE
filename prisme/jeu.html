@@ -162,6 +162,12 @@ h3.m-etape{font:600 15px var(--sans);margin:14px 2px 4px} .m-choix > h3.m-etape:
 /* 2.4 (29/10/2026) : la carte Mécanique en trois niveaux, la recherche du sélecteur en tête */
 .lignes-courtes.bas{margin:4px 0 0} .lignes-courtes.bas .ligne-courte{font-size:12.5px;color:var(--muted);margin:0 0 2px}
 .m-recherche{width:100%;box-sizing:border-box;font:15px var(--sans);padding:9px 12px;margin:0 0 10px;border:1.5px solid var(--trait);border-radius:10px;background:var(--paper);color:var(--ink)}
+/* 2.5 (29/10/2026) : les modes de jeu dans la carte d'identité, les remarques entre parenthèses, le sujet en titre de la carte Thème */
+.modes{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0} .modes:empty{display:none}
+.mode{display:inline-block;padding:5px 13px;border-radius:999px;background:var(--neutre);color:var(--ink);font-size:14px;font-weight:600}
+.rem{font-weight:400;opacity:.8}
+.cadre-theme{font-size:13px;color:var(--muted);margin:-6px 0 0}
+.m-aide{grid-column:1 / -1;font-size:12px;color:var(--muted);margin:-2px 0 0}
 
 .version{font-size:12px;color:var(--muted);text-align:right;margin:0}
 @media (max-width:760px){
@@ -188,7 +194,7 @@ h3.m-etape{font:600 15px var(--sans);margin:14px 2px 4px} .m-choix > h3.m-etape:
 
 <script src="timeline.js?v=3.9"></script>
 <script>
-const VERSION = { numero:"2.4", date:"2026-10-29 19:00" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"2.5", date:"2026-10-29 21:00" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -354,7 +360,7 @@ async function afficher(user){
   let h = `<div class="carte identite">
     ${jeu.image_url ? `<img class="visuel" src="${esc(jeu.image_url)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'), { className:'visuel' }))">` : `<span class="visuel" aria-hidden="true"></span>`}
     <div class="id-corps">
-      <div><div class="surtitre">Fiche du jeu</div><h1>${titre}</h1><div class="technique">${ch.join(" · ")}</div>${nav}</div>
+      <div><div class="surtitre">Fiche du jeu</div><h1>${titre}</h1><div class="technique">${ch.join(" · ")}</div><div class="modes" id="id-modes"></div>${nav}</div>
       ${notation}
       ${pastilles.length ? `<div class="pastilles">${pastilles.join("")}</div>` : ""}
       ${verdict ? `<p class="verdict">« ${esc(verdict)} »</p>` : ""}
@@ -377,10 +383,11 @@ async function afficher(user){
       ${notees.length >= 3 ? `<div class="groupe"><span class="etiq">Ses points forts</span><ul class="forts">${notees.slice(0, 2).map(p => `<li>${esc(nomPaire(p.code))} <span class="discret">${fmt(p.note)}</span></li>`).join("")}</ul></div>
       <div class="groupe"><span class="etiq">Son point faible</span><ul class="forts"><li>${esc(nomPaire(notees.at(-1).code))} <span class="discret">${fmt(notees.at(-1).note)}</span></li></ul></div>` : ""}`;
   } else pourQui += `<p class="discret" style="margin:0">${!R ? "Pour qui ce jeu est fait paraîtra dès qu'une fiche sera déclarée finale." : !c ? "Le détail par profil paraîtra quand toutes les paires utiles seront notées." : "Le modèle PRISMEplayer n'a pas pu être lu."}</p>`;
+  // (2.5) Thème, puis Mécanique, puis Pour qui (empilés dans cet ordre sur téléphone)
   h += `<div class="poles">
-    <div class="carte pole">${pourQui}</div>
-    <div class="carte pole" id="carte-meca"><div class="surtitre">Mécanique</div><p class="discret">Chargement…</p></div>
     <div class="carte pole theme" id="carte-theme"><div class="surtitre">Thème</div><p class="discret" style="margin:0">Chargement…</p></div>
+    <div class="carte pole" id="carte-meca"><div class="surtitre">Mécanique</div><p class="discret">Chargement…</p></div>
+    <div class="carte pole">${pourQui}</div>
   </div>`;
 
   // 3. sa vie dans le temps, en petit
@@ -429,8 +436,8 @@ async function afficher(user){
 
 /* ---- les mécanismes du jeu (nomenclature PRISMEmechanics, 28/10/2026) ---- */
 // libellés : un seul endroit pour changer un mot
-const POIDS = { 3:"majeur", 2:"présent", 1:"marginal" };
-const POIDS_PLURIEL = { 3:"majeurs", 2:"présents", 1:"marginaux" };
+const POIDS = { 3:"majeur", 2:"secondaire", 1:"marginal" };   // (2.5) « secondaire » au lieu de « présent » ; valeurs en base inchangées
+const POIDS_PLURIEL = { 3:"majeurs", 2:"secondaires", 1:"marginaux" };
 // les niveaux, dans l'ordre d'affichage (29/10/2026 : le niveau « paramètre » n'existe plus)
 const NIVEAUX_MECA = { materiel:"Matériel", geste:"Gestes de base", mecanisme:"Mécanisme", hasard:"Hasard", assemblage:"Combinaison", aspect:"Mode de jeu", structure:"Déroulement", fin_de_partie:"Fin de partie", mise_en_place:"Mise en place", support:"Plateau et formes", parole:"Parole", hors_modele:"Hors modèle" };
 // un nom et son anglais : « nom (name) », l'anglais en italique et en gris
@@ -439,10 +446,12 @@ const legendeDML = `<p class="legende"><span class="info" tabindex="0" aria-labe
 // (2.3) simples coches : pour ces niveaux le poids n'a pas de sens ; cochée = une ligne de poids 2, sans remarque
 const COCHE = ["materiel", "geste", "aspect", "fin_de_partie"];
 const estCoche = l => COCHE.includes(l?.niveau);
-// (2.4) la carte Mécanique : en tête le mode de jeu et la fin de partie, en pastilles ; en bas, en petit, le matériel et les gestes
-const CARTE_TETE = [["aspect", "Mode de jeu"], ["fin_de_partie", "Fin de partie"]], CARTE_BAS = [["materiel", "Matériel"], ["geste", "Gestes"]];
-// (2.4) un jeu sans mode de jeu est compté Compétitif (la base fait de même pour tout nouveau jeu)
-const COMPETITIF = "STR-22";
+// (2.5) la carte Mécanique : en tête la fin de partie (le mode de jeu est monté dans la carte d'identité) ; en bas, en petit, le matériel et les gestes
+const CARTE_TETE = [["fin_de_partie", "Fin de partie"]], CARTE_BAS = [["materiel", "Matériel"], ["geste", "Gestes"]];
+// modes par défaut, comme la base pour tout nouveau jeu : sans mode de jeu, Compétitif (2.4) ; sans partie indépendante, campagne ni legacy, Partie indépendante (2.5)
+const COMPETITIF = "STR-22", PARTIE_INDEPENDANTE = "STR-26", FORMATS = ["STR-26", "STR-13", "STR-05"];
+// une remarque, visible entre parenthèses à la suite du nom
+const remVisible = r => r ? ` <span class="rem">(${esc(r)})</span>` : "";
 const norm = s => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 const M = { jeu:null, user:null, role:null, ecrit:false, lignes:[], requis:{}, affectes:{}, brouillon:null };   // affectes : { code: { poids, remarque } } ; requis : { code: [codes requis] }
 
@@ -465,7 +474,7 @@ async function chargerMecanismes(code, user, role){
   // jeu.html?jeu=…&saisir=mecanismes (depuis l'évaluation) : le sélecteur s'ouvre d'emblée, une seule fois
   if (!M.ouvertAuto && M.ecrit && new URLSearchParams(location.search).get("saisir") === "mecanismes"){ M.ouvertAuto = true; ouvrirSelecteur(); }
 }
-const aideMeca = `<p class="question">Ce dont le jeu est fait, selon la nomenclature PRISMEmechanics. Le matériel, les gestes, le mode de jeu et la fin de partie se cochent ; le reste se pèse : majeur (le jeu repose dessus), présent, marginal.</p>`;
+const aideMeca = `<p class="question">Ce dont le jeu est fait, selon la nomenclature PRISMEmechanics. Le matériel, les gestes, le mode de jeu et la fin de partie se cochent ; le reste se pèse : majeur (le jeu repose dessus), secondaire, marginal.</p>`;
 const ligneMeca = c => M.lignes.find(l => l.code === c);
 const badgesMeca = l => `<span class="m-code">${esc(l.code)}</span>${l.niveau ? `<span class="m-niv">${esc(NIVEAUX_MECA[l.niveau] || l.niveau)}</span>` : ""}`;
 const fusionMeca = l => { if (l.statut !== "fusionner") return ""; const cible = l.fusion_vers ? ligneMeca(l.fusion_vers) : null;
@@ -484,26 +493,29 @@ const requisManquants = (c, acquis) => (M.requis[c] || []).filter(r => !acquis.h
 function afficherMecanismes(){
   const carte = $("#carte-meca"), det = $("#detail-meca"); if (!carte) return;
   const bouton = M.ecrit ? `<button class="lien-btn" type="button" id="m-modifier">Modifier les mécanismes</button>` : "";
-  // dans les pastilles, le nom français seul ; l'anglais rejoint la définition dans l'info-bulle
+  // dans les pastilles, le nom français et la remarque entre parenthèses (2.5) ; l'anglais rejoint la définition dans l'info-bulle
   const puce = (l, cls) => { const def = l.definition || "Pas encore de définition.";
-    return `<span class="${cls} info" tabindex="0">${esc(l.nom)}<span class="bulle">${l.nom_en ? `<i>${esc(l.nom_en)}</i><br>` : ""}${esc(def)}${M.affectes[l.code]?.remarque ? `<br><i>${esc(M.affectes[l.code].remarque)}</i>` : ""}</span></span>`; };
-  // trois niveaux (2.4) : en tête, comme une carte d'identité, le mode de jeu et la fin de partie ; puis les mécanismes, marginaux compris ;
-  // en bas, en petit, le matériel et les gestes
+    return `<span class="${cls} info" tabindex="0">${esc(l.nom)}${remVisible(M.affectes[l.code]?.remarque)}<span class="bulle">${l.nom_en ? `<i>${esc(l.nom_en)}</i><br>` : ""}${esc(def)}</span></span>`; };
   const affectesDu = n => M.lignes.filter(l => l.niveau === n && M.affectes[l.code]);
+  // (2.5) les modes de jeu, en pastilles sous le titre du jeu
+  const modes = $("#id-modes");
+  if (modes) modes.innerHTML = affectesDu("aspect").map(l => puce(l, "mode")).join("");
+  // trois niveaux : en tête la fin de partie ; puis les mécanismes, marginaux compris ; en bas, en petit, le matériel et les gestes
   const tete = CARTE_TETE.map(([n, t]) => [t, affectesDu(n)]).filter(([, L]) => L.length), bas = CARTE_BAS.map(([n, t]) => [t, affectesDu(n)]).filter(([, L]) => L.length);
   const [L3, L2, L1] = [3, 2, 1].map(parPoids);
   let h = `<div class="surtitre">Mécanique</div><p class="titre-carte">Ce dont il est fait</p>`;
   tete.forEach(([t, L]) => { h += `<div class="groupe"><span class="etiq">${esc(t)}</span><div class="puces">${L.map(l => puce(l, "pr")).join("")}</div></div>`; });
   if (!tete.length && !bas.length && !L3.length && !L2.length && !L1.length) h += `<p class="discret" style="margin:0">Aucun mécanisme n'est encore affecté à ce jeu.</p>`;
   if (L3.length) h += `<div class="groupe"><span class="etiq">Majeurs</span><div class="puces" style="gap:8px">${L3.map(l => puce(l, "mj")).join("")}</div></div>`;
-  if (L2.length) h += `<div class="groupe"><span class="etiq">Présents</span><div class="puces">${L2.map(l => puce(l, "pr")).join("")}</div></div>`;
+  if (L2.length) h += `<div class="groupe"><span class="etiq">Secondaires</span><div class="puces">${L2.map(l => puce(l, "pr")).join("")}</div></div>`;
   if (L1.length) h += `<div class="groupe"><span class="etiq">Marginaux</span><div class="puces">${L1.map(l => puce(l, "mg")).join("")}</div></div>`;
   if (bas.length) h += `<div class="lignes-courtes bas">${bas.map(([t, L]) => `<div class="ligne-courte"><span>${esc(t)} :</span> ${L.map(l => puce(l, "")).join(", ")}</div>`).join("")}</div>`;
   carte.innerHTML = h + bouton;
   $("#m-modifier")?.addEventListener("click", ouvrirSelecteur);
-  // la liste complète, dans l'ordre de la carte : mode de jeu et fin, puis le reste par poids, puis matériel et gestes, avec la définition et la remarque
+  // la liste complète : mode de jeu et fin, puis le reste par poids, puis matériel et gestes, avec la définition et la remarque
   let dh = aideMeca;
-  const groupes = [...tete, ...[3, 2, 1].map(p => [maj(POIDS_PLURIEL[p]), parPoids(p)]).filter(([, L]) => L.length), ...bas];
+  const modesDet = affectesDu("aspect").length ? [["Mode de jeu", affectesDu("aspect")]] : [];
+  const groupes = [...modesDet, ...tete, ...[3, 2, 1].map(p => [maj(POIDS_PLURIEL[p]), parPoids(p)]).filter(([, L]) => L.length), ...bas];
   if (!groupes.length) dh += `<p class="discret">Aucun mécanisme n'est encore affecté à ce jeu.</p>`;
   groupes.forEach(([t, L]) => {
     dh += `<h3 class="m-groupe">${esc(t)}</h3><ul class="m-liste">${L.map(l => { const rem = M.affectes[l.code].remarque;
@@ -518,7 +530,7 @@ const dialogue = $("#m-dialogue");
 dialogue.addEventListener("cancel", () => { M.brouillon = null; });   // Échap : comme « Annuler »
 function ouvrirSelecteur(){
   M.brouillon = Object.fromEntries(Object.entries(M.affectes).map(([c, v]) => [c, { ...v }]));
-  competitifParDefaut(M.brouillon);
+  modesParDefaut(M.brouillon);
   // proposées : tout sauf hors modèle, écartées et fusionnées ; une ligne déjà affectée reste proposée pour pouvoir la retirer
   const proposees = M.lignes.filter(l => M.affectes[l.code] || (l.niveau !== "hors_modele" && l.statut !== "ecarter" && l.statut !== "fusionner"));
   const opt = (o, tous) => `<option value="">${esc(tous)}</option>` + Object.entries(o).map(([c, t]) => `<option value="${esc(c)}">${esc(t)}</option>`).join("");
@@ -541,7 +553,8 @@ function ouvrirSelecteur(){
       <label><input type="checkbox" id="m-seuls"> n'afficher que les mécanismes affectés</label>
       <label title="Montre aussi les lignes dont le matériel ou le mécanisme requis n'est pas coché (pour un jeu atypique)"><input type="checkbox" id="m-tout"> tout afficher</label></div>
     ${legendeDML}
-    ${ligneMeca(COMPETITIF) ? `<p class="m-masques">Sans autre mode de jeu coché, le jeu est enregistré « ${esc(ligneMeca(COMPETITIF).nom)} ».</p>` : ""}
+    ${ligneMeca(COMPETITIF) || ligneMeca(PARTIE_INDEPENDANTE) ? `<p class="m-masques">${[ligneMeca(COMPETITIF) && `Sans autre mode de jeu coché, le jeu est enregistré « ${esc(ligneMeca(COMPETITIF).nom)} »`,
+      ligneMeca(PARTIE_INDEPENDANTE) && `sans campagne ni legacy, « ${esc(ligneMeca(PARTIE_INDEPENDANTE).nom)} »`].filter(Boolean).join(" ; ").replace(/^s/, "S")}.</p>` : ""}
     <p class="m-masques" id="m-masques" role="status"></p>
     <div class="m-choix" id="m-choix"></div>
     <p class="m-actions"><button class="btn plein" type="button" id="m-enregistrer">Enregistrer</button><button class="btn" type="button" id="m-annuler">Annuler</button><span class="m-etat" id="m-etat"></span></p>`;
@@ -600,9 +613,9 @@ function ligneChoix(l, acquis, prof = 0){
   return `<div class="m-ligne${p ? " affecte" : ""}" data-code="${esc(l.code)}"${retrait}>${nom}
     <div class="m-poids" role="group" aria-label="Poids de ${esc(l.nom)}">${[[0, "—"], [1, POIDS[1]], [2, POIDS[2]], [3, POIDS[3]]].map(([n, t]) =>
       `<button type="button" data-p="${n}" aria-pressed="${p === n}"${n ? "" : ' title="absent"'}>${esc(t)}</button>`).join("")}</div>
-    ${p ? `<input class="m-rem" type="text" placeholder="Remarque (facultative)" aria-label="Remarque" value="${esc(v.remarque)}">` : ""}</div>`;
+    ${p ? `<input class="m-rem" type="text" placeholder="Remarque (facultative)" aria-label="Remarque, visible sur la fiche entre parenthèses" value="${esc(v.remarque)}"><span class="m-aide">Visible sur la fiche, entre parenthèses</span>` : ""}</div>`;
 }
-// le compteur : les lignes à poids (« 3 majeurs · 1 présent »), puis les simples coches (« 4 cochés »)
+// le compteur : les lignes à poids (« 3 majeurs · 1 secondaire »), puis les simples coches (« 4 cochés »)
 function compter(){
   const n = { 3:0, 2:0, 1:0 }; let coches = 0;
   Object.entries(M.brouillon).forEach(([c, v]) => estCoche(ligneMeca(c)) ? coches++ : n[v.poids]++);
@@ -610,12 +623,14 @@ function compter(){
   if (coches) L.push(`${coches} coché${coches > 1 ? "s" : ""}`);
   $("#m-compteur").textContent = L.join(" · ") || "Rien n'est encore choisi.";
 }
-// aucun mode de jeu : Compétitif ; un jeu qui a un autre mode n'est pas touché
-function competitifParDefaut(choisis){
-  if (ligneMeca(COMPETITIF)?.niveau === "aspect" && !Object.keys(choisis).some(c => ligneMeca(c)?.niveau === "aspect")) choisis[COMPETITIF] = { poids:2, remarque:"" };
+// aucun mode de jeu : Compétitif ; aucun de partie indépendante, campagne, legacy : Partie indépendante ; un jeu qui a déjà ces modes n'est pas touché
+function modesParDefaut(choisis){
+  const coche = c => { if (ligneMeca(c)?.niveau === "aspect") choisis[c] = { poids:2, remarque:"" }; };
+  if (!Object.keys(choisis).some(c => ligneMeca(c)?.niveau === "aspect")) coche(COMPETITIF);
+  if (!FORMATS.some(c => choisis[c])) coche(PARTIE_INDEPENDANTE);
 }
 async function enregistrerMecanismes(){
-  competitifParDefaut(M.brouillon);
+  modesParDefaut(M.brouillon);
   const avant = M.affectes, apres = M.brouillon, etat = $("#m-etat");
   const maintenant = new Date().toISOString();
   const majs = Object.entries(apres).filter(([c, v]) => !avant[c] || avant[c].poids !== v.poids || avant[c].remarque.trim() !== v.remarque.trim())
@@ -635,7 +650,7 @@ async function enregistrerMecanismes(){
 /* ---- les thèmes du jeu (nomenclature PRISMEthemes, 29/10/2026) : même modèle que les mécanismes ---- */
 // facettes, dans l'ordre d'affichage ; la carte montre le cadre en tête, puis les facettes descriptives
 const FACETTES = { cadre:"Cadre", periode:"Période", realisme:"Réalisme", sujet:"Sujet", role:"Rôle", lieu:"Lieu", ton:"Ton", tag:"Tags du fantastique", reference:"Référence culturelle et géographique" };
-const FACETTES_CARTE = ["sujet", "role", "lieu", "ton", "tag", "reference"];
+const FACETTES_CARTE = ["sujet", "role", "ton", "lieu", "tag", "reference"];   // (2.5) sous le titre ; le sujet n'y garde que ses valeurs non majeures
 const ABSTRAIT = "CAD-ABSTRAIT", FACETTES_TEMPS = ["periode", "realisme"];   // un jeu abstrait n'a ni période ni réalisme
 const TH = { jeu:null, user:null, role:null, ecrit:false, lignes:[], affectes:{}, brouillon:null };
 
@@ -667,16 +682,19 @@ function afficherThemes(){
   const rien = !Object.keys(TH.affectes).length;
   carte.classList.toggle("theme", rien);   // la bordure pointillée disparaît dès qu'un thème est affecté
   const bouton = TH.ecrit ? `<button class="lien-btn" type="button" id="t-modifier">Modifier les thèmes</button>` : "";
-  const puce = (l, cls) => `<span class="${cls} info" tabindex="0">${esc(l.libelle)}<span class="bulle">${l.libelle_en ? `<i>${esc(l.libelle_en)}</i><br>` : ""}${esc(l.definition || "Pas encore de définition.")}${TH.affectes[l.code]?.remarque ? `<br><i>${esc(TH.affectes[l.code].remarque)}</i>` : ""}</span></span>`;
+  // (2.5) la remarque entre parenthèses à la suite du libellé : « Un individu (le pilote) »
+  const puce = (l, cls) => `<span class="${cls} info" tabindex="0">${esc(l.libelle)}${remVisible(TH.affectes[l.code]?.remarque)}<span class="bulle">${l.libelle_en ? `<i>${esc(l.libelle_en)}</i><br>` : ""}${esc(l.definition || "Pas encore de définition.")}</span></span>`;
   let h = `<div class="surtitre">Thème</div>`;
   if (rien) h += `<p class="discret" style="margin:0">Aucun thème n'est encore affecté à ce jeu.</p>`;
   else {
-    // la ligne de cadre : « Abstrait », ou la ou les périodes et le réalisme
+    // (2.5) en titre, le ou les sujets majeurs ; dessous, en petit, « Abstrait », ou la ou les périodes et le réalisme
+    const sujets = affectesDe("sujet").filter(l => TH.affectes[l.code].poids === 3);
+    if (sujets.length) h += `<p class="titre-carte">${sujets.map(l => puce(l, "")).join(" · ")}</p>`;
     const cadre = TH.affectes[ABSTRAIT] ? ["Abstrait"] : [...affectesDe("periode").map(l => l.libelle), ...affectesDe("realisme").map(l => l.libelle.toLowerCase())];
-    if (cadre.length) h += `<p class="titre-carte">${esc(cadre.join(" · "))}</p>`;
+    if (cadre.length) h += `<p class="cadre-theme"${sujets.length ? "" : ' style="margin:0"'}>${esc(cadre.join(" · "))}</p>`;
     let nMarg = 0;
     FACETTES_CARTE.forEach(f => {
-      const L = affectesDe(f); if (!L.length) return;
+      const L = affectesDe(f).filter(l => f !== "sujet" || TH.affectes[l.code].poids !== 3); if (!L.length) return;
       const marg = L.filter(l => TH.affectes[l.code].poids === 1); nMarg += marg.length;
       const pleins = L.length > marg.length;
       h += `<div class="groupe"${pleins ? "" : " data-t-marg hidden"}><span class="etiq">${esc(FACETTES[f])}</span><div class="puces">${L.map(l => {
@@ -694,7 +712,7 @@ function afficherThemes(){
   });
   $("#t-modifier")?.addEventListener("click", ouvrirSelecteurThemes);
   // la liste complète, groupée par facette, avec la définition et la remarque
-  let dh = `<p class="question">De quoi parle le jeu, selon la nomenclature PRISMEthemes, en facettes : majeur, présent, marginal.</p>`;
+  let dh = `<p class="question">De quoi parle le jeu, selon la nomenclature PRISMEthemes, en facettes : majeur, secondaire, marginal.</p>`;
   const facettes = Object.keys(FACETTES).filter(f => affectesDe(f).length);
   if (!facettes.length) dh += `<p class="discret">Aucun thème n'est encore affecté à ce jeu.</p>`;
   facettes.forEach(f => {
@@ -747,7 +765,7 @@ function ligneChoixTheme(l){
   return `<div class="m-ligne${p ? " affecte" : ""}${l.parent ? " t-sous" : ""}" data-code="${esc(l.code)}"><div>${bilingue(l.libelle, l.libelle_en)}<span class="m-code">${esc(l.code)}</span></div>
     <div class="m-poids" role="group" aria-label="Poids de ${esc(l.libelle)}">${[[0, "—"], [1, POIDS[1]], [2, POIDS[2]], [3, POIDS[3]]].map(([n, t]) =>
       `<button type="button" data-p="${n}" aria-pressed="${p === n}"${n ? "" : ' title="absent"'}>${esc(t)}</button>`).join("")}</div>
-    ${p ? `<input class="m-rem" type="text" placeholder="Remarque (facultative)" aria-label="Remarque" value="${esc(v.remarque)}">` : ""}</div>`;
+    ${p ? `<input class="m-rem" type="text" placeholder="Remarque (facultative)" aria-label="Remarque, visible sur la fiche entre parenthèses" value="${esc(v.remarque)}"><span class="m-aide">Visible sur la fiche, entre parenthèses</span>` : ""}</div>`;
 }
 // Abstrait coché (poids quelconque) : Période et Réalisme grisées, leurs choix ignorés à l'enregistrement
 function griser(){
