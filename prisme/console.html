@@ -79,7 +79,7 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(260px,330px) 
 .badge.ballotage{color:var(--err)}
 .badge.a_discuter{color:var(--warn)}
 .badge.ecarter{color:var(--muted)}
-/* PRISMEmécanismes : filtres et cases D, M, L */
+/* PRISMEmechanics : filtres et cases D, M, L */
 .item.meca{grid-template-columns:64px 1fr}
 .filtres-m{display:grid;gap:8px;margin-top:8px}
 .filtres-m select{width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--paper)}
@@ -87,7 +87,25 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(260px,330px) 
 .cases label{display:flex;gap:5px;align-items:center}
 .cases input{width:auto}
 .compteur{font-size:12.5px;color:var(--muted)}
-/* PRISMEthèmes : valeurs groupées par facette, sous-items indentés */
+.plus-filtres > summary{cursor:pointer;font-size:13px;color:var(--muted)}
+.plus-filtres select{margin-top:6px}
+/* l'anglais à côté du français, en italique et en gris (29/10/2026) */
+.en{font-style:italic;font-weight:400;color:var(--muted)}
+.item .nom .en{font-size:14px}
+.suppose{font:400 12.5px var(--sans);color:var(--muted);margin-left:6px}
+/* légende D, M, L : l'explication au survol ou au focus */
+.legende-m{padding:6px 14px;border-bottom:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+.info{position:relative;cursor:help}
+.info .bulle{display:none;position:absolute;left:0;top:calc(100% + 6px);z-index:20;background:var(--ink);color:var(--panel);font:400 12.5px/1.45 var(--sans);padding:7px 10px;border-radius:8px;width:max-content;max-width:min(340px,80vw);white-space:normal;text-align:left;box-shadow:0 4px 14px rgba(0,0,0,.15)}
+.info:hover .bulle,.info:focus .bulle{display:block}
+/* « Suppose » : les lignes requises, en pastilles retirables */
+.requis{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 8px}
+.requis .pill{display:inline-flex;gap:2px;align-items:center;border:1px solid var(--line);border-radius:999px;padding:2px 4px 2px 10px;font-size:13.5px;background:var(--panel)}
+.requis .pill button{border:0;background:none;cursor:pointer;color:var(--muted);font-size:16px;line-height:1;padding:2px 7px;border-radius:999px}
+.requis .pill button:hover{background:var(--hover);color:var(--ink)}
+.requis-ajout{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.requis-ajout select{flex:1 1 240px;min-width:0;max-width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--paper)}
+/* PRISMEthemes : valeurs groupées par facette, sous-items indentés */
 .item.theme{grid-template-columns:1fr}
 .item.theme.sous-item{padding-left:34px}
 .item.theme .code{padding-top:0}
@@ -204,8 +222,8 @@ dialog h2{font:600 22px var(--serif);margin:0 0 16px}
     <nav role="tablist">
       <button role="tab" aria-selected="false" data-tab="player">PRISMEplayer</button>
       <button role="tab" aria-selected="true" data-tab="modele">PRISMEgame</button>
-      <button role="tab" aria-selected="false" data-tab="mecanismes">PRISMEmécanismes</button>
-      <button role="tab" aria-selected="false" data-tab="themes">PRISMEthèmes</button>
+      <button role="tab" aria-selected="false" data-tab="mecanismes">PRISMEmechanics</button>
+      <button role="tab" aria-selected="false" data-tab="themes">PRISMEthemes</button>
       <button role="tab" aria-selected="false" data-tab="textes">Textes généraux</button>
       <button role="tab" aria-selected="false" data-tab="jeux">Jeux</button>
       <button role="tab" aria-selected="false" data-tab="journal" id="tab-journal" class="hidden">Journal</button>
@@ -246,12 +264,13 @@ dialog h2{font:600 22px var(--serif);margin:0 0 16px}
         <div class="filtres-m">
           <select id="m-niveau" aria-label="Niveau"></select>
           <select id="m-statut" aria-label="Statut"></select>
-          <select id="m-famille" aria-label="Famille d'origine"></select>
           <div class="cases"><span class="compteur">Catégorie</span><label><input type="checkbox" data-mf="D"> D</label><label><input type="checkbox" data-mf="M"> M</label><label><input type="checkbox" data-mf="L"> L</label></div>
+          <details class="plus-filtres"><summary>Plus de filtres</summary><select id="m-famille" aria-label="Famille d'origine (classement de la récolte)"></select></details>
           <div class="compteur" id="m-compte" role="status"></div>
           <div><button class="btn ghost small" id="m-nouveau" type="button">Ajouter un mécanisme</button></div>
         </div>
       </div>
+      <div class="legende-m"><span class="info" tabindex="0" aria-label="D déplacement : un composant change de zone (piocher, poser, payer). M modification : il change d'état sur place (lancer, retourner, incliner). L lecture : une règle lit la situation (majorité, série complète, fin de partie).">D déplacement · M modification · L lecture<span class="bulle" aria-hidden="true">D : un composant change de zone (piocher, poser, payer).<br>M : il change d'état sur place (lancer, retourner, incliner).<br>L : une règle lit la situation (majorité, série complète, fin de partie).</span></span></div>
       <div id="m-list" role="listbox" aria-label="Mécanismes"></div>
     </aside>
     <section id="m-edit-pane" class="closed">
@@ -288,7 +307,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 16px}
 
 <script>
 /* ================= configuration ================= */
-const VERSION = { numero:"3.8", date:"2026-10-29 00:08" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.9", date:"2026-10-29 15:00" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 
@@ -308,7 +327,8 @@ const OPTIONS = {
   nature:   { descriptif:"descriptif", evaluatif:"évaluatif" },
   echelle:  { "0-5":"0 à 5", ecart:"écart −− à ++", crans5:"5 crans −− à ++", calcule:"calculée" },
   type:     { statut:"statut", solo:"volet solo", absorption:"absorption", consigne:"consigne de rédaction", historique:"historique", reserve:"en réserve", regle:"règle", note:"note" },
-  niveau:   { mecanisme:"mécanisme", aspect:"aspect", support:"support", parametre:"paramètre", assemblage:"assemblage", parole:"parole", structure:"structure", mise_en_place:"mise en place", hors_modele:"hors modèle" },
+  // les niveaux de PRISMEmechanics, dans l'ordre d'affichage (29/10/2026 : le niveau « paramètre » n'existe plus)
+  niveau:   { materiel:"Matériel", geste:"Gestes de base", mecanisme:"Mécanisme", assemblage:"Combinaison", aspect:"Mode de jeu", structure:"Déroulement", fin_de_partie:"Fin de partie", mise_en_place:"Mise en place", support:"Plateau et formes", parole:"Parole", hors_modele:"Hors modèle" },
   statut_meca:{ garder:"garder", fusionner:"fusionner", scinder:"scinder", ecarter:"écarter", a_discuter:"à discuter" }
 };
 const CATEGORIES = { D:"déplacement", M:"modification", L:"lecture" };
@@ -316,7 +336,7 @@ const CATEGORIES = { D:"déplacement", M:"modification", L:"lecture" };
 const canonCat = s => Object.keys(CATEGORIES).filter(l => String(s ?? "").includes(l)).join("+") || null;
 const TABLES = { prisme_player_moteurs:"moteur", prisme_player_temperaments:"tempérament", prisme_player_styles:"style", prisme_player_styles_60:"profil (archive)", prisme_player_archetypes:"archétype", prisme_player_profils:"profil",
                  prisme_player_sous_profils:"sous-profil", prisme_player_questions:"question", prisme_chapitres:"chapitre", prisme_paires:"paire", prisme_axes:"axe", prisme_paliers:"palier",
-                 prisme_notes:"encadré", prisme_jeux:"jeu", prisme_exemples:"exemple", prisme_textes:"texte", prisme_roles:"rôle", prisme_mecanismes:"mécanisme", prisme_reglages:"réglage", prisme_themes:"thème" };
+                 prisme_notes:"encadré", prisme_jeux:"jeu", prisme_exemples:"exemple", prisme_textes:"texte", prisme_roles:"rôle", prisme_mecanismes:"mécanisme", prisme_reglages:"réglage", prisme_themes:"thème", prisme_mecanismes_requis:"requis" };
 // clé d'une ligne pour l'enregistrement : « code » partout, sauf les réglages
 const CLES = { prisme_reglages:"cle" };
 const cleDe = table => CLES[table] || "code";
@@ -331,9 +351,12 @@ const LIBELLES = { devise:"Devise", a_la_table:"À la table, il peut (un comport
   jeu:"Jeu", valeur:"Valeur chiffrée", symbole:"Symbole", valeur_texte:"Valeur affichée", remarque:"Remarque",
   justification:"Justification", amorce:"Amorce littéraire", titre:"Titre", contenu:"Contenu", bgg_id:"Identifiant BGG", image_url:"Image de la boîte", notes:"Notes", role:"Rôle",
   nom_en:"Nom anglais", famille_recolte:"Famille d'origine (récolte)", niveau:"Niveau", categorie:"Catégorie", lecture:"Lecture dans le modèle",
-  parametres:"Paramètres", exemples:"Exemples", sources:"Sources", axe_prisme:"Axe PRISME", fusion_vers:"Fusionné vers", remarques:"Remarques", parent:"Valeur parente" };
+  parametres:"Paramètres", exemples:"Exemples", sources:"Sources", axe_prisme:"Axe PRISME", fusion_vers:"Fusionné vers", remarques:"Remarques", parent:"Valeur parente", libelle_en:"Libellé anglais" };
+// un nom et son anglais : « nom (name) », l'anglais en italique et en gris ; en texte simple pour les listes déroulantes
+const bilingue = (fr, en) => esc(fr) + (en ? ` <span class="en">(${esc(en)})</span>` : "");
+const bilingueTexte = (fr, en) => fr + (en ? ` (${en})` : "");
 
-let state = { user:null, role:null, noms:{}, chapitres:[], paires:[], axes:[], paliers:[], notes:[], jeux:[], exemples:[], textes:[], mecanismes:[], reglages:[], themes:[], current:null };
+let state = { user:null, role:null, noms:{}, chapitres:[], paires:[], axes:[], paliers:[], notes:[], jeux:[], exemples:[], textes:[], mecanismes:[], requis:[], reglages:[], themes:[], current:null };
 const peutEcrire = () => state.role === "proprietaire" || state.role === "editeur";
 const peutAjouterJeu = () => peutEcrire() || state.role === "evaluateur";
 
@@ -363,6 +386,9 @@ async function chargerModele(){
   const err = r.find(x => x.error); if (err) throw err.error;
   [state.chapitres, state.paires, state.axes, state.paliers, state.notes, state.jeux, state.exemples, state.textes, state.mecanismes, state.reglages, state.themes] = r.map(x => x.data);
   state.paires.sort((a,b) => chap(a.chapitre).ordre - chap(b.chapitre).ordre || a.ordre - b.ordre);
+  // « tel mécanisme suppose tel autre » : lu à part, la console reste utilisable si la table manque
+  const rq = await sb.from("prisme_mecanismes_requis").select("*");
+  state.requis = rq.error ? [] : rq.data; state.requisErreur = rq.error?.message || null;
 }
 const chap = code => state.chapitres.find(c => c.code === code) || { ordre:99, nom:code };
 
@@ -696,8 +722,11 @@ function ouvrirP(code, force){
   $("#p-editor-host").innerHTML = `<div class="editor" style="--chap:${coul}">${peutEcrire() ? "" : '<p class="readonly-note">Lecture seule : ton rôle ne permet pas de modifier le modèle.</p>'}${h}</div>`;
 }
 
-/* ================= PRISMEmécanismes ================= */
+/* ================= PRISMEmechanics ================= */
 // la nomenclature des mécanismes (table prisme_mecanismes) : liste filtrable, une fiche par ligne, pas de suppression
+// les requis (table prisme_mecanismes_requis, 29/10/2026) : « tel mécanisme suppose tel autre », le plus souvent un matériel
+const nomM = code => state.mecanismes.find(m => m.code === code)?.nom || code;
+const requisDe = code => state.requis.filter(r => r.mecanisme === code).map(r => r.requis);
 function afficherMecanismes(){
   afficherListeM();
   if (!state.currentM) accueilM();
@@ -724,7 +753,7 @@ function afficherListeM(){
   $("#m-compte").textContent = `${ms.length} ligne${s} affichée${s} sur ${state.mecanismes.length} · ${nd} à discuter`;
   $("#m-list").innerHTML = ms.map(m => `<div class="item meca" role="option" tabindex="0" data-mcode="${esc(m.code)}" style="--chap:var(--muted)" aria-selected="${state.currentM === m.code}">
       <span class="code">${esc(m.code)}</span>
-      <span><span class="nom">${esc(m.nom)}</span><span class="badge ${esc(m.statut)}">${esc(OPTIONS.statut_meca[m.statut] || m.statut)}</span><br>
+      <span><span class="nom">${bilingue(m.nom, m.nom_en)}</span>${requisDe(m.code).length ? `<span class="suppose">suppose : ${esc(requisDe(m.code).map(nomM).join(", "))}</span>` : ""}<span class="badge ${esc(m.statut)}">${esc(OPTIONS.statut_meca[m.statut] || m.statut)}</span><br>
       <span class="sous">${[OPTIONS.niveau[m.niveau] || m.niveau, m.categorie, m.fusion_vers && "→ " + m.fusion_vers].filter(Boolean).map(esc).join(" · ")}</span></span></div>`).join("")
     || '<p class="empty">Aucun mécanisme ne correspond à ces filtres.</p>';
 }
@@ -741,8 +770,8 @@ function accueilM(ouvrirVolet){
   state.currentM = null; afficherListeM();
   if (ouvrirVolet) $("#m-edit-pane").classList.remove("closed");
   $("#m-band").style.background = "var(--line)";
-  $("#m-editor-host").innerHTML = `<div class="editor"><h2>PRISMEmécanismes</h2>
-    <p class="aide">La nomenclature des mécanismes, lue dans le modèle (D déplacement, M modification, L lecture). On écarte une ligne par son statut, on ne la supprime pas.</p>
+  $("#m-editor-host").innerHTML = `<div class="editor"><h2>PRISMEmechanics</h2>
+    <p class="aide">La nomenclature des mécanismes, lue dans le modèle (D déplacement, M modification, L lecture). On écarte une ligne par son statut, on ne la supprime pas. Une ligne peut en supposer d'autres (« Suppose », dans sa fiche) : la fiche du jeu ne la propose qu'une fois ses requis cochés.</p>
     ${peutEcrire() ? `<h4>Ajouter un mécanisme</h4><div class="ajout">
       <label class="field"><span>Code</span><input id="m-new-code" type="text" placeholder="ex. STR-12"></label>
       <label class="field"><span>Nom</span><input id="m-new-nom" type="text"></label>
@@ -768,12 +797,12 @@ function ouvrirM(code, force){
   state.currentM = code; afficherListeM();
   $("#m-edit-pane").classList.remove("closed");
   $("#m-band").style.background = "var(--muted)";
-  const autres = Object.fromEntries(state.mecanismes.filter(m => m.code !== code).map(m => [m.code, `${m.code} — ${m.nom}`]));
+  const autres = Object.fromEntries(state.mecanismes.filter(m => m.code !== code).map(m => [m.code, `${m.code} — ${bilingueTexte(m.nom, m.nom_en)}`]));
   if (x.fusion_vers && !autres[x.fusion_vers]) autres[x.fusion_vers] = `${x.fusion_vers} (code introuvable)`;
   const ro = peutEcrire() ? "" : "disabled";
   $("#m-editor-host").innerHTML = `<div class="editor">
     <div class="meta"><span>${esc(x.code)}</span><span>${esc(OPTIONS.niveau[x.niveau] || x.niveau)}</span>${x.famille_recolte ? `<span>${esc(x.famille_recolte)}</span>` : ""}</div>
-    <h2>${esc(x.nom)}</h2>
+    <h2>${bilingue(x.nom, x.nom_en)}</h2>
     ${peutEcrire() ? "" : '<p class="readonly-note">Lecture seule : ton rôle ne permet pas de modifier le modèle.</p>'}
     ${bloc("prisme_mecanismes", x, r => `
       <div class="grid2">${champ("nom", r.nom)}${champ("nom_en", r.nom_en)}</div>
@@ -787,10 +816,54 @@ function ouvrirM(code, force){
       ${champ("exemples", r.exemples, { type:"area" })}
       ${champ("remarques", r.remarques, { type:"area" })}
       ${champ("sources", r.sources)}`)}
+    <h4>Suppose</h4><div id="m-requis">${htmlRequis(x)}</div>
   </div>`;
 }
+// « Suppose » : hors du bloc de la fiche, chaque ajout ou retrait s'enregistre aussitôt (l'horodatage et le journal sont tenus par la base)
+function htmlRequis(x){
+  if (state.requisErreur) return `<p class="msg err">Les requis n'ont pas pu être lus : ${esc(state.requisErreur)}.</p>`;
+  const L = requisDe(x.code), ecr = peutEcrire();
+  const ligne = c => state.mecanismes.find(m => m.code === c);
+  const pills = L.map(c => { const m = ligne(c);
+    return `<span class="pill">${m ? bilingue(m.nom, m.nom_en) : esc(c) + " (code introuvable)"}${ecr ? `<button type="button" data-retirer-requis="${esc(c)}" title="Retirer" aria-label="Retirer ${esc(m?.nom || c)}">×</button>` : ""}</span>`; }).join("");
+  // le sélecteur : toutes les lignes sauf elle-même et ses requis, les matériels en tête
+  const candidats = state.mecanismes.filter(m => m.code !== x.code && !L.includes(m.code));
+  const opt = m => `<option value="${esc(m.code)}">${esc(bilingueTexte(m.nom, m.nom_en))} — ${esc(m.code)}</option>`;
+  const mat = candidats.filter(m => m.niveau === "materiel"), autres = candidats.filter(m => m.niveau !== "materiel");
+  return `<div class="requis">${pills || '<span class="compteur">Aucun requis : la ligne est proposée pour tout jeu.</span>'}</div>
+    ${ecr ? `<div class="requis-ajout"><select id="m-requis-choix" aria-label="Ajouter une ligne requise"><option value="">Ajouter une ligne requise…</option>
+        ${mat.length ? `<optgroup label="${esc(OPTIONS.niveau.materiel)}">${mat.map(opt).join("")}</optgroup>` : ""}<optgroup label="Autres lignes">${autres.map(opt).join("")}</optgroup></select>
+      <button class="btn small" id="m-requis-ajouter" type="button">Ajouter</button></div><p class="msg" id="m-requis-msg"></p>` : ""}
+    <p class="aide">Ce que la ligne suppose pour avoir un sens, le plus souvent un matériel (« Cartes »). Enregistré aussitôt, sans passer par le bouton de la fiche.</p>`;
+}
+function majRequis(code, msg){
+  const x = state.mecanismes.find(m => m.code === code); if (!x) return;
+  $("#m-requis").innerHTML = htmlRequis(x);
+  if (msg){ const m = $("#m-requis-msg"); if (m){ m.className = "msg ok"; m.textContent = msg; } }
+  afficherListeM();
+}
+$("#m-editor-host").addEventListener("click", async e => {
+  const code = state.currentM; if (!code) return;
+  const ret = e.target.closest("[data-retirer-requis]");
+  if (ret){
+    const r = ret.dataset.retirerRequis; ret.disabled = true;
+    const { error } = await sb.from("prisme_mecanismes_requis").delete().eq("mecanisme", code).eq("requis", r);
+    if (error){ ret.disabled = false; const m = $("#m-requis-msg"); if (m){ m.className = "msg err"; m.textContent = "Retrait refusé : " + error.message; } return; }
+    state.requis = state.requis.filter(x => !(x.mecanisme === code && x.requis === r));
+    majRequis(code, `${nomM(r)} retiré.`); return;
+  }
+  if (e.target.closest("#m-requis-ajouter")){
+    const r = $("#m-requis-choix").value, m = $("#m-requis-msg");
+    if (!r){ m.className = "msg warn"; m.textContent = "Choisis d'abord une ligne dans la liste."; return; }
+    e.target.disabled = true;
+    const { data, error } = await sb.from("prisme_mecanismes_requis").insert({ mecanisme:code, requis:r }).select();
+    if (error){ e.target.disabled = false; m.className = "msg err"; m.textContent = "Ajout refusé : " + error.message; return; }
+    state.requis.push(data[0]);
+    majRequis(code, `${nomM(r)} ajouté.`);
+  }
+});
 
-/* ================= PRISMEthèmes (29/10/2026) ================= */
+/* ================= PRISMEthemes (29/10/2026) ================= */
 // la nomenclature des thèmes, en facettes ; seules les facettes enrichissables reçoivent de nouvelles valeurs ; pas de suppression
 const FACETTES = { cadre:"Cadre", periode:"Période", realisme:"Réalisme", sujet:"Sujet", role:"Rôle", lieu:"Lieu", ton:"Ton", tag:"Tags du fantastique", reference:"Référence culturelle et géographique" };
 const FACETTES_OUVERTES = { tag:"TAG-", reference:"REF-" };
@@ -807,13 +880,13 @@ function themesRanges(facette){
 }
 function afficherListeT(){
   const q = norm($("#t-q").value.trim());
-  const voit = x => !q || norm([x.code, x.libelle, x.definition, x.remarques].join(" ")).includes(q);
+  const voit = x => !q || norm([x.code, x.libelle, x.libelle_en, x.definition, x.remarques].join(" ")).includes(q);
   let html = "", n = 0;
   Object.entries(FACETTES).forEach(([f, nom]) => {
     const tous = themesRanges(f), L = tous.filter(voit); if (!L.length) return; n += L.length;
     html += `<div class="chap-title" style="--chap:var(--muted)">${esc(nom)}<span class="compteur">${q ? `${L.length} sur ${tous.length}` : tous.length}</span></div>` + L.map(x =>
       `<div class="item theme${x.parent ? " sous-item" : ""}" role="option" tabindex="0" data-tcode="${esc(x.code)}" style="--chap:var(--muted)" aria-selected="${state.currentT === x.code}">
-        <span><span class="nom">${esc(x.libelle)}</span><br><span class="sous">${esc(x.code)}</span></span></div>`).join("");
+        <span><span class="nom">${bilingue(x.libelle, x.libelle_en)}</span><br><span class="sous">${esc(x.code)}</span></span></div>`).join("");
   });
   $("#t-compte").textContent = `${n} valeur${n > 1 ? "s" : ""} affichée${n > 1 ? "s" : ""} sur ${state.themes.length}`;
   $("#t-list").innerHTML = html || '<p class="empty">Aucun thème ne correspond à cette recherche.</p>';
@@ -830,7 +903,7 @@ function accueilT(ouvrirVolet){
   state.currentT = null; afficherListeT();
   if (ouvrirVolet) $("#t-edit-pane").classList.remove("closed");
   $("#t-band").style.background = "var(--line)";
-  $("#t-editor-host").innerHTML = `<div class="editor"><h2>PRISMEthèmes</h2>
+  $("#t-editor-host").innerHTML = `<div class="editor"><h2>PRISMEthemes</h2>
     <p class="aide">La nomenclature des thèmes, en facettes. Les tags et les références s'enrichissent ici au fil des jeux.</p>
     ${peutEcrire() ? `<h4>Ajouter un tag ou une référence</h4><div class="ajout">
       <label class="field"><span>Facette</span><select id="t-new-facette">${Object.keys(FACETTES_OUVERTES).map(f => `<option value="${f}">${esc(FACETTES[f])}</option>`).join("")}</select></label>
@@ -865,14 +938,14 @@ function ouvrirT(code, force){
   $("#t-edit-pane").classList.remove("closed");
   $("#t-band").style.background = "var(--muted)";
   // parent : une valeur de la même facette, sans parent elle-même (un seul niveau de sous-items)
-  const parents = Object.fromEntries(state.themes.filter(t => t.facette === x.facette && t.code !== code && !t.parent).map(t => [t.code, `${t.libelle} (${t.code})`]));
+  const parents = Object.fromEntries(state.themes.filter(t => t.facette === x.facette && t.code !== code && !t.parent).map(t => [t.code, `${bilingueTexte(t.libelle, t.libelle_en)} — ${t.code}`]));
   if (x.parent && !parents[x.parent]) parents[x.parent] = `${x.parent} (code introuvable)`;
   $("#t-editor-host").innerHTML = `<div class="editor">
     <div class="meta"><span>${esc(x.code)}</span><span>${esc(FACETTES[x.facette] || x.facette)}</span></div>
-    <h2>${esc(x.libelle)}</h2>
+    <h2>${bilingue(x.libelle, x.libelle_en)}</h2>
     ${peutEcrire() ? "" : '<p class="readonly-note">Lecture seule : ton rôle ne permet pas de modifier le modèle.</p>'}
     ${bloc("prisme_themes", x, r => `
-      <div class="grid2">${champ("libelle", r.libelle)}${champ("parent", r.parent, { type:"select", options:parents, vide:"aucune" })}</div>
+      <div class="grid3">${champ("libelle", r.libelle)}${champ("libelle_en", r.libelle_en)}${champ("parent", r.parent, { type:"select", options:parents, vide:"aucune" })}</div>
       ${champ("definition", r.definition, { type:"area", rows:3 })}
       ${champ("remarques", r.remarques, { type:"area" })}`)}
   </div>`;
@@ -1139,7 +1212,7 @@ function exporterResultats(nomDe){
 /* ================= sauvegarde (propriétaire) ================= */
 const TABLES_SAUVEGARDE = ["prisme_player_moteurs","prisme_player_temperaments","prisme_player_styles","prisme_player_styles_60","prisme_player_archetypes","prisme_player_profils","prisme_player_sous_profils",
                            "prisme_player_questions","prisme_player_resultats","prisme_chapitres","prisme_paires","prisme_axes","prisme_paliers","prisme_notes","prisme_jeux",
-                           "prisme_exemples","prisme_textes","prisme_roles","prisme_evaluations","prisme_evaluation_valeurs","prisme_mecanismes","prisme_jeux_mecanismes","prisme_reglages","prisme_themes","prisme_jeux_themes"];
+                           "prisme_exemples","prisme_textes","prisme_roles","prisme_evaluations","prisme_evaluation_valeurs","prisme_mecanismes","prisme_mecanismes_requis","prisme_jeux_mecanismes","prisme_reglages","prisme_themes","prisme_jeux_themes"];
 // anciennes fiches archivées par le script 09 (lecture réservée au propriétaire) : sauvegardées si elles existent
 const TABLES_SAUVEGARDE_ARCHIVES = ["prisme_evaluations_archive","prisme_evaluation_valeurs_archive"];
 async function lireTout(table, filtre){

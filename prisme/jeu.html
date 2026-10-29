@@ -148,6 +148,14 @@ dialog.fenetre h2{font:600 22px/1.25 var(--serif);margin:0 0 4px}
 .m-rem{grid-column:1 / -1;font:13.5px var(--sans);padding:4px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink)}
 .m-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0 0}
 .m-etat{font-size:13.5px} .m-etat.err{color:var(--err)}
+/* 2.2 (29/10/2026) : l'anglais en italique et en gris, la légende D M L, la saisie en entonnoir, la ligne du matériel */
+.en{font-style:italic;font-weight:400;color:var(--muted)}
+.legende{font-size:13px;color:var(--muted);margin:0 0 10px} .legende .info{border-bottom:1px dotted var(--trait);cursor:help}
+h3.m-etape{font:600 15px var(--sans);margin:14px 2px 4px} .m-choix > h3.m-etape:first-child{margin-top:10px}
+.m-masques{font-size:13px;color:var(--muted);margin:0 0 8px}
+.m-manque{display:block;font-size:12.5px;color:var(--warn)}
+.ligne-mat{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center;font-size:13px;color:var(--muted)}
+.mat{display:inline-block;padding:2px 9px;border-radius:999px;background:var(--neutre);color:var(--ink);font-size:12.5px}
 
 .version{font-size:12px;color:var(--muted);text-align:right;margin:0}
 @media (max-width:760px){
@@ -174,7 +182,7 @@ dialog.fenetre h2{font:600 22px/1.25 var(--serif);margin:0 0 4px}
 
 <script src="timeline.js?v=3.9"></script>
 <script>
-const VERSION = { numero:"2.1", date:"2026-10-29 00:08" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"2.2", date:"2026-10-29 15:00" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -413,43 +421,63 @@ async function afficher(user){
   chargerThemes(code, user, role);
 }
 
-/* ---- les mécanismes du jeu (nomenclature PRISMEmécanismes, 28/10/2026) ---- */
+/* ---- les mécanismes du jeu (nomenclature PRISMEmechanics, 28/10/2026) ---- */
 // libellés : un seul endroit pour changer un mot
 const POIDS = { 3:"majeur", 2:"présent", 1:"marginal" };
 const POIDS_PLURIEL = { 3:"majeurs", 2:"présents", 1:"marginaux" };
-const NIVEAUX_MECA = { mecanisme:"mécanisme", aspect:"aspect", support:"support", parametre:"paramètre", assemblage:"assemblage", parole:"parole", structure:"structure", mise_en_place:"mise en place" };
+// les niveaux, dans l'ordre d'affichage (29/10/2026 : le niveau « paramètre » n'existe plus)
+const NIVEAUX_MECA = { materiel:"Matériel", geste:"Gestes de base", mecanisme:"Mécanisme", assemblage:"Combinaison", aspect:"Mode de jeu", structure:"Déroulement", fin_de_partie:"Fin de partie", mise_en_place:"Mise en place", support:"Plateau et formes", parole:"Parole", hors_modele:"Hors modèle" };
+// un nom et son anglais : « nom (name) », l'anglais en italique et en gris
+const bilingue = (fr, en) => esc(fr) + (en ? ` <span class="en">(${esc(en)})</span>` : "");
+const legendeDML = `<p class="legende"><span class="info" tabindex="0" aria-label="D déplacement : un composant change de zone (piocher, poser, payer). M modification : il change d'état sur place (lancer, retourner, incliner). L lecture : une règle lit la situation (majorité, série complète, fin de partie).">D déplacement · M modification · L lecture<span class="bulle" aria-hidden="true">D : un composant change de zone (piocher, poser, payer).<br>M : il change d'état sur place (lancer, retourner, incliner).<br>L : une règle lit la situation (majorité, série complète, fin de partie).</span></span></p>`;
 const norm = s => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
-const M = { jeu:null, user:null, role:null, ecrit:false, lignes:[], affectes:{}, brouillon:null };   // affectes : { code: { poids, remarque } }
+const M = { jeu:null, user:null, role:null, ecrit:false, lignes:[], requis:{}, affectes:{}, brouillon:null };   // affectes : { code: { poids, remarque } } ; requis : { code: [codes requis] }
 
 async function chargerMecanismes(code, user, role){
   Object.assign(M, { jeu:code, user, role, ecrit: NIVEAUX[role] >= NIVEAUX.evaluateur, brouillon:null });
-  const [l, a] = await Promise.all([
-    sb.from("prisme_mecanismes").select("code,nom,niveau,categorie,statut,fusion_vers,famille_recolte,ordre,definition").order("ordre"),
-    sb.from("prisme_jeux_mecanismes").select("mecanisme,poids,remarque").eq("jeu", code)]);
+  const [l, a, rq] = await Promise.all([
+    sb.from("prisme_mecanismes").select("code,nom,nom_en,niveau,categorie,statut,fusion_vers,famille_recolte,ordre,definition").order("ordre"),
+    sb.from("prisme_jeux_mecanismes").select("mecanisme,poids,remarque").eq("jeu", code),
+    sb.from("prisme_mecanismes_requis").select("mecanisme,requis")]);
   if (l.error || a.error){
     const msg = `<p class="discret">Les mécanismes n'ont pas pu être lus (${esc((l.error || a.error).message)}).</p>`;
     $("#carte-meca").innerHTML = `<div class="surtitre">Mécanique</div>` + msg; $("#detail-meca").innerHTML = msg; return;
   }
   M.lignes = l.data || [];
+  // sans les requis, le sélecteur propose tout (comme « Tout afficher »)
+  if (rq.error) console.warn("PRISME : requis des mécanismes illisibles, le sélecteur propose toutes les lignes", rq.error.message);
+  M.requis = {}; (rq.data || []).forEach(r => (M.requis[r.mecanisme] ||= []).push(r.requis));
   M.affectes = Object.fromEntries((a.data || []).map(x => [x.mecanisme, { poids:x.poids, remarque:x.remarque || "" }]));
   afficherMecanismes();
 }
-const aideMeca = `<p class="question">Ce dont le jeu est fait, selon la nomenclature PRISMEmécanismes : majeur (le jeu repose dessus), présent, marginal.</p>`;
+const aideMeca = `<p class="question">Ce dont le jeu est fait, selon la nomenclature PRISMEmechanics : majeur (le jeu repose dessus), présent, marginal.</p>`;
 const ligneMeca = c => M.lignes.find(l => l.code === c);
 const badgesMeca = l => `<span class="m-code">${esc(l.code)}</span>${l.niveau ? `<span class="m-niv">${esc(NIVEAUX_MECA[l.niveau] || l.niveau)}</span>` : ""}`;
 const fusionMeca = l => { if (l.statut !== "fusionner") return ""; const cible = l.fusion_vers ? ligneMeca(l.fusion_vers) : null;
   return `<span class="m-fusion">→ ${esc(cible?.nom || l.fusion_vers || "ligne fusionnée")}</span>`; };
-const parPoids = p => M.lignes.filter(l => M.affectes[l.code]?.poids === p);
+const parPoids = (p, sansMateriel) => M.lignes.filter(l => M.affectes[l.code]?.poids === p && !(sansMateriel && l.niveau === "materiel"));
+// ce qui est acquis : les lignes cochées et, de proche en proche, ce que supposent les matériels cochés (cocher « Ouvriers » vaut « Pions ») ;
+// un mécanisme coché ne vaut pas pour son requis : « Relance » cochée sans « Dés » reste signalée « suppose : Dés (non coché) »
+function acquisDe(choisis){
+  const a = new Set(Object.keys(choisis)), pile = [...a].filter(c => ligneMeca(c)?.niveau === "materiel");
+  while (pile.length) (M.requis[pile.pop()] || []).forEach(r => { if (!a.has(r)){ a.add(r); if (ligneMeca(r)?.niveau === "materiel") pile.push(r); } });
+  return a;
+}
+const requisManquants = (c, acquis) => (M.requis[c] || []).filter(r => !acquis.has(r));
 
 // la carte Mécanique et la liste complète du détail, pour tous
 function afficherMecanismes(){
   const carte = $("#carte-meca"), det = $("#detail-meca"); if (!carte) return;
   const bouton = M.ecrit ? `<button class="lien-btn" type="button" id="m-modifier">Modifier les mécanismes</button>` : "";
+  // dans les pastilles, le nom français seul ; l'anglais rejoint la définition dans l'info-bulle
   const puce = (l, cls) => { const def = l.definition || "Pas encore de définition.";
-    return `<span class="${cls} info" tabindex="0">${esc(l.nom)}<span class="bulle">${esc(def)}${M.affectes[l.code]?.remarque ? `<br><i>${esc(M.affectes[l.code].remarque)}</i>` : ""}</span></span>`; };
-  const [L3, L2, L1] = [3, 2, 1].map(parPoids);
+    return `<span class="${cls} info" tabindex="0">${esc(l.nom)}<span class="bulle">${l.nom_en ? `<i>${esc(l.nom_en)}</i><br>` : ""}${esc(def)}${M.affectes[l.code]?.remarque ? `<br><i>${esc(M.affectes[l.code].remarque)}</i>` : ""}</span></span>`; };
+  // le matériel : une première ligne discrète ; puis les majeurs, présents et marginaux, sans le matériel
+  const mat = M.lignes.filter(l => l.niveau === "materiel" && M.affectes[l.code]).sort((x, y) => M.affectes[y.code].poids - M.affectes[x.code].poids || x.ordre - y.ordre);
+  const [L3, L2, L1] = [3, 2, 1].map(p => parPoids(p, true));
   let h = `<div class="surtitre">Mécanique</div><p class="titre-carte">Ce dont il est fait</p>`;
-  if (!L3.length && !L2.length && !L1.length) h += `<p class="discret" style="margin:0">Aucun mécanisme n'est encore affecté à ce jeu.</p>`;
+  if (mat.length) h += `<div class="ligne-mat"><span>Matériel :</span>${mat.map(l => puce(l, "mat")).join("")}</div>`;
+  if (!mat.length && !L3.length && !L2.length && !L1.length) h += `<p class="discret" style="margin:0">Aucun mécanisme n'est encore affecté à ce jeu.</p>`;
   if (L3.length) h += `<div class="groupe"><span class="etiq">Majeurs</span><div class="puces" style="gap:8px">${L3.map(l => puce(l, "mj")).join("")}</div></div>`;
   if (L2.length) h += `<div class="groupe"><span class="etiq">Présents</span><div class="puces">${L2.map(l => puce(l, "pr")).join("")}</div></div>`;
   if (L1.length) h += `<div class="groupe" id="m-marginaux" hidden><span class="etiq">Marginaux</span><div class="puces">${L1.map(l => puce(l, "mg")).join("")}</div></div>
@@ -464,12 +492,13 @@ function afficherMecanismes(){
   if (!groupes.length) dh += `<p class="discret">Aucun mécanisme n'est encore affecté à ce jeu.</p>`;
   groupes.forEach(([p, L]) => {
     dh += `<h3 class="m-groupe">${esc(maj(POIDS_PLURIEL[p]))}</h3><ul class="m-liste">${L.map(l => { const rem = M.affectes[l.code].remarque;
-      return `<li>${esc(l.nom)}${badgesMeca(l)}${fusionMeca(l)}${l.definition ? `<span class="m-def">${esc(l.definition)}</span>` : ""}${rem ? `<span class="m-rem-lue">${esc(rem)}</span>` : ""}</li>`; }).join("")}</ul>`;
+      return `<li>${bilingue(l.nom, l.nom_en)}${badgesMeca(l)}${fusionMeca(l)}${l.definition ? `<span class="m-def">${esc(l.definition)}</span>` : ""}${rem ? `<span class="m-rem-lue">${esc(rem)}</span>` : ""}</li>`; }).join("")}</ul>`;
   });
   det.innerHTML = dh;
 }
 
 // le sélecteur, pour l'évaluateur, l'éditeur et le propriétaire : dans une fenêtre (2.0)
+// saisie en entonnoir (2.2) : d'abord le matériel, puis le reste par niveau, seulement les lignes dont les requis sont acquis
 const dialogue = $("#m-dialogue");
 dialogue.addEventListener("cancel", () => { M.brouillon = null; });   // Échap : comme « Annuler »
 function ouvrirSelecteur(){
@@ -477,28 +506,56 @@ function ouvrirSelecteur(){
   // proposées : tout sauf hors modèle, écartées et fusionnées ; une ligne déjà affectée reste proposée pour pouvoir la retirer
   const proposees = M.lignes.filter(l => M.affectes[l.code] || (l.niveau !== "hors_modele" && l.statut !== "ecarter" && l.statut !== "fusionner"));
   const opt = (o, tous) => `<option value="">${esc(tous)}</option>` + Object.entries(o).map(([c, t]) => `<option value="${esc(c)}">${esc(t)}</option>`).join("");
-  const niveaux = Object.fromEntries(Object.entries(NIVEAUX_MECA).filter(([c]) => proposees.some(l => l.niveau === c)));
+  const materiel = proposees.filter(l => l.niveau === "materiel");
+  // les niveaux de l'étape 2, dans l'ordre des libellés ; un niveau inconnu va en fin de liste
+  const ordre = [...Object.keys(NIVEAUX_MECA), ...new Set(proposees.map(l => l.niveau).filter(n => n && !(n in NIVEAUX_MECA)))]
+    .filter(n => n !== "materiel" && proposees.some(l => l.niveau === n));
+  const niveaux = Object.fromEntries(ordre.map(n => [n, NIVEAUX_MECA[n] || n]));
   const familles = [...new Set(proposees.map(l => l.famille_recolte).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr"));
   $("#m-dialogue-corps").innerHTML = `<h2 id="m-dialogue-titre">Mécanismes</h2>${aideMeca}
     <p class="m-compteur" id="m-compteur"></p>
     <div class="m-filtres"><input type="search" id="m-q" placeholder="Chercher un code ou un nom" aria-label="Chercher un code ou un nom">
       <select id="m-niv" aria-label="Niveau">${opt(niveaux, "Tous les niveaux")}</select>
       <select id="m-fam" aria-label="Famille d'origine">${opt(Object.fromEntries(familles.map(f => [f, f])), "Toutes les familles d'origine")}</select>
-      <label><input type="checkbox" id="m-seuls"> n'afficher que les mécanismes affectés</label></div>
+      <label><input type="checkbox" id="m-seuls"> n'afficher que les mécanismes affectés</label>
+      <label title="Montre aussi les lignes dont le matériel ou le mécanisme requis n'est pas coché (pour un jeu atypique)"><input type="checkbox" id="m-tout"> tout afficher</label></div>
+    ${legendeDML}
+    <p class="m-masques" id="m-masques" role="status"></p>
     <div class="m-choix" id="m-choix"></div>
     <p class="m-actions"><button class="btn plein" type="button" id="m-enregistrer">Enregistrer</button><button class="btn" type="button" id="m-annuler">Annuler</button><span class="m-etat" id="m-etat"></span></p>`;
+  // titres dépliés : le niveau Mécanisme, et ceux qui ont déjà une ligne affectée
+  const ouverts = new Set(["mecanisme", ...Object.keys(M.affectes).map(c => ligneMeca(c)?.niveau)]);
   const lister = () => {
-    const q = norm($("#m-q").value.trim()), niv = $("#m-niv").value, fam = $("#m-fam").value, seuls = $("#m-seuls").checked;
-    const L = proposees.filter(l => (!q || norm(l.code + " " + l.nom).includes(q)) && (!niv || l.niveau === niv) && (!fam || l.famille_recolte === fam) && (!seuls || M.brouillon[l.code]));
-    $("#m-choix").innerHTML = L.map(ligneChoix).join("") || `<p class="discret">Aucun mécanisme ne correspond à ces filtres.</p>`;
+    const q = norm($("#m-q").value.trim()), niv = $("#m-niv").value, fam = $("#m-fam").value, seuls = $("#m-seuls").checked, tout = $("#m-tout").checked;
+    const acquis = acquisDe(M.brouillon);
+    const garde = l => (!q || norm(l.code + " " + l.nom + " " + (l.nom_en || "")).includes(q)) && (!fam || l.famille_recolte === fam) && (!seuls || M.brouillon[l.code]);
+    // étape 1, toujours en tête : le matériel du jeu
+    const Lm = materiel.filter(garde);
+    let h = `<h3 class="m-etape">1. Le matériel du jeu</h3>` + (Lm.map(l => ligneChoix(l, acquis)).join("") || `<p class="discret">Aucun matériel ne correspond à ces filtres.</p>`);
+    // étape 2 : le reste, par niveau ; une ligne affectée reste toujours visible
+    let masques = 0;
+    const groupes = ordre.filter(n => !niv || n === niv).map(n => {
+      const tous = proposees.filter(l => l.niveau === n), L = tous.filter(garde);
+      const vis = L.filter(l => tout || M.brouillon[l.code] || !requisManquants(l.code, acquis).length);
+      masques += L.length - vis.length;
+      if (!vis.length) return "";
+      const nb = tous.filter(l => M.brouillon[l.code]).length;
+      return `<details class="t-facette" data-niveau="${esc(n)}"${q || seuls || ouverts.has(n) ? " open" : ""}><summary><b>${esc(niveaux[n])}</b> <span class="discret">${vis.length} proposé${vis.length > 1 ? "s" : ""}${nb ? ` · ${nb} choisi${nb > 1 ? "s" : ""}` : ""}</span></summary>${vis.map(l => ligneChoix(l, acquis)).join("")}</details>`;
+    }).join("");
+    h += `<h3 class="m-etape">2. Le reste, par niveau</h3>` + (groupes || `<p class="discret">Aucun mécanisme ne correspond à ces filtres.</p>`);
+    $("#m-choix").innerHTML = h;
+    $("#m-masques").textContent = masques ? `${masques} ligne${masques > 1 ? "s" : ""} masquée${masques > 1 ? "s" : ""} : ${masques > 1 ? "elles supposent" : "elle suppose"} un matériel ou un mécanisme non coché (« tout afficher » pour les voir).` : "";
   };
-  ["#m-q", "#m-niv", "#m-fam", "#m-seuls"].forEach(s => $(s).addEventListener("input", lister));
+  $("#m-choix").addEventListener("toggle", e => { if (e.target.matches?.("details")) e.target.open ? ouverts.add(e.target.dataset.niveau) : ouverts.delete(e.target.dataset.niveau); }, true);
+  ["#m-q", "#m-niv", "#m-fam", "#m-seuls", "#m-tout"].forEach(s => $(s).addEventListener("input", lister));
   $("#m-choix").addEventListener("click", e => {
     const b = e.target.closest("[data-p]"); if (!b) return;
-    const ligne = b.closest(".m-ligne"), c = ligne.dataset.code, p = +b.dataset.p;
+    const c = b.closest(".m-ligne").dataset.code, p = +b.dataset.p;
     if (p) M.brouillon[c] = { poids:p, remarque: M.brouillon[c]?.remarque || "" }; else delete M.brouillon[c];
-    ligne.outerHTML = ligneChoix(ligneMeca(c));
-    compter();
+    // un choix peut faire apparaître ou disparaître des lignes : on redessine, sans perdre la place ni le focus
+    const boite = $("#m-choix"), haut = boite.scrollTop;
+    lister(); compter(); boite.scrollTop = haut;
+    boite.querySelector(`.m-ligne[data-code="${CSS.escape(c)}"] [data-p="${p}"]`)?.focus();
   });
   $("#m-choix").addEventListener("input", e => { if (e.target.matches(".m-rem")) M.brouillon[e.target.closest(".m-ligne").dataset.code].remarque = e.target.value; });
   $("#m-annuler").addEventListener("click", () => { M.brouillon = null; dialogue.close(); });
@@ -506,9 +563,10 @@ function ouvrirSelecteur(){
   lister(); compter();
   dialogue.showModal();
 }
-function ligneChoix(l){
+function ligneChoix(l, acquis){
   const v = M.brouillon[l.code], p = v?.poids || 0;
-  return `<div class="m-ligne${p ? " affecte" : ""}" data-code="${esc(l.code)}"><div>${esc(l.nom)}${badgesMeca(l)}</div>
+  const manque = requisManquants(l.code, acquis).map(r => ligneMeca(r)?.nom || r);
+  return `<div class="m-ligne${p ? " affecte" : ""}" data-code="${esc(l.code)}"><div>${bilingue(l.nom, l.nom_en)}${badgesMeca(l)}${manque.length ? `<span class="m-manque">suppose : ${esc(manque.join(", "))} (non coché)</span>` : ""}</div>
     <div class="m-poids" role="group" aria-label="Poids de ${esc(l.nom)}">${[[0, "—"], [1, POIDS[1]], [2, POIDS[2]], [3, POIDS[3]]].map(([n, t]) =>
       `<button type="button" data-p="${n}" aria-pressed="${p === n}"${n ? "" : ' title="absent"'}>${esc(t)}</button>`).join("")}</div>
     ${p ? `<input class="m-rem" type="text" placeholder="Remarque (facultative)" aria-label="Remarque" value="${esc(v.remarque)}">` : ""}</div>`;
@@ -534,7 +592,7 @@ async function enregistrerMecanismes(){
   await chargerMecanismes(M.jeu, M.user, M.role);
 }
 
-/* ---- les thèmes du jeu (nomenclature PRISMEthèmes, 29/10/2026) : même modèle que les mécanismes ---- */
+/* ---- les thèmes du jeu (nomenclature PRISMEthemes, 29/10/2026) : même modèle que les mécanismes ---- */
 // facettes, dans l'ordre d'affichage ; la carte montre le cadre en tête, puis les facettes descriptives
 const FACETTES = { cadre:"Cadre", periode:"Période", realisme:"Réalisme", sujet:"Sujet", role:"Rôle", lieu:"Lieu", ton:"Ton", tag:"Tags du fantastique", reference:"Référence culturelle et géographique" };
 const FACETTES_CARTE = ["sujet", "role", "lieu", "ton", "tag", "reference"];
@@ -544,7 +602,7 @@ const TH = { jeu:null, user:null, role:null, ecrit:false, lignes:[], affectes:{}
 async function chargerThemes(code, user, role){
   Object.assign(TH, { jeu:code, user, role, ecrit: NIVEAUX[role] >= NIVEAUX.evaluateur, brouillon:null });
   const [l, a] = await Promise.all([
-    sb.from("prisme_themes").select("code,facette,libelle,parent,definition,ordre").order("ordre"),
+    sb.from("prisme_themes").select("code,facette,libelle,libelle_en,parent,definition,ordre").order("ordre"),
     sb.from("prisme_jeux_themes").select("theme,poids,remarque").eq("jeu", code)]);
   if (l.error || a.error){
     const msg = `<p class="discret">Les thèmes n'ont pas pu être lus (${esc((l.error || a.error).message)}).</p>`;
@@ -569,7 +627,7 @@ function afficherThemes(){
   const rien = !Object.keys(TH.affectes).length;
   carte.classList.toggle("theme", rien);   // la bordure pointillée disparaît dès qu'un thème est affecté
   const bouton = TH.ecrit ? `<button class="lien-btn" type="button" id="t-modifier">Modifier les thèmes</button>` : "";
-  const puce = (l, cls) => `<span class="${cls} info" tabindex="0">${esc(l.libelle)}<span class="bulle">${esc(l.definition || "Pas encore de définition.")}${TH.affectes[l.code]?.remarque ? `<br><i>${esc(TH.affectes[l.code].remarque)}</i>` : ""}</span></span>`;
+  const puce = (l, cls) => `<span class="${cls} info" tabindex="0">${esc(l.libelle)}<span class="bulle">${l.libelle_en ? `<i>${esc(l.libelle_en)}</i><br>` : ""}${esc(l.definition || "Pas encore de définition.")}${TH.affectes[l.code]?.remarque ? `<br><i>${esc(TH.affectes[l.code].remarque)}</i>` : ""}</span></span>`;
   let h = `<div class="surtitre">Thème</div>`;
   if (rien) h += `<p class="discret" style="margin:0">Aucun thème n'est encore affecté à ce jeu.</p>`;
   else {
@@ -596,12 +654,12 @@ function afficherThemes(){
   });
   $("#t-modifier")?.addEventListener("click", ouvrirSelecteurThemes);
   // la liste complète, groupée par facette, avec la définition et la remarque
-  let dh = `<p class="question">De quoi parle le jeu, selon la nomenclature PRISMEthèmes, en facettes : majeur, présent, marginal.</p>`;
+  let dh = `<p class="question">De quoi parle le jeu, selon la nomenclature PRISMEthemes, en facettes : majeur, présent, marginal.</p>`;
   const facettes = Object.keys(FACETTES).filter(f => affectesDe(f).length);
   if (!facettes.length) dh += `<p class="discret">Aucun thème n'est encore affecté à ce jeu.</p>`;
   facettes.forEach(f => {
     dh += `<h3 class="m-groupe">${esc(FACETTES[f])}</h3><ul class="m-liste">${affectesDe(f).map(l => { const v = TH.affectes[l.code];
-      return `<li>${esc(l.libelle)}<span class="m-code">${esc(l.code)}</span><span class="m-niv">${esc(POIDS[v.poids])}</span>${l.definition ? `<span class="m-def">${esc(l.definition)}</span>` : ""}${v.remarque ? `<span class="m-rem-lue">${esc(v.remarque)}</span>` : ""}</li>`; }).join("")}</ul>`;
+      return `<li>${bilingue(l.libelle, l.libelle_en)}<span class="m-code">${esc(l.code)}</span><span class="m-niv">${esc(POIDS[v.poids])}</span>${l.definition ? `<span class="m-def">${esc(l.definition)}</span>` : ""}${v.remarque ? `<span class="m-rem-lue">${esc(v.remarque)}</span>` : ""}</li>`; }).join("")}</ul>`;
   });
   det.innerHTML = dh;
 }
@@ -622,7 +680,7 @@ function ouvrirSelecteurThemes(){
   const lister = () => {
     const q = norm($("#t-q").value.trim()), seuls = $("#t-seuls").checked;
     $("#t-choix").innerHTML = Object.entries(FACETTES).map(([f, nom]) => {
-      const tous = themesRanges(f), L = tous.filter(l => (!q || norm(l.code + " " + l.libelle).includes(q)) && (!seuls || TH.brouillon[l.code]));
+      const tous = themesRanges(f), L = tous.filter(l => (!q || norm(l.code + " " + l.libelle + " " + (l.libelle_en || "")).includes(q)) && (!seuls || TH.brouillon[l.code]));
       if (!L.length) return "";
       const n = tous.filter(l => TH.brouillon[l.code]).length;
       return `<details class="t-facette" data-facette="${f}"${q || seuls || ouverts.has(f) ? " open" : ""}><summary><b>${esc(nom)}</b> <span class="discret">${tous.length} valeur${tous.length > 1 ? "s" : ""}<span data-nb>${n ? ` · ${n} choisi${n > 1 ? "s" : ""}` : ""}</span></span><span class="t-ignore discret"> · ignoré : le jeu est abstrait</span></summary>${L.map(ligneChoixTheme).join("")}</details>`;
@@ -646,7 +704,7 @@ function ouvrirSelecteurThemes(){
 }
 function ligneChoixTheme(l){
   const v = TH.brouillon[l.code], p = v?.poids || 0;
-  return `<div class="m-ligne${p ? " affecte" : ""}${l.parent ? " t-sous" : ""}" data-code="${esc(l.code)}"><div>${esc(l.libelle)}<span class="m-code">${esc(l.code)}</span></div>
+  return `<div class="m-ligne${p ? " affecte" : ""}${l.parent ? " t-sous" : ""}" data-code="${esc(l.code)}"><div>${bilingue(l.libelle, l.libelle_en)}<span class="m-code">${esc(l.code)}</span></div>
     <div class="m-poids" role="group" aria-label="Poids de ${esc(l.libelle)}">${[[0, "—"], [1, POIDS[1]], [2, POIDS[2]], [3, POIDS[3]]].map(([n, t]) =>
       `<button type="button" data-p="${n}" aria-pressed="${p === n}"${n ? "" : ' title="absent"'}>${esc(t)}</button>`).join("")}</div>
     ${p ? `<input class="m-rem" type="text" placeholder="Remarque (facultative)" aria-label="Remarque" value="${esc(v.remarque)}">` : ""}</div>`;
