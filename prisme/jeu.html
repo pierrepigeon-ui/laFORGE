@@ -159,6 +159,9 @@ h3.m-etape{font:600 15px var(--sans);margin:14px 2px 4px} .m-choix > h3.m-etape:
 .ligne-courte .info{border-bottom:1px dotted var(--trait)} .lignes-courtes{margin:0 0 10px}
 .m-coche{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--muted);cursor:pointer;white-space:nowrap}
 .m-coche input{width:18px;height:18px;margin:0;cursor:pointer}
+/* 2.4 (29/10/2026) : la carte Mécanique en trois niveaux, la recherche du sélecteur en tête */
+.lignes-courtes.bas{margin:4px 0 0} .lignes-courtes.bas .ligne-courte{font-size:12.5px;color:var(--muted);margin:0 0 2px}
+.m-recherche{width:100%;box-sizing:border-box;font:15px var(--sans);padding:9px 12px;margin:0 0 10px;border:1.5px solid var(--trait);border-radius:10px;background:var(--paper);color:var(--ink)}
 
 .version{font-size:12px;color:var(--muted);text-align:right;margin:0}
 @media (max-width:760px){
@@ -185,7 +188,7 @@ h3.m-etape{font:600 15px var(--sans);margin:14px 2px 4px} .m-choix > h3.m-etape:
 
 <script src="timeline.js?v=3.9"></script>
 <script>
-const VERSION = { numero:"2.3", date:"2026-10-29 17:00" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"2.4", date:"2026-10-29 19:00" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -429,15 +432,17 @@ async function afficher(user){
 const POIDS = { 3:"majeur", 2:"présent", 1:"marginal" };
 const POIDS_PLURIEL = { 3:"majeurs", 2:"présents", 1:"marginaux" };
 // les niveaux, dans l'ordre d'affichage (29/10/2026 : le niveau « paramètre » n'existe plus)
-const NIVEAUX_MECA = { materiel:"Matériel", geste:"Gestes de base", mecanisme:"Mécanisme", assemblage:"Combinaison", aspect:"Mode de jeu", structure:"Déroulement", fin_de_partie:"Fin de partie", mise_en_place:"Mise en place", support:"Plateau et formes", parole:"Parole", hors_modele:"Hors modèle" };
+const NIVEAUX_MECA = { materiel:"Matériel", geste:"Gestes de base", mecanisme:"Mécanisme", hasard:"Hasard", assemblage:"Combinaison", aspect:"Mode de jeu", structure:"Déroulement", fin_de_partie:"Fin de partie", mise_en_place:"Mise en place", support:"Plateau et formes", parole:"Parole", hors_modele:"Hors modèle" };
 // un nom et son anglais : « nom (name) », l'anglais en italique et en gris
 const bilingue = (fr, en) => esc(fr) + (en ? ` <span class="en">(${esc(en)})</span>` : "");
 const legendeDML = `<p class="legende"><span class="info" tabindex="0" aria-label="D déplacement : un composant change de zone (piocher, poser, payer). M modification : il change d'état sur place (lancer, retourner, incliner). L lecture : une règle lit la situation (majorité, série complète, fin de partie).">D déplacement · M modification · L lecture<span class="bulle" aria-hidden="true">D : un composant change de zone (piocher, poser, payer).<br>M : il change d'état sur place (lancer, retourner, incliner).<br>L : une règle lit la situation (majorité, série complète, fin de partie).</span></span></p>`;
 // (2.3) simples coches : pour ces niveaux le poids n'a pas de sens ; cochée = une ligne de poids 2, sans remarque
 const COCHE = ["materiel", "geste", "aspect", "fin_de_partie"];
 const estCoche = l => COCHE.includes(l?.niveau);
-// les lignes courtes de la carte Mécanique, dans cet ordre
-const LIGNES_COURTES = [["materiel", "Matériel"], ["aspect", "Mode de jeu"], ["fin_de_partie", "Fin de partie"], ["geste", "Gestes"]];
+// (2.4) la carte Mécanique : en tête le mode de jeu et la fin de partie, en pastilles ; en bas, en petit, le matériel et les gestes
+const CARTE_TETE = [["aspect", "Mode de jeu"], ["fin_de_partie", "Fin de partie"]], CARTE_BAS = [["materiel", "Matériel"], ["geste", "Gestes"]];
+// (2.4) un jeu sans mode de jeu est compté Compétitif (la base fait de même pour tout nouveau jeu)
+const COMPETITIF = "STR-22";
 const norm = s => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 const M = { jeu:null, user:null, role:null, ecrit:false, lignes:[], requis:{}, affectes:{}, brouillon:null };   // affectes : { code: { poids, remarque } } ; requis : { code: [codes requis] }
 
@@ -482,23 +487,23 @@ function afficherMecanismes(){
   // dans les pastilles, le nom français seul ; l'anglais rejoint la définition dans l'info-bulle
   const puce = (l, cls) => { const def = l.definition || "Pas encore de définition.";
     return `<span class="${cls} info" tabindex="0">${esc(l.nom)}<span class="bulle">${l.nom_en ? `<i>${esc(l.nom_en)}</i><br>` : ""}${esc(def)}${M.affectes[l.code]?.remarque ? `<br><i>${esc(M.affectes[l.code].remarque)}</i>` : ""}</span></span>`; };
-  // en tête, les simples coches en lignes courtes (« Matériel : Cartes, Dés ») ; puis les majeurs, présents et marginaux des autres niveaux
-  const courtes = LIGNES_COURTES.map(([n, t]) => [t, M.lignes.filter(l => l.niveau === n && M.affectes[l.code])]).filter(([, L]) => L.length);
+  // trois niveaux (2.4) : en tête, comme une carte d'identité, le mode de jeu et la fin de partie ; puis les mécanismes, marginaux compris ;
+  // en bas, en petit, le matériel et les gestes
+  const affectesDu = n => M.lignes.filter(l => l.niveau === n && M.affectes[l.code]);
+  const tete = CARTE_TETE.map(([n, t]) => [t, affectesDu(n)]).filter(([, L]) => L.length), bas = CARTE_BAS.map(([n, t]) => [t, affectesDu(n)]).filter(([, L]) => L.length);
   const [L3, L2, L1] = [3, 2, 1].map(parPoids);
   let h = `<div class="surtitre">Mécanique</div><p class="titre-carte">Ce dont il est fait</p>`;
-  if (courtes.length) h += `<div class="lignes-courtes">${courtes.map(([t, L]) => `<div class="ligne-courte"><span>${esc(t)} :</span> ${L.map(l => puce(l, "")).join(", ")}</div>`).join("")}</div>`;
-  if (!courtes.length && !L3.length && !L2.length && !L1.length) h += `<p class="discret" style="margin:0">Aucun mécanisme n'est encore affecté à ce jeu.</p>`;
+  tete.forEach(([t, L]) => { h += `<div class="groupe"><span class="etiq">${esc(t)}</span><div class="puces">${L.map(l => puce(l, "pr")).join("")}</div></div>`; });
+  if (!tete.length && !bas.length && !L3.length && !L2.length && !L1.length) h += `<p class="discret" style="margin:0">Aucun mécanisme n'est encore affecté à ce jeu.</p>`;
   if (L3.length) h += `<div class="groupe"><span class="etiq">Majeurs</span><div class="puces" style="gap:8px">${L3.map(l => puce(l, "mj")).join("")}</div></div>`;
   if (L2.length) h += `<div class="groupe"><span class="etiq">Présents</span><div class="puces">${L2.map(l => puce(l, "pr")).join("")}</div></div>`;
-  if (L1.length) h += `<div class="groupe" id="m-marginaux" hidden><span class="etiq">Marginaux</span><div class="puces">${L1.map(l => puce(l, "mg")).join("")}</div></div>
-    <button class="lien-btn" type="button" id="m-deplier" aria-expanded="false" aria-controls="m-marginaux">+ ${L1.length} ${L1.length > 1 ? POIDS_PLURIEL[1] : POIDS[1]}</button>`;
+  if (L1.length) h += `<div class="groupe"><span class="etiq">Marginaux</span><div class="puces">${L1.map(l => puce(l, "mg")).join("")}</div></div>`;
+  if (bas.length) h += `<div class="lignes-courtes bas">${bas.map(([t, L]) => `<div class="ligne-courte"><span>${esc(t)} :</span> ${L.map(l => puce(l, "")).join(", ")}</div>`).join("")}</div>`;
   carte.innerHTML = h + bouton;
-  $("#m-deplier")?.addEventListener("click", e => { const g = $("#m-marginaux"), ouvert = g.hidden; g.hidden = !ouvert;
-    e.currentTarget.setAttribute("aria-expanded", ouvert); e.currentTarget.textContent = ouvert ? `− replier les ${POIDS_PLURIEL[1]}` : `+ ${L1.length} ${L1.length > 1 ? POIDS_PLURIEL[1] : POIDS[1]}`; });
   $("#m-modifier")?.addEventListener("click", ouvrirSelecteur);
-  // la liste complète : les simples coches par niveau, puis le reste par poids, avec la définition et la remarque
+  // la liste complète, dans l'ordre de la carte : mode de jeu et fin, puis le reste par poids, puis matériel et gestes, avec la définition et la remarque
   let dh = aideMeca;
-  const groupes = [...courtes, ...[3, 2, 1].map(p => [maj(POIDS_PLURIEL[p]), parPoids(p)]).filter(([, L]) => L.length)];
+  const groupes = [...tete, ...[3, 2, 1].map(p => [maj(POIDS_PLURIEL[p]), parPoids(p)]).filter(([, L]) => L.length), ...bas];
   if (!groupes.length) dh += `<p class="discret">Aucun mécanisme n'est encore affecté à ce jeu.</p>`;
   groupes.forEach(([t, L]) => {
     dh += `<h3 class="m-groupe">${esc(t)}</h3><ul class="m-liste">${L.map(l => { const rem = M.affectes[l.code].remarque;
@@ -513,6 +518,7 @@ const dialogue = $("#m-dialogue");
 dialogue.addEventListener("cancel", () => { M.brouillon = null; });   // Échap : comme « Annuler »
 function ouvrirSelecteur(){
   M.brouillon = Object.fromEntries(Object.entries(M.affectes).map(([c, v]) => [c, { ...v }]));
+  competitifParDefaut(M.brouillon);
   // proposées : tout sauf hors modèle, écartées et fusionnées ; une ligne déjà affectée reste proposée pour pouvoir la retirer
   const proposees = M.lignes.filter(l => M.affectes[l.code] || (l.niveau !== "hors_modele" && l.statut !== "ecarter" && l.statut !== "fusionner"));
   const opt = (o, tous) => `<option value="">${esc(tous)}</option>` + Object.entries(o).map(([c, t]) => `<option value="${esc(c)}">${esc(t)}</option>`).join("");
@@ -525,19 +531,22 @@ function ouvrirSelecteur(){
     .filter(n => n !== "materiel" && proposees.some(l => l.niveau === n));
   const niveaux = Object.fromEntries(ordre.map(n => [n, NIVEAUX_MECA[n] || n]));
   const familles = [...new Set(proposees.map(l => l.famille_recolte).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr"));
-  $("#m-dialogue-corps").innerHTML = `<h2 id="m-dialogue-titre">Mécanismes</h2>${aideMeca}
+  $("#m-dialogue-corps").innerHTML = `<h2 id="m-dialogue-titre">Mécanismes</h2>
+    <input type="search" class="m-recherche" id="m-q" placeholder="Chercher un mécanisme, un matériel, un code…" aria-label="Chercher un code ou un nom">
+    ${aideMeca}
     <p class="m-compteur" id="m-compteur"></p>
-    <div class="m-filtres"><input type="search" id="m-q" placeholder="Chercher un code ou un nom" aria-label="Chercher un code ou un nom">
+    <div class="m-filtres">
       <select id="m-niv" aria-label="Niveau">${opt(niveaux, "Tous les niveaux")}</select>
       <select id="m-fam" aria-label="Famille d'origine">${opt(Object.fromEntries(familles.map(f => [f, f])), "Toutes les familles d'origine")}</select>
       <label><input type="checkbox" id="m-seuls"> n'afficher que les mécanismes affectés</label>
       <label title="Montre aussi les lignes dont le matériel ou le mécanisme requis n'est pas coché (pour un jeu atypique)"><input type="checkbox" id="m-tout"> tout afficher</label></div>
     ${legendeDML}
+    ${ligneMeca(COMPETITIF) ? `<p class="m-masques">Sans autre mode de jeu coché, le jeu est enregistré « ${esc(ligneMeca(COMPETITIF).nom)} ».</p>` : ""}
     <p class="m-masques" id="m-masques" role="status"></p>
     <div class="m-choix" id="m-choix"></div>
     <p class="m-actions"><button class="btn plein" type="button" id="m-enregistrer">Enregistrer</button><button class="btn" type="button" id="m-annuler">Annuler</button><span class="m-etat" id="m-etat"></span></p>`;
-  // titres dépliés : Mécanisme, Mode de jeu et Fin de partie (requis pour publier), et ceux qui ont déjà une ligne affectée
-  const ouverts = new Set(["mecanisme", "aspect", "fin_de_partie", ...Object.keys(M.affectes).map(c => ligneMeca(c)?.niveau)]);
+  // (2.4) tous les groupes repliés, sauf ceux qui ont déjà une ligne choisie ; une recherche déplie ceux qui ont un résultat
+  const ouverts = new Set(Object.keys(M.brouillon).map(c => ligneMeca(c)?.niveau));
   const lister = () => {
     const q = norm($("#m-q").value.trim()), niv = $("#m-niv").value, fam = $("#m-fam").value, seuls = $("#m-seuls").checked, tout = $("#m-tout").checked;
     const acquis = acquisDe(M.brouillon);
@@ -601,7 +610,12 @@ function compter(){
   if (coches) L.push(`${coches} coché${coches > 1 ? "s" : ""}`);
   $("#m-compteur").textContent = L.join(" · ") || "Rien n'est encore choisi.";
 }
+// aucun mode de jeu : Compétitif ; un jeu qui a un autre mode n'est pas touché
+function competitifParDefaut(choisis){
+  if (ligneMeca(COMPETITIF)?.niveau === "aspect" && !Object.keys(choisis).some(c => ligneMeca(c)?.niveau === "aspect")) choisis[COMPETITIF] = { poids:2, remarque:"" };
+}
 async function enregistrerMecanismes(){
+  competitifParDefaut(M.brouillon);
   const avant = M.affectes, apres = M.brouillon, etat = $("#m-etat");
   const maintenant = new Date().toISOString();
   const majs = Object.entries(apres).filter(([c, v]) => !avant[c] || avant[c].poids !== v.poids || avant[c].remarque.trim() !== v.remarque.trim())
