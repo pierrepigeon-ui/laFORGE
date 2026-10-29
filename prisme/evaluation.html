@@ -121,6 +121,10 @@ table.sp-extremes{margin:0 0 10px} table.tl-table tr.choisi td{background:color-
 .carnet h2{font:600 20px var(--serif);margin:0 0 4px}
 .carnet textarea{min-height:220px}
 .lecture{font-size:13px;color:var(--warn)}
+/* 3.35 (29/10/2026) : la description du jeu, requise pour rendre la fiche finale ou la publier */
+.desc-manque{font-size:14px;line-height:1.5;border-left:3px solid var(--warn);padding:8px 12px;margin:10px 0 0;background:var(--paper);border-radius:0 8px 8px 0}
+.desc-manque a{font-weight:600;white-space:nowrap}
+input[aria-disabled=true]{opacity:.45;cursor:not-allowed} label:has(> input[aria-disabled=true]){color:var(--muted);cursor:not-allowed}
 #recherche{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px;font-size:14px}
 #recherche input,#recherche select{font:14px var(--sans);padding:6px 9px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink)}
 #recherche input{min-width:220px} #f-compte{color:var(--muted);font-size:13px;margin-left:auto}
@@ -277,6 +281,7 @@ details.article-bloc > summary .etat-art{font-size:13px;color:var(--muted)}
     <label style="font-size:13px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="finale"> Fiche finale</label>
     <span id="etat"></span>
   </div>
+  <div class="wrap hidden" id="desc-manque"></div>
   <div class="wrap" id="grille"></div>
 </section>
 <div id="pied" class="hidden"></div>
@@ -291,7 +296,7 @@ details.article-bloc > summary .etat-art{font-size:13px;color:var(--muted)}
 
 <script src="timeline.js?v=3.9"></script>
 <script>
-const VERSION = { numero:"3.34", date:"2026-10-26 21:40" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.35", date:"2026-10-29 17:00" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -505,6 +510,7 @@ function ouvrirFiche(f, empiler = true){
   $("#suivante").classList.toggle("hidden", lectureSeule);
   $("#etat").textContent = lectureSeule ? "" : (f.id ? "Fiche reprise." : "Nouvelle fiche : elle sera créée à la première saisie.");
   construireGrille(); recalculer(); window.scrollTo(0, 0);
+  verifierDescription();
 }
 function majBarreFiche(){
   $("#titre-jeu").textContent = titreFiche(fiche);
@@ -726,7 +732,7 @@ function construireGrille(){
   $("#grille").innerHTML = h;
   document.querySelectorAll(".axe").forEach(majPaliers);
   M.paires.forEach(p => { if (estComplete(p, saisie)) document.getElementById("p-" + p.code).classList.add("repliee"); });   // ce qui est fait se replie
-  aligner(); majToutEnrouler();
+  aligner(); majToutEnrouler(); appliquerDescription();
 }
 // curseurs alignés : l'en-tête (titre + question) des deux colonnes prend la même hauteur
 function aligner(){
@@ -967,7 +973,44 @@ $("#suivante").addEventListener("click", () => {
   el.querySelector('input[type="range"]')?.focus({ preventScroll:true });
 });
 $("#aller").addEventListener("change", e => { if (e.target.value){ const el = document.getElementById(e.target.value); if (el.tagName === "DETAILS") el.open = true; el.classList.remove("repliee"); aligner(); el.scrollIntoView({ behavior:"smooth" }); } e.target.value = ""; });
-$("#finale").addEventListener("change", e => { fiche.statut = e.target.checked ? "finale" : "brouillon"; ficheModifiee = true; planifier(); });
+$("#finale").addEventListener("change", e => {
+  if (e.target.checked && descriptionBloque()){ e.target.checked = false; $("#etat").textContent = messageDescription(); return; }
+  fiche.statut = e.target.checked ? "finale" : "brouillon"; ficheModifiee = true; planifier(); appliquerDescription(); });
+
+/* ---------------- la description du jeu, requise pour rendre finale ou publier (3.35, 29/10/2026) ---------------- */
+// complète = dans prisme_jeux_mecanismes, au moins un matériel, un mode de jeu, une fin de partie, et un mécanisme ou une combinaison majeur ;
+// vérifiée à l'ouverture de la fiche et au retour sur la page ; une fiche déjà finale n'est pas concernée ; si la base ne répond pas, rien n'est bloqué
+const DESC = { niveaux:null, jeu:null, manque:[] };
+async function verifierDescription(){
+  if (!fiche) return;
+  const jeu = fiche.jeu;
+  try {
+    if (!DESC.niveaux){ const { data, error } = await sb.from("prisme_mecanismes").select("code,niveau"); if (error) throw error;
+      DESC.niveaux = Object.fromEntries(data.map(m => [m.code, m.niveau])); }
+    const { data, error } = await sb.from("prisme_jeux_mecanismes").select("mecanisme,poids").eq("jeu", jeu); if (error) throw error;
+    if (fiche?.jeu !== jeu) return;   // une autre fiche a été ouverte entre-temps
+    const L = data.map(x => ({ niveau: DESC.niveaux[x.mecanisme], poids: x.poids })), a = n => L.some(x => x.niveau === n);
+    DESC.manque = [!a("materiel") && "le matériel", !a("aspect") && "le mode de jeu", !a("fin_de_partie") && "la fin de partie",
+      !L.some(x => (x.niveau === "mecanisme" || x.niveau === "assemblage") && x.poids === 3) && "un mécanisme ou une combinaison majeur"].filter(Boolean);
+  } catch (e){ console.warn("PRISME : description du jeu illisible, la publication n'est pas bloquée", e.message); DESC.manque = []; }
+  DESC.jeu = jeu; appliquerDescription();
+}
+const descriptionBloque = () => !!fiche && !lectureSeule && fiche.statut !== "finale" && DESC.jeu === fiche.jeu && DESC.manque.length > 0;
+const messageDescription = () => `La description du jeu est à compléter avant de publier : il manque ${DESC.manque.join(", ").replace(/, ([^,]*)$/, " et $1")}.`;
+// le bandeau, et les deux actions qui publient (« Fiche finale », « Publié sur la vitrine ») : grisées mais atteignables au clavier, l'explication au survol et au focus
+function appliquerDescription(){
+  const box = $("#desc-manque"); if (!fiche || !box) return;
+  const bloque = descriptionBloque(), msg = bloque ? messageDescription() : "";
+  box.classList.toggle("hidden", !bloque);
+  box.innerHTML = bloque ? `<p class="desc-manque" id="desc-msg">${esc(msg)} <a href="jeu.html?jeu=${encodeURIComponent(fiche.jeu)}&saisir=mecanismes">Compléter la fiche du jeu →</a></p>` : "";
+  const marquer = el => { if (!el) return;
+    if (bloque){ el.setAttribute("aria-disabled", "true"); el.setAttribute("aria-describedby", "desc-msg"); } else { el.removeAttribute("aria-disabled"); el.removeAttribute("aria-describedby"); }
+    el.closest("label").title = msg; };
+  marquer($("#finale"));
+  const pub = $("#art-publie"); if (pub && !fiche.publie) marquer(pub);   // une fiche déjà publiée peut toujours être retirée
+}
+window.addEventListener("pageshow", e => { if (e.persisted) verifierDescription(); });
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") verifierDescription(); });
 
 /* ---------------- enregistrement automatique ---------------- */
 function planifier(code){
@@ -1331,6 +1374,7 @@ async function completerInstantanes(){
 }
 $("#grille").addEventListener("change", e => {
   if (e.target.id !== "art-publie" || lectureSeule) return;
+  if (e.target.checked && descriptionBloque()){ e.target.checked = false; $("#etat").textContent = messageDescription(); return; }
   if (e.target.checked && !aUnArticle(fiche)){ e.target.checked = false; $("#etat").textContent = "Écris d'abord l'article : la vitrine ne publie que des articles."; return; }
   fiche.publie = e.target.checked; if (fiche.publie && !fiche.publie_le) fiche.publie_le = new Date().toISOString();
   ficheModifiee = true; planifier();
