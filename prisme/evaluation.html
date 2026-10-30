@@ -296,7 +296,7 @@ details.article-bloc > summary .etat-art{font-size:13px;color:var(--muted)}
 
 <script src="timeline.js?v=3.9"></script>
 <script>
-const VERSION = { numero:"3.35", date:"2026-10-29 17:00" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.36", date:"2026-10-30 16:30" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -1002,7 +1002,7 @@ function appliquerDescription(){
   const box = $("#desc-manque"); if (!fiche || !box) return;
   const bloque = descriptionBloque(), msg = bloque ? messageDescription() : "";
   box.classList.toggle("hidden", !bloque);
-  box.innerHTML = bloque ? `<p class="desc-manque" id="desc-msg">${esc(msg)} <a href="jeu.html?jeu=${encodeURIComponent(fiche.jeu)}&saisir=mecanismes">Compléter la fiche du jeu →</a></p>` : "";
+  box.innerHTML = bloque ? `<p class="desc-manque" id="desc-msg">${esc(msg)} <a href="decrire.html?jeu=${encodeURIComponent(fiche.jeu)}">Décrire le jeu →</a></p>` : "";
   const marquer = el => { if (!el) return;
     if (bloque){ el.setAttribute("aria-disabled", "true"); el.setAttribute("aria-describedby", "desc-msg"); } else { el.removeAttribute("aria-disabled"); el.removeAttribute("aria-describedby"); }
     el.closest("label").title = msg; };

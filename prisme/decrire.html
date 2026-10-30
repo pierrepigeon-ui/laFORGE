@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PRISME — Décrire le jeu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
+<style>
+/* 1.0 (30/10/2026) : la maquette validée « Décrire le jeu » (faite sur Heat), avec les couleurs et les polices de la fiche du jeu */
+:root{--ink:#15171C;--muted:#4B5160;--line:#E2E4E9;--trait:#C9CEDB;--paper:#F4F5F7;--panel:#FFFFFF;--neutre:#E8EAF0;--filet:#EEF0F4;
+  --accent:#2346C8;--accent-fonce:#16308F;--sur-accent:#FFFFFF;--bleu-fond:#E6EBFB;--bleu-bord:#C9D3F5;--bleu-texte:#16308F;--orange-fond:#FBEDE4;--orange-texte:#8A3108;
+  --vert-fond:#E7F4EC;--vert-texte:#14532D;--ok:#1E7A46;--warn:#B7791F;--err:#B42318;
+  --serif:"Source Serif 4",Georgia,"Times New Roman",serif;--sans:"IBM Plex Sans","Segoe UI",Arial,sans-serif}
+@media (prefers-color-scheme: dark){:root{--ink:#E6E9EE;--muted:#A3ADBB;--line:#2C3542;--trait:#3A4555;--paper:#11161D;--panel:#171D25;--neutre:#252D38;--filet:#232B36;
+  --accent:#7C9BFF;--accent-fonce:#A9BDFF;--sur-accent:#0B1020;--bleu-fond:#1F2A4D;--bleu-bord:#2E3D6B;--bleu-texte:#C9D6FF;--orange-fond:#3D2618;--orange-texte:#F5C3A3;
+  --vert-fond:#16301F;--vert-texte:#A6E3BC;--ok:#5CC98A;--warn:#E0A84A;--err:#F2837A}}
+*{box-sizing:border-box} html,body{margin:0} [hidden]{display:none!important} body{background:var(--paper);color:var(--ink);font:15px/1.5 var(--sans)}
+a{color:var(--accent)} a:hover{color:var(--accent-fonce)}
+button,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.marque{font:600 19px/1 "Source Serif 4",Georgia,serif;letter-spacing:.08em;color:var(--ink)!important;text-decoration:none}
+.barre{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:12px 20px;font-size:13px;color:var(--muted)}
+.barre a{text-decoration:none;color:var(--muted)} #qui a{margin-left:10px}
+main{max-width:1080px;margin:0 auto;padding:8px 24px 120px;display:flex;flex-direction:column;gap:20px}
+.retour{font-size:13.5px;color:var(--muted);text-decoration:none;align-self:flex-start} .retour:hover{text-decoration:underline}
+#contenu{display:flex;flex-direction:column;gap:20px}
+.vide{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:30px 26px;font:italic 18px/1.5 var(--serif);color:var(--muted);margin:0}
+.discret{color:var(--muted);font-size:13.5px}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;font:500 14px var(--sans);padding:0 18px;border-radius:8px;border:1px solid var(--trait);background:var(--panel);color:var(--ink);text-decoration:none;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--ink)}
+.btn.plein{background:var(--accent);border-color:var(--accent);color:var(--sur-accent);font-weight:600} .btn.plein:hover{background:var(--accent-fonce);border-color:var(--accent-fonce)}
+.btn.contour{min-height:40px;padding:0 16px;border-color:var(--accent);color:var(--accent);font-weight:600} .btn.contour:hover{background:var(--bleu-fond)}
+.btn:disabled{opacity:.5;cursor:default}
+/* infobulle : au survol et au focus (clavier), comme sur la fiche du jeu */
+.info{position:relative;cursor:default}
+.info .bulle{display:none;position:absolute;left:0;top:calc(100% + 6px);z-index:20;background:var(--ink);color:var(--panel);font:400 12.5px/1.45 var(--sans);padding:7px 10px;border-radius:8px;width:max-content;max-width:min(340px,80vw);white-space:normal;text-align:left;box-shadow:0 4px 14px rgba(0,0,0,.15)}
+.info:hover .bulle,.info:focus .bulle,.info:focus-within .bulle{display:block}
+
+/* l'en-tête */
+.tete{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:16px}
+.tete > div:first-child{display:flex;flex-direction:column;gap:6px}
+.surtitre{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.tete h1{margin:0;font:600 clamp(28px,4.5vw,36px)/1.1 var(--serif)}
+.tete p{margin:0;color:var(--muted);font-size:14px}
+.configs{display:flex;gap:4px;padding:4px;background:var(--neutre);border-radius:10px}
+.configs a,.configs b{padding:8px 16px;border-radius:8px;font-size:14px;font-weight:600;text-decoration:none}
+.configs b{background:var(--panel);color:var(--ink)} .configs a{color:var(--accent)}
+/* le bandeau d'état */
+.etat{display:flex;align-items:flex-start;gap:10px;padding:12px 16px;border-radius:12px;font-size:14px;margin:0}
+.etat.ok{background:var(--vert-fond);color:var(--vert-texte)} .etat.manque{background:var(--orange-fond);color:var(--orange-texte)}
+.etat b{flex:none}
+/* les blocs */
+section.bloc{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:16px}
+.bloc-tete{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:12px}
+.bloc-tete > div{display:flex;flex-direction:column;gap:4px}
+.bloc h2{margin:0;font:600 21px/1.25 var(--sans)}
+.bloc-tete p,.aide{margin:0;font-size:14px;color:var(--muted)}
+.aide.petite{font-size:13px}
+.champs{display:flex;flex-wrap:wrap;gap:20px 28px;align-items:flex-end}
+.champ{display:flex;flex-direction:column;gap:6px} .champ > span:first-child{font-size:13px;color:var(--muted)}
+.champ > div{display:flex;align-items:center;gap:8px} .champ > div > span{color:var(--muted);font-size:13px}
+.champ input[type=text],.champ input[type=number]{min-height:40px;padding:8px 12px;border:1px solid var(--trait);border-radius:8px;background:var(--panel);font-size:15px}
+.champ input.n{width:90px} .champ input.n2{width:72px} .champ input.long{width:min(280px,80vw)}
+.champ input:disabled,textarea:disabled{background:var(--paper);color:var(--ink)}
+.case{display:flex;align-items:center;gap:8px;min-height:40px;font-size:14px;cursor:pointer}
+.case input{width:18px;height:18px;margin:0;cursor:pointer}
+.champ input.faux{border-color:var(--err)}
+/* le prix */
+.tranches{display:flex;flex-wrap:wrap;gap:16px}
+.groupe-prix{flex:1 1 220px;display:flex;flex-direction:column;gap:8px}
+.groupe-prix > span{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.tranche{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-size:14px}
+.tranche input{position:absolute;opacity:0;width:1px;height:1px}
+.tranche small{font-size:12px;color:var(--muted);white-space:nowrap}
+.tranche:has(input:checked){border:2px solid var(--accent);background:var(--bleu-fond);color:var(--bleu-texte);font-weight:600;padding:0 13px}
+.tranche:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+.tranche:has(input:disabled){cursor:default}
+/* les résumés de la mécanique et du thème */
+.resume{display:flex;flex-direction:column;gap:10px}
+.rang{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.rang > .etiq{font-size:13px;color:var(--muted);width:110px;flex:none}
+.puce{display:inline-block;padding:5px 11px;border-radius:999px;font-size:13px;background:var(--panel);color:var(--ink);border:1px solid var(--trait)}
+.puce.mj{background:var(--bleu-fond);color:var(--bleu-texte);font-weight:600;border-color:var(--bleu-bord)}
+.puce.mg{color:var(--muted);border-style:dashed;font-size:12px}
+.rem{font-weight:400;opacity:.85}
+.bas{font-size:13px;color:var(--muted)}
+/* les axes descriptifs */
+.chapitre > .surtitre{font-size:12px;letter-spacing:.06em;padding-bottom:4px}
+.axe{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 16px;align-items:center;padding:10px 0;border-top:1px solid var(--filet)}
+.axe-nom{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0}
+.axe-nom .nom{font-size:15px;font-weight:600;border-bottom:1px dotted var(--trait)}
+.axe-code{font-weight:400;color:var(--muted);font-size:12px;margin-left:4px;font-variant-numeric:tabular-nums}
+.deduit{font-size:12px;color:var(--orange-texte);background:var(--orange-fond);padding:2px 8px;border-radius:999px}
+.axe-saisie{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;justify-content:flex-end}
+.echelle{display:flex;gap:4px}
+.echelle button{width:36px;height:34px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;font-size:13px;border:0;background:var(--paper);color:var(--muted);cursor:pointer}
+.echelle button.sous{background:var(--bleu-fond);color:var(--bleu-texte)}
+.echelle button[aria-pressed=true]{background:var(--accent);color:var(--sur-accent);font-weight:600}
+.echelle button:disabled{cursor:default}
+.so-lab{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);cursor:pointer;white-space:nowrap}
+.so-lab input{width:16px;height:16px;margin:0}
+.axe.so .echelle{opacity:.35}
+details.com{grid-column:1 / -1}
+details.com > summary{font-size:12.5px;color:var(--muted);cursor:pointer;width:max-content}
+details.com textarea{display:block;width:100%;margin-top:6px;padding:7px 10px;border:1px solid var(--trait);border-radius:8px;background:var(--panel);font-size:14px;resize:vertical}
+/* la barre d'enregistrement, fixée en bas */
+.enr{position:fixed;left:0;right:0;bottom:0;z-index:30;padding:12px 24px;background:var(--panel);border-top:1px solid var(--line);display:flex;justify-content:center}
+.enr > div{max-width:1080px;width:100%;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px 12px}
+.enr .infos{display:flex;flex-direction:column;font-size:13px;color:var(--muted)}
+#enr-etat{font-size:13px} #enr-etat.err{color:var(--err)} #enr-etat.ok{color:var(--ok)}
+.enr .boutons{display:flex;gap:8px}
+.version{font-size:12px;color:var(--muted);text-align:right;margin:0}
+@media (max-width:760px){
+  main{padding:8px 12px 150px;gap:16px} #contenu{gap:16px}
+  section.bloc{padding:18px}
+  .champs{gap:16px 20px}
+  .rang > .etiq{width:100%}
+  .axe{grid-template-columns:1fr}
+  .axe-saisie{justify-content:flex-start}
+  .echelle button{width:40px;height:38px}
+  .enr{padding:10px 12px} .enr .boutons{flex:1} .enr .boutons .btn{flex:1}
+}
+</style>
+</head>
+<body>
+<div class="barre"><a href="index.html" class="marque" title="Accueil de PRISME">PRISME</a><span id="qui"></span></div>
+<main>
+  <a class="retour" id="retour" href="jeux.html">← Tous les jeux</a>
+  <div id="contenu"><p class="vide">Chargement…</p></div>
+  <p class="version"><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p>
+</main>
+<div class="enr" id="enr" hidden><div>
+  <div class="infos"><span id="enr-modif"></span><span id="enr-etat" role="status"></span></div>
+  <div class="boutons" id="enr-boutons"><button class="btn" type="button" id="annuler">Annuler</button><button class="btn plein" type="button" id="enregistrer">Enregistrer</button></div>
+</div></div>
+
+<script src="selecteurs.js?v=1.0"></script>
+<script>
+const VERSION = { numero:"1.0", date:"2026-10-30 16:30" };   // à incrémenter à chaque livraison
+const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
+const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const virgule = v => String(v).replace(".", ",");
+$("#version").textContent = `Décrire le jeu ${VERSION.numero}, version du ${VERSION.date.replace(/(\d{4})-(\d\d)-(\d\d) (\d\d):(\d\d)/,"$3/$2/$1 à $4h$5")} · sélecteurs ${SELECTEURS_VERSION}`;
+
+/* ---- connexion : tout passe par la Forge ---- */
+const versForge = () => "../?retour=" + encodeURIComponent(location.href);
+function afficherCompte(u){
+  $("#qui").innerHTML = u ? `<span>${esc(u.email)}</span> <a href="#" id="deconnexion">Se déconnecter</a>` : `<a href="${versForge()}">Se connecter</a>`;
+  const d = $("#deconnexion"); if (d) d.addEventListener("click", e => { e.preventDefault(); sb.auth.signOut().then(() => location.href = "../"); });
+}
+let demarre = false;
+sb.auth.onAuthStateChange((_e, session) => {
+  if (!session?.user){ location.replace(versForge()); return; }
+  afficherCompte(session.user);
+  if (!demarre){ demarre = true; setTimeout(() => afficher(session.user), 0); }
+});
+const vide = html => $("#contenu").innerHTML = `<p class="vide">${html}</p>`;
+const NIVEAUX = { joueur:0, lecteur:1, evaluateur:2, editeur:3, proprietaire:4 };
+
+/* ---- le modèle de la page : un seul endroit pour changer un mot ---- */
+// les neuf gammes de prix, groupées par comportement d'achat ; les montants sont dans prisme_reglages (prix_A_max … prix_H_max)
+const GAMMES = [["Sur un coup de tête", [["A", "Une bagatelle"], ["B", "Un petit plaisir"], ["C", "Un coup de cœur"]]],
+  ["On vérifie le budget", [["D", "Un achat réfléchi"], ["E", "Un achat pesé"]]],
+  ["Il faut une bonne raison", [["F", "Un achat rare"], ["G", "Une folie"]]],
+  ["Une fois dans une vie", [["H", "Le jeu d'une vie"], ["I", "Une pièce de collection"]]]];
+// les axes qui se déduiront plus tard de la description
+const DEDUIT = { MECA1a:"hasard en entrée et en sortie", MECA1b:"mécanismes déclenchés par le jeu", THEM1:"thèmes", LIEN1:"mode de jeu", LIEN1c:"mécanismes de parole", LIEN1d:"nombre de joueurs" };
+const CONFIGS = { base:"Jeu de base", all_in:"Jeu all-in" };
+const D = { code:null, user:null, ecrit:false, jeu:null, freres:[], chapitres:[], axes:[], prix:{}, noms:{}, desc:null, F0:null, A:{}, A0:{}, derniere:null };
+
+async function afficher(user){
+  const code = new URLSearchParams(location.search).get("jeu");
+  if (!code) return vide('Aucun jeu choisi. <a href="jeux.html">Voir tous les jeux</a>.');
+  Object.assign(D, { code, user });
+  const [{ data: r }, j, ch, pa, ax, rg, nm] = await Promise.all([
+    sb.rpc("prisme_mon_role"),
+    sb.from("prisme_jeux").select("code,nom,configuration,fiche_globale").eq("code", code).maybeSingle(),
+    sb.from("prisme_chapitres").select("code,nom,ordre").order("ordre"),
+    sb.from("prisme_paires").select("code,chapitre,ordre").order("ordre"),
+    sb.from("prisme_axes").select("code,paire,rang,nom,question,definition,ordre").order("ordre"),
+    sb.from("prisme_reglages").select("cle,valeur"),
+    sb.rpc("prisme_noms")]);
+  if (j.error) return vide("Le jeu n'a pas pu être lu : " + esc(j.error.message));
+  if (!j.data) return vide('Ce jeu n\'existe pas. <a href="jeux.html">Voir tous les jeux</a>.');
+  D.jeu = j.data; D.ecrit = NIVEAUX[r || "joueur"] >= NIVEAUX.evaluateur;
+  document.title = `PRISME — Décrire le jeu — ${D.jeu.nom}`;
+  $("#retour").href = "jeu.html?jeu=" + encodeURIComponent(code); $("#retour").textContent = "← La fiche du jeu";
+  (nm.data || []).forEach(x => D.noms[x.user_id] = x.nom);
+  (rg.data || []).forEach(x => { const m = /^prix_([A-H])_max$/.exec(x.cle); if (m && x.valeur != null) D.prix[m[1]] = Number(x.valeur); });
+  // les axes descriptifs (« note 1 » : rang 1, 1b, 1c, 1d), par chapitre puis dans l'ordre des paires et des axes
+  const paire = Object.fromEntries((pa.data || []).map(p => [p.code, p]));
+  D.chapitres = ch.data || [];
+  const ordreCh = c => D.chapitres.find(x => x.code === c)?.ordre ?? 99;
+  D.axes = (ax.data || []).filter(a => /^1/.test(a.rang || "") && paire[a.paire]).map(a => ({ ...a, chap: paire[a.paire].chapitre }))
+    .sort((a, b) => ordreCh(a.chap) - ordreCh(b.chap) || paire[a.paire].ordre - paire[b.paire].ordre || a.ordre - b.ordre);
+  // les sous-fiches de la même fiche globale (jeu de base, all-in)
+  if (D.jeu.fiche_globale){
+    const { data: fr } = await sb.from("prisme_jeux").select("code,configuration").eq("fiche_globale", D.jeu.fiche_globale);
+    D.freres = (fr || []).sort((a, b) => (a.configuration === "base" ? 0 : 1) - (b.configuration === "base" ? 0 : 1));
+  }
+  const [err] = await Promise.all([lireDescription(), lireMecanismes(code, user, r || "joueur").then(e => D.errMeca = e), lireThemes(code, user, r || "joueur").then(e => D.errThemes = e)]);
+  if (err) return vide("La description n'a pas pu être lue : " + esc(err));
+  M.apres = e => { D.errMeca = e; resumeMeca(); bandeau(); };
+  TH.apres = e => { D.errThemes = e; resumeThemes(); };
+  dessiner();
+}
+
+// la ligne de description et ses axes ; une sous-fiche sans description s'ouvre vide
+async function lireDescription(){
+  const [d, a] = await Promise.all([
+    sb.from("prisme_descriptions").select("*").eq("jeu", D.code).maybeSingle(),
+    sb.from("prisme_descriptions_axes").select("axe,valeur,sans_objet,commentaire,modifie_le,modifie_par").eq("jeu", D.code)]);
+  if (d.error || a.error) return (d.error || a.error).message;
+  D.desc = d.data || null;
+  const lus = Object.fromEntries((a.data || []).map(x => [x.axe, x]));
+  D.A = Object.fromEntries(D.axes.map(x => { const v = lus[x.code];
+    return [x.code, { valeur: v?.valeur == null ? null : Number(v.valeur), sans_objet: !!v?.sans_objet, commentaire: v?.commentaire || "" }]; }));
+  D.A0 = JSON.parse(JSON.stringify(D.A));
+  // la dernière modification : la ligne de description ou l'un de ses axes
+  D.derniere = [D.desc, ...(a.data || [])].filter(x => x?.modifie_le).sort((x, y) => new Date(y.modifie_le) - new Date(x.modifie_le))[0] || null;
+  return null;
+}
+
+/* ---- la page ---- */
+function dessiner(){
+  const ro = D.ecrit ? "" : " disabled", d = D.desc || {};
+  const val = k => d[k] == null ? "" : virgule(d[k]);
+  const champ = (k, titre, cls = "n", mode = "numeric") => `<label class="champ"><span>${esc(titre)}</span><div><input type="text" inputmode="${mode}" class="${cls}" id="f-${k}" value="${esc(val(k))}"${ro}></div></label>`;
+  const deux = (a, b, titre, unite) => `<div class="champ"><span>${esc(titre)}</span><div><input type="text" inputmode="numeric" class="n2" id="f-${a}" value="${esc(val(a))}" aria-label="${esc(titre)} : minimum"${ro}><span>à</span><input type="text" inputmode="numeric" class="n2" id="f-${b}" value="${esc(val(b))}" aria-label="${esc(titre)} : maximum"${ro}>${unite ? `<span>${unite}</span>` : ""}</div></div>`;
+  const tete = (titre, sous, bouton) => `<div class="bloc-tete"><div><h2>${titre}</h2><p>${sous}</p></div>${bouton || ""}</div>`;
+  const nomCfg = c => CONFIGS[c] || c || "Jeu de base";
+  const configs = D.freres.length > 1
+    ? `<nav class="configs" aria-label="Sous-fiches">${D.freres.map(f => f.code === D.code ? `<b aria-current="page">${esc(nomCfg(f.configuration))}</b>` : `<a href="decrire.html?jeu=${encodeURIComponent(f.code)}">${esc(nomCfg(f.configuration))}</a>`).join("")}</nav>`
+    : `<div class="configs"><b>${esc(nomCfg(D.jeu.configuration))}</b></div>`;
+  const montant = l => l === "I" ? (D.prix.H != null ? `> ${D.prix.H} €` : "") : (D.prix[l] != null ? `≤ ${D.prix[l]} €` : "");
+  const prix = GAMMES.map(([g, L]) => `<div class="groupe-prix"><span>${esc(g)}</span>${L.map(([l, n]) =>
+    `<label class="tranche"><input type="radio" name="prix" value="${l}"${d.prix_gamme === l ? " checked" : ""}${ro}><span>${l} · ${esc(n)}</span><small>${esc(montant(l))}</small></label>`).join("")}</div>`).join("");
+  const axes = D.chapitres.map(c => { const L = D.axes.filter(a => a.chap === c.code); if (!L.length) return "";
+    return `<div class="chapitre"><div class="surtitre">${esc(c.nom)}</div>${L.map(ligneAxe).join("")}</div>`; }).join("");
+
+  $("#contenu").innerHTML = `
+    <div class="tete"><div><div class="surtitre">Décrire le jeu</div><h1>${esc(D.jeu.nom)}</h1>
+      <p>Une description partagée : ce qui est vrai du jeu, quel que soit l'avis de chacun.</p></div>${configs}</div>
+    <p class="etat" id="etat" role="status"></p>
+    <section class="bloc">${tete("Les faits", "Ce qu'on lit sur la boîte et dans la règle.")}
+      <div class="champs">${champ("pages", "Pages de règles")}${champ("poids_bgg", "Poids BGG", "n", "decimal")}${deux("joueurs_min", "joueurs_max", "Joueurs")}${deux("duree_min", "duree_max", "Durée", "min")}
+        <label class="case"><input type="checkbox" id="f-usage_unique"${d.usage_unique ? " checked" : ""}${ro}> Usage unique (campagne qui se consomme)</label></div></section>
+    <section class="bloc">${tete("Le prix", "Une gamme plutôt qu'un prix : elle dit quel achat c'est, et ne vieillit pas.")}
+      <div class="tranches" role="radiogroup" aria-label="Gamme de prix">${prix}</div>
+      <p class="aide petite">Les montants se règlent dans la console ; les catégories ne changent pas.</p></section>
+    <section class="bloc">${tete("Le contenu", "Combien de contenus distincts le jeu propose : scénarios, circuits, plateaux, factions…")}
+      <div class="champs">${champ("contenus_nombre", "Contenus distincts")}${champ("contenus_nature", "De quelle nature", "long", "text")}
+        <p class="aide petite" style="max-width:420px">Avec la complexité et la variabilité (mise en place variable), ce nombre servira à calculer les parties pour tout exploiter.</p></div></section>
+    <section class="bloc">${tete("La mécanique", "PRISMEmechanics : de quoi le jeu est fait.", D.ecrit ? `<button class="btn contour" type="button" id="modifier-meca">Modifier les mécanismes</button>` : "")}
+      <div class="resume" id="res-meca"></div></section>
+    <section class="bloc">${tete("Le thème", "PRISMEthemes : de quoi parle le jeu.", D.ecrit ? `<button class="btn contour" type="button" id="modifier-themes">Modifier les thèmes</button>` : "")}
+      <div class="resume" id="res-themes"></div></section>
+    <section class="bloc">${tete("Les axes descriptifs", "Les « note 1 » de PRISMEgame : décrire, sans juger. Pré-remplies avec la moyenne de tes fiches.")}
+      <div style="display:flex;flex-direction:column;gap:20px">${axes || `<p class="discret">Les axes descriptifs n'ont pas pu être lus.</p>`}</div></section>`;
+  $("#modifier-meca")?.addEventListener("click", () => { if (!D.errMeca) ouvrirSelecteur(); });
+  $("#modifier-themes")?.addEventListener("click", () => { if (!D.errThemes) ouvrirSelecteurThemes(); });
+  resumeMeca(); resumeThemes(); bandeau();
+  D.F0 = JSON.stringify(lireFaits());
+  // la barre du bas : en lecture seule, la date seulement
+  $("#enr").hidden = false; $("#enr-boutons").hidden = !D.ecrit;
+  $("#enr-modif").textContent = texteDerniere() + (D.ecrit ? "" : " · lecture seule");
+  $("#enr-etat").textContent = ""; $("#enr-etat").className = "";
+}
+
+// une ligne d'axe : la valeur pré-remplie s'affiche arrondie au plus proche, et n'est réécrite que si on la change
+function ligneAxe(a){
+  const v = D.A[a.code], so = v.sans_objet, r = v.valeur == null ? null : Math.round(v.valeur), ro = D.ecrit ? "" : " disabled";
+  const bulle = [a.question, a.definition].filter(Boolean).map(esc).join("<br><br>");
+  const lu = so ? "sans objet" : v.valeur == null ? "—" : virgule(v.valeur);
+  const com = D.ecrit || v.commentaire ? `<details class="com"${v.commentaire ? " open" : ""}><summary>Commentaire</summary><textarea data-com rows="2" placeholder="Facultatif" aria-label="Commentaire sur ${esc(a.nom)}"${ro}>${esc(v.commentaire)}</textarea></details>` : "";
+  return `<div class="axe${so ? " so" : ""}" data-axe="${esc(a.code)}">
+    <div class="axe-nom"><span><span class="nom info" tabindex="0">${esc(a.nom)}${bulle ? `<span class="bulle">${bulle}</span>` : ""}</span><span class="axe-code">${esc(a.code)} · ${lu}</span></span>
+      ${DEDUIT[a.code] ? `<span class="deduit">se déduira de : ${esc(DEDUIT[a.code])}</span>` : ""}</div>
+    <div class="axe-saisie"><div class="echelle" role="group" aria-label="${esc(a.nom)}, de 0 à 5">${[0, 1, 2, 3, 4, 5].map(n =>
+      `<button type="button" data-v="${n}"${r != null && n < r ? ' class="sous"' : ""} aria-pressed="${r === n}"${ro}>${n}</button>`).join("")}</div>
+      <label class="so-lab"><input type="checkbox" data-so${so ? " checked" : ""}${ro}> sans objet</label></div>
+    ${com}</div>`;
+}
+function redessinerAxe(code){
+  const el = document.querySelector(`.axe[data-axe="${CSS.escape(code)}"]`), a = D.axes.find(x => x.code === code);
+  const ouvert = el.querySelector("details.com")?.open;
+  el.outerHTML = ligneAxe(a);
+  const neuf = document.querySelector(`.axe[data-axe="${CSS.escape(code)}"]`), det = neuf.querySelector("details.com"); if (det && ouvert) det.open = true;
+  return neuf;
+}
+$("#contenu").addEventListener("click", e => {
+  const b = e.target.closest(".echelle button"); if (!b || !D.ecrit) return;
+  const code = b.closest(".axe").dataset.axe, v = D.A[code], n = +b.dataset.v;
+  v.valeur = v.valeur === n ? null : n;   // un second clic sur la valeur choisie l'efface
+  redessinerAxe(code).querySelector(`.echelle button[data-v="${n}"]`)?.focus();
+  changement();
+});
+$("#contenu").addEventListener("change", e => {
+  if (e.target.matches("[data-so]")){ const code = e.target.closest(".axe").dataset.axe; D.A[code].sans_objet = e.target.checked; redessinerAxe(code).querySelector("[data-so]").focus(); }
+  changement();
+});
+$("#contenu").addEventListener("input", e => {
+  if (e.target.matches("[data-com]")) D.A[e.target.closest(".axe").dataset.axe].commentaire = e.target.value;
+  if (e.target.closest(".champ")) document.querySelectorAll(".champ .faux").forEach(x => x.classList.remove("faux"));
+  changement();
+});
+
+// le bandeau : la même règle que le blocage de publication dans evaluation.html
+function bandeau(){
+  const el = $("#etat"); if (!el) return;
+  if (D.errMeca){ el.className = "etat manque"; el.innerHTML = `<b>!</b> <span>Les mécanismes n'ont pas pu être lus : l'état de la description est inconnu.</span>`; return; }
+  const L = Object.entries(M.affectes).map(([c, v]) => ({ niveau: ligneMeca(c)?.niveau, poids: v.poids })), a = n => L.some(x => x.niveau === n);
+  const manque = [!a("materiel") && "le matériel", !a("aspect") && "le mode de jeu", !a("fin_de_partie") && "la fin de partie",
+    !L.some(x => (x.niveau === "mecanisme" || x.niveau === "assemblage") && x.poids === 3) && "un mécanisme ou une combinaison majeur"].filter(Boolean);
+  el.className = "etat " + (manque.length ? "manque" : "ok");
+  el.innerHTML = manque.length ? `<b>!</b> <span>Description à compléter avant de publier la fiche finale : il manque ${esc(manque.join(", ").replace(/, ([^,]*)$/, " et $1"))}.</span>`
+    : `<b>✓</b> <span>Description complète : la fiche finale peut être publiée.</span>`;
+}
+
+// les résumés : le mode de jeu, la fin de partie, les mécanismes par poids, puis le matériel et les gestes en petit
+const puceMeca = (l, cls) => `<span class="puce ${cls} info" tabindex="0">${esc(l.nom)}${remVisible(M.affectes[l.code]?.remarque)}<span class="bulle">${l.nom_en ? `<i>${esc(l.nom_en)}</i><br>` : ""}${esc(l.definition || "Pas encore de définition.")}</span></span>`;
+const rang = (t, html) => `<div class="rang"><span class="etiq">${esc(t)}</span>${html}</div>`;
+function resumeMeca(){
+  const el = $("#res-meca"); if (!el) return;
+  if (D.errMeca){ el.innerHTML = `<p class="discret" style="margin:0">Les mécanismes n'ont pas pu être lus (${esc(D.errMeca)}).</p>`; return; }
+  const du = n => M.lignes.filter(l => l.niveau === n && M.affectes[l.code]);
+  const rangs = [["Mode de jeu", du("aspect"), ""], ["Fin de partie", du("fin_de_partie"), ""], ["Majeurs", parPoids(3), "mj"], ["Secondaires", parPoids(2), ""], ["Marginaux", parPoids(1), "mg"]]
+    .filter(([, L]) => L.length).map(([t, L, cls]) => rang(t, L.map(l => puceMeca(l, cls)).join("")));
+  const bas = [["Matériel", du("materiel")], ["Gestes", du("geste")]].filter(([, L]) => L.length).map(([t, L]) => `${t} : ${L.map(l => esc(l.nom.toLowerCase())).join(", ")}`);
+  el.innerHTML = rangs.join("") + (bas.length ? `<div class="bas">${bas.join(" · ")}</div>` : "")
+    || `<p class="discret" style="margin:0">Aucun mécanisme n'est encore affecté à ce jeu.</p>`;
+}
+const PUCE_POIDS = { 3:"mj", 2:"", 1:"mg" };
+function resumeThemes(){
+  const el = $("#res-themes"); if (!el) return;
+  if (D.errThemes){ el.innerHTML = `<p class="discret" style="margin:0">Les thèmes n'ont pas pu être lus (${esc(D.errThemes)}).</p>`; return; }
+  const puce = l => { const p = TH.affectes[l.code].poids;
+    return `<span class="puce ${PUCE_POIDS[p]} info" tabindex="0">${esc(l.libelle)}${remVisible(TH.affectes[l.code].remarque)}<span class="bulle">${l.libelle_en ? `<i>${esc(l.libelle_en)}</i><br>` : ""}${esc(l.definition || "Pas encore de définition.")}</span></span>`; };
+  // le cadre réunit Abstrait, ou la période et le réalisme ; puis les facettes descriptives
+  const cadre = TH.affectes[ABSTRAIT] ? affectesDe("cadre") : [...affectesDe("cadre"), ...affectesDe("periode"), ...affectesDe("realisme")];
+  const rangs = [["Cadre", cadre], ...["sujet", "role", "lieu", "ton", "tag", "reference"].map(f => [FACETTES[f], affectesDe(f)])]
+    .filter(([, L]) => L.length).map(([t, L]) => rang(t, L.map(puce).join("")));
+  el.innerHTML = rangs.join("") || `<p class="discret" style="margin:0">Aucun thème n'est encore affecté à ce jeu.</p>`;
+}
+
+/* ---- l'enregistrement ---- */
+const ENTIERS = ["pages", "joueurs_min", "joueurs_max", "duree_min", "duree_max", "contenus_nombre"];
+function lireFaits(){
+  const f = {};
+  ENTIERS.forEach(k => { const t = $("#f-" + k).value.trim(); f[k] = t === "" ? null : /^\d+$/.test(t) ? Number(t) : NaN; });
+  const p = $("#f-poids_bgg").value.trim().replace(",", "."); f.poids_bgg = p === "" ? null : /^\d+(\.\d+)?$/.test(p) ? Number(p) : NaN;
+  f.usage_unique = $("#f-usage_unique").checked;
+  f.prix_gamme = document.querySelector('input[name="prix"]:checked')?.value || null;
+  f.contenus_nature = $("#f-contenus_nature").value.trim() || null;
+  return f;
+}
+const axesModifies = () => D.axes.map(a => a.code).filter(c => JSON.stringify(D.A[c]) !== JSON.stringify(D.A0[c]));
+const modifie = () => D.F0 != null && (JSON.stringify(lireFaits()) !== D.F0 || axesModifies().length > 0);
+function changement(){
+  if (!D.ecrit) return;
+  const m = modifie(), e = $("#enr-etat");
+  e.className = ""; e.textContent = m ? "Modifications non enregistrées" : "";
+}
+function texteDerniere(){
+  const x = D.derniere; if (!x) return D.desc ? "Description pré-remplie, pas encore modifiée" : "Pas encore de description : elle sera créée à l'enregistrement";
+  const t = new Date(x.modifie_le), qui = !x.modifie_par ? "la base" : x.modifie_par === D.user.id ? "toi" : D.noms[x.modifie_par] || "un évaluateur";
+  return `Modifié le ${t.toLocaleDateString("fr-FR")} à ${t.toLocaleTimeString("fr-FR", { hour:"2-digit", minute:"2-digit" })} par ${qui}`;
+}
+// les contrôles : nombres entiers positifs, poids BGG de 1 à 5, minimum ≤ maximum
+function controler(f){
+  const err = [], faux = k => { $("#f-" + k).classList.add("faux"); };
+  ENTIERS.forEach(k => { if (Number.isNaN(f[k])){ faux(k); err.push("un nombre entier est attendu"); } });
+  if (Number.isNaN(f.poids_bgg) || (f.poids_bgg != null && (f.poids_bgg < 1 || f.poids_bgg > 5))){ faux("poids_bgg"); err.push("le poids BGG va de 1 à 5"); }
+  [["joueurs_min", "joueurs_max", "joueurs"], ["duree_min", "duree_max", "durée"]].forEach(([a, b, t]) => {
+    if (f[a] != null && f[b] != null && !Number.isNaN(f[a]) && !Number.isNaN(f[b]) && f[a] > f[b]){ faux(a); faux(b); err.push(`${t} : le minimum dépasse le maximum`); } });
+  return [...new Set(err)];
+}
+$("#enregistrer").addEventListener("click", async () => {
+  const f = lireFaits(), etat = $("#enr-etat"), err = controler(f);
+  if (err.length){ etat.className = "err"; etat.textContent = "À corriger : " + err.join(" ; ") + "."; return; }
+  const axes = axesModifies(), faitsModifies = JSON.stringify(f) !== D.F0;
+  if (!faitsModifies && !axes.length){ etat.className = ""; etat.textContent = "Rien à enregistrer."; return; }
+  $("#enregistrer").disabled = true; etat.className = ""; etat.textContent = "Enregistrement…";
+  // l'horodatage (modifie_le, modifie_par) est tenu par la base ; la ligne de description est créée si elle n'existe pas
+  const r1 = faitsModifies || !D.desc ? await sb.from("prisme_descriptions").upsert({ jeu:D.code, ...f }, { onConflict:"jeu" }) : {};
+  const r2 = !r1.error && axes.length ? await sb.from("prisme_descriptions_axes").upsert(axes.map(c => ({ jeu:D.code, axe:c, valeur:D.A[c].valeur,
+    sans_objet:D.A[c].sans_objet, commentaire:D.A[c].commentaire.trim() || null })), { onConflict:"jeu,axe" }) : {};
+  $("#enregistrer").disabled = false;
+  const e = r1.error || r2.error;
+  if (e){ etat.className = "err"; etat.textContent = (r1.error ? "Rien n'a pu être enregistré : " : "Les faits sont enregistrés, pas les axes : ") + e.message; return; }
+  // relire la base : la page montre ce qui y est vraiment
+  const haut = scrollY, e2 = await lireDescription();
+  if (e2){ etat.className = "err"; etat.textContent = "Enregistré, mais la relecture a échoué : " + e2; return; }
+  dessiner(); scrollTo(0, haut);
+  $("#enr-etat").className = "ok"; $("#enr-etat").textContent = "Enregistré.";
+});
+$("#annuler").addEventListener("click", () => {
+  if (!modifie()) return;
+  if (!confirm("Abandonner les modifications non enregistrées ?")) return;
+  const haut = scrollY; D.A = JSON.parse(JSON.stringify(D.A0)); dessiner(); scrollTo(0, haut);
+});
+// prévenir si l'on quitte la page avec des changements non enregistrés
+addEventListener("beforeunload", e => { if (D.ecrit && modifie()){ e.preventDefault(); e.returnValue = ""; } });
+</script>
+<script src="entete.js?v=1.4"></script>
+</body>
+</html>
