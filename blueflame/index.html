@@ -70,7 +70,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px} .field{display:block;margi
   <button class="btn ghost petit hidden" id="btn-logout" type="button">Se déconnecter</button></div>
 
 <section class="hero">
-  <h1><svg class="logo-fb" viewBox="0 24 100 98" role="img" aria-label="Flamme Bleue"><rect x="6" y="86" width="88" height="8" rx="4" fill="var(--fb-socle,#0B2E8A)"/><path fill="var(--fb-langue,#2F6BFF)" d="M13 84c-7-7-5-18 9-34-1 14 6 26-1 34zM30 84c-7-9-4-24 13-46-2 18 6 34-1 46zM47 84c-8-10-5-30 15-56-3 22 7 42-1 56zM64 84c-7-9-4-26 13-44-2 18 6 32-1 44zM81 84c-7-7-5-20 10-36-1 14 6 28-1 36z"/><text x="6" y="116" textLength="88" lengthAdjust="spacingAndGlyphs" fill="var(--fb-nom,#0B2E8A)" style="font:600 15px 'Source Serif 4',Georgia,'Times New Roman',serif">Flamme Bleue</text></svg></h1>
+  <h1><svg class="logo-fb" viewBox="0 24 100 98" role="img" aria-label="Flamme Bleue"><defs><linearGradient id="fbD" gradientUnits="userSpaceOnUse" x1="0" y1="84" x2="0" y2="28"><stop offset="0" stop-color="#1F5BFF"/><stop offset="1" stop-color="#081A6B"/></linearGradient><linearGradient id="fbDc" gradientUnits="userSpaceOnUse" x1="0" y1="84" x2="0" y2="50"><stop offset="0" stop-color="#FFE27A"/><stop offset=".35" stop-color="#9BE0FF"/><stop offset="1" stop-color="#4FA3FF"/></linearGradient></defs><rect x="6" y="86" width="88" height="8" rx="4" fill="var(--fb-socle,#0B2E8A)"/><path d="M13 84c-7-7-5-18 9-34-1 14 6 26-1 34zM30 84c-7-9-4-24 13-46-2 18 6 34-1 46zM47 84c-8-10-5-30 15-56-3 22 7 42-1 56zM64 84c-7-9-4-26 13-44-2 18 6 32-1 44zM81 84c-7-7-5-20 10-36-1 14 6 28-1 36z" fill="url(#fbD)"/><path d="M13 84c-7-7-5-18 9-34-1 14 6 26-1 34z" fill="url(#fbDc)" transform="translate(17 84) scale(0.5) translate(-17 -84)"/><path d="M30 84c-7-9-4-24 13-46-2 18 6 34-1 46z" fill="url(#fbDc)" transform="translate(36 84) scale(0.5) translate(-36 -84)"/><path d="M47 84c-8-10-5-30 15-56-3 22 7 42-1 56z" fill="url(#fbDc)" transform="translate(54 84) scale(0.5) translate(-54 -84)"/><path d="M64 84c-7-9-4-26 13-44-2 18 6 32-1 44z" fill="url(#fbDc)" transform="translate(71 84) scale(0.5) translate(-71 -84)"/><path d="M81 84c-7-7-5-20 10-36-1 14 6 28-1 36z" fill="url(#fbDc)" transform="translate(87 84) scale(0.5) translate(-87 -84)"/><text x="6" y="116" textLength="88" lengthAdjust="spacingAndGlyphs" fill="var(--fb-nom,#0B2E8A)" style="font:600 15px 'Source Serif 4',Georgia,'Times New Roman',serif">Flamme Bleue</text></svg></h1>
   <p class="signature">Cartographiez votre énergie</p>
   <p class="auteur">par l'Arpenteur</p>
   <div class="actions">
@@ -112,7 +112,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px} .field{display:block;margi
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 
 <script>
-const VERSION = { numero:"1.28", date:"2026-10-20 00:10" };
+const VERSION = { numero:"1.29", date:"2026-10-30 13:52" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -220,6 +220,6 @@ sb.auth.onAuthStateChange(async (_e, session) => {
   $("#tuiles").innerHTML = t;
 });
 </script>
-<script src="entete.js?v=1.4"></script>
+<script src="entete.js?v=1.6"></script>
 </body>
 </html>
