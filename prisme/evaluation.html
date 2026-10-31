@@ -40,6 +40,27 @@ table.fiches td{border-bottom:1px solid var(--line);padding:9px 12px} table.fich
 #barre-fiche .prog{flex:1 1 140px;height:8px;background:var(--line);border-radius:4px;overflow:hidden;min-width:100px}
 #barre-fiche .prog span{display:block;height:100%;background:var(--accent);width:0}
 #barre-fiche select{padding:4px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel)}
+/* 3.38 : sous 600 px, la barre tient sur une ligne (←, nom du jeu, progression, « Outils ▾ ») et le pied se replie sur la note finale ;
+   au-dessus, les groupes d'outils sont transparents (display:contents) et rien ne change */
+#outils-btn,.pied-bascule{display:none} .outils-groupe{display:contents}
+@media (max-width:599px){
+  body{padding-bottom:calc(var(--pied-h, 60px) + 16px)}
+  #barre-fiche{top:0;padding:6px 12px;gap:8px;flex-wrap:nowrap}
+  #barre-fiche .large-seul,#prog-txt{display:none}
+  #barre-fiche .jeu{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:16px}
+  #barre-fiche .prog{flex:0 0 56px;min-width:0}
+  #outils-btn{display:inline-flex;flex:none}
+  .outils-groupe{display:none}
+  #barre-fiche.outils-ouverts{flex-wrap:wrap}
+  #barre-fiche.outils-ouverts .outils-groupe{display:flex;flex-wrap:wrap;gap:8px;align-items:center;flex-basis:100%;order:10}
+  #barre-fiche.outils-ouverts #outils-b{order:11}
+  .art-outils{position:static}
+  #pied{padding:6px 12px;gap:10px 16px;align-items:center}
+  #pied.replie{justify-content:space-between;flex-wrap:nowrap}
+  #pied.replie > div:not(.final){display:none}
+  #pied.replie .final{display:flex;align-items:baseline;gap:8px} #pied.replie .final > small{display:inline}
+  .pied-bascule{display:inline-flex;align-items:center;font:500 13px var(--sans);padding:6px 12px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);cursor:pointer}
+}
 #etat{font-size:13px;color:var(--muted);min-width:150px}
 
 .chapitre h2{font:600 22px var(--serif);color:var(--chap);margin:30px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--chap);display:flex;gap:10px;align-items:baseline}
@@ -270,9 +291,11 @@ details.article-bloc > summary .etat-art{font-size:13px;color:var(--muted)}
 
 <section id="fiche" class="hidden">
   <div id="barre-fiche">
-    <button class="btn ghost" id="retour" type="button">← Les fiches</button>
-    <span class="jeu" id="titre-jeu"></span><a class="btn ghost" id="vers-jeu" href="jeux.html" title="La fiche du jeu, telle que la voient les joueurs">Fiche du jeu</a><button class="btn ghost hidden" id="btn-config" type="button" title="Évaluer le jeu avec ses extensions : une fiche liée, qui reprend celle-ci">+ Configuration</button><span class="lecture" id="lecture"></span>
+    <button class="btn ghost" id="retour" type="button" aria-label="Retour aux fiches">←<span class="large-seul"> Les fiches</span></button>
+    <span class="jeu" id="titre-jeu"></span><span class="outils-groupe" id="outils-a"><a class="btn ghost" id="vers-jeu" href="jeux.html" title="La fiche du jeu, telle que la voient les joueurs">Fiche du jeu</a><button class="btn ghost hidden" id="btn-config" type="button" title="Évaluer le jeu avec ses extensions : une fiche liée, qui reprend celle-ci">+ Configuration</button><span class="lecture" id="lecture"></span></span>
     <span class="prog"><span id="prog"></span></span><span id="prog-txt" style="font-size:13px;color:var(--muted)"></span>
+    <button class="btn ghost" id="outils-btn" type="button" aria-expanded="false" aria-controls="outils-a outils-b">Outils ▾</button>
+    <span class="outils-groupe" id="outils-b">
     <button class="btn ghost" id="suivante" type="button">Paire suivante à remplir</button>
     <select id="aller" aria-label="Aller à une paire"><option value="">Aller à…</option></select>
     <button class="btn ghost" id="tout-enrouler" type="button">Tout enrouler</button>
@@ -281,11 +304,12 @@ details.article-bloc > summary .etat-art{font-size:13px;color:var(--muted)}
     <button class="btn ghost" id="btn-export" type="button">Exporter</button>
     <label style="font-size:13px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="finale"> Fiche finale</label>
     <span id="etat"></span>
+    </span>
   </div>
   <div class="wrap hidden" id="desc-manque"></div>
   <div class="wrap" id="grille"></div>
 </section>
-<div id="pied" class="hidden"></div>
+<div id="pied" class="hidden replie"></div>
 <dialog id="dlg-coller"><h2>Coller la réponse de Claude</h2>
   <p class="aide" id="coller-aide">Colle ici toute la réponse, puis « Lire la réponse » : chaque texte reconnu est proposé à la case qui lui correspond.</p>
   <textarea id="coller-texte" rows="10" placeholder="La réponse de Claude…"></textarea>
@@ -297,7 +321,7 @@ details.article-bloc > summary .etat-art{font-size:13px;color:var(--muted)}
 
 <script src="timeline.js?v=3.9"></script>
 <script>
-const VERSION = { numero:"3.37", date:"2026-10-31 22:25" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.38", date:"2026-10-31 22:32" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -348,7 +372,7 @@ async function lireTout(table, filtre){
 }
 // arrivée depuis la liste des jeux ou la fiche d'un jeu (?jeu=) : la liste des fiches ne s'affiche pas, et « ← Retour » ramène d'où l'on vient
 const ARRIVEE = new URLSearchParams(location.search).get("jeu");
-if (ARRIVEE){ document.getElementById("accueil").classList.add("hidden"); document.getElementById("retour").textContent = "← Retour"; }
+if (ARRIVEE){ document.getElementById("accueil").classList.add("hidden"); document.getElementById("retour").querySelector(".large-seul").textContent = " Retour"; document.getElementById("retour").setAttribute("aria-label", "Retour"); }
 async function demarrer(){
   const { data: r } = await sb.rpc("prisme_mon_role"); role = r;
   if (!["proprietaire","editeur","evaluateur","lecteur"].includes(role)) $("#accueil").classList.remove("hidden");
@@ -535,6 +559,27 @@ $("#grille").addEventListener("click", async e => {
   $("#fiche").classList.add("hidden"); $("#pied").classList.add("hidden"); $("#accueil").classList.remove("hidden");
   fiche = null; await chargerFiches(); afficherFiches(); window.scrollTo(0, 0);
 });
+/* (3.38) sous 600 px : le menu « Outils ▾ » de la barre, et le pied replié */
+const barreFiche = $("#barre-fiche"), outilsBtn = $("#outils-btn");
+function outils(ouvrir, rendreFocus){
+  barreFiche.classList.toggle("outils-ouverts", ouvrir); outilsBtn.setAttribute("aria-expanded", ouvrir);
+  if (ouvrir) barreFiche.querySelector(".outils-groupe a, .outils-groupe button:not(.hidden), .outils-groupe select")?.focus();
+  else if (rendreFocus) outilsBtn.focus();
+}
+outilsBtn.addEventListener("click", () => outils(!barreFiche.classList.contains("outils-ouverts")));
+// Échap ferme le menu et rend la main au bouton ; un clic ailleurs le ferme
+barreFiche.addEventListener("keydown", e => { if (e.key === "Escape" && barreFiche.classList.contains("outils-ouverts")){ e.preventDefault(); outils(false, true); } });
+document.addEventListener("click", e => { if (barreFiche.classList.contains("outils-ouverts") && !barreFiche.contains(e.target)) outils(false); });
+// une action qui emmène ailleurs dans la page referme le menu (la case « Fiche finale » le laisse ouvert)
+barreFiche.addEventListener("click", e => { if (e.target.closest("#suivante, #tout-enrouler, #btn-article, #btn-recap, #btn-export")) outils(false); });
+$("#aller").addEventListener("change", () => outils(false));
+$("#pied").addEventListener("click", e => {
+  if (!e.target.closest(".pied-bascule")) return;
+  const replie = $("#pied").classList.toggle("replie");
+  e.target.setAttribute("aria-expanded", !replie); e.target.textContent = replie ? "Détails ▴" : "Replier ▾";
+});
+// la marge du bas suit la hauteur du pied, pour que rien ne soit caché dessous
+if (window.ResizeObserver) new ResizeObserver(() => document.documentElement.style.setProperty("--pied-h", $("#pied").offsetHeight + "px")).observe($("#pied"));
 $("#retour").addEventListener("click", async () => {
   if (enAttente.size || ficheModifiee){ clearTimeout(minuteur); await enregistrer(); }
   if (ARRIVEE){   // retour à la page d'origine (liste des jeux ou fiche du jeu)
@@ -819,6 +864,9 @@ function recalculer(){
   // coût d'effort (prototype, 13/10/2026) : règles, manuels, logistique, hasard toléré, renouvellement, attente ; moyenne quadratique sur 5
   const ce = coutEffort(entreesTimeline().n);
   $("#pied").insertAdjacentHTML("beforeend", `<div class="cout-pied" title="Coût d'effort (prototype) : ce qu'il faut investir pour jouer — règles (POID1), manuels (DOC1), logistique (MAN1), hasard (MECA1a, à moitié), renouvellement (VAR1), attente (RYT1). Sur 5 ; c'est la gêne du Triomphant."><small>Coût d'effort <span class="proto">proto</span></small><b>${ce == null ? "—" : fmt(ce, 2) + "<small>/5</small>"}</b></div>`);
+  // (3.38) sous 600 px, le pied se replie sur la note finale ; ce bouton (masqué au-dessus) le déplie
+  const replie = $("#pied").classList.contains("replie");
+  $("#pied").insertAdjacentHTML("beforeend", `<button type="button" class="pied-bascule" aria-expanded="${!replie}">${replie ? "Détails ▴" : "Replier ▾"}</button>`);
   return c;
 }
 
@@ -1431,6 +1479,6 @@ $("#btn-export").addEventListener("click", () => {
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000);
 });
 </script>
-<script src="entete.js?v=1.5"></script>
+<script src="entete.js?v=1.6"></script>
 </body>
 </html>
