@@ -55,6 +55,7 @@ table.fiches td{border-bottom:1px solid var(--line);padding:9px 12px} table.fich
   #barre-fiche.outils-ouverts .outils-groupe{display:flex;flex-wrap:wrap;gap:8px;align-items:center;flex-basis:100%;order:10}
   #barre-fiche.outils-ouverts #outils-b{order:11}
   .art-outils{position:static}
+  .etat-mini{margin-left:5px;font-weight:600} .etat-mini.ok{color:var(--ok)} .etat-mini.err{color:var(--err)} .etat-mini.encours{color:var(--muted)}
   #pied{padding:6px 12px;gap:10px 16px;align-items:center}
   #pied.replie{justify-content:space-between;flex-wrap:nowrap}
   #pied.replie > div:not(.final){display:none}
@@ -294,7 +295,7 @@ details.article-bloc > summary .etat-art{font-size:13px;color:var(--muted)}
     <button class="btn ghost" id="retour" type="button" aria-label="Retour aux fiches">←<span class="large-seul"> Les fiches</span></button>
     <span class="jeu" id="titre-jeu"></span><span class="outils-groupe" id="outils-a"><a class="btn ghost" id="vers-jeu" href="jeux.html" title="La fiche du jeu, telle que la voient les joueurs">Fiche du jeu</a><button class="btn ghost hidden" id="btn-config" type="button" title="Évaluer le jeu avec ses extensions : une fiche liée, qui reprend celle-ci">+ Configuration</button><span class="lecture" id="lecture"></span></span>
     <span class="prog"><span id="prog"></span></span><span id="prog-txt" style="font-size:13px;color:var(--muted)"></span>
-    <button class="btn ghost" id="outils-btn" type="button" aria-expanded="false" aria-controls="outils-a outils-b">Outils ▾</button>
+    <button class="btn ghost" id="outils-btn" type="button" aria-expanded="false" aria-controls="outils-a outils-b">Outils<span class="etat-mini" id="etat-mini" aria-hidden="true"></span> ▾</button>
     <span class="outils-groupe" id="outils-b">
     <button class="btn ghost" id="suivante" type="button">Paire suivante à remplir</button>
     <select id="aller" aria-label="Aller à une paire"><option value="">Aller à…</option></select>
@@ -321,7 +322,7 @@ details.article-bloc > summary .etat-art{font-size:13px;color:var(--muted)}
 
 <script src="timeline.js?v=3.9"></script>
 <script>
-const VERSION = { numero:"3.38", date:"2026-10-31 22:32" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.39", date:"2026-10-31 22:39" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -578,6 +579,12 @@ $("#pied").addEventListener("click", e => {
   const replie = $("#pied").classList.toggle("replie");
   e.target.setAttribute("aria-expanded", !replie); e.target.textContent = replie ? "Détails ▴" : "Replier ▾";
 });
+// (3.39) l'état de l'enregistrement reste visible menu fermé : un signe dans le bouton, le message complet en info-bulle
+new MutationObserver(() => {
+  const t = $("#etat").textContent, m = $("#etat-mini");
+  const [signe, cls] = /impossible|refus/i.test(t) ? ["!", "err"] : /^Enregistrement…/.test(t) ? ["…", "encours"] : /^Enregistré/.test(t) ? ["✓", "ok"] : ["", ""];
+  m.textContent = signe; m.className = "etat-mini " + cls; outilsBtn.title = t;
+}).observe($("#etat"), { childList:true, characterData:true, subtree:true });
 // la marge du bas suit la hauteur du pied, pour que rien ne soit caché dessous
 if (window.ResizeObserver) new ResizeObserver(() => document.documentElement.style.setProperty("--pied-h", $("#pied").offsetHeight + "px")).observe($("#pied"));
 $("#retour").addEventListener("click", async () => {
