@@ -160,9 +160,9 @@ ul.m-liste li{border-bottom:1px solid var(--line);padding:7px 0}
 </main>
 
 <script src="timeline.js?v=3.9"></script>
-<script src="selecteurs.js?v=1.0"></script>
+<script src="selecteurs.js?v=1.1"></script>
 <script>
-const VERSION = { numero:"2.6", date:"2026-10-30 16:30" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"2.7", date:"2026-10-31 21:59" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -356,7 +356,7 @@ async function afficher(user){
   // (2.5) Thème, puis Mécanique, puis Pour qui (empilés dans cet ordre sur téléphone)
   h += `<div class="poles">
     <div class="carte pole theme" id="carte-theme"><div class="surtitre">Thème</div><p class="discret" style="margin:0">Chargement…</p></div>
-    <div class="carte pole" id="carte-meca"><div class="surtitre">Mécanique</div><p class="discret">Chargement…</p></div>
+    <div class="carte pole" id="carte-meca"><div class="surtitre">Les mécaniques</div><p class="discret">Chargement…</p></div>
     <div class="carte pole">${pourQui}</div>
   </div>`;
 
@@ -410,12 +410,12 @@ async function chargerMecanismes(code, user, role){
   const err = await lireMecanismes(code, user, role);
   if (err){
     const msg = `<p class="discret">Les mécanismes n'ont pas pu être lus (${esc(err)}).</p>`;
-    $("#carte-meca").innerHTML = `<div class="surtitre">Mécanique</div>` + msg; $("#detail-meca").innerHTML = msg; return;
+    $("#carte-meca").innerHTML = `<div class="surtitre">Les mécaniques</div>` + msg; $("#detail-meca").innerHTML = msg; return;
   }
   afficherMecanismes();
 }
 
-// la carte Mécanique et la liste complète du détail, pour tous
+// la carte Les mécaniques (2.7 : au pluriel) et la liste complète du détail, pour tous
 function afficherMecanismes(){
   const carte = $("#carte-meca"), det = $("#detail-meca"); if (!carte) return;
   // dans les pastilles, le nom français et la remarque entre parenthèses (2.5) ; l'anglais rejoint la définition dans l'info-bulle
@@ -428,7 +428,7 @@ function afficherMecanismes(){
   // trois niveaux : en tête la fin de partie ; puis les mécanismes, marginaux compris ; en bas, en petit, le matériel et les gestes
   const tete = CARTE_TETE.map(([n, t]) => [t, affectesDu(n)]).filter(([, L]) => L.length), bas = CARTE_BAS.map(([n, t]) => [t, affectesDu(n)]).filter(([, L]) => L.length);
   const [L3, L2, L1] = [3, 2, 1].map(parPoids);
-  let h = `<div class="surtitre">Mécanique</div><p class="titre-carte">Ce dont il est fait</p>`;
+  let h = `<div class="surtitre">Les mécaniques</div><p class="titre-carte">Ce dont il est fait</p>`;
   tete.forEach(([t, L]) => { h += `<div class="groupe"><span class="etiq">${esc(t)}</span><div class="puces">${L.map(l => puce(l, "pr")).join("")}</div></div>`; });
   if (!tete.length && !bas.length && !L3.length && !L2.length && !L1.length) h += `<p class="discret" style="margin:0">Aucun mécanisme n'est encore affecté à ce jeu.</p>`;
   if (L3.length) h += `<div class="groupe"><span class="etiq">Majeurs</span><div class="puces" style="gap:8px">${L3.map(l => puce(l, "mj")).join("")}</div></div>`;

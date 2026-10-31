@@ -3,8 +3,10 @@
    défauts Compétitif et Partie indépendante, remarques. Le fichier injecte ses styles et crée ses fenêtres.
    À charger AVANT le script de la page ; il s'appuie sur ce que la page définit : sb, $, esc, NIVEAUX.
    La page lit avec lireMecanismes() / lireThemes(), ouvre avec ouvrirSelecteur() / ouvrirSelecteurThemes(),
-   et met dans M.apres / TH.apres ce qu'il faut redessiner après un enregistrement (reçoit l'erreur de relecture, ou null). */
-const SELECTEURS_VERSION = "1.0";
+   et met dans M.apres / TH.apres ce qu'il faut redessiner après un enregistrement (reçoit l'erreur de relecture, ou null).
+   (1.1, 31/10/2026) les modes de jeu en trois sous-groupes (Contre qui, À combien, Dans la durée) ; facettes « Le joueur incarne »
+   et « Atmosphère », le sujet avant le cadre. */
+const SELECTEURS_VERSION = "1.1";
 (function(){
   const st = document.createElement("style");
   st.textContent = `
@@ -35,6 +37,7 @@ details.t-facette.grise > .m-ligne{opacity:.45}
 .m-etat{font-size:13.5px} .m-etat.err{color:var(--err)}
 .legende{font-size:13px;color:var(--muted);margin:0 0 10px} .legende .info{border-bottom:1px dotted var(--trait);cursor:help}
 h3.m-etape{font:600 15px var(--sans);margin:14px 2px 4px} .m-choix > h3.m-etape:first-child{margin-top:10px}
+h4.m-sg{font:600 12px var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:10px 2px 2px}
 .m-masques{font-size:13px;color:var(--muted);margin:0 0 8px}
 .m-manque{display:block;font-size:12.5px;color:var(--warn)}
 .m-coche{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--muted);cursor:pointer;white-space:nowrap}
@@ -71,6 +74,10 @@ const estCoche = l => COCHE.includes(l?.niveau);
 const CARTE_TETE = [["fin_de_partie", "Fin de partie"]], CARTE_BAS = [["materiel", "Matériel"], ["geste", "Gestes"]];
 // modes par défaut, comme la base pour tout nouveau jeu : sans mode de jeu, Compétitif (2.4) ; sans partie indépendante, campagne ni legacy, Partie indépendante (2.5)
 const COMPETITIF = "STR-22", PARTIE_INDEPENDANTE = "STR-26", FORMATS = ["STR-26", "STR-13", "STR-05"];
+// (1.1) les modes de jeu, rangés selon prisme_mecanismes.sous_groupe ; « Autres » seulement s'il en reste sans sous-groupe
+const SOUS_GROUPES = { contre_qui:"Contre qui", a_combien:"À combien", duree:"Dans la durée" };
+const parSousGroupe = L => [...Object.entries(SOUS_GROUPES).map(([g, t]) => [t, L.filter(l => l.sous_groupe === g)]),
+  ["Autres", L.filter(l => !(l.sous_groupe in SOUS_GROUPES))]].filter(([, G]) => G.length);
 // une remarque, visible entre parenthèses à la suite du nom
 const remVisible = r => r ? ` <span class="rem">(${esc(r)})</span>` : "";
 const norm = s => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -80,7 +87,7 @@ const M = { jeu:null, user:null, role:null, ecrit:false, lignes:[], requis:{}, a
 async function lireMecanismes(code, user, role){
   Object.assign(M, { jeu:code, user, role, ecrit: NIVEAUX[role] >= NIVEAUX.evaluateur, brouillon:null });
   const [l, a, rq] = await Promise.all([
-    sb.from("prisme_mecanismes").select("code,nom,nom_en,niveau,categorie,statut,fusion_vers,famille_recolte,ordre,definition").order("ordre"),
+    sb.from("prisme_mecanismes").select("code,nom,nom_en,niveau,sous_groupe,categorie,statut,fusion_vers,famille_recolte,ordre,definition").order("ordre"),
     sb.from("prisme_jeux_mecanismes").select("mecanisme,poids,remarque").eq("jeu", code),
     sb.from("prisme_mecanismes_requis").select("mecanisme,requis")]);
   if (l.error || a.error) return (l.error || a.error).message;
@@ -161,7 +168,9 @@ function ouvrirSelecteur(){
       masques += L.length - vis.length;
       if (!vis.length) return "";
       const nb = tous.filter(l => M.brouillon[l.code]).length;
-      return `<details class="t-facette" data-niveau="${esc(n)}"${q || seuls || ouverts.has(n) ? " open" : ""}><summary><b>${esc(niveaux[n])}</b> <span class="discret">${vis.length} proposé${vis.length > 1 ? "s" : ""}${nb ? ` · ${nb} choisi${nb > 1 ? "s" : ""}` : ""}</span></summary>${vis.map(l => ligneChoix(l, acquis)).join("")}</details>`;
+      return `<details class="t-facette" data-niveau="${esc(n)}"${q || seuls || ouverts.has(n) ? " open" : ""}><summary><b>${esc(niveaux[n])}</b> <span class="discret">${vis.length} proposé${vis.length > 1 ? "s" : ""}${nb ? ` · ${nb} choisi${nb > 1 ? "s" : ""}` : ""}</span></summary>${n === "aspect"
+        ? parSousGroupe(vis).map(([t, G]) => `<h4 class="m-sg">${esc(t)}</h4>${G.map(l => ligneChoix(l, acquis)).join("")}`).join("")
+        : vis.map(l => ligneChoix(l, acquis)).join("")}</details>`;
     }).join("");
     h += `<h3 class="m-etape">2. Le reste, par niveau</h3>` + (groupes || `<p class="discret">Aucun mécanisme ne correspond à ces filtres.</p>`);
     $("#m-choix").innerHTML = h;
@@ -231,7 +240,8 @@ async function enregistrerMecanismes(){
 
 /* ---- les thèmes du jeu (nomenclature PRISMEthemes, 29/10/2026) : même modèle que les mécanismes ---- */
 // facettes, dans l'ordre d'affichage ; la carte montre le cadre en tête, puis les facettes descriptives
-const FACETTES = { cadre:"Cadre", periode:"Période", realisme:"Réalisme", sujet:"Sujet", role:"Rôle", lieu:"Lieu", ton:"Ton", tag:"Tags du fantastique", reference:"Référence culturelle et géographique" };
+// (1.1) le sujet avant le cadre ; « Le joueur incarne » (facette role) et « Atmosphère » (facette ton), codes en base inchangés
+const FACETTES = { sujet:"Sujet", cadre:"Cadre", periode:"Période", realisme:"Réalisme", role:"Le joueur incarne", lieu:"Lieu", ton:"Atmosphère", tag:"Tags du fantastique", reference:"Référence culturelle et géographique" };
 const FACETTES_CARTE = ["sujet", "role", "ton", "lieu", "tag", "reference"];   // (2.5) sous le titre ; le sujet n'y garde que ses valeurs non majeures
 const ABSTRAIT = "CAD-ABSTRAIT", FACETTES_TEMPS = ["periode", "realisme"];   // un jeu abstrait n'a ni période ni réalisme
 const TH = { jeu:null, user:null, role:null, ecrit:false, lignes:[], affectes:{}, brouillon:null, apres:null };

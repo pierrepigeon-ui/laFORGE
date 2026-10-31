@@ -9,7 +9,9 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <style>
-/* 1.0 (30/10/2026) : la maquette validée « Décrire le jeu » (faite sur Heat), avec les couleurs et les polices de la fiche du jeu */
+/* 1.0 (30/10/2026) : la maquette validée « Décrire le jeu » (faite sur Heat), avec les couleurs et les polices de la fiche du jeu
+   1.1 (31/10/2026) : lisibilité, après le test sur Heat : « En bref », le thème avant les mécaniques, modes de jeu en trois lignes,
+   mécanismes en trois colonnes, chaque axe titré par sa question avec le libellé de ses paliers */
 :root{--ink:#15171C;--muted:#4B5160;--line:#E2E4E9;--trait:#C9CEDB;--paper:#F4F5F7;--panel:#FFFFFF;--neutre:#E8EAF0;--filet:#EEF0F4;
   --accent:#2346C8;--accent-fonce:#16308F;--sur-accent:#FFFFFF;--bleu-fond:#E6EBFB;--bleu-bord:#C9D3F5;--bleu-texte:#16308F;--orange-fond:#FBEDE4;--orange-texte:#8A3108;
   --vert-fond:#E7F4EC;--vert-texte:#14532D;--ok:#1E7A46;--warn:#B7791F;--err:#B42318;
@@ -67,6 +69,8 @@ section.bloc{background:var(--panel);border:1px solid var(--line);border-radius:
 .champ input:disabled,textarea:disabled{background:var(--paper);color:var(--ink)}
 .case{display:flex;align-items:center;gap:8px;min-height:40px;font-size:14px;cursor:pointer}
 .case input{width:18px;height:18px;margin:0;cursor:pointer}
+.case-aide{display:flex;flex-direction:column;max-width:320px} .case-aide .aide{margin-top:-4px}
+.champ .aide{max-width:360px}
 .champ input.faux{border-color:var(--err)}
 /* le prix */
 .tranches{display:flex;flex-wrap:wrap;gap:16px}
@@ -87,15 +91,24 @@ section.bloc{background:var(--panel);border:1px solid var(--line);border-radius:
 .puce.mg{color:var(--muted);border-style:dashed;font-size:12px}
 .rem{font-weight:400;opacity:.85}
 .bas{font-size:13px;color:var(--muted)}
+/* les mécanismes à poids : trois colonnes côte à côte, empilées sur téléphone */
+.colonnes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.colonne{display:flex;flex-direction:column;gap:8px;padding:12px;border:1px solid var(--filet);border-radius:12px}
+.colonne > .etiq{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.colonne .puces{display:flex;flex-wrap:wrap;gap:6px}
 /* les axes descriptifs */
 .chapitre > .surtitre{font-size:12px;letter-spacing:.06em;padding-bottom:4px}
 .axe{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 16px;align-items:center;padding:10px 0;border-top:1px solid var(--filet)}
 .axe-nom{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0}
 .axe-nom .nom{font-size:15px;font-weight:600;border-bottom:1px dotted var(--trait)}
-.axe-code{font-weight:400;color:var(--muted);font-size:12px;margin-left:4px;font-variant-numeric:tabular-nums}
+.axe-code{font-weight:400;color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
 .deduit{font-size:12px;color:var(--orange-texte);background:var(--orange-fond);padding:2px 8px;border-radius:999px}
 .axe-saisie{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;justify-content:flex-end}
-.echelle{display:flex;gap:4px}
+.echelle{display:flex;gap:4px;position:relative}
+/* le libellé de chaque palier : en info-bulle au-dessus des cases (ancrée sur l'échelle, pour ne pas sortir de l'écran), et sous les cases pour la valeur choisie */
+.echelle button.info{position:static}
+.echelle button .bulle{top:auto;bottom:calc(100% + 6px);font-weight:400;max-width:min(260px,80vw)}
+.palier{flex-basis:100%;text-align:right;font-size:13px;color:var(--bleu-texte)} .palier:empty{display:none}
 .echelle button{width:36px;height:34px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;font-size:13px;border:0;background:var(--paper);color:var(--muted);cursor:pointer}
 .echelle button.sous{background:var(--bleu-fond);color:var(--bleu-texte)}
 .echelle button[aria-pressed=true]{background:var(--accent);color:var(--sur-accent);font-weight:600}
@@ -119,7 +132,8 @@ details.com textarea{display:block;width:100%;margin-top:6px;padding:7px 10px;bo
   .champs{gap:16px 20px}
   .rang > .etiq{width:100%}
   .axe{grid-template-columns:1fr}
-  .axe-saisie{justify-content:flex-start}
+  .axe-saisie{justify-content:flex-start} .palier{text-align:left}
+  .colonnes{grid-template-columns:1fr}
   .echelle button{width:40px;height:38px}
   .enr{padding:10px 12px} .enr .boutons{flex:1} .enr .boutons .btn{flex:1}
 }
@@ -137,9 +151,9 @@ details.com textarea{display:block;width:100%;margin-top:6px;padding:7px 10px;bo
   <div class="boutons" id="enr-boutons"><button class="btn" type="button" id="annuler">Annuler</button><button class="btn plein" type="button" id="enregistrer">Enregistrer</button></div>
 </div></div>
 
-<script src="selecteurs.js?v=1.0"></script>
+<script src="selecteurs.js?v=1.1"></script>
 <script>
-const VERSION = { numero:"1.0", date:"2026-10-30 16:30" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.1", date:"2026-10-31 21:59" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -170,28 +184,34 @@ const GAMMES = [["Sur un coup de tête", [["A", "Une bagatelle"], ["B", "Un peti
   ["Il faut une bonne raison", [["F", "Un achat rare"], ["G", "Une folie"]]],
   ["Une fois dans une vie", [["H", "Le jeu d'une vie"], ["I", "Une pièce de collection"]]]];
 // les axes qui se déduiront plus tard de la description
-const DEDUIT = { MECA1a:"hasard en entrée et en sortie", MECA1b:"mécanismes déclenchés par le jeu", THEM1:"thèmes", LIEN1:"mode de jeu", LIEN1c:"mécanismes de parole", LIEN1d:"nombre de joueurs" };
+const DEDUIT = { MECA1a:"imprévus et prise de risque", MECA1b:"mécanismes déclenchés par le jeu", THEM1:"thèmes", LIEN1:"mode de jeu", LIEN1c:"mécanismes de parole", LIEN1d:"nombre de joueurs" };
 const CONFIGS = { base:"Jeu de base", all_in:"Jeu all-in" };
-const D = { code:null, user:null, ecrit:false, jeu:null, freres:[], chapitres:[], axes:[], prix:{}, noms:{}, desc:null, F0:null, A:{}, A0:{}, derniere:null };
+// (1.1) suggestions pour la nature des contenus (champ libre)
+const NATURES = ["scénarios", "circuits", "plateaux", "factions", "personnages", "missions"];
+const D = { code:null, user:null, ecrit:false, jeu:null, freres:[], chapitres:[], axes:[], paliers:{}, prix:{}, noms:{}, desc:null, F0:null, A:{}, A0:{}, derniere:null };
 
 async function afficher(user){
   const code = new URLSearchParams(location.search).get("jeu");
   if (!code) return vide('Aucun jeu choisi. <a href="jeux.html">Voir tous les jeux</a>.');
   Object.assign(D, { code, user });
-  const [{ data: r }, j, ch, pa, ax, rg, nm] = await Promise.all([
+  const [{ data: r }, j, ch, pa, ax, rg, nm, pl] = await Promise.all([
     sb.rpc("prisme_mon_role"),
     sb.from("prisme_jeux").select("code,nom,configuration,fiche_globale").eq("code", code).maybeSingle(),
     sb.from("prisme_chapitres").select("code,nom,ordre").order("ordre"),
     sb.from("prisme_paires").select("code,chapitre,ordre").order("ordre"),
     sb.from("prisme_axes").select("code,paire,rang,nom,question,definition,ordre").order("ordre"),
     sb.from("prisme_reglages").select("cle,valeur"),
-    sb.rpc("prisme_noms")]);
+    sb.rpc("prisme_noms"),
+    sb.from("prisme_paliers").select("axe,valeur,libelle")]);
   if (j.error) return vide("Le jeu n'a pas pu être lu : " + esc(j.error.message));
   if (!j.data) return vide('Ce jeu n\'existe pas. <a href="jeux.html">Voir tous les jeux</a>.');
   D.jeu = j.data; D.ecrit = NIVEAUX[r || "joueur"] >= NIVEAUX.evaluateur;
   document.title = `PRISME — Décrire le jeu — ${D.jeu.nom}`;
   $("#retour").href = "jeu.html?jeu=" + encodeURIComponent(code); $("#retour").textContent = "← La fiche du jeu";
   (nm.data || []).forEach(x => D.noms[x.user_id] = x.nom);
+  // les libellés des paliers, par axe et par valeur ; sans eux, les cases restent muettes
+  if (pl.error) console.warn("PRISME : paliers illisibles", pl.error.message);
+  (pl.data || []).forEach(x => (D.paliers[x.axe] ||= {})[Number(x.valeur)] = x.libelle);
   (rg.data || []).forEach(x => { const m = /^prix_([A-H])_max$/.exec(x.cle); if (m && x.valeur != null) D.prix[m[1]] = Number(x.valeur); });
   // les axes descriptifs (« note 1 » : rang 1, 1b, 1c, 1d), par chapitre puis dans l'ordre des paires et des axes
   const paire = Object.fromEntries((pa.data || []).map(p => [p.code, p]));
@@ -248,19 +268,24 @@ function dessiner(){
     <div class="tete"><div><div class="surtitre">Décrire le jeu</div><h1>${esc(D.jeu.nom)}</h1>
       <p>Une description partagée : ce qui est vrai du jeu, quel que soit l'avis de chacun.</p></div>${configs}</div>
     <p class="etat" id="etat" role="status"></p>
-    <section class="bloc">${tete("Les faits", "Ce qu'on lit sur la boîte et dans la règle.")}
+    <section class="bloc">${tete("En bref", "Ce qu'on lit sur la boîte et dans la règle.")}
       <div class="champs">${champ("pages", "Pages de règles")}${champ("poids_bgg", "Poids BGG", "n", "decimal")}${deux("joueurs_min", "joueurs_max", "Joueurs")}${deux("duree_min", "duree_max", "Durée", "min")}
-        <label class="case"><input type="checkbox" id="f-usage_unique"${d.usage_unique ? " checked" : ""}${ro}> Usage unique (campagne qui se consomme)</label></div></section>
+        <div class="case-aide"><label class="case"><input type="checkbox" id="f-usage_unique"${d.usage_unique ? " checked" : ""}${ro}> Usage unique</label>
+          <span class="aide petite">Le jeu ne se rejoue pas tel quel : escape game, legacy, campagne qui se consomme…</span></div></div></section>
     <section class="bloc">${tete("Le prix", "Une gamme plutôt qu'un prix : elle dit quel achat c'est, et ne vieillit pas.")}
       <div class="tranches" role="radiogroup" aria-label="Gamme de prix">${prix}</div>
-      <p class="aide petite">Les montants se règlent dans la console ; les catégories ne changent pas.</p></section>
+      <p class="aide petite">Les seuils de chaque tranche s'ajustent dans les réglages de la console ; les catégories, elles, ne changent pas.</p></section>
     <section class="bloc">${tete("Le contenu", "Combien de contenus distincts le jeu propose : scénarios, circuits, plateaux, factions…")}
-      <div class="champs">${champ("contenus_nombre", "Contenus distincts")}${champ("contenus_nature", "De quelle nature", "long", "text")}
-        <p class="aide petite" style="max-width:420px">Avec la complexité et la variabilité (mise en place variable), ce nombre servira à calculer les parties pour tout exploiter.</p></div></section>
-    <section class="bloc">${tete("La mécanique", "PRISMEmechanics : de quoi le jeu est fait.", D.ecrit ? `<button class="btn contour" type="button" id="modifier-meca">Modifier les mécanismes</button>` : "")}
-      <div class="resume" id="res-meca"></div></section>
+      <div class="champs" style="align-items:flex-start">
+        <label class="champ"><span>Combien de parties différentes le jeu propose-t-il ?</span><div><input type="text" inputmode="numeric" class="n" id="f-contenus_nombre" value="${esc(val("contenus_nombre"))}"${ro}></div>
+          <span class="aide petite">Heat : 4 circuits. Gloomhaven : 95 scénarios. Rien à découvrir : laisser vide.</span></label>
+        <label class="champ"><span>De quelle nature</span><div><input type="text" class="long" id="f-contenus_nature" list="natures" value="${esc(val("contenus_nature"))}"${ro}></div></label>
+        <datalist id="natures">${NATURES.map(n => `<option value="${esc(n)}">`).join("")}</datalist>
+        <p class="aide petite" style="max-width:420px;margin:0">Avec la complexité et la variabilité (mise en place variable), ce nombre servira à calculer les parties pour tout exploiter.</p></div></section>
     <section class="bloc">${tete("Le thème", "PRISMEthemes : de quoi parle le jeu.", D.ecrit ? `<button class="btn contour" type="button" id="modifier-themes">Modifier les thèmes</button>` : "")}
       <div class="resume" id="res-themes"></div></section>
+    <section class="bloc">${tete("Les mécaniques", "PRISMEmechanics : de quoi le jeu est fait.", D.ecrit ? `<button class="btn contour" type="button" id="modifier-meca">Modifier les mécanismes</button>` : "")}
+      <div class="resume" id="res-meca"></div></section>
     <section class="bloc">${tete("Les axes descriptifs", "Les « note 1 » de PRISMEgame : décrire, sans juger. Pré-remplies avec la moyenne de tes fiches.")}
       <div style="display:flex;flex-direction:column;gap:20px">${axes || `<p class="discret">Les axes descriptifs n'ont pas pu être lus.</p>`}</div></section>`;
   $("#modifier-meca")?.addEventListener("click", () => { if (!D.errMeca) ouvrirSelecteur(); });
@@ -276,15 +301,16 @@ function dessiner(){
 // une ligne d'axe : la valeur pré-remplie s'affiche arrondie au plus proche, et n'est réécrite que si on la change
 function ligneAxe(a){
   const v = D.A[a.code], so = v.sans_objet, r = v.valeur == null ? null : Math.round(v.valeur), ro = D.ecrit ? "" : " disabled";
-  const bulle = [a.question, a.definition].filter(Boolean).map(esc).join("<br><br>");
-  const lu = so ? "sans objet" : v.valeur == null ? "—" : virgule(v.valeur);
+  // (1.1) en titre, la question de l'axe ; dessous, en petit, son nom et son code ; la définition en info-bulle
+  const lu = so ? "sans objet" : v.valeur == null ? "—" : virgule(v.valeur), P = D.paliers[a.code] || {};
   const com = D.ecrit || v.commentaire ? `<details class="com"${v.commentaire ? " open" : ""}><summary>Commentaire</summary><textarea data-com rows="2" placeholder="Facultatif" aria-label="Commentaire sur ${esc(a.nom)}"${ro}>${esc(v.commentaire)}</textarea></details>` : "";
   return `<div class="axe${so ? " so" : ""}" data-axe="${esc(a.code)}">
-    <div class="axe-nom"><span><span class="nom info" tabindex="0">${esc(a.nom)}${bulle ? `<span class="bulle">${bulle}</span>` : ""}</span><span class="axe-code">${esc(a.code)} · ${lu}</span></span>
+    <div class="axe-nom"><span class="nom info" tabindex="0">${esc(a.question || a.nom)}${a.definition ? `<span class="bulle">${esc(a.definition)}</span>` : ""}</span><span class="axe-code">${esc(a.nom)} · ${esc(a.code)} · ${lu}</span>
       ${DEDUIT[a.code] ? `<span class="deduit">se déduira de : ${esc(DEDUIT[a.code])}</span>` : ""}</div>
     <div class="axe-saisie"><div class="echelle" role="group" aria-label="${esc(a.nom)}, de 0 à 5">${[0, 1, 2, 3, 4, 5].map(n =>
-      `<button type="button" data-v="${n}"${r != null && n < r ? ' class="sous"' : ""} aria-pressed="${r === n}"${ro}>${n}</button>`).join("")}</div>
-      <label class="so-lab"><input type="checkbox" data-so${so ? " checked" : ""}${ro}> sans objet</label></div>
+      `<button type="button" data-v="${n}" class="info${r != null && n < r ? " sous" : ""}" aria-pressed="${r === n}"${ro}>${n}${P[n] ? `<span class="bulle">${esc(P[n])}</span>` : ""}</button>`).join("")}</div>
+      <label class="so-lab"><input type="checkbox" data-so${so ? " checked" : ""}${ro}> sans objet</label>
+      <span class="palier">${!so && r != null && P[r] ? esc(P[r]) : ""}</span></div>
     ${com}</div>`;
 }
 function redessinerAxe(code){
@@ -323,17 +349,20 @@ function bandeau(){
     : `<b>✓</b> <span>Description complète : la fiche finale peut être publiée.</span>`;
 }
 
-// les résumés : le mode de jeu, la fin de partie, les mécanismes par poids, puis le matériel et les gestes en petit
+// les résumés : les modes de jeu en trois lignes, la fin de partie, les mécanismes en trois colonnes par poids, puis le matériel et les gestes en petit
 const puceMeca = (l, cls) => `<span class="puce ${cls} info" tabindex="0">${esc(l.nom)}${remVisible(M.affectes[l.code]?.remarque)}<span class="bulle">${l.nom_en ? `<i>${esc(l.nom_en)}</i><br>` : ""}${esc(l.definition || "Pas encore de définition.")}</span></span>`;
 const rang = (t, html) => `<div class="rang"><span class="etiq">${esc(t)}</span>${html}</div>`;
 function resumeMeca(){
   const el = $("#res-meca"); if (!el) return;
   if (D.errMeca){ el.innerHTML = `<p class="discret" style="margin:0">Les mécanismes n'ont pas pu être lus (${esc(D.errMeca)}).</p>`; return; }
   const du = n => M.lignes.filter(l => l.niveau === n && M.affectes[l.code]);
-  const rangs = [["Mode de jeu", du("aspect"), ""], ["Fin de partie", du("fin_de_partie"), ""], ["Majeurs", parPoids(3), "mj"], ["Secondaires", parPoids(2), ""], ["Marginaux", parPoids(1), "mg"]]
-    .filter(([, L]) => L.length).map(([t, L, cls]) => rang(t, L.map(l => puceMeca(l, cls)).join("")));
+  const rangs = [...parSousGroupe(du("aspect")), ["Fin de partie", du("fin_de_partie")]]
+    .filter(([, L]) => L.length).map(([t, L]) => rang(t, L.map(l => puceMeca(l, "")).join("")));
+  const P = [["Majeurs", parPoids(3), "mj"], ["Secondaires", parPoids(2), ""], ["Marginaux", parPoids(1), "mg"]];
+  const colonnes = P.some(([, L]) => L.length) ? `<div class="colonnes">${P.map(([t, L, cls]) => `<div class="colonne"><span class="etiq">${t}</span>
+    <div class="puces">${L.map(l => puceMeca(l, cls)).join("") || `<span class="discret">aucun</span>`}</div></div>`).join("")}</div>` : "";
   const bas = [["Matériel", du("materiel")], ["Gestes", du("geste")]].filter(([, L]) => L.length).map(([t, L]) => `${t} : ${L.map(l => esc(l.nom.toLowerCase())).join(", ")}`);
-  el.innerHTML = rangs.join("") + (bas.length ? `<div class="bas">${bas.join(" · ")}</div>` : "")
+  el.innerHTML = rangs.join("") + colonnes + (bas.length ? `<div class="bas">${bas.join(" · ")}</div>` : "")
     || `<p class="discret" style="margin:0">Aucun mécanisme n'est encore affecté à ce jeu.</p>`;
 }
 const PUCE_POIDS = { 3:"mj", 2:"", 1:"mg" };
@@ -342,9 +371,9 @@ function resumeThemes(){
   if (D.errThemes){ el.innerHTML = `<p class="discret" style="margin:0">Les thèmes n'ont pas pu être lus (${esc(D.errThemes)}).</p>`; return; }
   const puce = l => { const p = TH.affectes[l.code].poids;
     return `<span class="puce ${PUCE_POIDS[p]} info" tabindex="0">${esc(l.libelle)}${remVisible(TH.affectes[l.code].remarque)}<span class="bulle">${l.libelle_en ? `<i>${esc(l.libelle_en)}</i><br>` : ""}${esc(l.definition || "Pas encore de définition.")}</span></span>`; };
-  // le cadre réunit Abstrait, ou la période et le réalisme ; puis les facettes descriptives
+  // (1.1) le sujet en premier, puis le cadre (Abstrait, ou la période et le réalisme), puis les autres facettes
   const cadre = TH.affectes[ABSTRAIT] ? affectesDe("cadre") : [...affectesDe("cadre"), ...affectesDe("periode"), ...affectesDe("realisme")];
-  const rangs = [["Cadre", cadre], ...["sujet", "role", "lieu", "ton", "tag", "reference"].map(f => [FACETTES[f], affectesDe(f)])]
+  const rangs = [[FACETTES.sujet, affectesDe("sujet")], [FACETTES.cadre, cadre], ...["role", "lieu", "ton", "tag", "reference"].map(f => [FACETTES[f], affectesDe(f)])]
     .filter(([, L]) => L.length).map(([t, L]) => rang(t, L.map(puce).join("")));
   el.innerHTML = rangs.join("") || `<p class="discret" style="margin:0">Aucun thème n'est encore affecté à ce jeu.</p>`;
 }
