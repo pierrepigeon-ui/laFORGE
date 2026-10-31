@@ -79,6 +79,7 @@ details.repli[open] > summary::before{transform:rotate(90deg)}
 details.repli > summary small{font:13px var(--sans);color:var(--muted);font-weight:400}
 details.repli > section{border:0;margin:0;padding-top:0}
 #vos-jeux table.pj-jeux{font-size:15px}
+#rival-jeux, #vos-jeux-corps{overflow-x:auto}   /* 3.11 : sur téléphone, les tableaux de jeux défilent dans leur cadre */
 .version{font-size:12px;color:var(--muted);text-align:right;margin-top:24px}
 .vide{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:30px 26px;font:italic 18px/1.5 var(--serif);color:var(--muted)}
 .vide a{color:var(--ink)}
@@ -93,7 +94,7 @@ details.repli > section{border:0;margin:0;padding-top:0}
 <script src="timeline.js?v=3.9"></script>
 <script src="totems.js?v=4"></script>
 <script>
-const VERSION = { numero:"3.10", date:"2026-10-26 21:40" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.11", date:"2026-10-31 22:25" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -279,6 +280,6 @@ function frise(mots){
   return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Le moment de chacun de vos moteurs, de la découverte à la maturité">${grad}${g}${phases}</svg>`;
 }
 </script>
-<script src="entete.js?v=1.4"></script>
+<script src="entete.js?v=1.5"></script>
 </body>
 </html>

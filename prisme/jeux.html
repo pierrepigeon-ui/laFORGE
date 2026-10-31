@@ -57,7 +57,7 @@ tr.attente td{color:var(--muted)}
 
 <script src="timeline.js?v=3.9"></script>
 <script>
-const VERSION = { numero:"1.7", date:"2026-10-26 21:40" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.8", date:"2026-10-31 22:25" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -157,6 +157,6 @@ function afficher(){
     const c = h.dataset.tri; tri = { cle:c, sens: tri.cle === c ? -tri.sens : (c === "nom" || c === "cout" ? 1 : -1) }; afficher(); }));
 }
 </script>
-<script src="entete.js?v=1.4"></script>
+<script src="entete.js?v=1.5"></script>
 </body>
 </html>

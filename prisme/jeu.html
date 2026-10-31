@@ -162,7 +162,7 @@ ul.m-liste li{border-bottom:1px solid var(--line);padding:7px 0}
 <script src="timeline.js?v=3.9"></script>
 <script src="selecteurs.js?v=1.1"></script>
 <script>
-const VERSION = { numero:"2.7", date:"2026-10-31 21:59" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"2.8", date:"2026-10-31 22:25" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -373,11 +373,11 @@ async function afficher(user){
     paires = `<p class="discret">Pour chaque paire, sa note et les axes qui la composent. Les écarts (+ / −) disent ce que le jeu réussit au-delà ou en deçà de ce qu'on attendait.</p>`;
     (chapitres || []).forEach(ch2 => {
       const Pa = R.e.paires.filter(p => p.chap === ch2.code); if (!Pa.length) return;
-      paires += `<h3 class="chap" style="--c:var(--${esc(ch2.code)})">${esc(ch2.nom)}</h3><table class="paires"><thead><tr><th>Paire</th><th class="n">Note /5</th><th>Axes (sur 5 ; écarts de −2 à +2)</th></tr></thead><tbody>
+      paires += `<h3 class="chap" style="--c:var(--${esc(ch2.code)})">${esc(ch2.nom)}</h3><div class="defile"><table class="paires"><thead><tr><th>Paire</th><th class="n">Note /5</th><th>Axes (sur 5 ; écarts de −2 à +2)</th></tr></thead><tbody>
         ${Pa.map(p => { const A = d.axes.filter(a => a.paire === p.code && a.echelle !== "calcule");
           return `<tr><td>${esc(nomPaire(p.code))}</td><td class="n"><b>${p.note == null ? (R.e.absents.includes(p.code) ? "s. o." : "—") : fmt(p.note)}</b></td>
             <td class="axes">${A.map(a => { const v = val(a); return v == null ? "" : `<span>${esc(a.nom)} : <b>${esc(v)}</b></span>`; }).join(" ")}</td></tr>`; }).join("")}
-      </tbody></table>`;
+      </tbody></table></div>`;   // (2.8) le tableau défile dans son cadre sur téléphone
     });
   } else paires = `<p class="discret">Les notes paraîtront ici dès qu'une fiche sera déclarée finale.</p>`;
   const profils = T20 ? `<table class="paires"><thead><tr><th></th><th>Tempérament</th><th class="n">Note /5</th></tr></thead><tbody>${T20.map((x, i) =>
@@ -502,6 +502,6 @@ function afficherThemes(){
   det.innerHTML = dh;
 }
 </script>
-<script src="entete.js?v=1.4"></script>
+<script src="entete.js?v=1.5"></script>
 </body>
 </html>
