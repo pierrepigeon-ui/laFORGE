@@ -5,8 +5,9 @@
    La page lit avec lireMecanismes() / lireThemes(), ouvre avec ouvrirSelecteur() / ouvrirSelecteurThemes(),
    et met dans M.apres / TH.apres ce qu'il faut redessiner après un enregistrement (reçoit l'erreur de relecture, ou null).
    (1.1, 31/10/2026) les modes de jeu en trois sous-groupes (Contre qui, À combien, Dans la durée) ; facettes « Le joueur incarne »
-   et « Atmosphère », le sujet avant le cadre. */
-const SELECTEURS_VERSION = "1.1";
+   et « Atmosphère », le sujet avant le cadre.
+   (1.2, 01/11/2026) le sous-groupe « À combien » s'appelle « Solo » ; les aides en italique. */
+const SELECTEURS_VERSION = "1.2";
 (function(){
   const st = document.createElement("style");
   st.textContent = `
@@ -35,15 +36,15 @@ details.t-facette.grise > .m-ligne{opacity:.45}
 .m-rem{grid-column:1 / -1;font:13.5px var(--sans);padding:4px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink)}
 .m-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0 0}
 .m-etat{font-size:13.5px} .m-etat.err{color:var(--err)}
-.legende{font-size:13px;color:var(--muted);margin:0 0 10px} .legende .info{border-bottom:1px dotted var(--trait);cursor:help}
+.legende{font-size:13px;font-style:italic;color:var(--muted);margin:0 0 10px} .legende .info{border-bottom:1px dotted var(--trait);cursor:help}
 h3.m-etape{font:600 15px var(--sans);margin:14px 2px 4px} .m-choix > h3.m-etape:first-child{margin-top:10px}
 h4.m-sg{font:600 12px var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:10px 2px 2px}
-.m-masques{font-size:13px;color:var(--muted);margin:0 0 8px}
+.m-masques{font-size:13px;font-style:italic;color:var(--muted);margin:0 0 8px}
 .m-manque{display:block;font-size:12.5px;color:var(--warn)}
 .m-coche{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--muted);cursor:pointer;white-space:nowrap}
 .m-coche input{width:18px;height:18px;margin:0;cursor:pointer}
 .m-recherche{width:100%;box-sizing:border-box;font:15px var(--sans);padding:9px 12px;margin:0 0 10px;border:1.5px solid var(--trait);border-radius:10px;background:var(--paper);color:var(--ink)}
-.m-aide{grid-column:1 / -1;font-size:12px;color:var(--muted);margin:-2px 0 0}
+.m-aide{grid-column:1 / -1;font-size:12px;font-style:italic;color:var(--muted);margin:-2px 0 0}
 @media (max-width:760px){ .m-ligne{grid-template-columns:1fr} .m-poids button{flex:1;padding:5px 2px} }`;
   document.head.appendChild(st);
 })();
@@ -75,7 +76,7 @@ const CARTE_TETE = [["fin_de_partie", "Fin de partie"]], CARTE_BAS = [["materiel
 // modes par défaut, comme la base pour tout nouveau jeu : sans mode de jeu, Compétitif (2.4) ; sans partie indépendante, campagne ni legacy, Partie indépendante (2.5)
 const COMPETITIF = "STR-22", PARTIE_INDEPENDANTE = "STR-26", FORMATS = ["STR-26", "STR-13", "STR-05"];
 // (1.1) les modes de jeu, rangés selon prisme_mecanismes.sous_groupe ; « Autres » seulement s'il en reste sans sous-groupe
-const SOUS_GROUPES = { contre_qui:"Contre qui", a_combien:"À combien", duree:"Dans la durée" };
+const SOUS_GROUPES = { contre_qui:"Contre qui", a_combien:"Solo", duree:"Dans la durée" };
 const parSousGroupe = L => [...Object.entries(SOUS_GROUPES).map(([g, t]) => [t, L.filter(l => l.sous_groupe === g)]),
   ["Autres", L.filter(l => !(l.sous_groupe in SOUS_GROUPES))]].filter(([, G]) => G.length);
 // une remarque, visible entre parenthèses à la suite du nom

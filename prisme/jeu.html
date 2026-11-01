@@ -74,7 +74,8 @@ main{max-width:1180px;margin:0 auto;padding:8px 24px 48px;display:flex;flex-dire
 .pole{flex:1 1 320px;min-width:0;display:flex;flex-direction:column;gap:12px}
 .pole.theme{border-style:dashed;border-color:var(--trait)}
 .groupe{display:flex;flex-direction:column;gap:6px}
-.groupe > .etiq{font-size:13px;color:var(--muted)}
+.groupe > .etiq{font-size:13px;font-weight:600;color:var(--ink)}   /* 2.10 : les légendes en gras, les aides en italique */
+p.discret{font-style:italic}
 .puces{display:flex;flex-wrap:wrap;gap:6px}
 .tp{display:inline-block;padding:4px 10px;border-radius:999px;font-size:13px}
 .tp.bleu{background:var(--bleu-fond);color:var(--bleu-texte);font-weight:600}
@@ -129,7 +130,7 @@ ul.m-liste li{border-bottom:1px solid var(--line);padding:7px 0}
 /* 2.2 (29/10/2026) : l'anglais en italique et en gris, la légende D M L, la saisie en entonnoir, la ligne du matériel */
 .en{font-style:italic;font-weight:400;color:var(--muted)}
 /* 2.3 (29/10/2026) : les lignes courtes de la carte, les simples coches, les sous-rubriques du matériel */
-.ligne-courte{font-size:13.5px;margin:0 0 4px;line-height:1.5} .ligne-courte > span:first-child{color:var(--muted)}
+.ligne-courte{font-size:13.5px;margin:0 0 4px;line-height:1.5} .ligne-courte > span:first-child{color:var(--muted);font-weight:600}
 .ligne-courte .info{border-bottom:1px dotted var(--trait)} .lignes-courtes{margin:0 0 10px}
 /* 2.4 (29/10/2026) : la carte Mécanique en trois niveaux, la recherche du sélecteur en tête */
 .lignes-courtes.bas{margin:4px 0 0} .lignes-courtes.bas .ligne-courte{font-size:12.5px;color:var(--muted);margin:0 0 2px}
@@ -160,9 +161,9 @@ ul.m-liste li{border-bottom:1px solid var(--line);padding:7px 0}
 </main>
 
 <script src="timeline.js?v=3.9"></script>
-<script src="selecteurs.js?v=1.1"></script>
+<script src="selecteurs.js?v=1.2"></script>
 <script>
-const VERSION = { numero:"2.9", date:"2026-10-31 22:32" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"2.10", date:"2026-11-01 10:58" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
