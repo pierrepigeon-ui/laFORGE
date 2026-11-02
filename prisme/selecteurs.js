@@ -6,8 +6,10 @@
    et met dans M.apres / TH.apres ce qu'il faut redessiner après un enregistrement (reçoit l'erreur de relecture, ou null).
    (1.1, 31/10/2026) les modes de jeu en trois sous-groupes (Contre qui, À combien, Dans la durée) ; facettes « Le joueur incarne »
    et « Atmosphère », le sujet avant le cadre.
-   (1.2, 01/11/2026) le sous-groupe « À combien » s'appelle « Solo » ; les aides en italique. */
-const SELECTEURS_VERSION = "1.2";
+   (1.2, 01/11/2026) le sous-groupe « À combien » s'appelle « Solo » ; les aides en italique.
+   (1.3, 02/11/2026) les pictogrammes du matériel et des familles d'axes (PICTOS, picto()) ; le matériel en deux groupes
+   (« Ce que les joueurs manipulent », « Ce qui les accueille »), partagé avec decrire.html. */
+const SELECTEURS_VERSION = "1.3";
 (function(){
   const st = document.createElement("style");
   st.textContent = `
@@ -39,6 +41,7 @@ details.t-facette.grise > .m-ligne{opacity:.45}
 .legende{font-size:13px;font-style:italic;color:var(--muted);margin:0 0 10px} .legende .info{border-bottom:1px dotted var(--trait);cursor:help}
 h3.m-etape{font:600 15px var(--sans);margin:14px 2px 4px} .m-choix > h3.m-etape:first-child{margin-top:10px}
 h4.m-sg{font:600 12px var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:10px 2px 2px}
+svg.picto{flex:none;vertical-align:-5px;margin-right:6px;color:var(--muted)}
 .m-masques{font-size:13px;font-style:italic;color:var(--muted);margin:0 0 8px}
 .m-manque{display:block;font-size:12.5px;color:var(--warn)}
 .m-coche{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--muted);cursor:pointer;white-space:nowrap}
@@ -82,6 +85,38 @@ const parSousGroupe = L => [...Object.entries(SOUS_GROUPES).map(([g, t]) => [t, 
 // une remarque, visible entre parenthèses à la suite du nom
 const remVisible = r => r ? ` <span class="rem">(${esc(r)})</span>` : "";
 const norm = s => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+// (1.3) les pictogrammes, au trait, dans une grille de 24 : le matériel (par code) et les familles d'axes (par code de chapitre)
+const PICTOS = {
+  "MAT-CARTES": `<rect x="3" y="5" width="11" height="15" rx="2"/><rect x="10" y="3" width="11" height="15" rx="2"/>`,
+  "MAT-MAIN": `<path d="M6 19 L4 8 L10 6 Z"/><path d="M9 19 L9 5 L15 5 L15 19"/><path d="M18 19 L20 8 L14 6"/>`,
+  "MAT-DES": `<rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.2"/><circle cx="15" cy="15" r="1.2"/><circle cx="12" cy="12" r="1.2"/>`,
+  "MAT-TUILES": `<path d="M12 3 L20 7.5 L20 16.5 L12 21 L4 16.5 L4 7.5 Z"/>`,
+  "MAT-PIONS": `<circle cx="12" cy="7" r="3"/><path d="M9 21 L10.5 11 L13.5 11 L15 21 Z"/><path d="M7 21 H17"/>`,
+  "MAT-MEEPLES": `<path d="M12 3 a3 3 0 1 1 0.01 0 M5 11 L9 10 L8 21 H11 L12 16 L13 21 H16 L15 10 L19 11 L17 8 H7 Z"/>`,
+  "MAT-OUVRIERS": `<path d="M12 4 a2.5 2.5 0 1 1 0.01 0 M6 12 L9.5 10 L9 21 H11.5 L12 16 L12.5 21 H15 L14.5 10 L18 12"/><path d="M17 4 L20 7 M18.5 5.5 L15 9"/>`,
+  "MAT-FIGURINES": `<circle cx="12" cy="5" r="2.5"/><path d="M12 8 V15 M8 11 H16 M12 15 L9 21 M12 15 L15 21"/>`,
+  "MAT-JETONS": `<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/>`,
+  "MAT-MARQUEURS": `<path d="M12 3 L20 7.5 L12 12 L4 7.5 Z M4 7.5 V16.5 L12 21 V12 M20 7.5 V16.5 L12 21"/>`,
+  "MAT-PLATEAU": `<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3 V21 M15 3 V21 M3 9 H21 M3 15 H21"/>`,
+  "MAT-PLATEAU-JOUEUR": `<rect x="4" y="7" width="16" height="11" rx="2"/><path d="M8 11 H11 M13 11 H16 M8 14 H16"/>`,
+  "MAT-FEUILLE": `<path d="M6 3 H15 L19 7 V21 H6 Z"/><path d="M9 11 H16 M9 14 H16 M9 17 H13"/>`,
+  "MAT-SAC": `<path d="M8 7 Q12 3 16 7 L19 19 Q12 22 5 19 Z"/><path d="M8 7 H16"/>`,
+  "MAT-SABLIER": `<path d="M6 3 H18 M6 21 H18 M7 3 Q7 10 12 12 Q17 10 17 3 M7 21 Q7 14 12 12 Q17 14 17 21"/>`,
+  "MAT-ECRAN": `<path d="M3 6 L9 4 V18 L3 20 Z M9 4 L15 6 V20 L9 18 M15 6 L21 4 V18 L15 20"/>`,
+  SYS: `<circle cx="12" cy="12" r="3.2"/><path d="M12 2.5 V5.5 M12 18.5 V21.5 M2.5 12 H5.5 M18.5 12 H21.5 M5.3 5.3 L7.4 7.4 M16.6 16.6 L18.7 18.7 M5.3 18.7 L7.4 16.6 M16.6 7.4 L18.7 5.3"/>`,
+  EXP: `<path d="M12 20 C5 15 3 11 5 8 C7 5 10.5 6 12 8.5 C13.5 6 17 5 19 8 C21 11 19 15 12 20 Z"/>`,
+  EDI: `<path d="M3 7.5 L12 3 L21 7.5 L12 12 Z M3 7.5 V16.5 L12 21 V12 M21 7.5 V16.5 L12 21"/>` };
+// un pictogramme en SVG en ligne, de la couleur du texte ; rien si le code n'en a pas
+const picto = (code, t = 22) => PICTOS[code] ? `<svg class="picto" width="${t}" height="${t}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">${PICTOS[code]}</svg>` : "";
+// (1.3) le matériel en deux groupes, dans cet ordre ; une rubrique inconnue va dans « Autre matériel »
+const GROUPES_MATERIEL = [["Ce que les joueurs manipulent", ["MAT-CARTES", "MAT-DES", "MAT-TUILES", "MAT-PIONS", "MAT-JETONS", "MAT-MARQUEURS"]],
+  ["Ce qui les accueille", ["MAT-PLATEAU", "MAT-PLATEAU-JOUEUR", "MAT-FEUILLE", "MAT-SAC", "MAT-SABLIER", "MAT-ECRAN"]]];
+const rangerMateriel = racines => [...GROUPES_MATERIEL.map(([t, C]) => [t, C.map(c => racines.find(l => l.code === c)).filter(Boolean)]),
+  ["Autre matériel", racines.filter(l => !GROUPES_MATERIEL.some(([, C]) => C.includes(l.code)))]].filter(([, G]) => G.length);
+// les sous-rubriques, sous leur rubrique, dans cet ordre ; les autres suivent dans l'ordre de la nomenclature
+const ORDRE_SOUS_MATERIEL = ["MAT-MAIN", "MAT-MEEPLES", "MAT-OUVRIERS", "MAT-FIGURINES"];
+const rangSous = l => { const i = ORDRE_SOUS_MATERIEL.indexOf(l.code); return i < 0 ? 99 : i; };
+const rangerSous = L => [...L].sort((a, b) => rangSous(a) - rangSous(b));
 const M = { jeu:null, user:null, role:null, ecrit:false, lignes:[], requis:{}, affectes:{}, brouillon:null, apres:null };   // affectes : { code: { poids, remarque } } ; requis : { code: [codes requis] }
 
 // lit la nomenclature, les requis et les mécanismes du jeu dans M ; renvoie le message d'erreur, ou null
@@ -127,7 +162,7 @@ function ouvrirSelecteur(){
   const materiel = proposees.filter(l => l.niveau === "materiel");
   // (2.3) sous-rubriques : un matériel qui en suppose un autre (Ouvriers → Pions) se range sous lui
   const parentDe = l => (M.requis[l.code] || []).find(r => materiel.some(m => m.code === r));
-  const racines = materiel.filter(l => !parentDe(l)), enfants = c => materiel.filter(l => parentDe(l) === c);
+  const racines = materiel.filter(l => !parentDe(l)), enfants = c => rangerSous(materiel.filter(l => parentDe(l) === c));
   // les niveaux de l'étape 2, dans l'ordre des libellés ; un niveau inconnu va en fin de liste
   const ordre = [...Object.keys(NIVEAUX_MECA), ...new Set(proposees.map(l => l.niveau).filter(n => n && !(n in NIVEAUX_MECA)))]
     .filter(n => n !== "materiel" && proposees.some(l => l.niveau === n));
@@ -161,7 +196,9 @@ function ouvrirSelecteur(){
       if (garde(l) && !vu) masques++;
       return (vu ? ligneChoix(l, acquis, prof) : "") + arbre(enfants(l.code), prof + 1, l.code);
     }).join("");
-    let h = `<h3 class="m-etape">1. Le matériel du jeu</h3>` + (arbre(racines, 0, null) || `<p class="discret">Aucun matériel ne correspond à ces filtres.</p>`);
+    // (1.3) en deux groupes, comme dans « Le contenu et le matériel »
+    let h = `<h3 class="m-etape">1. Le matériel du jeu</h3>` + (rangerMateriel(racines).map(([t, G]) => { const a = arbre(G, 0, null); return a ? `<h4 class="m-sg">${esc(t)}</h4>${a}` : ""; }).join("")
+      || `<p class="discret">Aucun matériel ne correspond à ces filtres.</p>`);
     // étape 2 : le reste, par niveau ; une ligne affectée reste toujours visible
     const groupes = ordre.filter(n => !niv || n === niv).map(n => {
       const tous = proposees.filter(l => l.niveau === n), L = tous.filter(garde);
@@ -198,7 +235,7 @@ function ligneChoix(l, acquis, prof = 0){
   const v = M.brouillon[l.code], p = v?.poids || 0;
   const manque = requisManquants(l.code, acquis).map(r => ligneMeca(r)?.nom || r);
   const retrait = prof ? ` style="padding-left:${22 * prof}px"` : "";   // une sous-rubrique du matériel, en retrait sous sa rubrique
-  const nom = `<div>${prof ? "↳ " : ""}${bilingue(l.nom, l.nom_en)}${badgesMeca(l)}${manque.length ? `<span class="m-manque">suppose : ${esc(manque.join(", "))} (non coché)</span>` : ""}</div>`;
+  const nom = `<div>${prof ? "↳ " : ""}${l.niveau === "materiel" ? picto(l.code, 20) : ""}${bilingue(l.nom, l.nom_en)}${badgesMeca(l)}${manque.length ? `<span class="m-manque">suppose : ${esc(manque.join(", "))} (non coché)</span>` : ""}</div>`;
   // simple coche : une case, sans poids ni remarque
   if (estCoche(l)) return `<div class="m-ligne${p ? " affecte" : ""}" data-code="${esc(l.code)}"${retrait}>${nom}
     <label class="m-coche"><input type="checkbox" data-coche${p ? " checked" : ""} aria-label="${esc(l.nom)} : dans le jeu"> dans le jeu</label></div>`;

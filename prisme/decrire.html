@@ -13,14 +13,16 @@
    1.1 (31/10/2026) : lisibilité, après le test sur Heat : « En bref », le thème avant les mécaniques, modes de jeu en trois lignes,
    mécanismes en trois colonnes, chaque axe titré par sa question avec le libellé de ses paliers
    1.4 (01/11/2026) : légendes en gras, aides en italique ; le matériel en coches dans « Le contenu et le matériel » ; demi-valeurs ;
-   « Pour t'aider » sous cinq axes ; l'étendue (LIEN1d) calculée à partir du nombre de joueurs */
+   « Pour t'aider » sous cinq axes ; l'étendue (LIEN1d) calculée à partir du nombre de joueurs
+   1.5 (02/11/2026) : les axes en trapèzes arrondis, utilisables au clavier ; pictogrammes des familles d'axes et du matériel ;
+   le matériel en tuiles, en deux groupes, les sous-rubriques sous leur parent */
 :root{--ink:#15171C;--muted:#4B5160;--line:#E2E4E9;--trait:#C9CEDB;--paper:#F4F5F7;--panel:#FFFFFF;--neutre:#E8EAF0;--filet:#EEF0F4;
   --accent:#2346C8;--accent-fonce:#16308F;--sur-accent:#FFFFFF;--bleu-fond:#E6EBFB;--bleu-bord:#C9D3F5;--bleu-texte:#16308F;--orange-fond:#FBEDE4;--orange-texte:#8A3108;
-  --vert-fond:#E7F4EC;--vert-texte:#14532D;--ok:#1E7A46;--warn:#B7791F;--err:#B42318;
+  --vert-fond:#E7F4EC;--vert-texte:#14532D;--ok:#1E7A46;--warn:#B7791F;--err:#B42318;--trapeze:#F0F2F6;--trapeze-demi:#E3E6EE;
   --serif:"Source Serif 4",Georgia,"Times New Roman",serif;--sans:"IBM Plex Sans","Segoe UI",Arial,sans-serif}
 @media (prefers-color-scheme: dark){:root{--ink:#E6E9EE;--muted:#A3ADBB;--line:#2C3542;--trait:#3A4555;--paper:#11161D;--panel:#171D25;--neutre:#252D38;--filet:#232B36;
   --accent:#7C9BFF;--accent-fonce:#A9BDFF;--sur-accent:#0B1020;--bleu-fond:#1F2A4D;--bleu-bord:#2E3D6B;--bleu-texte:#C9D6FF;--orange-fond:#3D2618;--orange-texte:#F5C3A3;
-  --vert-fond:#16301F;--vert-texte:#A6E3BC;--ok:#5CC98A;--warn:#E0A84A;--err:#F2837A}}
+  --vert-fond:#16301F;--vert-texte:#A6E3BC;--ok:#5CC98A;--warn:#E0A84A;--err:#F2837A;--trapeze:#252D38;--trapeze-demi:#2E3744}}
 *{box-sizing:border-box} html,body{margin:0} [hidden]{display:none!important} body{background:var(--paper);color:var(--ink);font:15px/1.5 var(--sans)}
 a{color:var(--accent)} a:hover{color:var(--accent-fonce)}
 button,input,textarea{font:inherit;color:inherit}
@@ -76,7 +78,20 @@ section.bloc{background:var(--panel);border:1px solid var(--line);border-radius:
 .champ input.faux{border-color:var(--err)}
 /* (1.4) l'info-bulle « ⓘ » des exemples ; le matériel en simples coches, les sous-rubriques en retrait */
 .i-aide{display:inline-block;margin-left:6px;color:var(--accent);font-weight:400;cursor:help} .i-aide .bulle{left:auto;right:0}
-.materiel{columns:3 200px;column-gap:24px} .materiel .case{break-inside:avoid;min-height:34px}
+/* (1.5) le matériel en tuiles (pictogramme + nom), en deux groupes ; les sous-rubriques s'ouvrent sous leur parent, en retrait */
+.materiel{display:flex;flex-direction:column;gap:8px}
+.mat-groupe{font-size:13px;font-weight:700;color:var(--ink);padding-top:4px}
+.tuiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;align-items:start}
+.tuiles > div{display:flex;flex-direction:column;gap:6px}
+.tuile{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel);font-size:14px;font-weight:600;cursor:pointer}
+.tuile.sous{margin-left:28px}
+.tuile input{position:absolute;opacity:0;width:1px;height:1px}
+.tuile svg.picto{margin:0}
+.tuile:hover{border-color:var(--trait)}
+.tuile:has(input:checked){border:2px solid var(--accent);background:var(--bleu-fond);color:var(--bleu-texte);padding:0 11px}
+.tuile:has(input:checked) svg.picto{color:var(--bleu-texte)}
+.tuile:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+.tuile:has(input:disabled){cursor:default}
 .sous-bloc{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--filet);padding-top:14px}
 /* le prix */
 .tranches{display:flex;flex-wrap:wrap;gap:16px}
@@ -103,7 +118,12 @@ section.bloc{background:var(--panel);border:1px solid var(--line);border-radius:
 .colonne > .etiq{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .colonne .puces{display:flex;flex-wrap:wrap;gap:6px}
 /* les axes descriptifs */
-.chapitre > .surtitre{font-size:12px;letter-spacing:.06em;padding-bottom:4px}
+/* (1.5) chaque famille : son pictogramme dans un carré arrondi, son nom bien visible, sa phrase d'aide en italique */
+.famille{display:flex;align-items:center;gap:12px;padding:6px 0 10px}
+.famille > span:first-child{flex:none;width:40px;height:40px;border-radius:10px;background:var(--bleu-fond);color:var(--bleu-texte);display:flex;align-items:center;justify-content:center}
+.famille svg.picto{margin:0;color:inherit}
+.famille h3{margin:0;font:600 21px/1.2 var(--serif)}
+.famille p{margin:0;font-size:13px;font-style:italic;color:var(--muted)}
 /* (1.4) la question sur toute la largeur, le nom et le code à côté ; les cases dessous, avec les demi-valeurs en quinconce au-dessus */
 .axe{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;padding:12px 0;border-top:1px solid var(--filet)}
 .axe-nom{min-width:0}
@@ -111,16 +131,22 @@ section.bloc{background:var(--panel);border:1px solid var(--line);border-radius:
 .axe-code{font-weight:400;color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums;margin-left:8px;white-space:nowrap}
 .aide-axe{margin:0;font-size:13px;font-style:italic;color:var(--muted)}
 .axe-saisie{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:flex-end}
-.echelle{--l:36px;display:grid;grid-template-columns:repeat(5,var(--l) 4px) var(--l);grid-template-rows:18px auto;row-gap:4px;position:relative}
-.echelle button.demi{width:22px;height:18px;justify-self:center;border-radius:5px;padding:0}
+/* (1.5) les trapèzes arrondis : six grands (0 à 5) en bas, cinq petits (0,5 à 4,5) au-dessus, dans les creux ;
+   chaque bouton occupe deux colonnes de --d ; le contour de la couleur du fond arrondit les angles */
+.echelle{--d:22px;display:grid;grid-template-columns:repeat(12,var(--d));grid-template-rows:25px 35px;row-gap:1px;position:relative}
+.echelle button{grid-column-end:span 2;width:100%;height:100%;padding:0;border:0;background:none;color:var(--ink);cursor:pointer;border-radius:6px}
+.echelle button svg{display:block;width:100%;height:100%;overflow:visible}
+.echelle polygon{fill:var(--trapeze);stroke:var(--trapeze);stroke-width:6;stroke-linejoin:round}
+.echelle button.demi{color:var(--muted)} .echelle button.demi polygon{fill:var(--trapeze-demi);stroke:var(--trapeze-demi)}
+.echelle text{fill:currentColor;font-family:var(--sans);font-weight:500}
+.echelle button:not(:disabled):hover polygon{fill:var(--bleu-fond);stroke:var(--bleu-fond)}
+.echelle button[aria-pressed=true]{color:var(--sur-accent)} .echelle button[aria-pressed=true] text{font-weight:700}
+.echelle button[aria-pressed=true] polygon{fill:var(--accent);stroke:var(--accent)}
+.echelle button:disabled{cursor:default}
 /* le libellé de chaque palier : en info-bulle au-dessus des cases (ancrée sur l'échelle, pour ne pas sortir de l'écran), et sous les cases pour la valeur choisie */
 .echelle button.info{position:static}
 .echelle button .bulle{top:auto;bottom:calc(100% + 6px);font-weight:400;max-width:min(260px,80vw)}
-.palier{flex-basis:100%;font-size:13px;color:var(--bleu-texte)} .palier:empty{display:none}
-.echelle button{width:var(--l);height:34px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;font-size:13px;border:0;background:var(--paper);color:var(--muted);cursor:pointer}
-.echelle button.sous{background:var(--bleu-fond);color:var(--bleu-texte)}
-.echelle button[aria-pressed=true]{background:var(--accent);color:var(--sur-accent);font-weight:600}
-.echelle button:disabled{cursor:default}
+.palier{flex-basis:100%;font-size:13px;font-style:italic;color:var(--muted)} .palier:empty{display:none}
 .so-lab{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);cursor:pointer;white-space:nowrap}
 .so-lab input{width:16px;height:16px;margin:0}
 .axe.so .echelle{opacity:.35}
@@ -140,7 +166,8 @@ details.com textarea{display:block;width:100%;margin-top:6px;padding:7px 10px;bo
   .champs{gap:16px 20px}
   .rang > .etiq{width:100%}
   .colonnes{grid-template-columns:1fr}
-  .echelle{--l:40px} .echelle button{height:38px} .echelle button.demi{height:18px}
+  .echelle{--d:24px}
+  .tuiles{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))} .tuile.sous{margin-left:18px}
   .enr{padding:10px 12px} .enr .boutons{flex:1} .enr .boutons .btn{flex:1}
 }
 </style>
@@ -157,9 +184,9 @@ details.com textarea{display:block;width:100%;margin-top:6px;padding:7px 10px;bo
   <div class="boutons" id="enr-boutons"><button class="btn" type="button" id="annuler">Annuler</button><button class="btn plein" type="button" id="enregistrer">Enregistrer</button></div>
 </div></div>
 
-<script src="selecteurs.js?v=1.2"></script>
+<script src="selecteurs.js?v=1.3"></script>
 <script>
-const VERSION = { numero:"1.4", date:"2026-11-01 10:58" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.5", date:"2026-11-02 23:18" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -209,6 +236,8 @@ function etendue(min, max){
   return n <= 1 ? 0 : n === 2 ? 1 : n <= 4 ? 2 : n <= 6 ? 3 : n <= 9 ? 4 : 5;
 }
 const CONFIGS = { base:"Jeu de base", all_in:"Jeu all-in" };
+// (1.5) la phrase d'aide de chaque famille d'axes (code du chapitre) ; le pictogramme est dans PICTOS (selecteurs.js)
+const FAMILLES = { SYS:"Comment le jeu fonctionne", EXP:"Ce que le jeu fait vivre", EDI:"Ce que la boîte contient" };
 // (1.1) suggestions pour la nature des contenus (champ libre)
 const NATURES = ["scénarios", "circuits", "plateaux", "factions", "personnages", "missions"];
 const D = { code:null, user:null, ecrit:false, jeu:null, freres:[], chapitres:[], axes:[], paliers:{}, prix:{}, noms:{}, desc:null, F0:null, A:{}, A0:{}, derniere:null, mat:new Set(), mat0:new Set() };
@@ -288,7 +317,7 @@ function dessiner(){
     `<label class="tranche"><input type="radio" name="prix" value="${l}"${d.prix_gamme === l ? " checked" : ""}${ro}><span>${l} · ${esc(n)}</span><small>${esc(montant(l))}</small></label>`).join("")}</div>`).join("");
   if (D.A[CALCULE]) D.A[CALCULE].valeur = etendue(d.joueurs_min, d.joueurs_max);   // (1.4) l'étendue suit le nombre de joueurs enregistré
   const axes = D.chapitres.map(c => { const L = D.axes.filter(a => a.chap === c.code); if (!L.length) return "";
-    return `<div class="chapitre"><div class="surtitre">${esc(c.nom)}</div>${L.map(ligneAxe).join("")}</div>`; }).join("");
+    return `<div class="chapitre"><div class="famille"><span>${picto(c.code, 24)}</span><div><h3>${esc(c.nom)}</h3>${FAMILLES[c.code] ? `<p>${esc(FAMILLES[c.code])}</p>` : ""}</div></div>${L.map(ligneAxe).join("")}</div>`; }).join("");
 
   $("#contenu").innerHTML = `
     <div class="tete"><div><div class="surtitre">Décrire le jeu</div><h1>${esc(D.jeu.nom)}</h1>
@@ -309,8 +338,9 @@ function dessiner(){
         <datalist id="natures">${NATURES.map(n => `<option value="${esc(n)}">`).join("")}</datalist></div>
       <p class="aide petite" style="max-width:520px">Avec la complexité et la variabilité (mise en place variable), ce nombre servira à calculer les parties pour tout exploiter.</p>
       <div class="sous-bloc"><span class="etiquette">Le matériel</span>
-        <p class="aide petite">Les mêmes coches que dans les mécaniques : cocher ici ou là revient au même. Une sous-rubrique apparaît quand sa rubrique est cochée.</p>
-        <div class="materiel" id="materiel" role="group" aria-label="Le matériel du jeu"></div></div></section>
+        <p class="aide petite">Les mêmes coches que dans les mécaniques : cocher ici ou là revient au même. Une sous-rubrique s'ouvre sous sa rubrique quand celle-ci est cochée.</p>
+        <div class="materiel" id="materiel" role="group" aria-label="Le matériel du jeu"></div>
+        <p class="aide petite">Le rôle compte, pas la forme : un pion représente un acteur, un jeton une quantité, un marqueur une position. Un cube peut être un jeton ou un marqueur.</p></div></section>
     <section class="bloc">${tete("Le thème", "PRISMEthemes : de quoi parle le jeu.", D.ecrit ? `<button class="btn contour" type="button" id="modifier-themes">Modifier les thèmes</button>` : "")}
       <div class="resume" id="res-themes"></div></section>
     <section class="bloc">${tete("Les mécaniques", "PRISMEmechanics : de quoi le jeu est fait.", D.ecrit ? `<button class="btn contour" type="button" id="modifier-meca">Modifier les mécanismes</button>` : "")}
@@ -341,9 +371,14 @@ function ligneAxe(a){
   // (le point final et la majuscule initiale d'un palier rédigé en phrase s'effacent dans « entre … et … »)
   const milieu = t => t.replace(/\.$/, "").replace(/^\p{Lu}(?!\p{Lu})/u, c => c.toLowerCase());
   const libelle = x => x == null ? "" : x % 1 === 0 ? P[x] || "" : P[x - .5] && P[x + .5] ? `entre ${milieu(P[x - .5])} et ${milieu(P[x + .5])}` : "";
-  // les six cases sur la seconde ligne ; les cinq demi-valeurs au-dessus, chacune entre ses deux voisines
-  const bouton = x => { const demi = x % 1 !== 0, place = demi ? `1 / ${2 * x + 1}` : `2 / ${2 * x + 1}`;
-    return `<button type="button" data-v="${x}" class="info${demi ? " demi" : ""}${r != null && x < r ? " sous" : ""}" style="grid-area:${place}" aria-pressed="${r === x}"${demi ? ` aria-label="${virgule(x)}${libelle(x) ? " : " + esc(libelle(x)) : ""}"` : ""}${ro}>${demi ? "" : x}${libelle(x) ? `<span class="bulle"${demi ? ' aria-hidden="true"' : ""}>${esc(libelle(x))}</span>` : ""}</button>`; };
+  // (1.5) les six grands trapèzes sur la seconde ligne (petit côté en haut) ; les cinq petits au-dessus (grand côté en haut), chacun entre ses deux voisins.
+  // Un seul bouton de l'échelle dans l'ordre de tabulation (la valeur choisie, sinon 0) : les flèches font le reste, demi-pas par demi-pas
+  const tab = r ?? 0;
+  const forme = x => x % 1 !== 0
+    ? `<svg viewBox="0 0 44 25" aria-hidden="true"><polygon points="4,4 40,4 31.5,21 12.5,21"/><text x="22" y="15" text-anchor="middle" font-size="10.5">${virgule(x)}</text></svg>`
+    : `<svg viewBox="0 0 44 35" aria-hidden="true"><polygon points="12.5,4 31.5,4 40,31 4,31"/><text x="22" y="26" text-anchor="middle" font-size="15">${x}</text></svg>`;
+  const bouton = x => { const demi = x % 1 !== 0;
+    return `<button type="button" data-v="${x}" class="info${demi ? " demi" : ""}" style="grid-row:${demi ? 1 : 2};grid-column-start:${2 * x + 1}" aria-pressed="${r === x}" aria-label="${virgule(x)} sur 5" tabindex="${x === tab ? 0 : -1}"${ro}>${forme(x)}${libelle(x) ? `<span class="bulle" aria-hidden="true">${esc(libelle(x))}</span>` : ""}</button>`; };
   const aide = calc ? `<p class="aide-axe">Calculé à partir du nombre de joueurs${v.valeur == null ? " (à remplir dans « En bref »)" : ""}.</p>`
     : AIDES[a.code] ? `<p class="aide-axe" data-aide="${esc(a.code)}">${esc(texteAide(a.code))}</p>` : "";
   const com = D.ecrit || v.commentaire ? `<details class="com"${v.commentaire ? " open" : ""}><summary>Commentaire</summary><textarea data-com rows="2" placeholder="Facultatif" aria-label="Commentaire sur ${esc(a.nom)}"${D.ecrit ? "" : " disabled"}>${esc(v.commentaire)}</textarea></details>` : "";
@@ -352,7 +387,7 @@ function ligneAxe(a){
     ${aide}
     <div class="axe-saisie"><div class="echelle" role="group" aria-label="${esc(a.nom)}, de 0 à 5${calc ? ", calculé" : ""}">${VALEURS.map(bouton).join("")}</div>
       ${calc ? "" : `<label class="so-lab"><input type="checkbox" data-so${so ? " checked" : ""}${ro}> sans objet</label>`}
-      <span class="palier">${!so ? esc(libelle(r)) : ""}</span></div>
+      <span class="palier">${!so && libelle(r) ? `${virgule(r)} : ${esc(libelle(r))}` : ""}</span></div>
     ${com}</div>`;
 }
 const majAides = () => document.querySelectorAll("[data-aide]").forEach(el => el.textContent = texteAide(el.dataset.aide));
@@ -367,6 +402,15 @@ $("#contenu").addEventListener("click", e => {
   const b = e.target.closest(".echelle button"); if (!b || !D.ecrit) return;
   const code = b.closest(".axe").dataset.axe, v = D.A[code], n = +b.dataset.v;
   v.valeur = v.valeur === n ? null : n;   // un second clic sur la valeur choisie l'efface
+  redessinerAxe(code).querySelector(`.echelle button[data-v="${n}"]`)?.focus();
+  changement();
+});
+// (1.5) au clavier : flèche gauche ou droite, la demi-valeur voisine est choisie
+$("#contenu").addEventListener("keydown", e => {
+  const b = e.target.closest(".echelle button"); if (!b || !D.ecrit || b.disabled || !["ArrowLeft", "ArrowRight"].includes(e.key)) return;
+  e.preventDefault();
+  const code = b.closest(".axe").dataset.axe, n = Math.min(5, Math.max(0, +b.dataset.v + (e.key === "ArrowRight" ? .5 : -.5)));
+  D.A[code].valeur = n;
   redessinerAxe(code).querySelector(`.echelle button[data-v="${n}"]`)?.focus();
   changement();
 });
@@ -396,13 +440,15 @@ function dessinerMateriel(){
   const L = M.lignes.filter(l => l.niveau === "materiel" && (D.mat.has(l.code) || M.affectes[l.code] || (l.statut !== "ecarter" && l.statut !== "fusionner")));
   const parentDe = l => (M.requis[l.code] || []).find(r => L.some(m => m.code === r));
   const ro = D.ecrit ? "" : " disabled";
-  // une sous-rubrique n'apparaît, en retrait, que si sa rubrique est cochée (ou si elle-même l'est)
+  // (1.5) une tuile par élément : pictogramme, nom, définition au survol ou au focus ;
+  // une sous-rubrique ne s'ouvre, en retrait sous sa rubrique, que si celle-ci est cochée (ou si elle-même l'est)
+  const tuile = (l, sous) => `<label class="tuile info${sous ? " sous" : ""}"><input type="checkbox" data-mat="${esc(l.code)}"${D.mat.has(l.code) ? " checked" : ""}${ro}>${picto(l.code)}<span>${esc(l.nom)}</span>${l.definition ? `<span class="bulle" aria-hidden="true">${esc(l.definition)}</span>` : ""}</label>`;
   const arbre = (G, prof, parent) => prof > 4 ? "" : G.map(l => {
     const vu = !parent || D.mat.has(l.code) || D.mat.has(parent);
-    return (vu ? `<label class="case"${prof ? ` style="padding-left:${22 * prof}px"` : ""}><input type="checkbox" data-mat="${esc(l.code)}"${D.mat.has(l.code) ? " checked" : ""}${ro}> ${prof ? "↳ " : ""}${esc(l.nom)}</label>` : "")
-      + arbre(L.filter(x => parentDe(x) === l.code), prof + 1, l.code);
+    return (vu ? tuile(l, prof > 0) : "") + arbre(rangerSous(L.filter(x => parentDe(x) === l.code)), prof + 1, l.code);
   }).join("");
-  el.innerHTML = arbre(L.filter(l => !parentDe(l)), 0, null) || `<p class="discret" style="margin:0">Aucun matériel dans la nomenclature.</p>`;
+  el.innerHTML = rangerMateriel(L.filter(l => !parentDe(l))).map(([t, G]) => `<div class="mat-groupe">${esc(t)}</div>
+    <div class="tuiles">${G.map(l => `<div>${arbre([l], 0, null)}</div>`).join("")}</div>`).join("") || `<p class="discret" style="margin:0">Aucun matériel dans la nomenclature.</p>`;
 }
 
 // le bandeau : la même règle que le blocage de publication dans evaluation.html
