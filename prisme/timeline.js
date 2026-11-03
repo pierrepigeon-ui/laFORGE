@@ -1,7 +1,7 @@
 /* PRISME — timeline du jeu : jalons, durées, flow, α β γ ω, durée de vie.
    Module partagé par l'encyclopédie et l'outil d'évaluation. Méthode arrêtée le 08/10/2026 (jeu d'essai : Heat) ; modèle à 12 paires le 11/10/2026 ;
    formules refaites phase par phase le 12/10/2026 avec trois jeux de référence (Gloomhaven, Heat, Flip 7). L'unité est la session. */
-const TIMELINE_VERSION = { numero:"3.10", date:"2026-11-03 18:54" };   // à incrémenter à chaque livraison
+const TIMELINE_VERSION = { numero:"3.11", date:"2026-11-03 23:33" };   // à incrémenter à chaque livraison
 
 const JALONS = [
   { n:0, nom:"identifié", quoi:"Le jeu est connu de loin : critique, vitrine, recommandation." },
@@ -565,8 +565,15 @@ function entreesPourCalcul(saisieFiche, extraFiche, description, axesDescription
 // les trois tables de la bascule, une requête par table : { descriptions: { jeu: ligne }, axes: { jeu: { axe: ligne } }, reglages: { cle: valeur } }
 // une table illisible (droits, script pas passé) : vide, et les calculs restent sur la fiche
 async function lireSourceCalcul(sb){
-  const [d, a, r] = await Promise.all([sb.from("prisme_descriptions").select("*"),
-    sb.from("prisme_descriptions_axes").select("jeu,axe,valeur,sans_objet"), sb.from("prisme_reglages").select("cle,valeur")]);
+  // (3.11) une table de plus de 1000 lignes (prisme_descriptions_axes : 16 lignes par jeu) est lue par pages de 1000, en parallèle, dans un ordre stable
+  const parPages = async (t, cols, ordre) => {
+    const q = (a, compte) => { let r = sb.from(t).select(cols, compte ? { count:"exact" } : undefined); ordre.forEach(o => r = r.order(o)); return r.range(a, a + 999); };
+    const p = await q(0, true); if (p.error || !p.count || p.count <= 1000) return p;
+    const suite = await Promise.all([...Array(Math.ceil(p.count / 1000) - 1).keys()].map(k => q((k + 1) * 1000)));
+    const err = suite.find(r => r.error); return err ? { error: err.error } : { data: p.data.concat(...suite.map(r => r.data)) };
+  };
+  const [d, a, r] = await Promise.all([parPages("prisme_descriptions", "*", ["jeu"]),
+    parPages("prisme_descriptions_axes", "jeu,axe,valeur,sans_objet", ["jeu", "axe"]), sb.from("prisme_reglages").select("cle,valeur")]);
   [d, a, r].forEach(x => { if (x.error) console.warn("PRISME : source des calculs illisible", x.error.message); });
   const src = { descriptions:{}, axes:{}, reglages:{} };
   (d.data || []).forEach(x => src.descriptions[x.jeu] = x);
