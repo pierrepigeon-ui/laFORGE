@@ -9,128 +9,169 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <style>
-:root{--ocre:#B4532A;--ink:#1B2430;--muted:#5B6573;--line:#DDE1E7;--paper:#F6F5F1;--panel:#FFFFFF;--accent:#3D2645;--ok:#1E7A46;--warn:#9A5B00;--err:#B42318;
-  --SYS:#4f6b8f;--EXP:#7a5c8f;--EDI:#6b8f5c;
+/* 4.0 (03/11/2026) : l'écran ne garde que les avis. Ce qui est vrai du jeu vit dans « Décrire le jeu » et n'est ici qu'affiché (« Décrit ») ;
+   les couleurs, les polices et les trapèzes sont ceux de « Décrire le jeu » (maquette validée, faite sur Heat). */
+:root{--ink:#15171C;--muted:#4B5160;--line:#E2E4E9;--trait:#C9CEDB;--paper:#F4F5F7;--panel:#FFFFFF;--neutre:#E8EAF0;--filet:#EEF0F4;
+  --accent:#2346C8;--accent-fonce:#16308F;--sur-accent:#FFFFFF;--bleu-fond:#E6EBFB;--bleu-texte:#16308F;--orange-fond:#FBEDE4;--orange-texte:#8A3108;
+  --vert-fond:#E7F4EC;--vert-texte:#14532D;--ok:#1E7A46;--warn:#9A5B00;--err:#B42318;--trapeze:#F0F2F6;--trapeze-demi:#E3E6EE;
+  --decrit:#7F1D1D;--decrit-fond:#FCECEC;
   --serif:"Source Serif 4",Georgia,"Times New Roman",serif;--sans:"IBM Plex Sans","Segoe UI",Arial,sans-serif}
-@media (prefers-color-scheme: dark){:root{--ocre:#E08A5F;--ink:#E6E9EE;--muted:#9AA4B2;--line:#2C3542;--paper:#11161D;--panel:#171D25;--accent:#C9B4D2;--ok:#5CC98A;--warn:#E0A84A;--err:#F2837A;--SYS:#8aa6cc;--EXP:#b49ccc;--EDI:#9cc58c}}
-*{box-sizing:border-box} html{scroll-padding-top:70px} html,body{margin:0} body{background:var(--paper);color:var(--ink);font:15px/1.5 var(--sans);padding-bottom:90px}
-button,input,select{font:inherit;color:inherit} :focus-visible{outline:2px solid #3B6FE0;outline-offset:2px} .hidden{display:none!important}
-a{color:inherit}
-.marque{font:600 19px/1 "Source Serif 4",Georgia,serif;letter-spacing:.08em;color:inherit!important;text-decoration:none}
-.barre{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:12px 20px;font-size:13px;color:var(--muted)} .barre a{text-decoration:none}
+@media (prefers-color-scheme: dark){:root{--ink:#E6E9EE;--muted:#A3ADBB;--line:#2C3542;--trait:#3A4555;--paper:#11161D;--panel:#171D25;--neutre:#252D38;--filet:#232B36;
+  --accent:#7C9BFF;--accent-fonce:#A9BDFF;--sur-accent:#0B1020;--bleu-fond:#1F2A4D;--bleu-texte:#C9D6FF;--orange-fond:#3D2618;--orange-texte:#F5C3A3;
+  --vert-fond:#16301F;--vert-texte:#A6E3BC;--ok:#5CC98A;--warn:#E0A84A;--err:#F2837A;--trapeze:#252D38;--trapeze-demi:#2E3744;
+  --decrit:#F5B5B5;--decrit-fond:#3A1A1A}}
+*{box-sizing:border-box} html{scroll-padding-top:80px} html,body{margin:0} body{background:var(--paper);color:var(--ink);font:15px/1.5 var(--sans);padding-bottom:110px}
+button,input,select,textarea{font:inherit;color:inherit} :focus-visible{outline:2px solid var(--accent);outline-offset:2px} .hidden{display:none!important}
+a{color:var(--accent)} a:hover{color:var(--accent-fonce)}
+.marque{font:600 19px/1 "Source Serif 4",Georgia,serif;letter-spacing:.08em;color:var(--ink)!important;text-decoration:none}
+.barre{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:12px 20px;font-size:13px;color:var(--muted)} .barre a{text-decoration:none;color:var(--muted)}
 #qui a{margin-left:10px}
 
-.btn{border:1px solid var(--ink);background:var(--ink);color:var(--panel);padding:8px 14px;border-radius:6px;cursor:pointer;font-weight:500}
-.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)} .btn:disabled{opacity:.4;cursor:default}
-.wrap{max-width:860px;margin:0 auto;padding:0 20px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-height:40px;border:1px solid var(--ink);background:var(--ink);color:var(--panel);padding:0 14px;border-radius:8px;cursor:pointer;font-weight:500;text-decoration:none;white-space:nowrap}
+.btn.ghost{background:var(--panel);color:var(--ink);border-color:var(--trait)} .btn.ghost:hover{border-color:var(--ink)} .btn:disabled{opacity:.4;cursor:default}
+.btn.plein{background:var(--accent);border-color:var(--accent);color:var(--sur-accent);font-weight:600} .btn.plein:hover{background:var(--accent-fonce);border-color:var(--accent-fonce)}
+.wrap{max-width:960px;margin:0 auto;padding:0 20px}
 h1{font:600 34px/1.15 var(--serif);margin:6px 0 4px}
 .aide{color:var(--muted);font-size:14px;max-width:70ch;margin:0 0 12px}
-.choix{display:flex;gap:10px;flex-wrap:wrap;align-items:end;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:12px 0}
-.choix label{display:block;font-size:13px;color:var(--muted)} .choix select,.choix input{padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--paper);min-width:240px}
+.choix{display:flex;gap:10px;flex-wrap:wrap;align-items:end;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:12px 0}
+.choix label{display:block;font-size:13px;color:var(--muted)} .choix select,.choix input{padding:8px 10px;border:1px solid var(--trait);border-radius:8px;background:var(--panel);min-width:240px}
 .msg{font-size:14px} .msg.err{color:var(--err)} .msg.ok{color:var(--ok)}
-table.fiches{border-collapse:collapse;width:100%;font-size:14px;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+table.fiches{border-collapse:collapse;width:100%;font-size:14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
 table.fiches th{text-align:left;font-weight:500;color:var(--muted);border-bottom:1px solid var(--line);padding:8px 12px}
 table.fiches td{border-bottom:1px solid var(--line);padding:9px 12px} table.fiches tr.f{cursor:pointer} table.fiches tr.f:hover{background:var(--paper)}
+table.fiches th[data-tri]{cursor:pointer;user-select:none} table.fiches th[data-tri]:hover{color:var(--ink)} table.fiches th .sens{font-size:10px;margin-left:3px}
 .badge{font:500 11.5px var(--sans);border:1px solid currentColor;border-radius:3px;padding:0 5px}
-.badge.finale{color:var(--ok)} .badge.brouillon{color:var(--warn)}
-
-/* barre de la fiche */
-#barre-fiche{position:sticky;top:var(--ent-h, 0px);z-index:20;background:var(--paper);border-bottom:2px solid var(--ink);padding:9px 20px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
-#barre-fiche .jeu{font:600 18px var(--serif)}
-#barre-fiche .prog{flex:1 1 140px;height:8px;background:var(--line);border-radius:4px;overflow:hidden;min-width:100px}
-#barre-fiche .prog span{display:block;height:100%;background:var(--accent);width:0}
-#barre-fiche select{padding:4px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel)}
-/* 3.38 : sous 600 px, la barre tient sur une ligne (←, nom du jeu, progression, « Outils ▾ ») et le pied se replie sur la note finale ;
-   au-dessus, les groupes d'outils sont transparents (display:contents) et rien ne change */
-#outils-btn,.pied-bascule{display:none} .outils-groupe{display:contents}
-@media (max-width:599px){
-  body{padding-bottom:calc(var(--pied-h, 60px) + 16px)}
-  #barre-fiche{top:0;padding:6px 12px;gap:8px;flex-wrap:nowrap}
-  #barre-fiche .large-seul,#prog-txt{display:none}
-  #barre-fiche .jeu{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:16px}
-  #barre-fiche .prog{flex:0 0 56px;min-width:0}
-  #outils-btn{display:inline-flex;flex:none}
-  .outils-groupe{display:none}
-  #barre-fiche.outils-ouverts{flex-wrap:wrap}
-  #barre-fiche.outils-ouverts .outils-groupe{display:flex;flex-wrap:wrap;gap:8px;align-items:center;flex-basis:100%;order:10}
-  #barre-fiche.outils-ouverts #outils-b{order:11}
-  .art-outils{position:static}
-  .etat-mini{margin-left:5px;font-weight:600} .etat-mini.ok{color:var(--ok)} .etat-mini.err{color:var(--err)} .etat-mini.encours{color:var(--muted)}
-  #pied{padding:6px 12px;gap:10px 16px;align-items:center}
-  #pied.replie{justify-content:space-between;flex-wrap:nowrap}
-  #pied.replie > div:not(.final){display:none}
-  #pied.replie .final{display:flex;align-items:baseline;gap:8px} #pied.replie .final > small{display:inline}
-  .pied-bascule{display:inline-flex;align-items:center;font:500 13px var(--sans);padding:6px 12px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);cursor:pointer}
-}
-#etat{font-size:13px;color:var(--muted);min-width:150px}
-
-.chapitre h2{font:600 22px var(--serif);color:var(--chap);margin:30px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--chap);display:flex;gap:10px;align-items:baseline}
-.chapitre h2 .moy{margin-left:auto;font:500 15px var(--sans);color:var(--muted)}
-.paire{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-bottom:12px;scroll-margin-top:70px}
-.paire.faite{border-left:4px solid var(--ok)}
-.paire .tete{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
-.paire h3{font:600 19px var(--serif);margin:0}
-.paire .meca{font-size:12.5px;color:var(--muted);font-style:italic}
-.na{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--muted);margin:6px 0 10px;padding-bottom:8px;border-bottom:1px dashed var(--line)}
-.paire.sans-objet .axes,.paire.sans-objet .res{opacity:.35;pointer-events:none}
-.axes{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-.pile{display:flex;flex-direction:column;gap:14px}
-.axe .titre{font-weight:600;font-size:14px} .axe .q{font:italic 14px/1.4 var(--serif);color:var(--muted);margin:2px 0 6px}
-.ligne{display:flex;gap:10px;align-items:center}
-.piste{flex:1;min-width:0}
-.piste input{width:100%;margin:0;display:block;accent-color:var(--accent);cursor:pointer}
-.piste input.vierge{opacity:.4}
-.piste input::-webkit-slider-thumb{width:16px} .piste input::-moz-range-thumb{width:16px}
-.grad{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);padding:0 8px}
-.num{font-variant-numeric:tabular-nums;font-weight:700;font-size:17px;min-width:2.6em;text-align:right;color:var(--ocre,#B4532A)}
-.palier{font-size:13.5px;margin-top:5px;min-height:2.6em;line-height:1.4} .palier .vide{color:var(--muted);font-style:italic}
-.reperes{font-size:12.5px;color:var(--muted);font-style:italic;margin-top:3px}
-.res{margin-top:12px;padding-top:9px;border-top:1px dashed var(--line);font-size:14px;color:var(--muted)} .res b{color:var(--ink);font-size:16px}
-#pied{position:fixed;left:0;right:0;bottom:0;background:var(--paper);border-top:2px solid var(--ink);padding:9px 20px;display:flex;gap:26px;justify-content:center;flex-wrap:wrap;z-index:15}
-#pied div{text-align:center} #pied small{display:block;font-size:12px;color:var(--muted)} #pied b{font-size:18px;font-variant-numeric:tabular-nums} #pied .final b{font-size:22px;color:var(--accent)}
+.badge.finale{color:var(--ok)} .badge.brouillon{color:var(--warn)} .badge.art{color:var(--accent)} .badge.pub{color:var(--ok)}
+#recherche{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px;font-size:14px}
+#recherche input,#recherche select{font:14px var(--sans);padding:6px 9px;border:1px solid var(--trait);border-radius:8px;background:var(--panel);color:var(--ink)}
+#recherche input{min-width:220px} #f-compte{color:var(--muted);font-size:13px;margin-left:auto}
+#filtre{display:flex;gap:14px;align-items:center;font-size:14px;margin:18px 0 8px} #filtre h2{font:600 20px var(--serif);margin:0;margin-right:auto}
+.cfg-nom{font-weight:400;color:var(--muted)}
 .version{font-size:12px;color:var(--muted);text-align:right;margin:26px 0 0}
-@media (max-width:640px){ .axes{grid-template-columns:1fr} h1{font-size:28px} .choix select,.choix input{min-width:0;width:100%} }
+@media (max-width:640px){ h1{font-size:28px} .choix select,.choix input{min-width:0;width:100%} }
 
-/* --- version 2 --- */
-.chiffres{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:18px 0 6px}
-.chiffres h2{font:600 19px var(--serif);margin:0 0 4px}
-.chiffres .grille{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
-.chiffres label{font-size:12.5px;color:var(--muted)} .chiffres input{width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--paper)}
-.paire .tete{cursor:pointer}
-.paire .tete .note{margin-left:auto;font:600 15px var(--sans);color:var(--accent);margin-right:10px}
-@media (max-width:480px){.paire .tete{flex-wrap:wrap} .paire .tete .meca{order:5;flex-basis:100%}}   /* 3.37 : sur téléphone, le mécanisme passe sous le nom de la paire */
+/* ---- la barre du haut : une ligne, collante ---- */
+#barre-fiche{position:sticky;top:var(--ent-h, 0px);z-index:20;background:var(--panel);border-bottom:1px solid var(--line);padding:8px 24px;display:flex;gap:14px;align-items:center}
+#barre-fiche #retour{flex:none;min-width:40px;padding:0 10px;font-size:18px}
+#barre-fiche .titres{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.3}
+#barre-fiche .jeu{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#barre-fiche .sous{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#barre-fiche .prog{flex:0 0 140px;height:6px;background:var(--neutre);border-radius:3px;overflow:hidden}
+#barre-fiche .prog span{display:block;height:100%;background:var(--accent);width:0;border-radius:3px}
+.menu-outils{position:relative;flex:none}
+#outils-btn{font-weight:600;font-size:14px}
+.etat-mini{margin-left:4px;font-weight:600} .etat-mini.ok{color:var(--ok)} .etat-mini.err{color:var(--err)} .etat-mini.encours{color:var(--muted)}
+#outils-menu{position:absolute;right:0;top:calc(100% + 6px);width:min(320px,calc(100vw - 24px));max-height:calc(100vh - 120px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px rgba(10,15,25,.16);padding:6px;display:flex;flex-direction:column;z-index:40}
+#outils-menu > button,#outils-menu > a,#outils-menu > label{display:flex;align-items:center;gap:8px;min-height:40px;padding:0 12px;border:0;border-radius:8px;background:none;color:var(--ink);text-align:left;text-decoration:none;font-size:14px;cursor:pointer}
+#outils-menu > button:hover,#outils-menu > a:hover{background:var(--paper)}
+#outils-menu > button[aria-disabled=true]{color:var(--muted);cursor:not-allowed}
+#outils-menu > button.danger{color:var(--err)}
+#outils-menu select{flex:1;min-width:0;padding:6px 8px;border:1px solid var(--trait);border-radius:8px;background:var(--panel)}
+#outils-menu hr{border:0;border-top:1px solid var(--filet);margin:4px 6px}
+#outils-menu .menu-aide{margin:0 12px 6px;font-size:12.5px;color:var(--orange-texte)} #outils-menu .menu-aide:empty{display:none}
+#outils-menu .menu-etat,#outils-menu .lecture{margin:4px 12px;font-size:12.5px;color:var(--muted)} #outils-menu .menu-etat:empty,#outils-menu .lecture:empty{display:none}
+.lecture{color:var(--warn)!important}
+
+/* ---- la page ---- */
+.page{max-width:960px;margin:0 auto;padding:24px;display:flex;flex-direction:column;gap:18px}
+.bandeau{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:12px 16px;border-radius:12px;font-size:14px}
+.bandeau.ok{background:var(--vert-fond);color:var(--vert-texte)} .bandeau.manque{background:var(--orange-fond);color:var(--orange-texte)}
+.bandeau a{color:inherit;font-weight:700}
+.bloc{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:14px}
+.bloc > h2{margin:0;font:600 24px/1.2 var(--serif)} .bloc > .chapo{margin:-8px 0 0;font-size:14px;color:var(--muted);font-style:italic}
+/* les familles : pictogramme, nom, phrase d'aide, note ; dépliables */
+details.famille{border-top:1px solid var(--filet)} details.famille:first-of-type{border-top:0}
+details.famille > summary{list-style:none;display:flex;align-items:center;gap:12px;padding:10px 0;cursor:pointer}
+details.famille > summary::-webkit-details-marker{display:none}
+.famille .pic{flex:none;width:40px;height:40px;border-radius:10px;background:var(--bleu-fond);color:var(--bleu-texte);display:flex;align-items:center;justify-content:center}
+.famille .fam-t{flex:1;min-width:0;display:flex;flex-direction:column} .famille .fam-t b{font:600 21px/1.2 var(--serif)} .famille .fam-t i{font-size:13px;color:var(--muted)}
+.famille .fam-note{font:700 22px var(--sans);color:var(--accent);font-variant-numeric:tabular-nums}
+.famille .chev{width:20px;height:20px;flex:none;color:var(--muted);transition:transform .15s} details.famille[open] .chev{transform:rotate(90deg)}
+.cartes{display:flex;flex-direction:column;gap:12px;padding:0 0 16px}
+/* une paire : son nom et sa note, les « Décrit », puis l'avis */
+.paire{border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:12px;background:var(--panel);scroll-margin-top:90px}
+.paire.faite{border-left:4px solid var(--ok)}
+.paire .tete{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.paire h3{margin:0;font:700 18px var(--sans);letter-spacing:.02em;cursor:pointer}
+.paire .note-paire{font-size:13px;color:var(--muted)} .paire .note-paire b{color:var(--ink);font-size:15px}
 .paire.repliee .corps{display:none}
-.paire .fleche{color:var(--muted);font-size:13px}
-.paliers{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:3px}
-.paliers li{display:grid;grid-template-columns:30px 1fr;gap:8px;align-items:baseline;font-size:13px;line-height:1.35;padding:4px 6px;border-radius:5px;cursor:pointer;border:1px solid transparent}
-.paliers li:hover{background:var(--paper)}
-.paliers li.proche{border-color:var(--line);background:var(--paper)}
-.paliers li.choisi{border-color:var(--accent);background:var(--paper);font-weight:500}
-.paliers li b{font:600 13px var(--sans);text-align:center;color:var(--muted)}
-.ro .paliers li{cursor:default}
-.suggestion{font-size:13px;margin-top:6px;padding:5px 8px;background:var(--paper);border-radius:6px}
-.suggestion button{margin-left:6px;font-size:12.5px;padding:2px 8px;border:1px solid var(--line);background:var(--panel);border-radius:5px;cursor:pointer}
-.justif{margin-top:12px} .justif label{font-size:12.5px;color:var(--muted)}
-.justif textarea,.carnet textarea{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:var(--paper);font:15px/1.5 var(--serif);resize:vertical}
+.corps{display:flex;flex-direction:column;gap:12px}
+.decrits{display:flex;flex-wrap:wrap;gap:8px}
+.decrit{display:inline-flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;padding:8px 14px;border-radius:10px;background:var(--decrit-fond);border:2px solid var(--decrit);color:var(--decrit);font-size:14px}
+.decrit .mot{font-weight:800;letter-spacing:.06em;text-transform:uppercase;font-size:12px}
+.decrit .nom{font-weight:600} .decrit .nom b{font:700 20px var(--sans)} .decrit .pal{font-style:italic}
+.decrit a{color:inherit;font-weight:700}
+.axe{display:flex;flex-direction:column;gap:6px}
+.axe + .axe{padding-top:10px;border-top:1px solid var(--filet)}
+.axe .axe-nom{font-size:12.5px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.axe .q{font-size:16px;font-weight:600}
+.axe .q button,.outils-paire button{font:500 12.5px var(--sans);padding:2px 9px;border:1px solid var(--line);background:var(--panel);border-radius:12px;cursor:pointer;color:var(--muted);margin-left:6px;vertical-align:2px}
+.axe .q button{border-radius:50%;padding:0 7px}
+.paire.sans-objet .axe .echelle,.paire.sans-objet .axe .palier{opacity:.35;pointer-events:none}
+/* les trapèzes arrondis de « Décrire le jeu » : les entiers en bas (petit côté en haut), les demi-valeurs au-dessus, dans les creux ;
+   la rangée défile dans son cadre si elle est trop large, jamais la page */
+.echelle-cadre{max-width:100%;overflow-x:auto;padding:2px 0 4px}
+.echelle{--d:22px;display:grid;grid-template-rows:25px 35px;row-gap:1px;width:max-content}
+.echelle button{grid-column-end:span 2;width:100%;height:100%;padding:0;border:0;background:none;color:var(--ink);cursor:pointer;border-radius:6px}
+.echelle button svg{display:block;width:100%;height:100%;overflow:visible}
+.echelle polygon{fill:var(--trapeze);stroke:var(--trapeze);stroke-width:6;stroke-linejoin:round}
+.echelle button.demi{color:var(--muted)} .echelle button.demi polygon{fill:var(--trapeze-demi);stroke:var(--trapeze-demi)}
+.echelle text{fill:currentColor;font-family:var(--sans);font-weight:500}
+.echelle button:not(:disabled):hover polygon{fill:var(--bleu-fond);stroke:var(--bleu-fond)}
+.echelle button[aria-pressed=true]{color:var(--sur-accent)} .echelle button[aria-pressed=true] text{font-weight:700}
+.echelle button[aria-pressed=true] polygon{fill:var(--accent);stroke:var(--accent)}
+.echelle button:disabled{cursor:default}
+.palier{margin:0;font-size:13px;font-style:italic;color:var(--muted)} .palier:empty{display:none}
+.reperes{font-size:12.5px;color:var(--muted);font-style:italic}
+.res{font-size:14px;color:var(--muted)} .res:empty{display:none}
+.outils-paire{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
+.outils-paire button{margin:0}
+.outils-paire button[aria-expanded="true"]{border-color:var(--accent);color:var(--accent)}
+.na-droite{display:flex;gap:7px;align-items:center;font:500 13.5px var(--sans);padding:3px 10px;border:1px solid var(--line);border-radius:12px;background:var(--panel);cursor:pointer}
+.na-droite:has(input:checked){border-color:var(--warn);color:var(--warn)}
+.panneau{background:var(--paper);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:8px;padding:10px 14px;font:14.5px/1.55 var(--serif)}
+.panneau h4{font:600 13px var(--sans);color:var(--accent);margin:10px 0 2px;text-transform:uppercase;letter-spacing:.04em} .panneau h4:first-child{margin-top:0}
+.panneau p{margin:3px 0} .panneau ul{margin:3px 0;padding-left:20px}
+.panneau .formule{font:13.5px/1.5 ui-monospace,Consolas,monospace;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 10px;margin:6px 0}
+.panneau table{border-collapse:collapse;font:12.5px var(--sans);margin-top:6px}
+.panneau td,.panneau th{border:1px solid var(--line);padding:2px 7px;text-align:center} .panneau th{color:var(--muted);font-weight:500}
+.panneau td.ici{background:var(--accent);color:var(--sur-accent);font-weight:600}
+.justif label{font-size:12.5px;color:var(--muted)}
+.justif textarea,.carnet textarea{width:100%;padding:7px 9px;border:1px solid var(--trait);border-radius:8px;background:var(--panel);font:15px/1.5 var(--serif);resize:vertical}
 .btn-modeles{font-size:12.5px;padding:2px 9px;border:1px solid var(--line);background:var(--panel);border-radius:5px;cursor:pointer;margin-left:8px;color:var(--muted)}
 .modeles{margin-top:8px;border:1px solid var(--line);border-radius:8px;background:var(--paper);padding:8px 12px;display:grid;gap:10px}
 .modele{font:14.5px/1.5 var(--serif)} .modele .src{font:600 12.5px var(--sans);color:var(--muted)}
 .modele p{margin:2px 0} .modele .amorce{font-style:italic}
 .modele button{font:12px var(--sans);padding:1px 8px;border:1px solid var(--line);background:var(--panel);border-radius:5px;cursor:pointer;margin-left:6px}
-.timeline{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:26px 0 10px}
-.timeline h2{font:600 20px var(--serif);margin:0 0 4px} .timeline .courbe-box{background:var(--paper)}
+/* « À combien ? » et « Parties pour tout exploiter » */
+.effectif{display:grid;grid-template-columns:96px minmax(0,1fr);gap:12px;align-items:center;padding:8px 0;border-top:1px solid var(--filet)}
+.effectif > span{font-weight:700}
+.meilleur{font-size:14px;padding-top:6px} .meilleur i{color:var(--decrit)}
+.bloc.parties{flex-direction:row;flex-wrap:wrap;align-items:center;gap:12px 16px;padding:20px 24px}
+.bloc.parties input{width:80px;padding:8px 12px;border:1px solid var(--trait);border-radius:8px;background:var(--panel)}
+.bloc.parties i{font-size:13px;color:var(--muted)}
+/* les blocs repliés : timeline, spectromètre, article */
+details.repli{background:var(--panel);border:1px solid var(--line);border-radius:12px}
+details.repli > summary{list-style:none;min-height:56px;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:0 20px;cursor:pointer}
+details.repli > summary::-webkit-details-marker{display:none}
+details.repli > summary i{color:var(--muted)} details.repli > summary .chev{width:18px;height:18px;flex:none;color:var(--muted);transition:transform .15s}
+details.repli[open] > summary .chev{transform:rotate(90deg)}
+.repli-corps{padding:0 20px 18px}
+.etat-art{font-size:13px;color:var(--muted);font-style:normal}
+/* timeline et spectromètre (graphiques : timeline.js) */
 .tl-bandeau{font:600 15px/1.5 var(--serif);border-left:3px solid var(--accent);padding:6px 12px;margin:10px 0;background:var(--paper);border-radius:0 8px 8px 0}
 .tl-attente{color:var(--muted);font-style:italic} .tl-attente a{color:inherit}
+.courbe-box{background:var(--paper)!important}
 .defile{overflow-x:auto;max-width:100%}
 table.tl-table{border-collapse:collapse;width:100%;font-size:13.5px;margin:8px 0}
 table.tl-table th{text-align:left;font-weight:500;color:var(--muted);border-bottom:1px solid var(--line);padding:5px 8px;white-space:nowrap}
 table.tl-table td{border-bottom:1px solid var(--line);padding:5px 8px} table.tl-table td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-table.tl-table tr.tl-phase td{font:600 12px var(--sans,inherit);text-transform:uppercase;letter-spacing:.04em;color:var(--muted);background:var(--paper);padding-top:8px}
+table.tl-table tr.tl-phase td{font:600 12px var(--sans);text-transform:uppercase;letter-spacing:.04em;color:var(--muted);background:var(--paper);padding-top:8px}
 table.tl-table tr.alpha td{background:color-mix(in srgb, var(--accent) 9%, transparent)} table.tl-table tr.chute td:first-child{color:var(--err)}
 table.tl-table tr.jamais td{opacity:.42;font-style:italic}
 .sp-haut{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:18px;align-items:start;margin:8px 0 12px}
 .sp-haut figure{margin:0} .sp-haut figcaption{font-size:12.5px;color:var(--muted);text-align:center}
-@media (max-width:700px){.sp-haut{grid-template-columns:minmax(0,1fr)}}   /* 3.37 : la colonne peut rétrécir sous la largeur de ses tableaux, qui défilent dans leur cadre */
+@media (max-width:700px){.sp-haut{grid-template-columns:minmax(0,1fr)}}
 .sp-arc{border-top:1px solid var(--line);padding:6px 0} .sp-arc summary{cursor:pointer;display:flex;gap:10px;align-items:baseline} .sp-arc summary .n{margin-left:auto;font-variant-numeric:tabular-nums}
 .sp-arc summary .aide{font-size:13px;margin:0}
 .sp-titre{font:600 18px var(--serif);margin:18px 0 2px}
@@ -138,102 +179,16 @@ table.tl-table tr.jamais td{opacity:.42;font-style:italic}
 button.lien,a.lien{border:0;background:none;padding:0;font:inherit;color:inherit;text-decoration:underline;text-decoration-color:var(--line);cursor:pointer}
 table.sp-extremes{margin:0 0 10px} table.tl-table tr.choisi td{background:color-mix(in srgb, var(--accent) 9%, transparent)} table.tl-table small{color:var(--muted)}
 .sp-courbe{border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:10px 0;background:var(--paper)} .sp-courbe h3{font:600 17px var(--serif);margin:0 0 4px}
-#pied b small{display:inline!important;font-size:12px;color:var(--muted)!important;font-weight:400;margin-left:1px} #pied .tl-pied{cursor:pointer} #pied .tl-pied b{font-size:16px;font-weight:600} #pied .tl-pied b small{display:inline;font-size:12px;color:var(--muted);font-weight:400}
-#pied .cout-pied b{font-size:16px;font-weight:600} #pied .proto{font-size:10px;text-transform:uppercase;letter-spacing:.04em;border:1px solid var(--line);border-radius:4px;padding:0 3px;color:var(--muted)}
-.carnet{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:26px 0 10px}
-.carnet h2{font:600 20px var(--serif);margin:0 0 4px}
-.carnet textarea{min-height:220px}
-.lecture{font-size:13px;color:var(--warn)}
-/* 3.35 (29/10/2026) : la description du jeu, requise pour rendre la fiche finale ou la publier */
-.desc-manque{font-size:14px;line-height:1.5;border-left:3px solid var(--warn);padding:8px 12px;margin:10px 0 0;background:var(--paper);border-radius:0 8px 8px 0}
-.desc-manque a{font-weight:600;white-space:nowrap}
-input[aria-disabled=true]{opacity:.45;cursor:not-allowed} label:has(> input[aria-disabled=true]){color:var(--muted);cursor:not-allowed}
-#recherche{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px;font-size:14px}
-#recherche input,#recherche select{font:14px var(--sans);padding:6px 9px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink)}
-#recherche input{min-width:220px} #f-compte{color:var(--muted);font-size:13px;margin-left:auto}
-table.fiches th[data-tri]{cursor:pointer;user-select:none} table.fiches th[data-tri]:hover{color:var(--ink)}
-table.fiches th .sens{font-size:10px;margin-left:3px}
-.zone-danger{margin:40px 0 10px;padding:16px 18px;border:1px solid var(--err,#B42318);border-radius:10px}
-.zone-danger h2{font:600 17px var(--serif);margin:0 0 4px;color:var(--err,#B42318)} .zone-danger p{margin:0 0 10px;font-size:13.5px;color:var(--muted)}
-.btn.danger{border-color:var(--err,#B42318);color:var(--err,#B42318);background:transparent}
-#filtre{display:flex;gap:14px;align-items:center;font-size:14px;margin:18px 0 8px} #filtre h2{font:600 20px var(--serif);margin:0;margin-right:auto}
-.jeu-tete{display:flex;gap:22px;align-items:flex-start;margin:18px 0 10px}
-.jeu-corps{flex:1;min-width:0}
-.jeu-titre{display:flex;gap:14px;align-items:baseline;flex-wrap:wrap;margin-bottom:6px}
-.jeu-tete .chiffres{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:6px 0 0}
-.ch-titre{font:600 15px var(--serif);margin-bottom:6px;display:flex;gap:8px;align-items:center}
-.aide-btn{border:1px solid var(--line);background:var(--paper);border-radius:50%;width:20px;height:20px;font-size:12px;line-height:1;cursor:pointer;color:var(--muted)}
-.ch-grille{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:flex-end}
-.ch{display:flex;flex-direction:column;gap:2px;font-size:12.5px;color:var(--muted)}
-.ch input{width:7ch;padding:5px 7px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);font:14px var(--sans)}
-.ch-prix_source input{width:22ch}
-.ch-paire .deux{display:flex;gap:6px;align-items:center}.ch-paire .deux em{font-style:normal;color:var(--muted)}
-.ch-paire .deux .ch span:empty{display:none}.ch-paire .deux .ch > span{display:none}
-details.assistant > summary{cursor:pointer;list-style:none}details.assistant > summary::-webkit-details-marker{display:none}
-details.assistant > summary h2::after{content:" ▾";color:var(--muted);font-size:14px}details.assistant:not([open]) > summary h2::after{content:" ▸"}
-details.assistant:not([open]){padding-bottom:8px}
-.chapitre h2[data-replier-chap]{cursor:pointer}.fleche-chap{font-size:14px;color:var(--muted)}
-.jeu-tete img{width:150px;max-height:170px;object-fit:contain;border-radius:8px;background:var(--panel);border:1px solid var(--line);flex:none}
-.jeu-tete h1{font:600 clamp(26px,4vw,38px)/1.15 var(--serif);margin:0 0 8px}
-.jeu-tete .bgg{display:inline-block;text-decoration:none;font-size:14px;padding:6px 12px}
-@media (max-width:560px){ .jeu-tete img{width:96px} }
+/* l'article : assistant de rédaction, éditeur, carnet */
 .assistant{border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:12px 18px;margin:14px 0;background:var(--panel)}
 .assistant h2{font:600 19px var(--serif);margin:0 0 4px}
+details.assistant > summary{cursor:pointer;list-style:none} details.assistant > summary::-webkit-details-marker{display:none}
+details.assistant > summary h2::after{content:" ▾";color:var(--muted);font-size:14px} details.assistant:not([open]) > summary h2::after{content:" ▸"}
 .ass-boutons{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
 #coller-texte{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--paper);font:14px/1.5 var(--sans);color:var(--ink)}
 .apercu{width:100%;border-collapse:collapse;font-size:14px}.apercu td,.apercu th{border-top:1px solid var(--line);padding:6px 8px;vertical-align:top;text-align:left}
 .apercu .avant{color:var(--muted);font-style:italic}.apercu .apres{font-family:var(--serif)}
-dialog{border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--ink);padding:20px 24px;width:min(900px,94vw);max-height:88vh}
-dialog::backdrop{background:rgba(10,15,25,.45)}
-dialog h2{font:600 22px var(--serif);margin:0 0 10px}
-table.recap{border-collapse:collapse;width:100%;font-size:13.5px}
-table.recap th{text-align:left;font-weight:500;color:var(--muted);border-bottom:1px solid var(--line);padding:6px 8px}
-table.recap td{border-bottom:1px solid var(--line);padding:6px 8px;vertical-align:top}
-table.recap tr.manque td:first-child{border-left:3px solid var(--warn)}
-table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-color:var(--line)}
-@media (max-width:760px){ .chiffres .grille{grid-template-columns:repeat(2,minmax(0,1fr))} }
-
-/* --- version 3 : couleur, aides, méthode de calcul --- */
-.chiffres .grille{grid-template-columns:repeat(5,minmax(0,1fr))}
-.paire{border-top:3px solid var(--chap)}
-.paire h3{color:var(--chap)}
-.paire .mesure{font:italic 14px/1.45 var(--serif);color:var(--muted);margin:4px 0 2px;max-width:75ch}
-.paliers li.choisi{border-color:var(--chap);background:color-mix(in srgb, var(--chap) 13%, var(--panel))}
-.paliers li.proche{background:color-mix(in srgb, var(--chap) 6%, var(--panel))}
-.num{color:var(--ocre,#B4532A)}
-.piste input{accent-color:var(--chap)}
-.outils{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 8px}
-.outils button,.axe .titre button{font:500 12.5px var(--sans);padding:2px 9px;border:1px solid var(--line);background:var(--panel);border-radius:12px;cursor:pointer;color:var(--muted)}
-.outils button[aria-expanded="true"],.axe .titre button[aria-expanded="true"]{border-color:var(--chap);color:var(--chap)}
-.axe .titre button{padding:0 7px;margin-left:6px;border-radius:50%}
-.panneau{background:color-mix(in srgb, var(--chap) 6%, var(--panel));border:1px solid var(--line);border-left:3px solid var(--chap);border-radius:8px;padding:10px 14px;margin:4px 0 12px;font:14.5px/1.55 var(--serif)}
-.panneau h4{font:600 13px var(--sans);color:var(--chap);margin:10px 0 2px;text-transform:uppercase;letter-spacing:.04em} .panneau h4:first-child{margin-top:0}
-.panneau p{margin:3px 0} .panneau ul{margin:3px 0;padding-left:20px}
-.panneau .formule{font:13.5px/1.5 ui-monospace,Consolas,monospace;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 10px;margin:6px 0}
-.panneau table{border-collapse:collapse;font:12.5px var(--sans);margin-top:6px}
-.panneau td,.panneau th{border:1px solid var(--line);padding:2px 7px;text-align:center} .panneau th{color:var(--muted);font-weight:500}
-.panneau td.ici{background:var(--chap);color:var(--panel);font-weight:600}
-#pied small{color:var(--c,var(--muted))}
-.outils{align-items:center}
-.na-droite{margin-left:auto;display:flex;gap:7px;align-items:center;font:500 13.5px var(--sans);padding:3px 10px;border:1px solid var(--line);border-radius:12px;background:var(--panel);cursor:pointer}
-.na-droite:has(input:checked){border-color:var(--warn);color:var(--warn)}
-.axe .titre button.calc{border-radius:12px;padding:0 9px;width:auto}
-.entete-axe{display:flow-root}
-.cfg-nom{font-weight:400;color:var(--muted)}
-.ch-unique .case{display:flex;gap:7px;align-items:center;font-size:13.5px;min-height:34px;white-space:nowrap}
-.ch-unique .case input{width:auto!important;margin:0}
-/* --- version 3.31 : joueurs et meilleur effectif ensemble ; « Sans objet » sur la première ligne de la paire --- */
-.ch-groupe{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:flex-end}
-.paire .ligne1{display:flex;gap:12px;align-items:flex-start}
-.paire .ligne1 .mesure{flex:1;min-width:0}
-.paire .ligne1 .na-droite{flex-shrink:0;margin-top:4px}
-@media (max-width:560px){.paire .ligne1{flex-direction:column;gap:4px}.paire .ligne1 .na-droite{margin-left:0}}
-/* --- version 3.32 : l'article --- */
-details.article-bloc{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin:16px 0}
-details.article-bloc > summary{cursor:pointer;list-style:none;display:flex;gap:10px;align-items:baseline}
-details.article-bloc > summary h2{font:600 22px var(--serif);margin:0}
-details.article-bloc > summary .etat-art{font-size:13px;color:var(--muted)}
-.art-outils{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:10px 0 8px;position:sticky;top:calc(var(--ent-h, 0px) + 54px);z-index:5;background:var(--panel);padding:6px 0}
+.art-outils{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:10px 0 8px;position:sticky;top:calc(var(--ent-h, 0px) + 58px);z-index:5;background:var(--panel);padding:6px 0}
 .art-outils button{font:500 13px var(--sans);padding:4px 10px;border:1px solid var(--line);background:var(--paper);border-radius:6px;cursor:pointer;color:var(--ink)}
 .art-outils button.fort{background:var(--ink);color:var(--panel);border-color:var(--ink)}
 .art-outils .sep{width:1px;height:22px;background:var(--line);margin:0 4px}
@@ -248,14 +203,42 @@ details.article-bloc > summary .etat-art{font-size:13px;color:var(--muted)}
 .article-ed .consigne{color:var(--muted);font-style:italic}
 .article-ed::after{content:"";display:block;clear:both}
 .art-aide{font-size:13px;color:var(--muted);margin:8px 0 0}
-.badge.art{color:var(--accent)} .badge.pub{color:var(--ok)}
 .art-pub{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin:10px 0 0;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--paper);font-size:14px}
-.art-pub label{display:flex;gap:7px;align-items:center;font-weight:500}
-.art-pub .aide{margin:0;font-size:13px}
-.ch-configuration input{width:220px!important}
-.ecart-saisi{font:700 16px var(--sans);color:var(--ocre,#B4532A);min-width:2.8em;text-align:left}
-.retenue{font:500 13.5px var(--sans);color:var(--chap);text-align:right;margin-top:2px;min-height:1.2em} .retenue b{font-size:16px}
-@media (max-width:760px){ .chiffres .grille{grid-template-columns:repeat(2,minmax(0,1fr))} }
+.art-pub label{display:flex;gap:7px;align-items:center;font-weight:500} .art-pub .aide{margin:0;font-size:13px}
+.carnet{margin:18px 0 0} .carnet h3{font:600 18px var(--serif);margin:0 0 4px} .carnet textarea{min-height:200px}
+input[aria-disabled=true]{opacity:.45;cursor:not-allowed} label:has(> input[aria-disabled=true]){color:var(--muted);cursor:not-allowed}
+dialog{border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--ink);padding:20px 24px;width:min(900px,94vw);max-height:88vh}
+dialog::backdrop{background:rgba(10,15,25,.45)}
+dialog h2{font:600 22px var(--serif);margin:0 0 10px}
+table.recap{border-collapse:collapse;width:100%;font-size:13.5px}
+table.recap th{text-align:left;font-weight:500;color:var(--muted);border-bottom:1px solid var(--line);padding:6px 8px}
+table.recap td{border-bottom:1px solid var(--line);padding:6px 8px;vertical-align:top}
+table.recap tr.manque td:first-child{border-left:3px solid var(--warn)}
+table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-color:var(--line)}
+.proto{font-size:10px;text-transform:uppercase;letter-spacing:.04em;border:1px solid var(--line);border-radius:4px;padding:0 3px;color:var(--muted)}
+
+/* ---- la barre du bas : une ligne, fixe ; « Détails » déplie les chapitres, la timeline résumée et les coûts ---- */
+#pied{position:fixed;left:0;right:0;bottom:0;z-index:15;background:var(--panel);border-top:1px solid var(--line);padding:10px 24px}
+#pied .pied-int{max-width:960px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
+#pied .pied-note{display:flex;align-items:baseline;gap:8px;min-width:0}
+#pied-finale{font:700 28px var(--sans);color:var(--accent);font-variant-numeric:tabular-nums} #pied .pied-note > span{color:var(--muted)}
+.pied-bascule{border:0;background:none;padding:0 0 0 6px;font:600 14px var(--sans);color:var(--accent);cursor:pointer}
+#pied-etat{flex:1;min-width:0;font-size:12.5px;color:var(--muted);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#pied-details{max-width:960px;margin:8px auto 2px;display:flex;flex-wrap:wrap;gap:10px 26px;font-size:14px}
+#pied-details div{display:flex;flex-direction:column} #pied-details small{font-size:12px;color:var(--muted)} #pied-details b{font-size:16px;font-variant-numeric:tabular-nums}
+#pied-details b small{display:inline;font-weight:400}
+
+@media (max-width:599px){
+  #barre-fiche{padding:6px 10px;gap:8px}
+  #barre-fiche .prog{flex-basis:44px}
+  #barre-fiche .jeu{font-size:14.5px}
+  .page{padding:14px 12px;gap:14px}
+  .bloc{padding:16px 14px;border-radius:14px}
+  .paire{padding:14px 12px}
+  .effectif{grid-template-columns:minmax(0,1fr);gap:4px}
+  #pied{padding:8px 12px} #pied-finale{font-size:24px} #pied-etat{display:none}
+  #pied .btn{min-height:40px;padding:0 14px}
+}
 </style>
 </head>
 <body>
@@ -292,25 +275,43 @@ details.article-bloc > summary .etat-art{font-size:13px;color:var(--muted)}
 
 <section id="fiche" class="hidden">
   <div id="barre-fiche">
-    <button class="btn ghost" id="retour" type="button" aria-label="Retour aux fiches">←<span class="large-seul"> Les fiches</span></button>
-    <span class="jeu" id="titre-jeu"></span><span class="outils-groupe" id="outils-a"><a class="btn ghost" id="vers-jeu" href="jeux.html" title="La fiche du jeu, telle que la voient les joueurs">Fiche du jeu</a><button class="btn ghost hidden" id="btn-config" type="button" title="Évaluer le jeu avec ses extensions : une fiche liée, qui reprend celle-ci">+ Configuration</button><span class="lecture" id="lecture"></span></span>
-    <span class="prog"><span id="prog"></span></span><span id="prog-txt" style="font-size:13px;color:var(--muted)"></span>
-    <button class="btn ghost" id="outils-btn" type="button" aria-expanded="false" aria-controls="outils-a outils-b">Outils<span class="etat-mini" id="etat-mini" aria-hidden="true"></span> ▾</button>
-    <span class="outils-groupe" id="outils-b">
-    <button class="btn ghost" id="suivante" type="button">Paire suivante à remplir</button>
-    <select id="aller" aria-label="Aller à une paire"><option value="">Aller à…</option></select>
-    <button class="btn ghost" id="tout-enrouler" type="button">Tout enrouler</button>
-    <button class="btn ghost" id="btn-article" type="button" title="Aller à l'article">Article</button>
-    <button class="btn ghost" id="btn-recap" type="button">Récapitulatif</button>
-    <button class="btn ghost" id="btn-export" type="button">Exporter</button>
-    <label style="font-size:13px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="finale"> Fiche finale</label>
-    <span id="etat"></span>
-    </span>
+    <button class="btn ghost" id="retour" type="button" aria-label="Retour aux fiches" title="Retour">←</button>
+    <div class="titres"><span class="jeu" id="titre-jeu"></span><span class="sous" id="sous-titre"></span></div>
+    <span class="prog" aria-hidden="true"><span id="prog"></span></span>
+    <div class="menu-outils">
+      <button class="btn ghost" id="outils-btn" type="button" aria-expanded="false" aria-controls="outils-menu" aria-haspopup="true">Outils<span class="etat-mini" id="etat-mini" aria-hidden="true"></span> ▾</button>
+      <div id="outils-menu" class="hidden">
+        <button type="button" id="m-fiches">Les fiches de ce jeu</button>
+        <a id="vers-jeu" href="jeux.html" title="La fiche du jeu, telle que la voient les joueurs">Fiche du jeu</a>
+        <a id="vers-decrire" href="decrire.html">Décrire le jeu</a>
+        <button type="button" id="btn-config" class="hidden" title="Évaluer le jeu avec ses extensions : une fiche liée, qui reprend celle-ci">+ Configuration (avec extensions)</button>
+        <hr>
+        <button type="button" id="suivante">Paire suivante à remplir</button>
+        <label>Aller à <select id="aller" aria-label="Aller à une paire"><option value="">…</option></select></label>
+        <button type="button" id="tout-enrouler">Tout enrouler</button>
+        <button type="button" id="btn-article">Article</button>
+        <hr>
+        <button type="button" id="btn-recap">Récapitulatif</button>
+        <button type="button" id="btn-export">Exporter</button>
+        <hr>
+        <button type="button" id="btn-finale">Rendre la fiche finale</button>
+        <p class="menu-aide" id="finale-aide"></p>
+        <button type="button" id="btn-supprimer" class="danger hidden">Supprimer cette fiche…</button>
+        <p class="lecture" id="lecture"></p>
+        <p class="menu-etat" id="etat"></p>
+      </div>
+    </div>
   </div>
-  <div class="wrap hidden" id="desc-manque"></div>
-  <div class="wrap" id="grille"></div>
+  <div class="page"><div id="bandeau-desc"></div><div id="grille" style="display:contents"></div></div>
 </section>
-<div id="pied" class="hidden replie"></div>
+<div id="pied" class="hidden">
+  <div class="pied-int">
+    <div class="pied-note"><b id="pied-finale">—</b><span>/ 5</span><button type="button" class="pied-bascule" aria-expanded="false" aria-controls="pied-details">Détails ▴</button></div>
+    <span id="pied-etat"></span>
+    <button type="button" class="btn plein" id="btn-enregistrer">Enregistrer</button>
+  </div>
+  <div id="pied-details" class="hidden"></div>
+</div>
 <dialog id="dlg-coller"><h2>Coller la réponse de Claude</h2>
   <p class="aide" id="coller-aide">Colle ici toute la réponse, puis « Lire la réponse » : chaque texte reconnu est proposé à la case qui lui correspond.</p>
   <textarea id="coller-texte" rows="10" placeholder="La réponse de Claude…"></textarea>
@@ -322,7 +323,7 @@ details.article-bloc > summary .etat-art{font-size:13px;color:var(--muted)}
 
 <script src="timeline.js?v=3.10"></script>
 <script>
-const VERSION = { numero:"3.40", date:"2026-11-03 18:54" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"4.0", date:"2026-11-03 22:36" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -347,11 +348,24 @@ let fiche = null;            // { id, jeu, statut, evaluateur, pages… notes_ar
 let saisie = {};             // axe -> { valeur, sans_objet, commentaire }
 let lectureSeule = false;
 let enAttente = new Set(), ficheModifiee = false, minuteur = null;
+const enCours = () => enAttente.size || ficheModifiee || effAttente.size;   // (4.0) quelque chose reste à enregistrer
 const DONNEES = [["pages","Pages des règles"],["prix","Prix (€)"],["prix_source","Source du prix (enseigne, date)","texte"],["poids_bgg","Poids BGG (1 à 5)"],["joueurs_min","Joueurs min."],
   ["joueurs_max","Joueurs max."],["effectif_reference","Meilleur effectif"],["duree_min","Durée min. (min)"],["duree_max","Durée max. (min)"],["contenu_parties","Parties pour tout exploiter"]];
 const CHAMPS = [...DONNEES.map(d => d[0]), "configuration", "contenu_unique"];   // (17/10/2026) script 27
 const cfgDe = f => String(f?.configuration ?? "").trim() || null;   // null : la boîte de base
 const titreFiche = f => nomJeu(f.jeu) + (cfgDe(f) ? " — " + cfgDe(f) : "");
+// (4.0) la sous-fiche (prisme_jeux.configuration), les familles et leurs pictogrammes (les mêmes que dans « Décrire le jeu », selecteurs.js)
+const CONFIGS = { base:"jeu de base", all_in:"jeu all-in" };
+const FAMILLES = { SYS:"Comment le jeu fonctionne", EXP:"Ce que le jeu fait vivre", EDI:"Ce que la boîte contient" };
+const PICTOS_FAM = {
+  SYS: `<circle cx="12" cy="12" r="3.2"/><path d="M12 2.5 V5.5 M12 18.5 V21.5 M2.5 12 H5.5 M18.5 12 H21.5 M5.3 5.3 L7.4 7.4 M16.6 16.6 L18.7 18.7 M5.3 18.7 L7.4 16.6 M16.6 7.4 L18.7 5.3"/>`,
+  EXP: `<path d="M12 20 C5 15 3 11 5 8 C7 5 10.5 6 12 8.5 C13.5 6 17 5 19 8 C21 11 19 15 12 20 Z"/>`,
+  EDI: `<path d="M3 7.5 L12 3 L21 7.5 L12 12 Z M3 7.5 V16.5 L12 21 V12 M21 7.5 V16.5 L12 21"/>` };
+const pictoFam = c => PICTOS_FAM[c] ? `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">${PICTOS_FAM[c]}</svg>` : "";
+const CHEVRON = `<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>`;
+const virgule = v => String(v).replace(".", ",");
+// (4.0) « À combien ? » : une note par effectif (script du 03/11) ; les noms de la table et de ses colonnes sont ici, et seulement ici
+const EFF = { table:"prisme_evaluations_effectifs", fiche:"evaluation", joueurs:"effectif", note:"note" };
 
 function courbeS(x0){ const t = (x0 + 2) / 9; return t <= .5 ? 10 * t * t : 5 * (1 - 2 * (1 - t) * (1 - t)); }
 
@@ -373,7 +387,7 @@ async function lireTout(table, filtre){
 }
 // arrivée depuis la liste des jeux ou la fiche d'un jeu (?jeu=) : la liste des fiches ne s'affiche pas, et « ← Retour » ramène d'où l'on vient
 const ARRIVEE = new URLSearchParams(location.search).get("jeu");
-if (ARRIVEE){ document.getElementById("accueil").classList.add("hidden"); document.getElementById("retour").querySelector(".large-seul").textContent = " Retour"; document.getElementById("retour").setAttribute("aria-label", "Retour"); }
+if (ARRIVEE){ document.getElementById("accueil").classList.add("hidden"); document.getElementById("retour").setAttribute("aria-label", "Retour"); }
 async function demarrer(){
   const { data: r } = await sb.rpc("prisme_mon_role"); role = r;
   if (!["proprietaire","editeur","evaluateur","lecteur"].includes(role)) $("#accueil").classList.remove("hidden");
@@ -498,12 +512,13 @@ async function nouvelleConfiguration(){
   if (!nom) return;
   const deja = toutes.find(e => e.jeu === fiche.jeu && e.evaluateur === user.id && cfgDe(e) === nom);
   if (deja){ ouvrirFiche(deja); $("#etat").textContent = `Tu as déjà une fiche « ${nom} » : la voici.`; return; }
-  if (enAttente.size || ficheModifiee){ clearTimeout(minuteur); await enregistrer(); }
+  if (enCours()){ clearTimeout(minuteur); await enregistrer(); }
   const base = fiche, copie = JSON.parse(JSON.stringify(saisie)), date = new Date().toLocaleDateString("fr-FR");
   fiche = { ...Object.fromEntries(CHAMPS.map(k => [k, base[k] ?? null])), id:null, jeu:base.jeu, evaluateur:user.id, statut:"brouillon", configuration:nom,
     notes_article: `[Configuration « ${nom} », reprise de la fiche de base le ${date}] Ne change que ce qui bouge avec cette configuration : matériel, volume de règles, variété, prix, parties pour tout exploiter…`
       + (base.notes_article ? "\n\n" + base.notes_article : "") };
   saisie = copie; enAttente = new Set(Object.keys(copie)); ficheModifiee = true; lectureSeule = false;
+  effAttente = new Set(Object.keys(effectifs).map(Number));   // (4.0) les notes par effectif sont reprises aussi
   majBarreFiche(); construireGrille(); recalculer(); window.scrollTo(0, 0);
   await enregistrer(); await chargerFiches();
   $("#etat").textContent = `Configuration « ${nom} » créée à partir de ta fiche de base.`;
@@ -521,7 +536,7 @@ function afficherListe(){
 }
 window.addEventListener("popstate", async ev => {
   if (ARRIVEE) return;
-  if (fiche && (enAttente.size || ficheModifiee)){ clearTimeout(minuteur); await enregistrer(); }
+  if (fiche && (enCours())){ clearTimeout(minuteur); await enregistrer(); }
   const id = ev.state?.fiche, f = id && toutes.find(e => e.id === id);
   if (f) ouvrirFiche(f, false);
   else { afficherListe(); fiche = null; await chargerFiches(); afficherFiches(); }
@@ -529,67 +544,91 @@ window.addEventListener("popstate", async ev => {
 function ouvrirFiche(f, empiler = true){
   noterHistorique(f, empiler);
   fiche = { ...f }; saisie = f.id ? saisieDe(f.id) : {}; enAttente = new Set(); ficheModifiee = false;
+  effectifs = {}; effAttente = new Set(); EFF_LU = false; EFF_ERR = null;
   lectureSeule = f.evaluateur !== user.id || role === "lecteur";
   $("#accueil").classList.add("hidden"); $("#fiche").classList.remove("hidden"); $("#pied").classList.remove("hidden");
   majBarreFiche();
   $("#lecture").textContent = lectureSeule ? `Fiche de ${nomDe(f.evaluateur)}, en lecture seule` : "";
-  $("#finale").checked = f.statut === "finale"; $("#finale").disabled = lectureSeule;
-  $("#suivante").classList.toggle("hidden", lectureSeule);
+  $("#suivante").classList.toggle("hidden", lectureSeule); $("#btn-enregistrer").classList.toggle("hidden", lectureSeule);
   $("#etat").textContent = lectureSeule ? "" : (f.id ? "Fiche reprise." : "Nouvelle fiche : elle sera créée à la première saisie.");
   construireGrille(); recalculer(); window.scrollTo(0, 0);
-  verifierDescription();
+  verifierDescription(); chargerEffectifs();
 }
+// (4.0) le jeu, sa sous-fiche (« jeu de base », « jeu all-in »), puis la configuration évaluée s'il y en a une
+const titreBarre = f => { const j = M.jeux.find(x => x.code === f.jeu) || {}; return [nomJeu(f.jeu), CONFIGS[j.configuration] || j.configuration || CONFIGS.base, cfgDe(f)].filter(Boolean).join(" · "); };
 function majBarreFiche(){
-  $("#titre-jeu").textContent = titreFiche(fiche);
+  $("#titre-jeu").textContent = $("#titre-jeu").title = titreBarre(fiche);
   $("#vers-jeu").href = "jeu.html?jeu=" + encodeURIComponent(fiche.jeu) + (cfgDe(fiche) ? "&config=" + encodeURIComponent(cfgDe(fiche)) : "");
+  $("#vers-decrire").href = "decrire.html?jeu=" + encodeURIComponent(fiche.jeu);
   $("#btn-config").classList.toggle("hidden", lectureSeule || !!cfgDe(fiche) || !fiche.id);   // depuis sa fiche de base, enregistrée
-  $("#finale").checked = fiche.statut === "finale"; $("#finale").disabled = lectureSeule;
+  $("#btn-supprimer").classList.toggle("hidden", role !== "proprietaire" || !fiche.id);
+  $("#btn-finale").classList.toggle("hidden", lectureSeule);
+  $("#btn-finale").textContent = fiche.statut === "finale" ? "Repasser la fiche en brouillon" : "Rendre la fiche finale";
 }
-$("#btn-config").addEventListener("click", nouvelleConfiguration);
+$("#btn-config").addEventListener("click", () => { outils(false); nouvelleConfiguration(); });
 // suppression sécurisée (18/10/2026, script 28) : propriétaire seulement, confirmation en deux temps, archive avant suppression
-$("#grille").addEventListener("click", async e => {
-  if (e.target.id !== "btn-supprimer" || role !== "proprietaire" || !fiche?.id) return;
+$("#btn-supprimer").addEventListener("click", async () => {
+  outils(false);
+  if (role !== "proprietaire" || !fiche?.id) return;
   const nb = Object.values(saisie).filter(v => v.valeur != null || v.sans_objet).length;
   const quoi = `${titreFiche(fiche)}\nÉvaluateur : ${nomDe(fiche.evaluateur)} · ${fiche.statut === "finale" ? "finale" : "brouillon"} · ${nb} axe${nb > 1 ? "s" : ""} saisi${nb > 1 ? "s" : ""}`;
   if (!confirm(`Supprimer cette fiche ?\n\n${quoi}\n\nElle sera archivée avant d'être supprimée.`)) return;
   const motif = prompt(`Pour confirmer, écris SUPPRIMER (en majuscules).\nTu peux ajouter un motif après, par exemple : SUPPRIMER doublon`);
   if (!motif || !/^SUPPRIMER\b/.test(motif.trim())){ $("#etat").textContent = "Suppression annulée."; return; }
-  clearTimeout(minuteur); enAttente = new Set(); ficheModifiee = false;
+  clearTimeout(minuteur); enAttente = new Set(); effAttente = new Set(); ficheModifiee = false;
   const { data, error } = await sb.rpc("prisme_supprimer_fiche", { p_fiche: fiche.id, p_motif: motif.trim().replace(/^SUPPRIMER\s*/, "") || null });
   if (error){ $("#etat").textContent = "Suppression refusée : " + error.message; return; }
   alert(data || "Fiche archivée puis supprimée.");
   $("#fiche").classList.add("hidden"); $("#pied").classList.add("hidden"); $("#accueil").classList.remove("hidden");
   fiche = null; await chargerFiches(); afficherFiches(); window.scrollTo(0, 0);
 });
-/* (3.38) sous 600 px : le menu « Outils ▾ » de la barre, et le pied replié */
-const barreFiche = $("#barre-fiche"), outilsBtn = $("#outils-btn");
+/* (4.0) le menu « Outils ▾ », à toutes les largeurs : il regroupe toutes les actions de la fiche */
+const outilsBtn = $("#outils-btn"), outilsMenu = $("#outils-menu");
 function outils(ouvrir, rendreFocus){
-  barreFiche.classList.toggle("outils-ouverts", ouvrir); outilsBtn.setAttribute("aria-expanded", ouvrir);
-  if (ouvrir) barreFiche.querySelector(".outils-groupe a, .outils-groupe button:not(.hidden), .outils-groupe select")?.focus();
+  outilsMenu.classList.toggle("hidden", !ouvrir); outilsBtn.setAttribute("aria-expanded", ouvrir);
+  if (ouvrir) outilsMenu.querySelector("button:not(.hidden), a")?.focus();
   else if (rendreFocus) outilsBtn.focus();
 }
-outilsBtn.addEventListener("click", () => outils(!barreFiche.classList.contains("outils-ouverts")));
-// Échap ferme le menu et rend la main au bouton ; un clic ailleurs le ferme
-barreFiche.addEventListener("keydown", e => { if (e.key === "Escape" && barreFiche.classList.contains("outils-ouverts")){ e.preventDefault(); outils(false, true); } });
-document.addEventListener("click", e => { if (barreFiche.classList.contains("outils-ouverts") && !barreFiche.contains(e.target)) outils(false); });
-// une action qui emmène ailleurs dans la page referme le menu (la case « Fiche finale » le laisse ouvert)
-barreFiche.addEventListener("click", e => { if (e.target.closest("#suivante, #tout-enrouler, #btn-article, #btn-recap, #btn-export")) outils(false); });
+outilsBtn.addEventListener("click", () => outils(outilsMenu.classList.contains("hidden")));
+// Échap ferme le menu et rend la main au bouton ; un clic ailleurs le ferme ; une action qui emmène ailleurs le referme
+$(".menu-outils").addEventListener("keydown", e => { if (e.key === "Escape" && !outilsMenu.classList.contains("hidden")){ e.preventDefault(); outils(false, true); } });
+document.addEventListener("click", e => { if (!outilsMenu.classList.contains("hidden") && !e.target.closest(".menu-outils")) outils(false); });
+outilsMenu.addEventListener("click", e => { if (e.target.closest("#suivante, #tout-enrouler, #btn-article, #btn-recap, #btn-export, #m-fiches")) outils(false); });
 $("#aller").addEventListener("change", () => outils(false));
-$("#pied").addEventListener("click", e => {
-  if (!e.target.closest(".pied-bascule")) return;
-  const replie = $("#pied").classList.toggle("replie");
-  e.target.setAttribute("aria-expanded", !replie); e.target.textContent = replie ? "Détails ▴" : "Replier ▾";
+// les fiches de ce jeu : la liste des fiches, filtrée sur ce jeu, toutes fiches confondues
+$("#m-fiches").addEventListener("click", async () => {
+  if (enCours()){ clearTimeout(minuteur); await enregistrer(); }
+  const nom = nomJeu(fiche.jeu); afficherListe(); try { history.replaceState(null, "", location.pathname); } catch (e){}
+  const toutesR = document.querySelector('input[name="qui"][value="toutes"]'); if (toutesR) toutesR.checked = true;
+  $("#f-texte").value = nom; fiche = null; await chargerFiches(); afficherFiches(); window.scrollTo(0, 0);
 });
-// (3.39) l'état de l'enregistrement reste visible menu fermé : un signe dans le bouton, le message complet en info-bulle
+// rendre la fiche finale : bloqué tant que la description est incomplète (l'explication s'affiche dessous)
+$("#btn-finale").addEventListener("click", () => {
+  if (lectureSeule || !fiche) return;
+  if (fiche.statut !== "finale" && descriptionBloque()){ $("#etat").textContent = messageDescription(); return; }
+  fiche.statut = fiche.statut === "finale" ? "brouillon" : "finale"; ficheModifiee = true; planifier();
+  majBarreFiche(); appliquerDescription(); recalculer();
+});
+// la barre du bas : « Détails » déplie les chapitres, la timeline résumée et les coûts ; « Enregistrer » enregistre tout de suite
+$("#pied").addEventListener("click", e => {
+  const b = e.target.closest(".pied-bascule"); if (!b) return;
+  const ouvert = !$("#pied-details").classList.toggle("hidden");
+  b.setAttribute("aria-expanded", ouvert); b.textContent = ouvert ? "Replier ▾" : "Détails ▴";
+});
+$("#btn-enregistrer").addEventListener("click", async () => {
+  if (lectureSeule || !fiche) return;
+  clearTimeout(minuteur); $("#etat").textContent = "Enregistrement…"; await enregistrer();
+});
+// (3.39) l'état de l'enregistrement reste visible menu fermé : un signe dans le bouton, le message dans la barre du bas
 new MutationObserver(() => {
   const t = $("#etat").textContent, m = $("#etat-mini");
   const [signe, cls] = /impossible|refus/i.test(t) ? ["!", "err"] : /^Enregistrement…/.test(t) ? ["…", "encours"] : /^Enregistré/.test(t) ? ["✓", "ok"] : ["", ""];
-  m.textContent = signe; m.className = "etat-mini " + cls; outilsBtn.title = t;
+  m.textContent = signe; m.className = "etat-mini " + cls; outilsBtn.title = t; $("#pied-etat").textContent = t;
 }).observe($("#etat"), { childList:true, characterData:true, subtree:true });
-// la marge du bas suit la hauteur du pied, pour que rien ne soit caché dessous
-if (window.ResizeObserver) new ResizeObserver(() => document.documentElement.style.setProperty("--pied-h", $("#pied").offsetHeight + "px")).observe($("#pied"));
+// la marge du bas suit la hauteur de la barre du bas, pour que rien ne soit caché dessous
+if (window.ResizeObserver) new ResizeObserver(() => document.body.style.paddingBottom = ($("#pied").offsetHeight + 24) + "px").observe($("#pied"));
 $("#retour").addEventListener("click", async () => {
-  if (enAttente.size || ficheModifiee){ clearTimeout(minuteur); await enregistrer(); }
+  if (enCours()){ clearTimeout(minuteur); await enregistrer(); }
   if (ARRIVEE){   // retour à la page d'origine (liste des jeux ou fiche du jeu)
     const ref = document.referrer && new URL(document.referrer, location.href);
     if (ref && ref.origin === location.origin && /\/jeux?\.html/.test(ref.pathname)) history.back();
@@ -607,7 +646,7 @@ const paliersDe = code => M.paliers.filter(p => p.axe === code).sort((a, b) => a
 const MECA = { liee:"paire liée : l'axe 2 juge l'écart à l'attente", independante:"deux notes indépendantes", crans5:"axe 2 en cinq crans",
   composite:"note composite", moyenne:"axe 2 : moyenne de deux notes", theme:"le thème est une nature : l'abstrait vaut 2,5",
   lien:"justesse et parole, prime à l'étendue" };
-const estEcart = (p, a) => a.rang === "2" && (p.mecanisme === "liee" || p.mecanisme === "crans5");
+const estEcart = (p, a) => a.echelle === "ecart" || (a.rang === "2" && (p.mecanisme === "liee" || p.mecanisme === "crans5"));   // (4.0) de −2 à +2
 const ecartTexte = v => (v > 0 ? "+" : v < 0 ? "−" : "±") + fmt(Math.abs(v));
 const aDeuxNotes = p => axesDe(p.code).some(a => a.echelle === "calcule");   // note de la paire calculée à partir de plusieurs axes
 // les deux colonnes d'une paire : à gauche les axes descriptifs (1, 1b, 1c…), à droite les axes évaluatifs saisis (2, 2a, 2b)
@@ -641,7 +680,7 @@ function aideAxe(a){
   return `${a.definition ? `<p>${esc(a.definition.charAt(0).toUpperCase() + a.definition.slice(1))}</p>` : ""}${a.methode ? `<h4>Comment noter</h4>${texteRiche(a.methode.replace(/(Repère[^\n]*|Étape 1[\s\S]*)$/, ""))}` : ""}`;
 }
 function methodeCalcul(p){
-  const ax = axesDe(p.code), s = saisie, v = r => s[ax.find(a => a.rang === r)?.code]?.valeur, c1 = ax.find(a => a.rang === "1")?.code;
+  const ax = axesDe(p.code), s = saisieCalcul(), v = r => s[ax.find(a => a.rang === r)?.code]?.valeur, c1 = ax.find(a => a.rang === "1")?.code;
   let h = "";
   if (p.mecanisme === "liee"){
     const a1 = v("1"), e = v("2");
@@ -686,14 +725,6 @@ function methodeCalcul(p){
   return h + `<p>La note d'un chapitre est la moyenne des notes de ses paires ; l'évaluation finale, la moyenne des trois chapitres.</p>`;
 }
 
-// notes factuelles proposées à partir du « jeu en chiffres »
-function suggestion(axe){
-  const d = fiche, palier = (x, seuils) => { let i = 0; while (i < seuils.length && x > seuils[i]) i++; return i; };
-  if ((axe === "POID1" || axe === "POI1") && d.pages) return { v: palier(d.pages, [2, 8, 16, 32, 64]), source: d.pages + " pages" + (d.poids_bgg ? ", poids BGG " + fmt(d.poids_bgg, 2) : "") + " ; le nombre de pages n'est qu'un guide" };
-  if (axe === "LIEN1d" && d.joueurs_max){ const n = Math.max(1, d.joueurs_max - (d.joueurs_min || d.joueurs_max) + 1);
-    return { v: palier(n, [1, 2, 4, 6, 9]), source: (d.joueurs_min ? d.joueurs_min + " à " : "jusqu'à ") + d.joueurs_max + " joueurs, soit " + n + " effectif" + (n > 1 ? "s" : "") }; }
-  return null;
-}
 function reperes(axe){
   const ids = id => toutes.find(e => e.id === id);
   // « Mes autres jeux » n'est plus affiché (3.31) : avec une base de 240 fiches, la ligne prenait trop de place
@@ -702,106 +733,147 @@ function reperes(axe){
   return [autres.length ? `Autres fiches sur ce jeu : ${autres.join(", ")}` : ""]
     .filter(Boolean).map(t => `<div class="reperes">${t}</div>`).join("");
 }
-function blocAxe(p, axe){
-  const ecart = estEcart(p, axe), s = saisie[axe.code], v = s?.valeur;
-  const min = ecart ? -2 : 0, max = ecart ? 2 : 5, milieu = ecart ? 0 : 2.5;
-  const grad = ecart ? ["−−","−","=","+","++"] : ["0","1","2","3","4","5"];
-  const pal = paliersDe(axe.code);
-  const sug = !lectureSeule && suggestion(axe.code);
-  const D = colDroite(p.code);
-  const porteCalc = D[0]?.code === axe.code;                                            // le bouton « méthode de calcul » va sur la première note évaluative
-  const porteRetenue = aDeuxNotes(p) && D.at(-1)?.code === axe.code;                    // note composée : sous la dernière note saisie
-  return `<div class="axe" data-axe="${esc(axe.code)}">
-    <div class="entete-axe"><div class="titre">${esc(axe.code)} — ${esc(axe.nom)}<button type="button" data-aide-axe="${esc(axe.code)}" aria-expanded="false" title="Ce que mesure cet axe, et comment le noter">?</button>${porteCalc ? `<button type="button" class="calc" data-panneau="calc-${esc(p.code)}" aria-expanded="false" title="Comment la note de la paire est calculée">Méthode de calcul</button>` : ""}</div>${axe.question ? `<div class="q">${esc(axe.question)}</div>` : ""}</div>
-    <div class="panneau hidden" id="aide-${esc(axe.code)}">${aideAxe(axe)}</div>${porteCalc ? `<div class="panneau hidden" id="calc-${esc(p.code)}"></div>` : ""}
-    <div class="ligne">${ecart ? `<span class="ecart-saisi" title="Écart saisi">${v == null ? "" : ecartTexte(v)}</span>` : ""}<div class="piste"><input type="range" min="${min}" max="${max}" step="0.1" value="${v ?? milieu}" class="${v == null ? "vierge" : ""}" data-axe="${esc(axe.code)}" aria-label="${esc(axe.nom)}" ${lectureSeule ? "disabled" : ""}>
-      <div class="grad">${grad.map(g => `<span>${g}</span>`).join("")}</div></div><span class="num"${ecart ? ' title="Note retenue, calculée à partir de l\'écart"' : ""}>${ecart ? "—" : v == null ? "—" : fmt(v)}</span></div>
-    ${porteRetenue ? `<div class="retenue" id="ret-${esc(p.code)}"></div>` : ""}
-    ${pal.length ? `<ul class="paliers">${pal.map(x => `<li data-v="${x.valeur}"><b>${esc(x.symbole || fmt(x.valeur, 0))}</b><span>${esc(x.libelle)}</span></li>`).join("")}</ul>` : ""}
-    ${sug ? `<div class="suggestion">D'après le jeu en chiffres (${esc(sug.source)}) : <b>${sug.v}</b>${v === sug.v ? " ✓" : `<button type="button" data-appliquer="${esc(axe.code)}" data-v="${sug.v}">Appliquer</button>`}</div>` : ""}
-    ${reperes(axe.code)}</div>`;
+/* (4.0) les « Décrit » : les axes de rang « 1… » de la paire, lus dans prisme_descriptions_axes (« Décrire le jeu »), en lecture seule */
+const decritDe = code => M.src?.axes?.[fiche.jeu]?.[code] || null;
+const nonDecrit = d => !d || (d.valeur == null && !d.sans_objet);
+// le libellé d'un palier ; une demi-valeur se dit « entre » ses deux voisins, comme dans « Décrire le jeu »
+// (le point final et la majuscule initiale d'un palier rédigé en phrase s'effacent dans « entre … et … »)
+function libellePalier(code, v){
+  if (v == null) return "";
+  const P = Object.fromEntries(paliersDe(code).map(x => [Number(x.valeur), x.libelle])), x = Math.round(v * 2) / 2;
+  const milieu = t => t.replace(/\.$/, "").replace(/^\p{Lu}(?!\p{Lu})/u, c => c.toLowerCase());
+  return x % 1 === 0 ? P[x] || "" : P[x - .5] && P[x + .5] ? `entre ${milieu(P[x - .5])} et ${milieu(P[x + .5])}` : "";
+}
+function blocDecrit(p){
+  const L = colGauche(p.code); if (!L.length) return "";
+  const lien = `<a href="decrire.html?jeu=${encodeURIComponent(fiche.jeu)}">Décrire le jeu</a>`;
+  return `<div class="decrits">${L.map(a => { const d = decritDe(a.code), v = d?.valeur == null ? null : Number(d.valeur);
+    if (nonDecrit(d)) return `<div class="decrit manque"><span class="mot">Décrit</span><span class="nom">${esc(a.nom)} : non décrit</span>${lien}</div>`;
+    const pal = d.sans_objet ? "" : libellePalier(a.code, v);
+    return `<div class="decrit" title="${esc(a.question || "")}"><span class="mot">Décrit</span><span class="nom">${esc(a.nom)} : <b>${d.sans_objet ? "sans objet" : virgule(v)}</b></span>${pal ? `<span class="pal">${esc(pal)}</span>` : ""}</div>`; }).join("")}</div>`;
+}
+/* (4.0) les trapèzes arrondis de « Décrire le jeu » : 0 à 5, ou −2 à +2 pour un écart, avec les demi-valeurs ;
+   les entiers en bas (petit côté en haut), les demi-valeurs au-dessus, chacune entre ses deux voisines ;
+   un seul bouton dans l'ordre de tabulation (la valeur choisie, sinon 0) : les flèches font le reste, demi-pas par demi-pas */
+const signe = (x, ecart) => ecart ? (x > 0 ? "+" : x < 0 ? "−" : "") + virgule(Math.abs(x)) : virgule(x);
+function echelle(v, ecart, nom, data, bloque){
+  const min = ecart ? -2 : 0, max = ecart ? 2 : 5, r = v == null ? null : Math.round(v * 2) / 2, tab = r ?? 0, ro = lectureSeule || bloque ? " disabled" : "";
+  const V = []; for (let x = min; x <= max; x += .5) V.push(x);
+  const forme = x => x % 1 !== 0
+    ? `<svg viewBox="0 0 44 25" aria-hidden="true"><polygon points="4,4 40,4 31.5,21 12.5,21"/><text x="22" y="15" text-anchor="middle" font-size="10.5">${signe(x, ecart)}</text></svg>`
+    : `<svg viewBox="0 0 44 35" aria-hidden="true"><polygon points="12.5,4 31.5,4 40,31 4,31"/><text x="22" y="26" text-anchor="middle" font-size="15">${signe(x, ecart)}</text></svg>`;
+  return `<div class="echelle-cadre"><div class="echelle" role="group" aria-label="${esc(nom)}, de ${signe(min, ecart)} à ${signe(max, ecart)}" data-min="${min}" data-max="${max}" ${data} style="grid-template-columns:repeat(${2 * (max - min + 1)},var(--d))">${V.map(x =>
+    `<button type="button" data-v="${x}" class="${x % 1 ? "demi" : ""}" style="grid-row:${x % 1 ? 1 : 2};grid-column-start:${2 * (x - min) + 1}" aria-pressed="${r === x}" aria-label="${signe(x, ecart)}" tabindex="${x === tab ? 0 : -1}"${ro}>${forme(x)}</button>`).join("")}</div></div>`;
+}
+const textePalierAvis = (a, v, ecart) => v == null ? "" : signe(Math.round(v * 2) / 2, ecart) + (libellePalier(a.code, v) ? " : " + libellePalier(a.code, v) : "");
+// un avis : la question de l'axe de rang « 2… » (ou de chaque sous-axe 2a, 2b), ses trapèzes, le palier choisi
+function blocAvis(p, a, plusieurs){
+  const v = saisie[a.code]?.valeur, ecart = estEcart(p, a);
+  return `<div class="axe" data-axe="${esc(a.code)}">${plusieurs ? `<span class="axe-nom">${esc(a.nom)}</span>` : ""}
+    <div class="q">${esc(a.question || a.nom)}<button type="button" data-aide-axe="${esc(a.code)}" aria-expanded="false" title="Ce que mesure cet axe, et comment le noter">?</button></div>
+    <div class="panneau hidden" id="aide-${esc(a.code)}">${aideAxe(a)}</div>
+    ${echelle(v, ecart, a.nom, `data-axe-echelle="${esc(a.code)}"`)}
+    <p class="palier" id="pal-${esc(a.code)}">${esc(textePalierAvis(a, v, ecart))}</p>${reperes(a.code)}</div>`;
+}
+function cartePaire(p){
+  const ax = axesDe(p.code), a1 = ax.find(a => a.rang === "1"), so = ax.some(a => saisie[a.code]?.sans_objet), D = colDroite(p.code), ro = lectureSeule ? " disabled" : "";
+  return `<article class="paire${so ? " sans-objet" : ""}" id="p-${esc(p.code)}" data-paire="${esc(p.code)}">
+    <div class="tete"><h3 data-replier="${esc(p.code)}" title="Enrouler ou dérouler la paire">${esc(p.nom)}</h3><span class="note-paire">Note de la paire <b id="note-${esc(p.code)}">—</b></span></div>
+    <div class="corps">${blocDecrit(p)}
+      ${D.map(a => blocAvis(p, a, D.length > 1)).join("")}
+      <div class="res" id="res-${esc(p.code)}"></div>
+      <div class="outils-paire"><label class="na-droite"><input type="checkbox" data-na="${esc(p.code)}"${so ? " checked" : ""}${ro}> Sans objet pour ce jeu</label>
+        <button type="button" data-panneau="aidep-${esc(p.code)}" aria-expanded="false">? En savoir plus</button>
+        <button type="button" data-panneau="calc-${esc(p.code)}" aria-expanded="false" title="Comment la note de la paire est calculée">Méthode de calcul</button></div>
+      <div class="panneau hidden" id="aidep-${esc(p.code)}">${aidePaire(p)}</div><div class="panneau hidden" id="calc-${esc(p.code)}"></div>
+      <div class="justif"><label for="j-${esc(p.code)}">Justification (facultative)</label>${boutonModeles(p, ax)}<button type="button" class="btn-modeles" data-prompt="paire" data-paire="${esc(p.code)}" title="Copie une demande à Claude pour rédiger ou améliorer cette justification">Demander à Claude</button>
+        <textarea id="j-${esc(p.code)}" rows="1" data-justif="${esc(a1.code)}"${ro} placeholder="Pourquoi ces notes ?">${esc(saisie[a1.code]?.commentaire || "")}</textarea>
+        <div class="modeles hidden" id="m-${esc(p.code)}"></div></div></div></article>`;
 }
 function construireGrille(){
-  const d = fiche, jeu = M.jeux.find(j => j.code === d.jeu) || {};
-  const champ = (k, l, t) => `<label class="ch ch-${k}"><span>${l}</span><input id="d-${k}" data-donnee="${k}" ${t === "texte" ? 'type="text"' : `type="number" min="0" step="${k === "prix" ? "0.05" : k === "poids_bgg" ? "0.01" : "1"}"`} value="${esc(d[k] ?? "")}" ${lectureSeule ? "disabled" : ""}></label>`;
-  const paire = (a, b, l, u) => `<div class="ch ch-paire"><span>${l}</span><div class="deux">${champ(a, "de", "")}<em>à</em>${champ(b, "", "")}${u ? `<em>${u}</em>` : ""}</div></div>`;
+  const d = fiche, jeu = M.jeux.find(j => j.code === d.jeu) || {}, ro = lectureSeule ? " disabled" : "";
   let ouvert = true; try { ouvert = localStorage.getItem("prisme_assistant") !== "ferme"; } catch (e){}
-  let h = `<section class="jeu-tete${lectureSeule ? " ro" : ""}">${jeu.image_url ? `<img src="${esc(jeu.image_url)}" alt="${esc(jeu.nom)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}
-    <div class="jeu-corps"><div class="jeu-titre"><h1>${esc(jeu.nom || d.jeu)}${cfgDe(d) ? ` <span class="cfg-nom">— ${esc(cfgDe(d))}</span>` : ""}</h1>${jeu.bgg_id ? `<a class="btn ghost bgg" href="https://boardgamegeek.com/boardgame/${esc(jeu.bgg_id)}" target="_blank" rel="noopener">BoardGameGeek ↗</a>` : ""}</div>
-      ${jeu.bgg_id ? "" : `<p class="aide">Pas encore de lien BoardGameGeek ni d'image : ils s'ajoutent dans la console (onglet Jeux).</p>`}
-      <div class="chiffres"><div class="ch-titre">Le jeu en chiffres <button type="button" class="aide-btn" data-panneau="aide-chiffres" aria-expanded="false" title="À quoi servent ces données">?</button></div>
-      <div class="panneau hidden" id="aide-chiffres"><p class="aide">Ces données proposent les notes factuelles (POIDS, étendue de LIEN) et servent à la timeline. Prix : le prix public actuel, avec l'enseigne et la date ; il n'entre pas dans la note ; il donne l'élan d'achat de la timeline et le coût par session.
-        Meilleur effectif : le nombre de joueurs auquel le jeu est le meilleur ; c'est l'effectif de référence (RYT1 et la timeline se notent à cet effectif). Parties pour tout exploiter : le nombre minimum de parties pour avoir fait le tour de ce que la boîte propose (circuits, scénarios, modules, factions…) ; au-delà de 15, la timeline use la variété d'autant moins vite.
-        Contenu à usage unique : une campagne, des scénarios qu'on ne rejoue pas ; une fois tout joué, le jeu est rangé (sa durée de vie ne dépasse pas ce contenu).
-        Configuration : une fiche peut évaluer le jeu avec ses extensions (bouton « + Configuration » depuis ta fiche de base) ; elle a sa propre courbe, à côté de celle de la boîte de base.</p></div>
-      <div class="ch-grille">${champ("pages", "Pages des règles")}${champ("poids_bgg", "Poids BGG")}${champ("prix", "Prix (€)")}${champ("prix_source", "Source du prix (enseigne, date)", "texte")}
-        <div class="ch-groupe">${paire("joueurs_min", "joueurs_max", "Joueurs")}${champ("effectif_reference", "Meilleur effectif")}</div>${paire("duree_min", "duree_max", "Durée", "min")}${champ("contenu_parties", "Parties pour tout exploiter")}
-        <label class="ch ch-unique"><span>Contenu</span><span class="case"><input type="checkbox" id="d-contenu_unique" data-donnee="contenu_unique" ${d.contenu_unique ? "checked" : ""} ${lectureSeule ? "disabled" : ""}> à usage unique (campagne)</span></label>
-        ${cfgDe(d) ? champ("configuration", "Configuration évaluée", "texte") : ""}</div></div></div></section>
-    ${blocArticle(jeu)}
-    <details class="assistant" id="assistant"${ouvert ? " open" : ""}><summary><h2>Assistant de rédaction</h2></summary>
-    <p class="aide">Les boutons préparent une demande complète pour Claude (le jeu, tes notes, tes textes, la charte de rédaction) et la copient dans le presse-papiers : colle-la dans une conversation sur claude.ai, puis recolle sa réponse ici. Rien n'est remplacé sans ton accord. Chaque paire a aussi son bouton « Demander à Claude ».
-      La charte se règle dans la console (Textes généraux, section « Assistant de rédaction »).</p>
-    <div class="ass-boutons"><button type="button" class="btn ghost" data-prompt="justifs">Demande : toutes les justifications</button>
-      <button type="button" class="btn ghost" data-prompt="article">Demande : un article</button>
-      ${lectureSeule ? "" : `<button type="button" class="btn" id="btn-coller">Coller la réponse de Claude</button>`}</div>
-    <p class="msg" id="ass-msg"></p></details>`;
-  $("#aller").innerHTML = '<option value="">Aller à…</option><option value="article">Article</option>';
-  M.chapitres.forEach(c => {
-    h += `<div class="chapitre" style="--chap:var(--${c.code})" data-chap="${esc(c.code)}"><h2 data-replier-chap="${esc(c.code)}" title="Enrouler ou dérouler toutes les paires du chapitre">${esc(c.nom)}<span class="fleche-chap">▾</span><span class="moy" id="moy-${c.code}"></span></h2>`;
-    M.paires.filter(p => p.chapitre === c.code).forEach(p => {
-      const ax = axesDe(p.code), a1 = ax.find(a => a.rang === "1"), so = ax.some(a => saisie[a.code]?.sans_objet);
-      const colonne = L => L.length === 1 ? blocAxe(p, L[0]) : `<div class="pile">${L.map(a => blocAxe(p, a)).join("")}</div>`;
-      const corps = colonne(colGauche(p.code)) + colonne(colDroite(p.code));
-      h += `<div class="paire${so ? " sans-objet" : ""}${lectureSeule ? " ro" : ""}" id="p-${esc(p.code)}" data-paire="${esc(p.code)}">
-        <div class="tete" data-replier="${esc(p.code)}"><h3>${esc(p.nom)}</h3><span class="meca">${MECA[p.mecanisme] || ""}</span><span class="note" id="note-${esc(p.code)}"></span><span class="fleche">▾</span></div>
-        <div class="corps"><div class="ligne1"><p class="mesure">${esc(premierePhrase(p.definition))}</p>
-          <label class="na-droite"><input type="checkbox" data-na="${esc(p.code)}" ${so ? "checked" : ""} ${lectureSeule ? "disabled" : ""}> Sans objet pour ce jeu</label></div>
-        <div class="outils"><button type="button" data-panneau="aidep-${esc(p.code)}" aria-expanded="false">? En savoir plus</button></div>
-        <div class="panneau hidden" id="aidep-${esc(p.code)}">${aidePaire(p)}</div>
-        <div class="axes">${corps}</div><div class="res" id="res-${esc(p.code)}"></div>
-        <div class="justif"><label for="j-${esc(p.code)}">Justification (facultative)</label>${boutonModeles(p, ax)}<button type="button" class="btn-modeles" data-prompt="paire" data-paire="${esc(p.code)}" title="Copie une demande à Claude pour rédiger ou améliorer cette justification">Demander à Claude</button>
-          <textarea id="j-${esc(p.code)}" rows="1" data-justif="${esc(a1.code)}" ${lectureSeule ? "disabled" : ""} placeholder="Pourquoi ces notes ?">${esc(saisie[a1.code]?.commentaire || "")}</textarea>
-          <div class="modeles hidden" id="m-${esc(p.code)}"></div></div></div></div>`;
-      $("#aller").insertAdjacentHTML("beforeend", `<option value="p-${esc(p.code)}">${esc(c.nom)} — ${esc(p.nom)}</option>`);
-    });
-    h += "</div>";
+  $("#aller").innerHTML = '<option value="">…</option>';
+  // « Mon avis » : les trois familles, la première dépliée
+  let h = `<section class="bloc" id="mon-avis"><h2>Mon avis</h2><p class="chapo">${M.paires.length} paires, en ${M.chapitres.length} familles. Pour chacune : ce que le jeu annonce (décrit), puis ce que tu en as vécu.</p>`;
+  M.chapitres.forEach((c, i) => {
+    h += `<details class="famille" id="fam-${esc(c.code)}" data-chap="${esc(c.code)}"${i === 0 ? " open" : ""}><summary><span class="pic">${pictoFam(c.code)}</span>
+      <span class="fam-t"><b>${esc(c.nom)}</b><i>${esc(FAMILLES[c.code] || "")}</i></span><span class="fam-note" id="moy-${esc(c.code)}"></span>${CHEVRON}</summary><div class="cartes">`;
+    M.paires.filter(p => p.chapitre === c.code).forEach(p => { h += cartePaire(p); $("#aller").insertAdjacentHTML("beforeend", `<option value="p-${esc(p.code)}">${esc(c.nom)} — ${esc(p.nom)}</option>`); });
+    h += `</div></details>`;
   });
-  h += `<section class="timeline" id="timeline"><h2>Timeline</h2>
-    <p class="aide">La vie du jeu, de la vitrine à l'étagère : à chaque jalon, le flow (stimulation moins friction, sur 10) calculé à partir des notes de la fiche, au meilleur effectif.
-      Elle se met à jour à chaque saisie. <a href="encyclopedie.html#temps" target="_blank" rel="noopener">La méthode dans l'encyclopédie</a>.</p>
-    <div id="tl-corps"></div></section>
-    <section class="timeline" id="spectro"><h2>Spectromètre</h2>
-    <p class="aide">Le jeu vu par chacun des 60 profils de PRISMEplayer (tempérament et style). Chacun range les cinq moteurs (3 pour le dominant, 1,5 pour le second, 0,5 pour les deux suivants) et en fuit un :
-      les paires qu'aiment ses moteurs pèsent plus, dans la note comme dans la courbe ; ce qu'il fuit devient friction à partir de son moment.
-      <a href="encyclopedie.html#croisement" target="_blank" rel="noopener">La méthode dans l'encyclopédie</a>.</p>
-    <div id="sp-corps"></div></section>`;
-  $("#aller").insertAdjacentHTML("beforeend", '<option value="timeline">Timeline</option><option value="spectro">Spectromètre</option>');
-  h += `<section class="carnet"><h2>Carnet d'article</h2>
-    <p class="aide">Idées, anecdotes de partie, citations, plan : tout ce qui servira à écrire un article sur ce jeu. Visible par les autres évaluateurs, comme le reste de la fiche.</p>
-    <textarea id="carnet" ${lectureSeule ? "disabled" : ""}>${esc(fiche.notes_article || "")}</textarea></section>`;
-  if (role === "proprietaire" && fiche.id) h += `<section class="zone-danger"><h2>Supprimer cette fiche</h2>
-    <p>Réservé au propriétaire. La fiche et toutes ses notes sont d'abord copiées dans les archives (restaurables par SQL), puis supprimées.</p>
-    <button type="button" class="btn danger" id="btn-supprimer">Supprimer cette fiche…</button></section>`;
+  h += `</section>
+    <section class="bloc" id="a-combien"><h2>À combien ?</h2><div id="eff-corps"></div></section>
+    <section class="bloc parties"><label for="d-contenu_parties"><b>Parties pour tout exploiter</b></label>
+      <input id="d-contenu_parties" data-donnee="contenu_parties" type="number" min="0" step="1" value="${esc(d.contenu_parties ?? "")}"${ro}>
+      <i>Provisoire : sera calculé à partir de la complexité, du contenu et de la variabilité.</i></section>
+    <details class="repli" id="timeline"><summary><span><b>Timeline</b> <i>· sa vie dans le temps</i></span>${CHEVRON}</summary><div class="repli-corps">
+      <p class="aide">La vie du jeu, de la vitrine à l'étagère : à chaque jalon, le flow (stimulation moins friction, sur 10) calculé à partir des notes de la fiche, au meilleur effectif.
+        Elle se met à jour à chaque saisie. <a href="encyclopedie.html#temps" target="_blank" rel="noopener">La méthode dans l'encyclopédie</a>.</p>
+      <div id="tl-corps"></div></div></details>
+    <details class="repli" id="spectro"><summary><span><b>Spectromètre</b> <i>· pour chaque moteur</i></span>${CHEVRON}</summary><div class="repli-corps">
+      <p class="aide">Le jeu vu par chacun des 60 profils de PRISMEplayer (tempérament et style). Chacun range les cinq moteurs (3 pour le dominant, 1,5 pour le second, 0,5 pour les deux suivants) et en fuit un :
+        les paires qu'aiment ses moteurs pèsent plus, dans la note comme dans la courbe ; ce qu'il fuit devient friction à partir de son moment.
+        <a href="encyclopedie.html#croisement" target="_blank" rel="noopener">La méthode dans l'encyclopédie</a>.</p>
+      <div id="sp-corps"></div></div></details>
+    <details class="repli" id="article"><summary><span><b>Article</b> <i>· la critique, avec l'assistant de rédaction</i> <span class="etat-art" id="art-mots"></span></span>${CHEVRON}</summary><div class="repli-corps">
+      <details class="assistant" id="assistant"${ouvert ? " open" : ""}><summary><h2>Assistant de rédaction</h2></summary>
+      <p class="aide">Les boutons préparent une demande complète pour Claude (le jeu, tes notes, tes textes, la charte de rédaction) et la copient dans le presse-papiers : colle-la dans une conversation sur claude.ai, puis recolle sa réponse ici. Rien n'est remplacé sans ton accord. Chaque paire a aussi son bouton « Demander à Claude ».
+        La charte se règle dans la console (Textes généraux, section « Assistant de rédaction »).</p>
+      <div class="ass-boutons"><button type="button" class="btn ghost" data-prompt="justifs">Demande : toutes les justifications</button>
+        <button type="button" class="btn ghost" data-prompt="article">Demande : un article</button>
+        ${lectureSeule ? "" : `<button type="button" class="btn" id="btn-coller">Coller la réponse de Claude</button>`}</div>
+      <p class="msg" id="ass-msg"></p></details>
+      ${blocArticle(jeu)}
+      <div class="carnet"><h3>Carnet d'article</h3>
+        <p class="aide">Idées, anecdotes de partie, citations, plan : tout ce qui servira à écrire un article sur ce jeu. Visible par les autres évaluateurs, comme le reste de la fiche.</p>
+        <textarea id="carnet"${ro}>${esc(fiche.notes_article || "")}</textarea></div></div></details>`;
+  $("#aller").insertAdjacentHTML("beforeend", '<option value="a-combien">À combien ?</option><option value="timeline">Timeline</option><option value="spectro">Spectromètre</option><option value="article">Article</option>');
   $("#grille").innerHTML = h;
-  document.querySelectorAll(".axe").forEach(majPaliers);
-  M.paires.forEach(p => { if (estComplete(p, saisie)) document.getElementById("p-" + p.code).classList.add("repliee"); });   // ce qui est fait se replie
-  aligner(); majToutEnrouler(); appliquerDescription();
+  $("#art-mots").textContent = ARTICLE_OK ? "· " + motsArticle(fiche.article) : "";
+  majToutEnrouler(); appliquerDescription(); dessinerEffectifs();
 }
-// curseurs alignés : l'en-tête (titre + question) des deux colonnes prend la même hauteur
-function aligner(){
-  document.querySelectorAll(".paire:not(.repliee) .axes").forEach(g => {
-    const [cg, cd] = g.children, premier = c => c && (c.matches(".axe") ? c : c.querySelector(".axe"))?.querySelector(".entete-axe");
-    const gauche = premier(cg), droite = premier(cd);
-    if (!gauche || !droite) return;
-    gauche.style.minHeight = droite.style.minHeight = "";
-    if (window.innerWidth <= 640) return;
-    const h = Math.max(gauche.offsetHeight, droite.offsetHeight) + "px";
-    gauche.style.minHeight = droite.style.minHeight = h;
-  });
+
+/* ---------------- « À combien ? » (4.0) : une note par effectif, de joueurs_min à joueurs_max de la description ----------------
+   enregistrée dans prisme_evaluations_effectifs ; le meilleur effectif s'en déduit et va aussi dans effectif_reference (le plus petit à égalité) */
+let effectifs = {}, effAttente = new Set(), EFF_LU = false, EFF_ERR = null;
+async function chargerEffectifs(){
+  const f = fiche; effectifs = {}; EFF_ERR = null;
+  // une fiche neuve n'a pas encore de notes : on vérifie seulement que la table répond
+  const { data, error } = f.id ? await sb.from(EFF.table).select("*").eq(EFF.fiche, f.id) : await sb.from(EFF.table).select(EFF.fiche).limit(1);
+  if (fiche !== f) return;   // une autre fiche a été ouverte entre-temps
+  if (error){ EFF_ERR = error.message; console.warn("PRISME : notes par effectif illisibles", error.message); }
+  else if (f.id) data.forEach(x => effectifs[Number(x[EFF.joueurs])] = x[EFF.note] == null ? null : Number(x[EFF.note]));
+  EFF_LU = true; dessinerEffectifs();
 }
-window.addEventListener("resize", () => { clearTimeout(aligner.t); aligner.t = setTimeout(aligner, 150); });
-document.fonts?.ready.then(() => aligner());
+// les effectifs proposés : ceux de la description (sinon ceux de la fiche), dix lignes au plus, la dernière « n et plus »
+function effectifsProposes(){
+  const d = M.src?.descriptions?.[fiche.jeu], deD = d?.joueurs_min != null && d?.joueurs_max != null;
+  const min = Number(deD ? d.joueurs_min : fiche.joueurs_min), max = Number(deD ? d.joueurs_max : fiche.joueurs_max);
+  if (!(min >= 1) || !(max >= min)) return { L:[] };
+  const L = []; for (let n = min; n <= max && L.length < 10; n++) L.push({ n, nom: L.length === 9 && max > n ? `${n} et plus` : `${n} joueur${n > 1 ? "s" : ""}` });
+  return { L, min, max, source: deD ? "la description" : "la fiche" };
+}
+function meilleurEffectif(){
+  const N = Object.entries(effectifs).filter(([, v]) => v != null).map(([k, v]) => [Number(k), v]); if (!N.length) return null;
+  const m = Math.max(...N.map(x => x[1])); return N.filter(x => x[1] === m).map(x => x[0]).sort((a, b) => a - b);
+}
+function majEffectifReference(){
+  const B = meilleurEffectif();   // sans aucune note : la valeur existante est gardée
+  if (B && fiche.effectif_reference !== B[0]){ fiche.effectif_reference = B[0]; ficheModifiee = true; }
+}
+function dessinerEffectifs(){
+  const box = $("#eff-corps"); if (!box || !fiche) return;
+  if (!EFF_LU){ box.innerHTML = `<p class="aide">Lecture des effectifs…</p>`; return; }
+  const { L, min, max, source } = effectifsProposes(), B = meilleurEffectif();
+  const lien = `<a href="decrire.html?jeu=${encodeURIComponent(fiche.jeu)}">Décrire le jeu</a>`;
+  const meilleur = B ? `<b>${B.join(" et ")}</b>` : fiche.effectif_reference != null ? `${esc(fiche.effectif_reference)} <i>(la valeur déjà enregistrée dans la fiche)</i>` : `<i>calculé dès qu'un effectif est noté</i>`;
+  box.innerHTML = (L.length ? `<p class="aide" style="font-style:italic;margin:0 0 4px">Ton avis sur chaque effectif que le jeu propose (de ${min} à ${max}, d'après ${source}). Laisse vide ce que tu n'as pas joué. Le meilleur effectif s'en déduit.</p>`
+      + L.map(x => `<div class="effectif"><span>${esc(x.nom)}</span>${echelle(effectifs[x.n] ?? null, false, x.nom, `data-eff="${x.n}"`, !!EFF_ERR)}</div>`).join("")
+    : `<p class="aide">Le nombre de joueurs n'est pas encore décrit : ${lien}.</p>`)
+    + `<div class="meilleur"><b>Meilleur effectif :</b> ${meilleur}</div>`
+    + (EFF_ERR ? `<p class="msg err">Les notes par effectif ne peuvent pas être lues ni enregistrées pour l'instant : ${esc(EFF_ERR)}</p>` : "");
+}
 /* ---- textes modèles : les exemples rédigés dans le modop (justifications, amorces littéraires) ---- */
 const modelesDe = ax => M.exemples.filter(x => ax.some(a => a.code === x.axe) && (x.justification || x.amorce));
 function boutonModeles(p, ax){
@@ -825,14 +897,6 @@ function ajouterTexte(champ, texte){
   champ.focus();
 }
 
-function majPaliers(div){
-  const code = div.dataset.axe, v = saisie[code]?.valeur, lis = div.querySelectorAll(".paliers li");
-  if (!lis.length) return;
-  const ref = v ?? Number(div.querySelector("input").value);
-  let best = null; lis.forEach(li => { li.classList.remove("proche", "choisi"); if (!best || Math.abs(+li.dataset.v - ref) < Math.abs(+best.dataset.v - ref)) best = li; });
-  best.classList.add(v == null ? "proche" : "choisi");
-}
-
 /* ---------------- calcul ---------------- */
 function noteDe(p, s){ return noteDePaire(p, s, axesDe(p.code)); }   // calcul partagé : timeline.js
 const estComplete = (p, s) => noteDe(p, s).complete;
@@ -851,34 +915,24 @@ function calculer(s){
 function recalculer(){
   const c = calculer(saisieCalcul());
   Object.values(c.parChap).flat().forEach(({ p, note, so, na1, seuil, complete }) => {
-    $("#res-" + p.code).innerHTML = so ? "Sans objet pour ce jeu." : note != null ? "" :
-      na1 ? "Axe 2 sans objet : l'axe 1 vaut 0." :
-      seuil ? `Axe 2 sans objet : l'axe 1 est sous ${fmt(p.seuil_axe1, 0)}. Si le manque est ressenti par la table, note l'axe 2 à 1 ou moins : il comptera.` : "En attente des notes.";
-    $("#note-" + p.code).textContent = so || na1 || seuil ? "sans objet" : note != null ? fmt(note, 2) : "";
+    const res = document.getElementById("res-" + p.code); if (!res) return;
+    res.innerHTML = so ? "Sans objet pour ce jeu." : note != null ? "" :
+      na1 ? "Axe 2 sans objet : l'axe décrit vaut 0." :
+      seuil ? `Axe 2 sans objet : l'axe décrit est sous ${fmt(p.seuil_axe1, 0)}. Si le manque est ressenti par la table, note l'axe 2 à 1 ou moins : il comptera.` : "En attente des notes.";
+    $("#note-" + p.code).textContent = so || na1 || seuil ? "sans objet" : note != null ? fmt(note, 2) : "—";
     const calc = document.getElementById("calc-" + p.code); if (calc && !calc.classList.contains("hidden")) calc.innerHTML = methodeCalcul(p);
-    if (p.mecanisme === "liee" || p.mecanisme === "crans5"){
-      const a2 = axesDe(p.code).find(a => a.rang === "2"), n2 = a2 && document.querySelector(`.axe[data-axe="${CSS.escape(a2.code)}"] .num`);
-      if (n2) n2.textContent = so || na1 ? "—" : note != null ? fmt(note, 2) : "—";
-    }
-    const ret = document.getElementById("ret-" + p.code);
-    if (ret) ret.innerHTML = so || na1 || seuil ? "Sans objet" : "";
     document.getElementById("p-" + p.code).classList.toggle("faite", complete);
   });
-  M.chapitres.forEach(ch => { const v = c.chap[ch.code]; $("#moy-" + ch.code).textContent = v == null ? "" : fmt(v, 2) + " / 5"; });
+  M.chapitres.forEach(ch => { const v = c.chap[ch.code], el = document.getElementById("moy-" + ch.code); if (el) el.textContent = v == null ? "—" : fmt(v, 2); });
   $("#prog").style.width = (c.faites / M.paires.length * 100) + "%";
-  $("#prog-txt").textContent = `${c.faites} / ${M.paires.length}`;
-  $("#pied").innerHTML = M.chapitres.map(ch => `<div style="--c:var(--${esc(ch.code)})"><small>${esc(ch.nom)}</small><b>${c.chap[ch.code] == null ? "—" : fmt(c.chap[ch.code], 2) + "<small>/5</small>"}</b></div>`).join("") +
-    `<div class="final"><small>Évaluation finale</small><b>${c.finale == null ? "—" : fmt(c.finale, 2) + "<small>/5</small>"}</b></div>`;
-  const tl = majTimeline();
-  $("#pied").insertAdjacentHTML("beforeend", `<div class="tl-pied" data-tl title="${tl.c ? esc(syntheseTimeline(tl.c)) : "Timeline incomplète"}"><small>Timeline</small><b>${tl.c ? piedTimeline(tl.c) : "—"}</b></div>`);
-  const k = tl.c ? coutFiche(tl.c) : null;
-  $("#pied").insertAdjacentHTML("beforeend", `<div class="cout-pied" title="${esc(k ? texteCout(k) + " (prix ÷ durée de vie calculée ; un classique est compté sur " + HORIZON_CLASSIQUE + " sessions)" : "Coût par session : il faut le prix et une timeline complète")}"><small>Coût par session</small><b>${k ? texteCout(k).replace(/ par session.*/, "").replace("moins de ", "< ") : "—"}</b></div>`);
-  // coût d'effort (prototype, 13/10/2026) : règles, manuels, logistique, hasard toléré, renouvellement, attente ; moyenne quadratique sur 5
-  const ce = coutEffort(entreesTimeline().n);
-  $("#pied").insertAdjacentHTML("beforeend", `<div class="cout-pied" title="Coût d'effort (prototype) : ce qu'il faut investir pour jouer — règles (POID1), manuels (DOC1), logistique (MAN1), hasard (MECA1a, à moitié), renouvellement (VAR1), attente (RYT1). Sur 5 ; c'est la gêne du Triomphant."><small>Coût d'effort <span class="proto">proto</span></small><b>${ce == null ? "—" : fmt(ce, 2) + "<small>/5</small>"}</b></div>`);
-  // (3.38) sous 600 px, le pied se replie sur la note finale ; ce bouton (masqué au-dessus) le déplie
-  const replie = $("#pied").classList.contains("replie");
-  $("#pied").insertAdjacentHTML("beforeend", `<button type="button" class="pied-bascule" aria-expanded="${!replie}">${replie ? "Détails ▴" : "Replier ▾"}</button>`);
+  $("#sous-titre").textContent = `${lectureSeule ? "Fiche de " + nomDe(fiche.evaluateur) : "Ma fiche"} · ${fiche.statut === "finale" ? "finale" : "brouillon"} · ${c.faites} paire${c.faites > 1 ? "s" : ""} sur ${M.paires.length}`;
+  $("#pied-finale").textContent = c.finale == null ? "—" : fmt(c.finale, 2);
+  // « Détails » : les notes de chapitres, la timeline résumée, le coût par session et le coût d'effort (prototype, 13/10/2026)
+  const tl = majTimeline(), k = tl.c ? coutFiche(tl.c) : null, ce = coutEffort(entreesTimeline().n);
+  $("#pied-details").innerHTML = M.chapitres.map(ch => `<div><small>${esc(ch.nom)}</small><b>${c.chap[ch.code] == null ? "—" : fmt(c.chap[ch.code], 2) + "<small>/5</small>"}</b></div>`).join("")
+    + `<div title="${tl.c ? esc(syntheseTimeline(tl.c)) : "Timeline incomplète"}"><small>Timeline</small><b>${tl.c ? piedTimeline(tl.c) : "—"}</b></div>`
+    + `<div title="${esc(k ? texteCout(k) + " (prix ÷ durée de vie calculée ; un classique est compté sur " + HORIZON_CLASSIQUE + " sessions)" : "Coût par session : il faut le prix et une timeline complète")}"><small>Coût par session</small><b>${k ? texteCout(k).replace(/ par session.*/, "").replace("moins de ", "< ") : "—"}</b></div>`
+    + `<div title="Coût d'effort (prototype) : ce qu'il faut investir pour jouer — règles (POID1), manuels (DOC1), logistique (MAN1), hasard (MECA1a, à moitié), renouvellement (VAR1), attente (RYT1). Sur 5 ; c'est la gêne du Triomphant."><small>Coût d'effort <span class="proto">proto</span></small><b>${ce == null ? "—" : fmt(ce, 2) + "<small>/5</small>"}</b></div>`;
   return c;
 }
 
@@ -954,42 +1008,47 @@ document.addEventListener("click", e => {
   const b = e.target.closest("[data-sp]");
   if (b){ e.preventDefault(); spChoisi = b.dataset.sp || null; majTimeline(); if (spChoisi) document.querySelector("#sp-corps .sp-courbe")?.scrollIntoView({ behavior:"smooth", block:"start" }); return; }
   const o = e.target.closest("[data-ouvrir]");
-  if (o){ e.preventDefault(); const el = document.getElementById("p-" + o.dataset.ouvrir); el.classList.remove("repliee"); aligner(); el.scrollIntoView({ behavior:"smooth" }); return; }
+  if (o){ e.preventDefault(); montrerPaire(o.dataset.ouvrir); return; }
   if (e.target.closest("[data-tl]")) document.getElementById("timeline")?.scrollIntoView({ behavior:"smooth" });
 });
 
-/* ---------------- saisie ---------------- */
+/* ---------------- saisie (4.0) : les trapèzes, la case « sans objet », les justifications ---------------- */
 function poser(code, v){
-  const s = saisie[code] || {};
-  saisie[code] = { valeur: Math.round(v * 10) / 10, sans_objet: s.sans_objet || false, commentaire: s.commentaire ?? null };
+  const s = saisie[code] || {}, a = M.axes.find(x => x.code === code), p = M.paires.find(x => x.code === a.paire), ecart = estEcart(p, a);
+  saisie[code] = { valeur: v == null ? null : Math.round(v * 10) / 10, sans_objet: s.sans_objet || false, commentaire: s.commentaire ?? null };
   const div = document.querySelector(`.axe[data-axe="${CSS.escape(code)}"]`);
-  const inp = div.querySelector("input"); inp.value = v; inp.classList.remove("vierge");
-  const es = div.querySelector(".ecart-saisi");
-  if (es) es.textContent = ecartTexte(v); else div.querySelector(".num").textContent = fmt(v);
-  majPaliers(div);
-  const sg = div.querySelector(".suggestion"); if (sg){ const b = sg.querySelector("button"); if (b && +b.dataset.v === v) b.replaceWith(" ✓"); }
+  if (div){ div.querySelector(".echelle-cadre").outerHTML = echelle(v, ecart, a.nom, `data-axe-echelle="${esc(code)}"`); div.querySelector(".palier").textContent = textePalierAvis(a, v, ecart); }
   recalculer(); planifier(code);
 }
+// une valeur choisie (ou null : effacée) sur une échelle : l'avis d'un axe, ou la note d'un effectif ; le focus reste sur la valeur
+function choisir(ech, v, n){
+  if (ech.dataset.axeEchelle){ const code = ech.dataset.axeEchelle; poser(code, v);
+    document.querySelector(`.echelle[data-axe-echelle="${CSS.escape(code)}"] button[data-v="${n}"]`)?.focus(); }
+  else if (ech.dataset.eff){ const k = Number(ech.dataset.eff); effectifs[k] = v; effAttente.add(k); majEffectifReference(); dessinerEffectifs(); planifier();
+    document.querySelector(`.echelle[data-eff="${k}"] button[data-v="${n}"]`)?.focus(); }
+}
+$("#grille").addEventListener("click", e => {
+  const b = e.target.closest(".echelle button"); if (!b || b.disabled || lectureSeule) return;
+  const n = Number(b.dataset.v);
+  choisir(b.closest(".echelle"), b.getAttribute("aria-pressed") === "true" ? null : n, n);   // un second clic sur la valeur choisie l'efface
+});
+// au clavier : flèche gauche ou droite, la demi-valeur voisine est choisie
+$("#grille").addEventListener("keydown", e => {
+  const b = e.target.closest(".echelle button"); if (!b || b.disabled || lectureSeule || !["ArrowLeft", "ArrowRight"].includes(e.key)) return;
+  e.preventDefault();
+  const ech = b.closest(".echelle"), n = Math.min(+ech.dataset.max, Math.max(+ech.dataset.min, +b.dataset.v + (e.key === "ArrowRight" ? .5 : -.5)));
+  choisir(ech, n, n);
+});
 $("#grille").addEventListener("input", e => {
   if (lectureSeule) return;
-  if (e.target.type === "range") poser(e.target.dataset.axe, Number(e.target.value));
-  else if (e.target.dataset.justif){ const c = e.target.dataset.justif, s = saisie[c] || { valeur:null, sans_objet:false };
+  if (e.target.dataset.justif){ const c = e.target.dataset.justif, s = saisie[c] || { valeur:null, sans_objet:false };
     saisie[c] = { ...s, commentaire: e.target.value.trim() || null }; e.target.rows = Math.min(5, 1 + Math.floor(e.target.value.length / 90)); planifier(c); }
   else if (e.target.dataset.donnee){ const k = e.target.dataset.donnee;
     fiche[k] = e.target.type === "checkbox" ? e.target.checked : e.target.value.trim() === "" ? null : (e.target.type === "text" ? e.target.value.trim() : Number(e.target.value));
-    if (k === "configuration"){ if (!fiche.configuration){ fiche.configuration = cfgDe(fiche) ?? e.target.defaultValue; return; } majBarreFiche(); }   // une configuration garde un nom
     ficheModifiee = true; planifier();
-    rafraichirSuggestions(); if (["contenu_parties", "contenu_unique", "prix", "duree_min", "duree_max"].includes(k)) recalculer(); }
+    if (["contenu_parties", "contenu_unique", "prix", "duree_min", "duree_max"].includes(k)) recalculer(); }
   else if (e.target.id === "carnet"){ fiche.notes_article = e.target.value; ficheModifiee = true; planifier(); }
 });
-function rafraichirSuggestions(){
-  ["POID1","LIEN1d"].forEach(code => {
-    const div = document.querySelector(`.axe[data-axe="${code}"]`); if (!div) return;
-    div.querySelector(".suggestion")?.remove();
-    const sug = suggestion(code), v = saisie[code]?.valeur; if (!sug) return;
-    div.querySelector(".paliers")?.insertAdjacentHTML("afterend", `<div class="suggestion">D'après le jeu en chiffres (${esc(sug.source)}) : <b>${sug.v}</b>${v === sug.v ? " ✓" : `<button type="button" data-appliquer="${code}" data-v="${sug.v}">Appliquer</button>`}</div>`);
-  });
-}
 $("#grille").addEventListener("click", e => {
   const bm = e.target.closest("[data-modeles]");
   if (bm){ afficherModeles(bm.dataset.modeles); return; }
@@ -1000,10 +1059,6 @@ $("#grille").addEventListener("click", e => {
     else { ajouterTexte($("#carnet"), `${x.amorce}  (modèle : ${nomJeu(x.jeu)})`); ins.textContent = "Ajouté ✓"; }
     return;
   }
-  const li = e.target.closest(".paliers li");
-  if (li && !lectureSeule){ poser(li.closest(".axe").dataset.axe, Number(li.dataset.v)); return; }
-  const ap = e.target.closest("[data-appliquer]");
-  if (ap){ poser(ap.dataset.appliquer, Number(ap.dataset.v)); return; }
   const pan = e.target.closest("[data-panneau], [data-aide-axe]");
   if (pan){
     const id = pan.dataset.panneau || "aide-" + pan.dataset.aideAxe, box = document.getElementById(id), ouvrir = box.classList.contains("hidden");
@@ -1011,7 +1066,7 @@ $("#grille").addEventListener("click", e => {
     box.classList.toggle("hidden", !ouvrir); pan.setAttribute("aria-expanded", String(ouvrir)); return;
   }
   const t = e.target.closest("[data-replier]");
-  if (t){ document.getElementById("p-" + t.dataset.replier).classList.toggle("repliee"); aligner(); majToutEnrouler(); }
+  if (t) document.getElementById("p-" + t.dataset.replier).classList.toggle("repliee");
 });
 $("#grille").addEventListener("change", e => {
   if (!e.target.dataset.na || lectureSeule) return;
@@ -1019,24 +1074,21 @@ $("#grille").addEventListener("change", e => {
   axesDe(p).forEach(a => { const s = saisie[a.code] || {}; saisie[a.code] = { valeur: s.valeur ?? null, sans_objet: on, commentaire: s.commentaire ?? null }; planifier(a.code); });
   document.getElementById("p-" + p).classList.toggle("sans-objet", on); recalculer();
 });
-// clavier : sur un curseur, les chiffres posent directement la note (0 à 5 ; pour un écart, 1 à 5 = −− à ++)
-document.addEventListener("keydown", e => {
-  const t = e.target; if (lectureSeule || t.type !== "range" || !/^[0-5]$/.test(e.key)) return;
-  const n = Number(e.key), ecart = t.min === "-2";
-  if (ecart && n === 0) return;
-  e.preventDefault(); poser(t.dataset.axe, ecart ? n - 3 : n);
-});
+// une paire : sa famille s'ouvre, elle se déroule, on y va
+function montrerPaire(code){
+  const el = document.getElementById("p-" + code); if (!el) return;
+  el.closest("details.famille").open = true; el.classList.remove("repliee"); majToutEnrouler(); el.scrollIntoView({ behavior:"smooth" });
+}
 $("#suivante").addEventListener("click", () => {
-  const p = M.paires.find(x => !estComplete(x, saisie));
-  M.paires.forEach(x => { if (estComplete(x, saisie)) document.getElementById("p-" + x.code).classList.add("repliee"); });
+  const s = saisieCalcul(), p = M.paires.find(x => !estComplete(x, s));
   if (!p){ $("#etat").textContent = "Toutes les paires sont remplies."; return; }
-  const el = document.getElementById("p-" + p.code); el.classList.remove("repliee"); aligner(); el.scrollIntoView({ behavior:"smooth" });
-  el.querySelector('input[type="range"]')?.focus({ preventScroll:true });
+  montrerPaire(p.code); document.querySelector(`#p-${CSS.escape(p.code)} .echelle button[tabindex="0"]`)?.focus({ preventScroll:true });
 });
-$("#aller").addEventListener("change", e => { if (e.target.value){ const el = document.getElementById(e.target.value); if (el.tagName === "DETAILS") el.open = true; el.classList.remove("repliee"); aligner(); el.scrollIntoView({ behavior:"smooth" }); } e.target.value = ""; });
-$("#finale").addEventListener("change", e => {
-  if (e.target.checked && descriptionBloque()){ e.target.checked = false; $("#etat").textContent = messageDescription(); return; }
-  fiche.statut = e.target.checked ? "finale" : "brouillon"; ficheModifiee = true; planifier(); appliquerDescription(); });
+$("#aller").addEventListener("change", e => {
+  const v = e.target.value; e.target.value = ""; if (!v) return;
+  if (v.startsWith("p-")) return montrerPaire(v.slice(2));
+  const el = document.getElementById(v); if (!el) return; if (el.tagName === "DETAILS") el.open = true; el.scrollIntoView({ behavior:"smooth" });
+});
 
 /* ---------------- la description du jeu, requise pour rendre finale ou publier (3.35, 29/10/2026) ---------------- */
 // complète = dans prisme_jeux_mecanismes, au moins un matériel, un mode de jeu, une fin de partie, et un mécanisme ou une combinaison majeur ;
@@ -1058,17 +1110,27 @@ async function verifierDescription(){
 }
 const descriptionBloque = () => !!fiche && !lectureSeule && fiche.statut !== "finale" && DESC.jeu === fiche.jeu && DESC.manque.length > 0;
 const messageDescription = () => `La description du jeu est à compléter avant de publier : il manque ${DESC.manque.join(", ").replace(/, ([^,]*)$/, " et $1")}.`;
-// le bandeau, et les deux actions qui publient (« Fiche finale », « Publié sur la vitrine ») : grisées mais atteignables au clavier, l'explication au survol et au focus
+// (4.0) le bandeau de description (vert : complète ; orangé : ce qui manque), et les deux actions qui publient
+// (« Rendre la fiche finale », « Publié sur la vitrine ») : grisées mais atteignables, l'explication dessous et au survol
 function appliquerDescription(){
-  const box = $("#desc-manque"); if (!fiche || !box) return;
+  const box = $("#bandeau-desc"); if (!fiche || !box) return;
   const bloque = descriptionBloque(), msg = bloque ? messageDescription() : "";
-  box.classList.toggle("hidden", !bloque);
-  box.innerHTML = bloque ? `<p class="desc-manque" id="desc-msg">${esc(msg)} <a href="decrire.html?jeu=${encodeURIComponent(fiche.jeu)}">Décrire le jeu →</a></p>` : "";
-  const marquer = el => { if (!el) return;
-    if (bloque){ el.setAttribute("aria-disabled", "true"); el.setAttribute("aria-describedby", "desc-msg"); } else { el.removeAttribute("aria-disabled"); el.removeAttribute("aria-describedby"); }
-    el.closest("label").title = msg; };
-  marquer($("#finale"));
-  const pub = $("#art-publie"); if (pub && !fiche.publie) marquer(pub);   // une fiche déjà publiée peut toujours être retirée
+  const desc = M.src?.descriptions?.[fiche.jeu];
+  const manquent = M.axes.filter(a => /^1/.test(a.rang || "") && M.paires.some(p => p.code === a.paire) && nonDecrit(decritDe(a.code)));
+  const quoi = [...(DESC.jeu === fiche.jeu ? DESC.manque : []),
+    ...(!desc ? [] : manquent.length ? [`${manquent.length === 1 ? "une note décrite" : manquent.length + " notes décrites"} (${manquent.map(a => a.nom).join(", ")})`] : [])];
+  const et = L => L.join(", ").replace(/, ([^,]*)$/, " et $1");
+  const lien = `<a href="decrire.html?jeu=${encodeURIComponent(fiche.jeu)}">Décrire le jeu</a>`, phrase = `<i>Les « Décrit » rappellent ce qui est partagé par tous ; ici, tu donnes ton avis.</i>`;
+  box.innerHTML = !desc ? `<div class="bandeau manque"><span><b>! Ce jeu n'a pas encore de description.</b> ${phrase}</span>${lien}</div>`
+    : `<div class="bandeau ${quoi.length ? "manque" : "ok"}"><span>${quoi.length ? `<b>! Description à compléter :</b> il manque ${esc(et(quoi))}.` : "<b>✓ Description complète.</b>"} ${phrase}</span>${lien}</div>`;
+  const bf = $("#btn-finale");
+  if (bloque){ bf.setAttribute("aria-disabled", "true"); bf.setAttribute("aria-describedby", "finale-aide"); bf.title = msg; }
+  else { bf.removeAttribute("aria-disabled"); bf.removeAttribute("aria-describedby"); bf.title = ""; }
+  $("#finale-aide").textContent = msg;
+  const pub = $("#art-publie");
+  if (pub && !fiche.publie){   // une fiche déjà publiée peut toujours être retirée
+    if (bloque){ pub.setAttribute("aria-disabled", "true"); pub.setAttribute("aria-describedby", "finale-aide"); } else { pub.removeAttribute("aria-disabled"); pub.removeAttribute("aria-describedby"); }
+    pub.closest("label").title = msg; }
 }
 window.addEventListener("pageshow", e => { if (e.persisted) verifierDescription(); });
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") verifierDescription(); });
@@ -1102,20 +1164,30 @@ async function enregistrer(){
     const { error } = await sb.from("prisme_evaluation_valeurs").upsert(lignes, { onConflict: "evaluation,axe" });
     if (error){ codes.forEach(c => enAttente.add(c)); $("#etat").textContent = "Enregistrement impossible : " + error.message + ". Nouvel essai à la prochaine saisie."; return; }
   }
+  // (4.0) les notes par effectif : posées, ou effacées (la ligne est supprimée)
+  const E = [...effAttente]; effAttente = new Set();
+  if (E.length && !EFF_ERR){
+    const pose = E.filter(n => effectifs[n] != null), ote = E.filter(n => effectifs[n] == null);
+    const r1 = pose.length ? await sb.from(EFF.table).upsert(pose.map(n => ({ [EFF.fiche]: fiche.id, [EFF.joueurs]: n, [EFF.note]: effectifs[n] })), { onConflict: EFF.fiche + "," + EFF.joueurs }) : {};
+    const r2 = !r1.error && ote.length ? await sb.from(EFF.table).delete().eq(EFF.fiche, fiche.id).in(EFF.joueurs, ote) : {};
+    const err = r1.error || r2.error;
+    if (err){ E.forEach(n => effAttente.add(n)); $("#etat").textContent = "Enregistrement des effectifs impossible : " + err.message + ". Nouvel essai à la prochaine saisie."; return; }
+  }
   $("#etat").textContent = "Enregistré à " + new Date().toLocaleTimeString("fr-FR", { hour:"2-digit", minute:"2-digit" }).replace(":", "h") + ".";
 }
-window.addEventListener("beforeunload", e => { if (enAttente.size || ficheModifiee){ e.preventDefault(); e.returnValue = ""; } });
+window.addEventListener("beforeunload", e => { if (enCours()){ e.preventDefault(); e.returnValue = ""; } });
 
-/* ---------------- enrouler / dérouler : par chapitre, ou tout ---------------- */
-function enrouler(paires, fermer){ paires.forEach(el => el.classList.toggle("repliee", fermer)); aligner(); majToutEnrouler(); }
-function majToutEnrouler(){ const L = [...document.querySelectorAll(".paire")]; $("#tout-enrouler").textContent = L.length && L.every(el => el.classList.contains("repliee")) ? "Tout dérouler" : "Tout enrouler"; }
-$("#grille").addEventListener("click", e => {
-  const h = e.target.closest("[data-replier-chap]"); if (!h) return;
-  const L = [...document.querySelectorAll(`.chapitre[data-chap="${CSS.escape(h.dataset.replierChap)}"] .paire`)];
-  enrouler(L, L.some(el => !el.classList.contains("repliee")));
+/* ---------------- enrouler / dérouler (4.0) : les familles ; une paire s'enroule d'un clic sur son nom ---------------- */
+function majToutEnrouler(){ const L = [...document.querySelectorAll("details.famille")]; $("#tout-enrouler").textContent = L.length && L.every(d => !d.open) ? "Tout dérouler" : "Tout enrouler"; }
+$("#tout-enrouler").addEventListener("click", () => {
+  const L = [...document.querySelectorAll("details.famille")], fermer = L.some(d => d.open);
+  L.forEach(d => d.open = !fermer); if (!fermer) document.querySelectorAll(".paire.repliee").forEach(el => el.classList.remove("repliee"));
+  majToutEnrouler();
 });
-$("#tout-enrouler").addEventListener("click", () => { const L = [...document.querySelectorAll(".paire")]; enrouler(L, L.some(el => !el.classList.contains("repliee"))); });
-document.addEventListener("toggle", e => { if (e.target.id === "assistant") try { localStorage.setItem("prisme_assistant", e.target.open ? "ouvert" : "ferme"); } catch (x){} }, true);
+document.addEventListener("toggle", e => {
+  if (e.target.id === "assistant") try { localStorage.setItem("prisme_assistant", e.target.open ? "ouvert" : "ferme"); } catch (x){}
+  if (e.target.matches?.("details.famille")) majToutEnrouler();
+}, true);
 
 /* ---------------- assistant de rédaction : demandes pour Claude, et retour de ses réponses ---------------- */
 // la charte : textes de la section « Assistant de rédaction » (prisme_textes), modifiables dans la console
@@ -1140,10 +1212,10 @@ function contexteJeu(){
   return t;
 }
 function textePaire(p, avecJustif = true){
-  const n = noteDe(p, saisie), ax = axesDe(p.code).filter(a => a.echelle !== "calcule");
+  const sc = saisieCalcul(), n = noteDe(p, sc), ax = axesDe(p.code).filter(a => a.echelle !== "calcule");
   let t = `### ${p.code} — ${p.nom} : ${n.so ? "sans objet pour ce jeu" : n.note == null ? (n.na1 || n.seuil ? "axe 2 sans objet" : "pas encore notée") : "note retenue " + fmt(n.note, 2) + " / 5"}\n`;
   t += `Ce que mesure la paire : ${premierePhrase(p.definition)}\n`;
-  ax.forEach(a => { const v = saisie[a.code]?.valeur; if (v == null) return;
+  ax.forEach(a => { const v = sc[a.code]?.valeur; if (v == null) return;
     t += `- ${a.code} ${a.nom} (${a.question || ""}) : ${estEcart(p, a) ? "écart " + ecartTexte(v) : fmt(v)}${palierTexte(a, v) ? " — « " + palierTexte(a, v) + " »" : ""}\n`; });
   if (avecJustif && justifDe(p)) t += `Justification actuelle de l'évaluateur : « ${justifDe(p)} »\n`;
   return t;
@@ -1261,13 +1333,10 @@ function motsArticle(html){
   const n = texteDe(b.innerHTML).split(" ").filter(Boolean).length; return n ? n + " mot" + (n > 1 ? "s" : "") : "à écrire";
 }
 function blocArticle(jeu){
-  let ouvert = true; try { ouvert = localStorage.getItem("prisme_article") !== "ferme"; } catch (e){}
-  if (!ARTICLE_OK) return `<details class="article-bloc" id="article"><summary><h2>Article</h2><span class="etat-art">pas encore disponible</span></summary>
-    <p class="aide">L'article demande le script SQL 40 (une colonne « article » dans la base). Une fois le script passé, recharge la page.</p></details>`;
+  if (!ARTICLE_OK) return `<p class="aide">L'article demande le script SQL 40 (une colonne « article » dans la base). Une fois le script passé, recharge la page.</p>`;
   const ro = lectureSeule;
   const b = (cmd, t, titre, fort) => `<button type="button" data-art="${cmd}" title="${esc(titre)}"${fort ? ' class="fort"' : ""}>${t}</button>`;
-  return `<details class="article-bloc" id="article"${ouvert ? " open" : ""}><summary><h2>Article</h2><span class="etat-art" id="art-mots">${motsArticle(fiche.article)}</span></summary>
-    <div class="art-outils">${ro ? "" : b("preparer", "Préparer l'article", "Pose l'encadré PRISME (chiffres, notes, durée de vie, coût) et un plan à remplir ; rien n'est effacé", true) + '<span class="sep"></span>' +
+  return `<div class="art-outils">${ro ? "" : b("preparer", "Préparer l'article", "Pose l'encadré PRISME (chiffres, notes, durée de vie, coût) et un plan à remplir ; rien n'est effacé", true) + '<span class="sep"></span>' +
       b("h1", "Titre", "Titre de l'article") + b("h2", "Intertitre", "Intertitre") + b("p", "Texte", "Paragraphe normal") + b("bold", "<b>G</b>", "Gras") + b("italic", "<i>I</i>", "Italique") +
       b("insertUnorderedList", "• Liste", "Liste à puces") + '<span class="sep"></span>' + b("imgjeu", "Image du jeu", "Insère l'image de la boîte, à gauche du texte") +
       b("img", "Image…", "Insère une image à partir de son adresse (clic droit sur une image du web : « Copier l'adresse de l'image »)") + b("lien", "Lien…", "Transforme le texte sélectionné en lien") +
@@ -1277,7 +1346,7 @@ function blocArticle(jeu){
     ${PUBLI_OK ? `<div class="art-pub"><label><input type="checkbox" id="art-publie" ${fiche.publie ? "checked" : ""} ${ro ? "disabled" : ""}> Publié sur la vitrine go2games</label>
       <a href="../go2games/article.html?id=${esc(fiche.id || "")}" target="_blank" rel="noopener" id="art-voir" class="${fiche.publie && fiche.id ? "" : "hidden"}">Voir sur la vitrine ↗</a>
       <span class="aide">La vitrine est lisible sans compte : elle montre l'article, l'image du jeu et l'encadré PRISME (note, durée de vie, coût), jamais le carnet ni les justifications.</span></div>` : ""}
-    <p class="art-aide">Enregistré automatiquement, comme le reste de la fiche. ${ro ? "" : "Les textes en gris du plan sont des consignes : remplace-les. "}Les intertitres sont libres : mets les tiens. <a href="guide.html" target="_blank" rel="noopener">Le guide en cinq étapes</a>.</p></details>`;
+    <p class="art-aide">Enregistré automatiquement, comme le reste de la fiche. ${ro ? "" : "Les textes en gris du plan sont des consignes : remplace-les. "}Les intertitres sont libres : mets les tiens. <a href="guide.html" target="_blank" rel="noopener">Le guide en cinq étapes</a>.</p>`;
 }
 // l'encadré PRISME : ce que la fiche sait du jeu, en langage de joueur
 // la source de l'encadré : ta fiche si elle est complète ; sinon la meilleure autre fiche du même jeu (finale d'abord), dite dans l'encadré
@@ -1333,7 +1402,7 @@ function inserer(html){
 function majArticle(){
   const ed = $("#article-ed"); if (!ed || lectureSeule) return;
   fiche.article = texteDe(ed.innerHTML) || ed.querySelector("img") ? nettoyer(ed.innerHTML) : null;   // ce qui est enregistré est toujours nettoyé
-  $("#art-mots").textContent = motsArticle(fiche.article);
+  $("#art-mots").textContent = "· " + motsArticle(fiche.article);
   ficheModifiee = true; planifier();
 }
 // la version pour Word : styles en ligne, image flottante en « align »
@@ -1402,7 +1471,6 @@ $("#grille").addEventListener("paste", e => {   // collage depuis Word ou le web
   inserer(html ? nettoyer(html) : "<p>" + esc(txt || "").replace(/\n{2,}/g, "</p><p>").replace(/\n/g, "<br>") + "</p>");
   majArticle();
 });
-$("#grille").addEventListener("toggle", e => { if (e.target.id === "article") try { localStorage.setItem("prisme_article", e.target.open ? "ouvert" : "ferme"); } catch (x){} }, true);
 $("#btn-article").addEventListener("click", () => { const a = $("#article"); if (a){ a.open = true; a.scrollIntoView({ behavior:"smooth" }); } });
 
 /* ---------------- la vitrine go2games (3.33, 19/10/2026, script 41) ----------------
@@ -1444,9 +1512,10 @@ $("#grille").addEventListener("change", e => {
 
 /* ---------------- récapitulatif et export ---------------- */
 function lignesRecap(){
+  const sc = saisieCalcul();
   return M.paires.map(p => {
-    const ax = axesDe(p.code), n = noteDe(p, saisieCalcul()), a1 = ax.find(a => a.rang === "1");
-    const notes = ax.filter(a => a.echelle !== "calcule").map(a => { const v = saisie[a.code]?.valeur; return `${a.code} ${v == null ? "—" : (estEcart(p, a) && v > 0 ? "+" : "") + fmt(v)}`; }).join(" · ");
+    const ax = axesDe(p.code), n = noteDe(p, sc), a1 = ax.find(a => a.rang === "1");
+    const notes = ax.filter(a => a.echelle !== "calcule").map(a => { const v = sc[a.code]?.valeur; return `${a.code} ${v == null ? "—" : (estEcart(p, a) && v > 0 ? "+" : "") + fmt(v)}`; }).join(" · ");
     return { p, n, notes, justif: saisie[a1.code]?.commentaire || "", chap: M.chapitres.find(c => c.code === p.chapitre).nom };
   });
 }
@@ -1461,7 +1530,7 @@ $("#btn-recap").addEventListener("click", () => {
     ${L.map(l => `<tr class="${l.n.complete ? "" : "manque"}"><td><span class="aller" data-aller="${esc(l.p.code)}">${esc(l.p.nom)}</span></td><td>${l.notes}</td>
       <td>${l.n.so ? "sans objet" : l.n.note == null ? (l.n.na1 || l.n.seuil ? "axe 2 sans objet" : "—") : fmt(l.n.note, 2)}</td><td>${esc(l.justif)}</td></tr>`).join("")}</tbody></table>`;
   $("#recap").querySelectorAll("[data-aller]").forEach(x => x.addEventListener("click", () => {
-    $("#dlg-recap").close(); const el = document.getElementById("p-" + x.dataset.aller); el.classList.remove("repliee"); el.scrollIntoView({ behavior:"smooth" }); }));
+    $("#dlg-recap").close(); montrerPaire(x.dataset.aller); }));
   $("#dlg-recap").showModal();
 });
 $("#fermer-recap").addEventListener("click", () => $("#dlg-recap").close());
