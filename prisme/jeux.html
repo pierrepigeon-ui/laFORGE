@@ -55,9 +55,9 @@ tr.attente td{color:var(--muted)}
   <p class="version"><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p>
 </main>
 
-<script src="timeline.js?v=3.9"></script>
+<script src="timeline.js?v=3.10"></script>
 <script>
-const VERSION = { numero:"1.9", date:"2026-10-31 22:32" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.10", date:"2026-11-03 18:54" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -106,7 +106,7 @@ async function demarrer(user){
   const t2 = performance.now();
   const parJeu = {}; d.fiches.forEach(f => (parJeu[f.jeu] ??= []).push(f));
   lignes = d.jeux.map(j => {
-    const F = parJeu[j.code] || [], r2 = resumeJeu(F, d.paires, d.axes, profil);
+    const F = parJeu[j.code] || [], r2 = resumeJeu(F, d.paires, d.axes, profil, d.src);
     const T = toutes.filter(f => f.jeu === j.code);
     const cfg = new Set((d.configurations || []).filter(f => f.jeu === j.code).map(configDe)).size, refJ = d.reference?.[j.code];
     return { j, n:F.length, r:r2, toutes:T.length, mienne:T.find(f => f.evaluateur === user.id && configDe(f) === (refJ || null)) || T.find(f => f.evaluateur === user.id), cfg, refJ };

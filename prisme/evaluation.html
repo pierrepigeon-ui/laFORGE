@@ -320,9 +320,9 @@ details.article-bloc > summary .etat-art{font-size:13px;color:var(--muted)}
 <dialog id="dlg-recap"><div id="recap"></div><p style="text-align:right;margin:12px 0 0"><button class="btn" id="fermer-recap" type="button">Fermer</button></p></dialog>
 <div class="wrap"><p class="version"><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p></div>
 
-<script src="timeline.js?v=3.9"></script>
+<script src="timeline.js?v=3.10"></script>
 <script>
-const VERSION = { numero:"3.39", date:"2026-10-31 22:39" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.40", date:"2026-11-03 18:54" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -390,6 +390,7 @@ async function demarrer(){
     [M.chapitres, M.paires, M.axes, M.paliers, M.exemples, M.jeux, M.notes] = await Promise.all([lire("prisme_chapitres","ordre"), lire("prisme_paires","ordre"),
       lire("prisme_axes","ordre"), lire("prisme_paliers","valeur"), lire("prisme_exemples","ordre"), lire("prisme_jeux","nom"), lire("prisme_notes","ordre")]);
     try { M.textes = await lire("prisme_textes","ordre"); } catch (e){ M.textes = []; }   // la charte de l'assistant de rédaction
+    M.src = await lireSourceCalcul(sb);   // (3.40) la source des calculs : la fiche, ou la description si bascule_description vaut 1
     const { data: n } = await sb.rpc("prisme_noms"); (n || []).forEach(x => noms[x.user_id] = x.nom);
     try { [PL.moteurs, PL.temperaments, PL.styles] = await Promise.all([lire("prisme_player_moteurs","ordre"), lire("prisme_player_temperaments","ordre"),
       lire("prisme_player_styles","ordre")]); } catch (e){ PL.erreur = e.message; }
@@ -440,7 +441,7 @@ function afficherFiches(){
   $("#f-compte").textContent = L.length === total ? `${total} fiche${total > 1 ? "s" : ""}` : `${L.length} sur ${total}`;
   if (!total){ $("#fiches").innerHTML = `<p class="aide">${miennes ? "Tu n'as encore évalué aucun jeu." : "Aucune fiche pour l'instant."}</p>`; return; }
   if (!L.length){ $("#fiches").innerHTML = `<p class="aide">Aucune fiche ne correspond à ces critères.</p>`; return; }
-  const R = L.map(e => ({ e, c: calculer(saisieDe(e.id)) }));
+  const R = L.map(e => ({ e, c: calculer(pourCalcul(e, saisieDe(e.id)).saisie) }));
   const cles = { jeu: x => norm(nomJeu(x.e.jeu) + " " + (cfgDe(x.e) || "")), eval: x => norm(nomDe(x.e.evaluateur)), etat: x => x.e.statut,
     paires: x => x.c.faites, note: x => x.c.finale ?? -1, modifie: x => x.e.modifie_le };
   const k = cles[tri.cle]; R.sort((a, b) => { const u = k(a), v = k(b); return (u < v ? -1 : u > v ? 1 : 0) * tri.sens; });
@@ -835,6 +836,10 @@ function majPaliers(div){
 /* ---------------- calcul ---------------- */
 function noteDe(p, s){ return noteDePaire(p, s, axesDe(p.code)); }   // calcul partagé : timeline.js
 const estComplete = (p, s) => noteDe(p, s).complete;
+// (3.40) ce qu'utilisent les calculs : la fiche, ou « Décrire le jeu » quand le réglage bascule_description vaut 1 (timeline.js) ;
+// les valeurs affichées dans la fiche restent celles de la fiche
+const pourCalcul = (f, s) => entreesDeFiche(f, s, M.axes, M.src);
+const saisieCalcul = () => pourCalcul(fiche, saisie).saisie;
 function calculer(s){
   const parChap = {}; let faites = 0;
   M.paires.forEach(p => { const n = noteDe(p, s); if (n.complete) faites++; (parChap[p.chapitre] ??= []).push({ p, ...n }); });
@@ -844,7 +849,7 @@ function calculer(s){
   return { parChap, chap, finale: cs.length ? cs.reduce((a, b) => a + b, 0) / cs.length : null, faites };
 }
 function recalculer(){
-  const c = calculer(saisie);
+  const c = calculer(saisieCalcul());
   Object.values(c.parChap).flat().forEach(({ p, note, so, na1, seuil, complete }) => {
     $("#res-" + p.code).innerHTML = so ? "Sans objet pour ce jeu." : note != null ? "" :
       na1 ? "Axe 2 sans objet : l'axe 1 vaut 0." :
@@ -879,9 +884,9 @@ function recalculer(){
 
 /* ---------------- timeline ---------------- */
 // rassemble les notes utiles à la timeline (calcul partagé : timeline.js)
-function entreesTimeline(){ const e = entreesFiche(saisie, M.paires, M.axes, { contenu_parties:fiche.contenu_parties, contenu_unique:fiche.contenu_unique, prix:fiche.prix }); return { n:e.n, manque:e.manque, absents:e.absents }; }
+function entreesTimeline(){ const x = pourCalcul(fiche, saisie), e = entreesFiche(x.saisie, M.paires, M.axes, x.extra); return { n:e.n, manque:e.manque, absents:e.absents }; }
 // coût par session : prix ÷ durée de vie d'après la timeline (plafonnée à 50 sessions)
-const coutFiche = c => coutParPartie(fiche.prix, c, fiche.duree_min, fiche.duree_max);
+const coutFiche = c => coutParPartie(pourCalcul(fiche, saisie).extra.prix, c, fiche.duree_min, fiche.duree_max);
 // pied de page : α, puis β et γ s'il y a une chute (sinon « pas de chute »), puis la durée de vie
 function piedTimeline(c){
   // pied : la hauteur de l'apogée et la durée de vie, sans les coordonnées des jalons (13/10/2026)
@@ -915,7 +920,7 @@ let spChoisi = null;   // profil dont la courbe est affichée
 function majSpectro(n){
   const box = document.getElementById("sp-corps"); if (!box) return null;
   if (!PL.styles.length){ box.innerHTML = `<p class="tl-attente">Modèle PRISMEplayer illisible${PL.erreur ? " : " + esc(PL.erreur) : ""}.</p>`; return null; }
-  const paires = Object.values(calculer(saisie).parChap).flat().map(x => ({ chap:x.p.chapitre, code:x.p.code, note:x.note }));
+  const paires = Object.values(calculer(saisieCalcul()).parChap).flat().map(x => ({ chap:x.p.chapitre, code:x.p.code, note:x.note }));
   const r = spectrometre(n, paires, PL), Mo = Object.fromEntries(PL.moteurs.map(m => [m.code, m]));
   const maj = t => { t = String(t ?? ""); return t.charAt(0).toUpperCase() + t.slice(1); };
   const coul = m => (matchMedia("(prefers-color-scheme: dark)").matches ? m.couleur_sombre : m.couleur) || m.couleur || "var(--accent)";
@@ -1123,7 +1128,7 @@ const regle = code => charte(code) || CHARTE_DEFAUT[code];
 const palierTexte = (a, v) => { const L = paliersDe(a.code); if (!L.length || v == null) return ""; const x = L.reduce((b, y) => Math.abs(y.valeur - v) < Math.abs(b.valeur - v) ? y : b); return x.libelle; };
 const justifDe = p => saisie[axesDe(p.code).find(a => a.rang === "1").code]?.commentaire || "";
 function contexteJeu(){
-  const d = fiche, jeu = M.jeux.find(j => j.code === d.jeu) || {}, c = calculer(saisie), tl = majTimeline();
+  const d = fiche, jeu = M.jeux.find(j => j.code === d.jeu) || {}, c = calculer(saisieCalcul()), tl = majTimeline();
   const chiffres = [d.pages && `${d.pages} pages de règles`, d.prix != null && d.prix !== "" && `${fmt(d.prix, 0)} €`, d.joueurs_max && `${d.joueurs_min || "?"} à ${d.joueurs_max} joueurs`,
     d.effectif_reference && `meilleur à ${d.effectif_reference}`, d.duree_max && `${d.duree_min || "?"} à ${d.duree_max} minutes`, d.contenu_parties && `${d.contenu_parties} parties pour tout exploiter`].filter(Boolean).join(", ");
   let t = `## Le jeu\n${jeu.nom || d.jeu}${jeu.bgg_id ? ` (BoardGameGeek n° ${jeu.bgg_id})` : ""}${chiffres ? "\n" + chiffres : ""}\n`;
@@ -1277,17 +1282,16 @@ function blocArticle(jeu){
 // l'encadré PRISME : ce que la fiche sait du jeu, en langage de joueur
 // la source de l'encadré : ta fiche si elle est complète ; sinon la meilleure autre fiche du même jeu (finale d'abord), dite dans l'encadré
 function sourceEncadre(){
-  const ext = f => ({ contenu_parties:f.contenu_parties, contenu_unique:f.contenu_unique, prix:f.prix });
-  const complete = x => !entreesFiche(x.s, M.paires, M.axes, ext(x.f)).manque.length && calculer(x.s).finale != null;
+  const complete = x => { const y = pourCalcul(x.f, x.s); return !entreesFiche(y.saisie, M.paires, M.axes, y.extra).manque.length && calculer(y.saisie).finale != null; };
   const propre = { f:fiche, s:saisie, autre:null };
   if (complete(propre)) return propre;
   const C = toutes.filter(e => e.jeu === fiche.jeu && cfgDe(e) === cfgDe(fiche) && e.id !== fiche.id).map(e => ({ f:e, s:saisieDe(e.id), autre:e.evaluateur })).filter(complete);
   return C.find(x => x.f.statut === "finale") || C[0] || propre;
 }
 function encadrePrisme(){
-  const src = sourceEncadre(), d = src.f, c = calculer(src.s);
-  const e = entreesFiche(src.s, M.paires, M.axes, { contenu_parties:d.contenu_parties, contenu_unique:d.contenu_unique, prix:d.prix });
-  const tl = { c: e.manque.length ? null : flowJeu(e.n) }, k = tl.c ? coutParPartie(d.prix, tl.c, d.duree_min, d.duree_max) : null;
+  const src = sourceEncadre(), d = src.f, x = pourCalcul(d, src.s), c = calculer(x.saisie);
+  const e = entreesFiche(x.saisie, M.paires, M.axes, x.extra);
+  const tl = { c: e.manque.length ? null : flowJeu(e.n) }, k = tl.c ? coutParPartie(x.extra.prix, tl.c, d.duree_min, d.duree_max) : null;
   const L = [];
   const j = d.joueurs_max ? `${d.joueurs_min && d.joueurs_min !== d.joueurs_max ? d.joueurs_min + " à " : ""}${d.joueurs_max} joueur${d.joueurs_max > 1 ? "s" : ""}${d.effectif_reference ? ` (idéal à ${d.effectif_reference})` : ""}` : "";
   const du = d.duree_max ? `${d.duree_min && d.duree_min !== d.duree_max ? d.duree_min + " à " : ""}${d.duree_max} min` : "";
@@ -1406,8 +1410,8 @@ $("#btn-article").addEventListener("click", () => { const a = $("#article"); if 
    des axes ni le modèle, seulement ce résumé. Il est recalculé à chaque enregistrement d'une fiche publiée. */
 let PUBLI_OK = false;
 function publicationDe(f, s){
-  const c = calculer(s), e = entreesFiche(s, M.paires, M.axes, { contenu_parties:f.contenu_parties, contenu_unique:f.contenu_unique, prix:f.prix });
-  const tl = e.manque.length ? null : flowJeu(e.n), k = tl ? coutParPartie(f.prix, tl, f.duree_min, f.duree_max) : null;
+  const x = pourCalcul(f, s), c = calculer(x.saisie), e = entreesFiche(x.saisie, M.paires, M.axes, x.extra);
+  const tl = e.manque.length ? null : flowJeu(e.n), k = tl ? coutParPartie(x.extra.prix, tl, f.duree_min, f.duree_max) : null;
   const h = [f.duree_min, f.duree_max].map(Number).filter(v => v > 0), hm = h.length ? h.reduce((a, b) => a + b, 0) / h.length / 60 : null;
   const fini = v => Number.isFinite(v) ? Math.round(v * 100) / 100 : null;
   return { v:1, maj: new Date().toISOString(), auteur: noms[f.evaluateur] || null,
@@ -1441,13 +1445,13 @@ $("#grille").addEventListener("change", e => {
 /* ---------------- récapitulatif et export ---------------- */
 function lignesRecap(){
   return M.paires.map(p => {
-    const ax = axesDe(p.code), n = noteDe(p, saisie), a1 = ax.find(a => a.rang === "1");
+    const ax = axesDe(p.code), n = noteDe(p, saisieCalcul()), a1 = ax.find(a => a.rang === "1");
     const notes = ax.filter(a => a.echelle !== "calcule").map(a => { const v = saisie[a.code]?.valeur; return `${a.code} ${v == null ? "—" : (estEcart(p, a) && v > 0 ? "+" : "") + fmt(v)}`; }).join(" · ");
     return { p, n, notes, justif: saisie[a1.code]?.commentaire || "", chap: M.chapitres.find(c => c.code === p.chapitre).nom };
   });
 }
 $("#btn-recap").addEventListener("click", () => {
-  const c = calculer(saisie), L = lignesRecap(), manque = L.filter(l => !l.n.complete);
+  const c = calculer(saisieCalcul()), L = lignesRecap(), manque = L.filter(l => !l.n.complete);
   $("#recap").innerHTML = `<h2>${esc(nomJeu(fiche.jeu))} : récapitulatif</h2>
     <p class="aide">${manque.length ? `Il manque ${manque.length} paire${manque.length > 1 ? "s" : ""} : ${manque.map(l => esc(l.p.nom)).join(", ")}.` : `Les ${M.paires.length} paires sont remplies.`}
       Note finale : <b>${c.finale == null ? "—" : fmt(c.finale, 2)}</b> (${M.chapitres.map(ch => `${esc(ch.nom)} ${c.chap[ch.code] == null ? "—" : fmt(c.chap[ch.code], 2)}`).join(", ")}).</p>
@@ -1463,7 +1467,7 @@ $("#btn-recap").addEventListener("click", () => {
 $("#fermer-recap").addEventListener("click", () => $("#dlg-recap").close());
 // export en Markdown : de quoi démarrer un article
 $("#btn-export").addEventListener("click", () => {
-  const c = calculer(saisie), L = lignesRecap(), d = fiche;
+  const c = calculer(saisieCalcul()), L = lignesRecap(), d = fiche;
   const chiffres = [d.pages && `${d.pages} pages de règles`, d.prix != null && d.prix !== "" && `${fmt(d.prix, 0)} €`,
     d.joueurs_max && `${d.joueurs_min || "?"} à ${d.joueurs_max} joueurs`, d.duree_max && `${d.duree_min || "?"} à ${d.duree_max} minutes`].filter(Boolean).join(", ");
   let md = `# ${nomJeu(d.jeu)}\n\nFiche PRISMEgame de ${noms[d.evaluateur] || "l'évaluateur"}, ${d.statut === "finale" ? "finale" : "brouillon"}, exportée le ${new Date().toLocaleDateString("fr-FR")}.\n\n`;

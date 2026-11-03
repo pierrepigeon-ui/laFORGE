@@ -181,6 +181,13 @@ table.j td input,table.j td select{padding:6px 8px;border:1px solid var(--line);
 .mini{display:flex;gap:3px;align-items:flex-end;height:28px}
 .mini span{width:9px;border-radius:2px 2px 0 0}
 table.j td .sous{font-size:12.5px;color:var(--muted)}
+/* (3.12) contrôle de la bascule */
+table.j th button.tri{all:unset;cursor:pointer;color:inherit} table.j th button.tri:hover{color:var(--ink)}
+table.j td.n,table.j th.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+table.j tr.bas-fort td.ecart{color:var(--warn);font-weight:600} table.j tr.bas-fort,table.j tr.bas-classe{background:color-mix(in srgb, var(--warn) 9%, transparent)}
+table.j td.classe-changee{color:var(--warn);font-weight:600}
+table.j tr.bas-groupe td{font-weight:600;color:var(--muted);background:var(--paper)}
+.bas-compteur{font-size:15px;margin:6px 0 4px}
 footer{border-top:1px solid var(--line);background:var(--panel);padding:4px 20px;text-align:right}
 footer .version{margin:0}
 
@@ -229,6 +236,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 16px}
       <button role="tab" aria-selected="false" data-tab="journal" id="tab-journal" class="hidden">Journal</button>
       <button role="tab" aria-selected="false" data-tab="resultats" id="tab-resultats" class="hidden">Résultats</button>
       <button role="tab" aria-selected="false" data-tab="personnes" id="tab-personnes" class="hidden">Personnes</button>
+      <button role="tab" aria-selected="false" data-tab="bascule" id="tab-bascule" class="hidden">Contrôle de la bascule</button>
       <button role="tab" aria-selected="false" data-tab="reglages">Réglages</button>
       <a class="navlink" href="questionnaire.html">Questionnaire</a>
       <a class="navlink" href="rosace.html">Rosace</a>
@@ -301,13 +309,15 @@ dialog h2{font:600 22px var(--serif);margin:0 0 16px}
   <main id="view-journal" class="hidden"><section class="full" id="journal-pane"></section></main>
   <main id="view-personnes" class="hidden"><section class="full" id="personnes-pane"></section></main>
   <main id="view-resultats" class="hidden"><section class="full" id="resultats-pane"></section></main>
+  <main id="view-bascule" class="hidden"><section class="full" id="bascule-pane"></section></main>
   <main id="view-reglages" class="hidden"><section class="full" id="reglages-pane"></section></main>
   <footer><span class="version" data-version></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></footer>
 </section>
 
+<script src="timeline.js?v=3.10"></script>   <!-- (3.12) les calculs partagés, pour le contrôle de la bascule -->
 <script>
 /* ================= configuration ================= */
-const VERSION = { numero:"3.11", date:"2026-10-31 22:32" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.12", date:"2026-11-03 18:54" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 
@@ -399,7 +409,7 @@ async function demarrer(){
   (roles || []).forEach(r => state.noms[r.user_id] = r.nom || ROLES[r.role]);
   const proprio = role === "proprietaire";
   $("#who").textContent = `${state.noms[state.user.id] || state.user.email} — ${ROLES[role] || "aucun rôle"}`;
-  ["#tab-journal","#tab-personnes","#backup"].forEach(s => $(s).classList.toggle("hidden", !proprio));
+  ["#tab-journal","#tab-personnes","#tab-bascule","#backup"].forEach(s => $(s).classList.toggle("hidden", !proprio));
   $("#tab-resultats").classList.toggle("hidden", !peutEcrire());   // propriétaire et éditeurs voient tous les résultats
   if (proprio) infoSauvegarde();
   if (!["proprietaire","editeur"].includes(role)){   // la console est réservée aux éditeurs et au propriétaire (13/10/2026)
@@ -415,8 +425,8 @@ async function demarrer(){
 document.querySelectorAll("nav [role=tab]").forEach(b => b.addEventListener("click", () => {
   if (blocsModifies() && !confirm("Des modifications n'ont pas été enregistrées. Les abandonner ?")) return;
   document.querySelectorAll("nav [role=tab]").forEach(x => x.setAttribute("aria-selected", x === b));
-  ["player","modele","mecanismes","themes","textes","jeux","journal","personnes","resultats","reglages"].forEach(t => $("#view-" + t).classList.toggle("hidden", t !== b.dataset.tab));
-  ({ player:afficherListeP, mecanismes:afficherMecanismes, themes:afficherThemes, textes:afficherTextes, jeux:afficherJeux, journal:afficherJournal, personnes:afficherPersonnes, resultats:afficherResultats, reglages:afficherReglages })[b.dataset.tab]?.();
+  ["player","modele","mecanismes","themes","textes","jeux","journal","personnes","resultats","bascule","reglages"].forEach(t => $("#view-" + t).classList.toggle("hidden", t !== b.dataset.tab));
+  ({ player:afficherListeP, mecanismes:afficherMecanismes, themes:afficherThemes, textes:afficherTextes, jeux:afficherJeux, journal:afficherJournal, personnes:afficherPersonnes, resultats:afficherResultats, bascule:afficherBascule, reglages:afficherReglages })[b.dataset.tab]?.();
 }));
 
 /* ================= liste des paires ================= */
@@ -1160,7 +1170,7 @@ async function afficherResultats(){
 }
 // le style d'un résultat : enregistré (v2) ou recalculé depuis le classement (résultats plus anciens)
 const PROFILS_C = () => { const O = "WUBRG", L = []; for (const a of O) for (const e of O) if (e !== a) for (const b of O) if (b !== a && b !== e) L.push(`${a}.${b.toLowerCase()}/${e.toLowerCase()}`); return L; };
-const styleDe = r => r.style || (r.classement ? r.classement[0] + "." + r.classement[1].toLowerCase() + "/" + r.classement[4].toLowerCase() : "");
+const profilDe = r => r.style || (r.classement ? r.classement[0] + "." + r.classement[1].toLowerCase() + "/" + r.classement[4].toLowerCase() : "");
 function resultatsFiltres(){
   const qui = $("#res-personne").value, dernier = $("#res-dernier").checked, vus = new Set();
   return resCache.res.filter(r => (!qui || r.user_id === qui) && (!dernier || (!vus.has(r.user_id) && vus.add(r.user_id))));
@@ -1168,7 +1178,7 @@ function resultatsFiltres(){
 function rendreResultats(nomDe){
   const { vue, mot } = resCache, lignes = resultatsFiltres();
   const nbPers = new Set(lignes.map(r => r.user_id)).size;
-  const parMot = {}; lignes.forEach(r => { const a = vue[styleDe(r)]?.moteur; parMot[a] = (parMot[a] || 0) + 1; });
+  const parMot = {}; lignes.forEach(r => { const a = vue[profilDe(r)]?.moteur; parMot[a] = (parMot[a] || 0) + 1; });
   const max = Math.max(1, ...Object.values(parMot));
   const repartition = mot.map(a => `<div class="rep-ligne"><span>${esc(a.nom)}</span>
     <span class="barre" style="width:${(parMot[a.code] || 0) / max * 100}%;min-width:${parMot[a.code] ? 4 : 0}px;background:${a.couleur}"></span>
@@ -1179,10 +1189,10 @@ function rendreResultats(nomDe){
     <p class="aide">${lignes.length} passation${lignes.length > 1 ? "s" : ""}, ${nbPers} personne${nbPers > 1 ? "s" : ""}. Répartition par moteur dominant :</p>
     <div class="repartition">${repartition}</div>
     <table class="j"><thead><tr><th>Date</th><th>Personne</th><th>Profil de joueur</th><th>Moteurs</th><th></th></tr></thead><tbody>
-    ${lignes.map(r => { const v = vue[styleDe(r)] || {}; return `<tr>
+    ${lignes.map(r => { const v = vue[profilDe(r)] || {}; return `<tr>
       <td>${new Date(r.passe_le).toLocaleString("fr-FR")}</td>
       <td>${esc(nomDe(r.user_id))}</td>
-      <td><b>${esc(maj(v.nom || styleDe(r)))}</b><br><span class="sous">${esc(styleDe(r))} · ${esc(v.moteur_nom || "")}${Object.keys(r.reponses || {}).length < 25 ? " · provisoire" : ""}</span></td>
+      <td><b>${esc(maj(v.nom || profilDe(r)))}</b><br><span class="sous">${esc(profilDe(r))} · ${esc(v.moteur_nom || "")}${Object.keys(r.reponses || {}).length < 25 ? " · provisoire" : ""}</span></td>
       <td>${mini(r)}</td>
       <td><div class="row-btn"><a class="btn ghost small" href="fiche.html?resultat=${esc(r.id)}" target="_blank">Fiche</a>
         ${state.role === "proprietaire" ? `<button class="btn ghost small res-suppr" type="button" data-id="${esc(r.id)}">Effacer</button>` : ""}</div></td></tr>`; }).join("")}
@@ -1195,11 +1205,64 @@ function rendreResultats(nomDe){
     resCache.res = resCache.res.filter(x => x.id !== r.id); rendreResultats(nomDe);
   }));
 }
+/* ================= contrôle de la bascule (propriétaire) : chaque fiche calculée depuis la fiche et depuis la description ================= */
+// (3.12, 03/11/2026) lecture seule : rien n'est enregistré ; le réglage bascule_description se change dans l'onglet Réglages
+let basCache = null, basTri = { cle:"ecart", sens:-1 };
+async function afficherBascule(){
+  const host = $("#bascule-pane");
+  host.innerHTML = '<p class="aide">Chargement…</p>';
+  try {
+    const [evals, vals, src] = await Promise.all([lireTout("prisme_evaluations"), lireTout("prisme_evaluation_valeurs"), lireSourceCalcul(sb)]);
+    const saisies = {}; vals.forEach(v => (saisies[v.evaluation] ??= {})[v.axe] = { valeur: v.valeur == null ? null : Number(v.valeur), sans_objet: v.sans_objet });
+    // une version : le réglage forcé à 0 (la fiche) ou à 1 (la description), les mêmes formules (timeline.js)
+    const calcul = (f, s, bascule) => {
+      const x = entreesDeFiche(f, s, state.axes, src, { ...src.reglages, bascule_description: bascule }), e = entreesFiche(x.saisie, state.paires, state.axes, x.extra);
+      const c = e.manque.length ? null : flowJeu(e.n);
+      return { source: x.source, note: noteProfil(e.paires, e.n, null), classe: c ? c.classe : null, cout: c ? coutParPartie(x.extra.prix, c, f.duree_min, f.duree_max) : null };
+    };
+    basCache = { src, lignes: evals.map(f => { const s = saisies[f.id] || {}, av = calcul(f, s, 0), ap = calcul(f, s, 1);
+      return { f, av, ap, ecart: av.note != null && ap.note != null ? ap.note - av.note : null }; }) };
+  } catch (e){ host.innerHTML = `<p class="msg err">Lecture des fiches impossible : ${esc(e.message)}</p>`; return; }
+  rendreBascule();
+}
+function rendreBascule(){
+  const host = $("#bascule-pane"), { src, lignes } = basCache;
+  const f2 = v => v == null ? "—" : Number(v).toFixed(2).replace(".", ",").replace("-", "−");
+  const cout = k => k ? (k.classique ? "< " : "") + f2(k.parPartie) + " €" : "—";
+  const nomJeu = c => state.jeux.find(j => j.code === c)?.nom || c;
+  const fort = l => l.ecart != null && Math.abs(l.ecart) > .05, change = l => l.av.classe !== l.ap.classe;
+  const nb = (L, mot) => `${L.length} ${mot}${L.length > 1 ? "s" : ""}`;
+  const cles = { jeu: l => norm(nomJeu(l.f.jeu)), eval: l => norm(state.noms[l.f.evaluateur] || ""), apres: l => l.ap.note ?? -1,
+    ecart: l => l.ecart == null ? -1 : Math.abs(l.ecart) };
+  const k = cles[basTri.cle], cmp = (a, b) => { const u = k(a), v = k(b); return (u < v ? -1 : u > v ? 1 : 0) * basTri.sens; };
+  // les finales d'abord, puis les brouillons ; dans chaque groupe, le tri choisi (par défaut : l'écart de note, du plus grand au plus petit)
+  const groupes = [[true, "Fiches finales"], [false, "Brouillons"]].map(([fin, titre]) => [titre, lignes.filter(l => (l.f.statut === "finale") === fin).sort(cmp)]);
+  const th = (cle, titre, cls = "") => `<th class="${cls}"><button type="button" class="tri" data-tri="${cle}">${titre}${basTri.cle === cle ? (basTri.sens > 0 ? " ▲" : " ▼") : ""}</button></th>`;
+  const fleche = (a, b) => a === b ? esc(a ?? "—") : `${esc(a ?? "—")} → ${esc(b ?? "—")}`;
+  const ligne = l => `<tr class="${fort(l) ? "bas-fort" : ""}${change(l) ? " bas-classe" : ""}">
+      <td>${esc(nomJeu(l.f.jeu))}${String(l.f.configuration ?? "").trim() ? ` <span class="sous">— ${esc(l.f.configuration)}</span>` : ""}${l.ap.source === "fiche" ? '<br><span class="sous">pas de description : inchangé</span>' : ""}</td>
+      <td>${esc(state.noms[l.f.evaluateur] || "compte " + String(l.f.evaluateur).slice(0, 8))}</td><td>${esc(l.f.statut)}</td>
+      <td class="n">${f2(l.av.note)} → <b>${f2(l.ap.note)}</b></td>
+      <td class="${change(l) ? "classe-changee" : ""}">${fleche(l.av.classe, l.ap.classe)}</td>
+      <td class="n">${fleche(cout(l.av.cout), cout(l.ap.cout))}</td>
+      <td class="n ecart">${l.ecart == null ? "—" : (l.ecart > 0 ? "+" : "") + f2(l.ecart)}</td></tr>`;
+  const reglage = src.reglages.bascule_description;
+  host.innerHTML = `<h2>Contrôle de la bascule</h2>
+    <p class="bas-compteur"><b>${nb(lignes, "fiche")} · ${nb(lignes.filter(fort), "écart")} > 0,05 · ${nb(lignes.filter(change), "classe")} ${lignes.filter(change).length > 1 ? "changées" : "changée"}</b></p>
+    <p class="aide">Chaque fiche est calculée deux fois : avant, tout depuis la fiche (comme aujourd'hui) ; après, les « note 1 », la gamme de prix et l'usage unique depuis « Décrire le jeu », le reste depuis la fiche. Les écarts viennent de ce que la description diffère de la fiche (moyenne de plusieurs fiches, gamme de prix au lieu du prix réel). Quand le tableau te convient, passe le réglage bascule_description à 1.</p>
+    <p class="aide">Réglage bascule_description aujourd'hui : <b>${reglage == null ? "absent (le script du réglage a-t-il été passé ?)" : esc(String(reglage).replace(".", ","))}</b>${Number(reglage) === 1 ? " — les pages calculent depuis la description" : " — les pages calculent depuis la fiche"}. Lecture seule : rien n'est enregistré ici.</p>
+    <table class="j"><thead><tr>${th("jeu", "Jeu")}${th("eval", "Évaluateur")}<th>Statut</th>${th("apres", "Note finale avant → après", "n")}<th>Classe de vie avant → après</th><th class="n">Coût par partie avant → après</th>${th("ecart", "Écart de note", "n")}</tr></thead>
+    ${groupes.filter(([, L]) => L.length).map(([titre, L]) => `<tbody><tr class="bas-groupe"><td colspan="7">${titre} (${L.length})</td></tr>${L.map(ligne).join("")}</tbody>`).join("")}</table>`;
+  host.querySelectorAll("button.tri").forEach(b => b.addEventListener("click", () => {
+    basTri = basTri.cle === b.dataset.tri ? { cle:b.dataset.tri, sens:-basTri.sens } : { cle:b.dataset.tri, sens: ["jeu", "eval"].includes(b.dataset.tri) ? 1 : -1 };
+    rendreBascule();
+  }));
+}
 function exporterResultats(nomDe){
   const { vue, mot } = resCache;
-  const lignes = resultatsFiltres().map(r => { const v = vue[styleDe(r)] || {}; return Object.assign({
+  const lignes = resultatsFiltres().map(r => { const v = vue[profilDe(r)] || {}; return Object.assign({
     date: new Date(r.passe_le).toLocaleString("fr-FR"), personne: nomDe(r.user_id),
-    classement: r.classement, code_profil: styleDe(r), temperament: v.temperament_nom, style: v.style_nom, moteur: v.moteur_nom, reponses: Object.keys(r.reponses || {}).length },
+    classement: r.classement, code_profil: profilDe(r), temperament: v.temperament_nom, style: v.style_nom, moteur: v.moteur_nom, reponses: Object.keys(r.reponses || {}).length },
     Object.fromEntries(mot.map(m => [m.nom, String(r.scores?.[m.code] ?? "").replace(".", ",")])),
     { version_questionnaire: r.version_questionnaire }); });
   if (!lignes.length) return;

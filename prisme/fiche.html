@@ -91,10 +91,10 @@ details.repli > section{border:0;margin:0;padding-top:0}
 <main id="contenu"><p class="vide">Chargement…</p></main>
 <main><p class="version"><span id="credit"></span><br><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p></main>
 
-<script src="timeline.js?v=3.9"></script>
+<script src="timeline.js?v=3.10"></script>
 <script src="totems.js?v=4"></script>
 <script>
-const VERSION = { numero:"3.12", date:"2026-10-31 22:32" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.13", date:"2026-11-03 18:54" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -230,12 +230,12 @@ function blocTemperament(code){
 async function afficherVosJeux(code, autre){
   const box = $("#vos-jeux-corps"), d = await lireJeuxEvalues(sb), rj = $("#rival-jeux");
   if (d.refus){ box.innerHTML = `<p class="pj-discret">Les jeux évalués sont réservés aux membres de PRISME pour l'instant.</p>`; if (rj) rj.innerHTML = box.innerHTML; return; }
-  const L = jeuxPourJoueurs(d.fiches, d.paires, d.axes, null, [code]);
+  const L = jeuxPourJoueurs(d.fiches, d.paires, d.axes, null, [code], d.src);
   box.innerHTML = tableJeuxHTML(L, d, autre ? "ce joueur" : "vous", false);
   if (!rj) return;
   // quels jeux pour vous deux : la note du rival est la moyenne de ses trois styles ; on classe selon la plus basse des deux notes
   const rival = code[4].toUpperCase() + "/" + code[0].toLowerCase();
-  const R2 = Object.fromEntries(jeuxPourJoueurs(d.fiches, d.paires, d.axes, null, stylesDe(rival)).map(x => [x.jeu, x]));
+  const R2 = Object.fromEntries(jeuxPourJoueurs(d.fiches, d.paires, d.axes, null, stylesDe(rival), d.src).map(x => [x.jeu, x]));
   const D = L.filter(x => R2[x.jeu]).map(x => ({ jeu:x.jeu, finale:x.finale, a:x.note, b:R2[x.jeu].note, n:Math.min(x.note, R2[x.jeu].note) })).sort((x, y) => y.n - x.n);
   const nom = c => d.jeux.find(j => j.code === c)?.nom || c, f = v => Number(v).toFixed(2).replace(".", ",");
   rj.innerHTML = D.length ? `<p class="pj-discret">Classés selon la note la plus basse des deux : le jeu qui ne laisse personne sur le bord.</p>

@@ -66,10 +66,10 @@ aside .vous-badge{display:inline-block;font:600 12px var(--sans);color:#fff;back
 </div>
 <p class="version"><span id="credit"></span><br><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p>
 
-<script src="timeline.js?v=3.9"></script>
+<script src="timeline.js?v=3.10"></script>
 <script src="totems.js?v=4"></script>
 <script>
-const VERSION = { numero:"3.15", date:"2026-10-31 22:32" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.16", date:"2026-11-03 18:54" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -260,7 +260,7 @@ async function afficherJeux(code, N){
   const box = document.getElementById("jeux-joueur"); J ??= await lireJeuxEvalues(sb);
   if (choisi !== code || !box?.isConnected) return;
   if (J.refus){ box.innerHTML = `<span class="lib">Ses jeux</span><p class="pj-discret">Les jeux évalués sont réservés aux membres de PRISME.</p>`; return; }
-  const L = jeuxPourJoueurs(J.fiches, J.paires, J.axes, null, stylesDe(code));
+  const L = jeuxPourJoueurs(J.fiches, J.paires, J.axes, null, stylesDe(code), J.src);
   box.innerHTML = `<span class="lib">Ses jeux</span>` + tableJeuxHTML(L, J, N === "moteur" ? "ses douze profils" : "ses trois profils", true);
 }
 function montrerAccueil(connecte){

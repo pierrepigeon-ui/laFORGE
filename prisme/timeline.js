@@ -1,7 +1,7 @@
 /* PRISME — timeline du jeu : jalons, durées, flow, α β γ ω, durée de vie.
    Module partagé par l'encyclopédie et l'outil d'évaluation. Méthode arrêtée le 08/10/2026 (jeu d'essai : Heat) ; modèle à 12 paires le 11/10/2026 ;
    formules refaites phase par phase le 12/10/2026 avec trois jeux de référence (Gloomhaven, Heat, Flip 7). L'unité est la session. */
-const TIMELINE_VERSION = { numero:"3.9", date:"2026-10-18 22:40" };   // à incrémenter à chaque livraison
+const TIMELINE_VERSION = { numero:"3.10", date:"2026-11-03 18:54" };   // à incrémenter à chaque livraison
 
 const JALONS = [
   { n:0, nom:"identifié", quoi:"Le jeu est connu de loin : critique, vitrine, recommandation." },
@@ -536,13 +536,58 @@ function entreesFiche(s, paires, axes, extra){
   return { n, manque:[...manque], absents:[...absents], etats,
     paires: paires.map(p => ({ chap:p.chapitre, code:p.code, note:etats[p.code].note })) };
 }
+/* ---------------- la source des calculs : la fiche, ou « Décrire le jeu » (03/11/2026) ----------------
+   Après la bascule, les « note 1 » (axes de rang 1…), la gamme de prix et l'usage unique viennent de la description de la sous-fiche ;
+   les « note 2 » et le nombre de parties pour tout exploiter restent ceux de la fiche. Aucune formule ne change, seule la source.
+   L'interrupteur : le réglage bascule_description (0 : la fiche, comme avant ; 1 : la description). */
+const GAMMES_PRIX = "ABCDEFGHI";
+// le prix d'une gamme : le milieu de sa tranche (A : de 0 à prix_A_max ; I : prix_H_max × 1,5) ; null si un montant manque
+function prixDeGamme(g, reglages){
+  const i = GAMMES_PRIX.indexOf(g || "?"), P = L => reglages?.["prix_" + L + "_max"], ok = v => v != null && v !== "" && !Number.isNaN(Number(v));
+  if (i < 0) return null;
+  if (i === 8) return ok(P("H")) ? Number(P("H")) * 1.5 : null;
+  const haut = P(GAMMES_PRIX[i]), bas = i === 0 ? 0 : P(GAMMES_PRIX[i - 1]);
+  return ok(haut) && ok(bas) ? (Number(bas) + Number(haut)) / 2 : null;
+}
+// saisieFiche : { axe: { valeur, sans_objet } } ; extraFiche : { contenu_parties, contenu_unique, prix } ; description : la ligne de prisme_descriptions
+// de la sous-fiche (ou null) ; axesDescription : ses lignes de prisme_descriptions_axes ({ axe: ligne } ou liste) ; reglages : { cle: valeur }
+// renvoie { saisie, extra, source } : saisie et extra se passent tels quels à entreesFiche ; source : "fiche" ou "description"
+function entreesPourCalcul(saisieFiche, extraFiche, description, axesDescription, reglages, axes){
+  if (Number(reglages?.bascule_description) !== 1 || !description) return { saisie:saisieFiche, extra:extraFiche, source:"fiche" };
+  const D = Array.isArray(axesDescription) ? Object.fromEntries(axesDescription.map(x => [x.axe, x])) : axesDescription || {};
+  const saisie = { ...saisieFiche };
+  axes.filter(a => /^1/.test(a.rang || "")).forEach(a => { const d = D[a.code]; if (!d) return;
+    saisie[a.code] = { ...saisieFiche?.[a.code], valeur: d.valeur == null ? null : Number(d.valeur), sans_objet: !!d.sans_objet }; });
+  const prix = prixDeGamme(description.prix_gamme, reglages);
+  return { saisie, source:"description",
+    extra: { ...extraFiche, prix: prix ?? extraFiche?.prix, contenu_unique: !!description.usage_unique, contenu_parties: extraFiche?.contenu_parties } };
+}
+// les trois tables de la bascule, une requête par table : { descriptions: { jeu: ligne }, axes: { jeu: { axe: ligne } }, reglages: { cle: valeur } }
+// une table illisible (droits, script pas passé) : vide, et les calculs restent sur la fiche
+async function lireSourceCalcul(sb){
+  const [d, a, r] = await Promise.all([sb.from("prisme_descriptions").select("*"),
+    sb.from("prisme_descriptions_axes").select("jeu,axe,valeur,sans_objet"), sb.from("prisme_reglages").select("cle,valeur")]);
+  [d, a, r].forEach(x => { if (x.error) console.warn("PRISME : source des calculs illisible", x.error.message); });
+  const src = { descriptions:{}, axes:{}, reglages:{} };
+  (d.data || []).forEach(x => src.descriptions[x.jeu] = x);
+  (a.data || []).forEach(x => (src.axes[x.jeu] ??= {})[x.axe] = x);
+  (r.data || []).forEach(x => src.reglages[x.cle] = x.valeur);
+  return src;
+}
+// raccourci pour une fiche f { jeu, configuration, contenu_parties, contenu_unique, prix } et sa saisie ; src : résultat de lireSourceCalcul (ou rien : la fiche)
+// une fiche d'une configuration (« toutes extensions »…) n'a pas de description propre : elle reste sur la fiche
+function entreesDeFiche(f, saisie, axes, src, reglages){
+  const desc = src && !configDe(f) ? src.descriptions[f.jeu] : null;
+  return entreesPourCalcul(saisie, { contenu_parties:f.contenu_parties, contenu_unique:f.contenu_unique, prix:f.prix }, desc, desc ? src.axes[f.jeu] : null, reglages ?? src?.reglages, axes);
+}
+
 // le meilleur des jeux pour des profils (codes complets W.b/u) : fiches = [{ jeu, statut, saisie, contenu_parties, prix }]
-// pour un tempérament, un style ou un moteur, passer la liste de ses profils : stylesDe(code)
-function jeuxPourJoueurs(fiches, paires, axes, pl, codes){
+// pour un tempérament, un style ou un moteur, passer la liste de ses profils : stylesDe(code) ; src : la source des calculs (lireSourceCalcul)
+function jeuxPourJoueurs(fiches, paires, axes, pl, codes, src){
   const prs = codes.map(prDeStyle);
   const parJeu = {};
   fiches.forEach(f => {
-    const e = entreesFiche(f.saisie, paires, axes, { contenu_parties:f.contenu_parties, contenu_unique:f.contenu_unique, prix:f.prix });
+    const x = entreesDeFiche(f, f.saisie, axes, src), e = entreesFiche(x.saisie, paires, axes, x.extra);
     if (e.manque.length) return;                                   // fiche incomplète : pas de calcul
     const base = noteProfil(e.paires, e.n, null), cb = flowJeu(e.n);
     const res = prs.map(pr => ({ note: noteProfil(e.paires, e.n, pr), c: flowJeu(e.n, pr) }));
@@ -574,7 +619,7 @@ async function lireJeuxEvalues(sb){
   const t0 = performance.now();
   try {
     const vues = Promise.all([lire("prisme_resultats_fiches"), lire("prisme_resultats_valeurs")]).then(r => { r[0].forEach(e => e.statut = "finale"); return r; }, () => null);
-    const [paires, axes, jeux, parVues] = await Promise.all([lire("prisme_paires","ordre"), lire("prisme_axes","ordre"), lire("prisme_jeux","nom"), vues]);
+    const [paires, axes, jeux, parVues, src] = await Promise.all([lire("prisme_paires","ordre"), lire("prisme_axes","ordre"), lire("prisme_jeux","nom"), vues, lireSourceCalcul(sb)]);
     if (!paires.length) return { refus:true };
     const [evals, vals] = parVues || await Promise.all([lire("prisme_evaluations"), lire("prisme_evaluation_valeurs")]);
     const saisies = {}; vals.forEach(v => (saisies[v.evaluation] ??= {})[v.axe] = { valeur: v.valeur == null ? null : Number(v.valeur), sans_objet: v.sans_objet });
@@ -585,7 +630,7 @@ async function lireJeuxEvalues(sb){
     // la liste des jeux, la note pour vous, les profils et la rosace ; sinon, la boîte de base
     const reference = {}; configurations.forEach(f => { if (estJeuComplet(f.configuration)) reference[f.jeu] ??= f.configuration; });
     const fiches = [...base.filter(f => !reference[f.jeu]), ...configurations.filter(f => reference[f.jeu] && f.configuration === reference[f.jeu])];
-    return { paires, axes, jeux, fiches, fichesBase: base, configurations, reference, duree: performance.now() - t0 };
+    return { paires, axes, jeux, fiches, fichesBase: base, configurations, reference, src, duree: performance.now() - t0 };
   } catch (e){ return { refus:true }; }
 }
 // la moyenne de plusieurs fiches d'un même jeu : axe par axe (une valeur sans objet dans toutes les fiches reste sans objet) ; données du jeu moyennées
@@ -599,15 +644,16 @@ function ficheMoyenne(fiches){
   d.contenu_unique = fiches.filter(f => f.contenu_unique).length * 2 > fiches.length;   // usage unique : l'avis de la majorité des fiches
   return { saisie:s, ...d, nb:fiches.length };
 }
-// le résumé d'un jeu (fiches finales moyennées) : notes, courbe, coûts ; code : le profil du joueur (A.b/e), facultatif
-function resumeJeu(fiches, paires, axes, code){
+// le résumé d'un jeu (fiches finales moyennées) : notes, courbe, coûts ; code : le profil du joueur (A.b/e), facultatif ; src : la source des calculs
+function resumeJeu(fiches, paires, axes, code, src){
   if (!fiches.length) return null;
-  const m = ficheMoyenne(fiches), e = entreesFiche(m.saisie, paires, axes, { contenu_parties:m.contenu_parties, contenu_unique:m.contenu_unique, prix:m.prix });
+  const m = ficheMoyenne(fiches), x = entreesDeFiche({ ...m, jeu:fiches[0].jeu, configuration:configDe(fiches[0]) }, m.saisie, axes, src);
+  const e = entreesFiche(x.saisie, paires, axes, x.extra);
   const parChap = {}; e.paires.forEach(p => { if (p.note != null) (parChap[p.chap] ??= []).push(p.note); });
   const chap = Object.fromEntries(Object.entries(parChap).map(([k, L]) => [k, L.reduce((t, x) => t + x, 0) / L.length]));
   const finale = Object.keys(chap).length ? Object.values(chap).reduce((t, x) => t + x, 0) / Object.keys(chap).length : null;
   const complet = !e.manque.length, c = complet ? flowJeu(e.n) : null;
-  const r = { m, e, chap, finale, complet, c, cout: c ? coutParPartie(m.prix, c, m.duree_min, m.duree_max) : null, effort: coutEffort(e.n) };
+  const r = { m, e, chap, finale, complet, c, cout: c ? coutParPartie(x.extra.prix, c, m.duree_min, m.duree_max) : null, effort: coutEffort(e.n), source:x.source };
   if (code && complet){ const pr = prDeStyle(code); r.cPour = flowJeu(e.n, pr); r.notePour = noteProfil(e.paires, e.n, pr); }
   return r;
 }

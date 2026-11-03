@@ -160,10 +160,10 @@ ul.m-liste li{border-bottom:1px solid var(--line);padding:7px 0}
   <p class="version"><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p>
 </main>
 
-<script src="timeline.js?v=3.9"></script>
+<script src="timeline.js?v=3.10"></script>
 <script src="selecteurs.js?v=1.2"></script>
 <script>
-const VERSION = { numero:"2.10", date:"2026-11-01 10:58" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"2.11", date:"2026-11-03 18:54" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -271,7 +271,7 @@ async function afficher(user){
   // (18/10/2026) sans choix explicite, la configuration de référence : le jeu complet quand il existe
   const ref = d.reference?.[code] || null;
   if (!P.has("config") && ref) cfg = ref;
-  const F = cfg ? (d.configurations || []).filter(f => f.jeu === code && configDe(f) === cfg) : (d.fichesBase || d.fiches).filter(f => f.jeu === code), R = resumeJeu(F, d.paires, d.axes, profil);
+  const F = cfg ? (d.configurations || []).filter(f => f.jeu === code && configDe(f) === cfg) : (d.fichesBase || d.fiches).filter(f => f.jeu === code), R = resumeJeu(F, d.paires, d.axes, profil, d.src);
   const lienCfg = c => "jeu.html?jeu=" + encodeURIComponent(code) + "&config=" + (c ? encodeURIComponent(c) : "");
   const liste = [null, ...noms, ...(cfg && !noms.includes(cfg) ? [cfg] : [])];
   const nomCfg = n => esc(n || "Boîte de base") + (n && !finales.has(n) ? ' <small class="brouillon">brouillon</small>' : "") + (n && n === ref ? ' <small class="brouillon" title="Configuration de référence : celle que lisent la liste des jeux et les profils">référence</small>' : "");
