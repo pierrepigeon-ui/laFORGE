@@ -19,7 +19,8 @@
    1.6 (05/11/2026) : une couleur par notion et le sommaire collant (selecteurs.js 1.4) ; le prix en trois colonnes ; le matériel d'abord,
    en arborescence de cases ; la liste complète des paliers à côté des trapèzes ; les codes des axes en info-bulle ; LIEN1d calculé en silence ;
    les onglets « Jeu de base » / « Jeu all-in » et « + Générer l'all-in »
-   1.7 (05/11/2026) : « + Générer l'all-in » appelle prisme_generer_all_in avec son vrai paramètre, p_base */
+   1.7 (05/11/2026) : « + Générer l'all-in » appelle prisme_generer_all_in avec son vrai paramètre, p_base
+   1.8 (05/11/2026) : selecteurs.js 1.5 (sélecteurs lisibles, sujets en familles, « Niveau de réalisme ») */
 :root{--ink:#15171C;--muted:#4B5160;--line:#E2E4E9;--trait:#C9CEDB;--paper:#F4F5F7;--panel:#FFFFFF;--neutre:#E8EAF0;--filet:#EEF0F4;
   --accent:#2346C8;--accent-fonce:#16308F;--sur-accent:#FFFFFF;--bleu-fond:#E6EBFB;--bleu-bord:#C9D3F5;--bleu-texte:#16308F;--orange-fond:#FBEDE4;--orange-texte:#8A3108;
   --vert-fond:#E7F4EC;--vert-texte:#14532D;--ok:#1E7A46;--warn:#B7791F;--err:#B42318;--trapeze:#F0F2F6;--trapeze-demi:#E3E6EE;
@@ -193,9 +194,9 @@ details.com textarea{display:block;width:100%;margin-top:6px;padding:7px 10px;bo
   <div class="boutons" id="enr-boutons"><button class="btn" type="button" id="annuler">Annuler</button><button class="btn plein" type="button" id="enregistrer">Enregistrer</button></div>
 </div></div>
 
-<script src="selecteurs.js?v=1.4"></script>
+<script src="selecteurs.js?v=1.5"></script>
 <script>
-const VERSION = { numero:"1.7", date:"2026-11-05 19:48" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.8", date:"2026-11-05 20:06" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);

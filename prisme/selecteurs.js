@@ -10,8 +10,11 @@
    (1.3, 02/11/2026) les pictogrammes du matériel et des familles d'axes (PICTOS, picto()) ; le matériel en deux groupes
    (« Ce que les joueurs manipulent », « Ce qui les accueille »), partagé avec decrire.html.
    (1.4, 05/11/2026) ce qui est commun aux pages, chargé aussi par evaluation.html : une couleur par notion (NOTIONS), le sommaire collant
-   (sommaire()), la liste complète des paliers d'un axe (listePaliers()) ; le Système en deux engrenages ; le sablier parmi les objets manipulés. */
-const SELECTEURS_VERSION = "1.4";
+   (sommaire()), la liste complète des paliers d'un axe (listePaliers()) ; le Système en deux engrenages ; le sablier parmi les objets manipulés.
+   (1.5, 05/11/2026) les sélecteurs lisibles : dans la teinte de leur notion (lavande, bleu), une carte repliable par facette ou par niveau,
+   avec sa phrase d'aide ; plus de codes visibles (info-bulle) ; « Jeu abstrait (aucun thème) » en tête ; le sujet en familles pesées,
+   les sous-sujets en simples coches (poids 2) ; « Niveau de réalisme » ; le matériel ne se saisit plus que dans « Décrire le jeu ». */
+const SELECTEURS_VERSION = "1.5";
 (function(){
   const st = document.createElement("style");
   st.textContent = `
@@ -82,7 +85,28 @@ svg.picto{flex:none;vertical-align:-5px;margin-right:6px;color:var(--muted)}
 .paliers button:not(:disabled):hover{background:rgba(127,127,127,.12)}
 .paliers button.choisi{background:#F3D9C9;color:var(--ink);font-weight:700} .paliers button.choisi b{font-weight:800}
 @media (prefers-color-scheme: dark){ .paliers button.choisi{background:#5A3524} }
-.paliers button:disabled{cursor:default}`;
+.paliers button:disabled{cursor:default}
+/* (1.5) les sélecteurs : une carte repliable par facette ou par niveau, dans la teinte de la notion ; lignes aérées, filet léger, ligne choisie sur fond teinté */
+details.sel-carte{border:1px solid var(--n-bord);border-radius:12px;margin:0 0 10px;background:var(--panel);overflow:hidden}
+details.sel-carte > summary{list-style:none;cursor:pointer;padding:11px 14px;display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;background:var(--n-fond)}
+details.sel-carte > summary::-webkit-details-marker{display:none}
+details.sel-carte > summary::after{content:"▸";margin-left:auto;color:var(--n-titre)} details.sel-carte[open] > summary::after{content:"▾"}
+details.sel-carte > summary b{font:600 16px var(--sans);color:var(--n-titre)}
+details.sel-carte .sel-aide{order:3;flex-basis:100%;font-size:13px;font-style:italic;color:var(--muted)}
+details.sel-carte .m-ligne{padding:10px 14px;border-bottom:1px solid var(--filet, var(--line))}
+details.sel-carte .m-ligne:last-child{border-bottom:0}
+details.sel-carte .m-ligne.affecte{background:var(--n-fond)}
+details.sel-carte h4.m-sg{margin:12px 14px 2px}
+.m-ligne .m-nom{cursor:default}
+.m-choix{border-top:0}
+.sel-abstrait{display:flex;align-items:center;gap:10px;margin:0 0 10px;padding:10px 14px;border:1px solid var(--n-bord);border-radius:12px;background:var(--n-fond);font-weight:600;color:var(--n-titre);cursor:pointer}
+.sel-abstrait input{width:18px;height:18px;margin:0;cursor:pointer}
+.t-famille{border-bottom:1px solid var(--filet, var(--line))} .t-famille:last-child{border-bottom:0}
+.t-famille > .m-ligne{border-bottom:0!important}
+.t-sous-cases{display:flex;flex-wrap:wrap;gap:4px 18px;padding:0 14px 12px 36px}
+.t-sous-case{display:flex;align-items:center;gap:7px;min-height:30px;font-size:14px;cursor:pointer}
+.t-sous-case input{width:17px;height:17px;margin:0;cursor:pointer}
+.t-sous-case:has(input:checked){font-weight:600}`;
   document.head.appendChild(st);
 })();
 // une fenêtre de sélecteur, créée au premier appel ; Échap vaut « Annuler »
@@ -102,6 +126,12 @@ const POIDS = { 3:"majeur", 2:"secondaire", 1:"marginal" };   // (2.5) « second
 const POIDS_PLURIEL = { 3:"majeurs", 2:"secondaires", 1:"marginaux" };
 // les niveaux, dans l'ordre d'affichage (29/10/2026 : le niveau « paramètre » n'existe plus)
 const NIVEAUX_MECA = { materiel:"Matériel", geste:"Gestes de base", mecanisme:"Mécanisme", hasard:"Hasard", assemblage:"Combinaison", aspect:"Mode de jeu", structure:"Déroulement", fin_de_partie:"Fin de partie", mise_en_place:"Mise en place", support:"Plateau et formes", parole:"Parole", hors_modele:"Hors modèle" };
+// (1.5) la phrase d'aide de chaque niveau, sous son titre dans le sélecteur
+const AIDES_NIVEAUX = { geste:"Les actions élémentaires des joueurs : piocher, poser, payer…", mecanisme:"Les règles qui organisent les choix des joueurs.",
+  hasard:"D'où vient l'incertitude que les joueurs ne maîtrisent pas.", assemblage:"Des mécanismes qui forment ensemble un système reconnaissable.",
+  aspect:"La forme de la partie : contre qui, en solo, dans la durée.", structure:"Comment s'enchaînent les tours, les manches, les phases.",
+  fin_de_partie:"Ce qui déclenche la fin de la partie.", mise_en_place:"Ce qui change d'une partie à l'autre avant de commencer.",
+  support:"La forme de l'espace de jeu.", parole:"La place que le jeu laisse à la parole entre joueurs.", hors_modele:"Hors de la nomenclature PRISMEmechanics." };
 // un nom et son anglais : « nom (name) », l'anglais en italique et en gris
 const bilingue = (fr, en) => esc(fr) + (en ? ` <span class="en">(${esc(en)})</span>` : "");
 const legendeDML = `<p class="legende"><span class="info" tabindex="0" aria-label="D déplacement : un composant change de zone (piocher, poser, payer). M modification : il change d'état sur place (lancer, retourner, incliner). L lecture : une règle lit la situation (majorité, série complète, fin de partie).">D déplacement · M modification · L lecture<span class="bulle" aria-hidden="true">D : un composant change de zone (piocher, poser, payer).<br>M : il change d'état sur place (lancer, retourner, incliner).<br>L : une règle lit la situation (majorité, série complète, fin de partie).</span></span></p>`;
@@ -254,17 +284,15 @@ function ouvrirSelecteur(){
   // proposées : tout sauf hors modèle, écartées et fusionnées ; une ligne déjà affectée reste proposée pour pouvoir la retirer
   const proposees = M.lignes.filter(l => M.affectes[l.code] || (l.niveau !== "hors_modele" && l.statut !== "ecarter" && l.statut !== "fusionner"));
   const opt = (o, tous) => `<option value="">${esc(tous)}</option>` + Object.entries(o).map(([c, t]) => `<option value="${esc(c)}">${esc(t)}</option>`).join("");
-  const materiel = proposees.filter(l => l.niveau === "materiel");
-  // (2.3) sous-rubriques : un matériel qui en suppose un autre (Ouvriers → Pions) se range sous lui
-  const parentDe = l => (M.requis[l.code] || []).find(r => materiel.some(m => m.code === r));
-  const racines = materiel.filter(l => !parentDe(l)), enfants = c => rangerSous(materiel.filter(l => parentDe(l) === c));
-  // les niveaux de l'étape 2, dans l'ordre des libellés ; un niveau inconnu va en fin de liste
+  // (1.5) le matériel ne se saisit plus ici, mais dans « Le contenu et le matériel » (decrire.html) ; l'entonnoir s'appuie toujours sur ce qui y est coché.
+  // Les niveaux, dans l'ordre des libellés ; un niveau inconnu va en fin de liste
   const ordre = [...Object.keys(NIVEAUX_MECA), ...new Set(proposees.map(l => l.niveau).filter(n => n && !(n in NIVEAUX_MECA)))]
     .filter(n => n !== "materiel" && proposees.some(l => l.niveau === n));
   const niveaux = Object.fromEntries(ordre.map(n => [n, NIVEAUX_MECA[n] || n]));
   const familles = [...new Set(proposees.map(l => l.famille_recolte).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr"));
+  dialogue().classList.add("notion-bleu");   // (1.5) la teinte des mécaniques
   $("#m-dialogue-corps").innerHTML = `<h2 id="m-dialogue-titre">Mécanismes</h2>
-    <input type="search" class="m-recherche" id="m-q" placeholder="Chercher un mécanisme, un matériel, un code…" aria-label="Chercher un code ou un nom">
+    <input type="search" class="m-recherche" id="m-q" placeholder="Chercher un mécanisme…" aria-label="Chercher un mécanisme">
     ${aideMeca}
     <p class="m-compteur" id="m-compteur"></p>
     <div class="m-filtres">
@@ -284,30 +312,20 @@ function ouvrirSelecteur(){
     const q = norm($("#m-q").value.trim()), niv = $("#m-niv").value, fam = $("#m-fam").value, seuls = $("#m-seuls").checked, tout = $("#m-tout").checked;
     const acquis = acquisDe(M.brouillon);
     const garde = l => (!q || norm(l.code + " " + l.nom + " " + (l.nom_en || "")).includes(q)) && (!fam || l.famille_recolte === fam) && (!seuls || M.brouillon[l.code]);
-    // étape 1, toujours en tête : le matériel du jeu ; une sous-rubrique n'apparaît, indentée, que si sa rubrique est cochée
     let masques = 0;
-    const arbre = (L, prof, parent) => prof > 4 ? "" : L.map(l => {
-      const vu = garde(l) && (!parent || tout || M.brouillon[l.code] || M.brouillon[parent]);
-      if (garde(l) && !vu) masques++;
-      return (vu ? ligneChoix(l, acquis, prof) : "") + arbre(enfants(l.code), prof + 1, l.code);
-    }).join("");
-    // (1.3) en deux groupes, comme dans « Le contenu et le matériel »
-    let h = `<h3 class="m-etape">1. Le matériel du jeu</h3>` + (rangerMateriel(racines).map(([t, G]) => { const a = arbre(G, 0, null); return a ? `<h4 class="m-sg">${esc(t)}</h4>${a}` : ""; }).join("")
-      || `<p class="discret">Aucun matériel ne correspond à ces filtres.</p>`);
-    // étape 2 : le reste, par niveau ; une ligne affectée reste toujours visible
+    // (1.5) une carte par niveau, sa phrase d'aide sous le titre ; une ligne affectée reste toujours visible
     const groupes = ordre.filter(n => !niv || n === niv).map(n => {
       const tous = proposees.filter(l => l.niveau === n), L = tous.filter(garde);
       const vis = L.filter(l => tout || M.brouillon[l.code] || !requisManquants(l.code, acquis).length);
       masques += L.length - vis.length;
       if (!vis.length) return "";
       const nb = tous.filter(l => M.brouillon[l.code]).length;
-      return `<details class="t-facette" data-niveau="${esc(n)}"${q || seuls || ouverts.has(n) ? " open" : ""}><summary><b>${esc(niveaux[n])}</b> <span class="discret">${vis.length} proposé${vis.length > 1 ? "s" : ""}${nb ? ` · ${nb} choisi${nb > 1 ? "s" : ""}` : ""}</span></summary>${n === "aspect"
+      return `<details class="t-facette sel-carte" data-niveau="${esc(n)}"${q || seuls || ouverts.has(n) ? " open" : ""}><summary><b>${esc(niveaux[n])}</b> <span class="discret">${vis.length} proposé${vis.length > 1 ? "s" : ""}${nb ? ` · ${nb} choisi${nb > 1 ? "s" : ""}` : ""}</span>${AIDES_NIVEAUX[n] ? `<span class="sel-aide">${esc(AIDES_NIVEAUX[n])}</span>` : ""}</summary>${n === "aspect"
         ? parSousGroupe(vis).map(([t, G]) => `<h4 class="m-sg">${esc(t)}</h4>${G.map(l => ligneChoix(l, acquis)).join("")}`).join("")
         : vis.map(l => ligneChoix(l, acquis)).join("")}</details>`;
     }).join("");
-    h += `<h3 class="m-etape">2. Le reste, par niveau</h3>` + (groupes || `<p class="discret">Aucun mécanisme ne correspond à ces filtres.</p>`);
-    $("#m-choix").innerHTML = h;
-    $("#m-masques").textContent = masques ? `${masques} ligne${masques > 1 ? "s" : ""} masquée${masques > 1 ? "s" : ""} : ${masques > 1 ? "elles supposent" : "elle suppose"} un matériel ou un mécanisme non coché (« tout afficher » pour les voir).` : "";
+    $("#m-choix").innerHTML = groupes || `<p class="discret">Aucun mécanisme ne correspond à ces filtres.</p>`;
+    $("#m-masques").textContent = masques ? `${masques} ligne${masques > 1 ? "s" : ""} masquée${masques > 1 ? "s" : ""} : ${masques > 1 ? "elles supposent" : "elle suppose"} un matériel (à cocher dans « Le contenu et le matériel ») ou un mécanisme non coché (« tout afficher » pour les voir).` : "";
   };
   $("#m-choix").addEventListener("toggle", e => { if (e.target.matches?.("details")) e.target.open ? ouverts.add(e.target.dataset.niveau) : ouverts.delete(e.target.dataset.niveau); }, true);
   ["#m-q", "#m-niv", "#m-fam", "#m-seuls", "#m-tout"].forEach(s => $(s).addEventListener("input", lister));
@@ -330,7 +348,8 @@ function ligneChoix(l, acquis, prof = 0){
   const v = M.brouillon[l.code], p = v?.poids || 0;
   const manque = requisManquants(l.code, acquis).map(r => ligneMeca(r)?.nom || r);
   const retrait = prof ? ` style="padding-left:${22 * prof}px"` : "";   // une sous-rubrique du matériel, en retrait sous sa rubrique
-  const nom = `<div>${prof ? "↳ " : ""}${l.niveau === "materiel" ? picto(l.code, 20) : ""}${bilingue(l.nom, l.nom_en)}${badgesMeca(l)}${manque.length ? `<span class="m-manque">suppose : ${esc(manque.join(", "))} (non coché)</span>` : ""}</div>`;
+  // (1.5) ni code ni badge de niveau (la carte le dit) : le code reste en info-bulle
+  const nom = `<div class="m-nom" title="${esc(l.code)}">${prof ? "↳ " : ""}${l.niveau === "materiel" ? picto(l.code, 20) : ""}${bilingue(l.nom, l.nom_en)}${manque.length ? `<span class="m-manque">suppose : ${esc(manque.join(", "))} (non coché)</span>` : ""}</div>`;
   // simple coche : une case, sans poids ni remarque
   if (estCoche(l)) return `<div class="m-ligne${p ? " affecte" : ""}" data-code="${esc(l.code)}"${retrait}>${nom}
     <label class="m-coche"><input type="checkbox" data-coche${p ? " checked" : ""} aria-label="${esc(l.nom)} : dans le jeu"> dans le jeu</label></div>`;
@@ -342,7 +361,8 @@ function ligneChoix(l, acquis, prof = 0){
 // le compteur : les lignes à poids (« 3 majeurs · 1 secondaire »), puis les simples coches (« 4 cochés »)
 function compter(){
   const n = { 3:0, 2:0, 1:0 }; let coches = 0;
-  Object.entries(M.brouillon).forEach(([c, v]) => estCoche(ligneMeca(c)) ? coches++ : n[v.poids]++);
+  Object.entries(M.brouillon).forEach(([c, v]) => { const l = ligneMeca(c); if (l?.niveau === "materiel") return;   // (1.5) le matériel se compte dans « Décrire le jeu »
+    estCoche(l) ? coches++ : n[v.poids]++; });
   const L = [3, 2, 1].filter(p => n[p]).map(p => `${n[p]} ${n[p] > 1 ? POIDS_PLURIEL[p] : POIDS[p]}`);
   if (coches) L.push(`${coches} coché${coches > 1 ? "s" : ""}`);
   $("#m-compteur").textContent = L.join(" · ") || "Rien n'est encore choisi.";
@@ -374,7 +394,15 @@ async function enregistrerMecanismes(){
 /* ---- les thèmes du jeu (nomenclature PRISMEthemes, 29/10/2026) : même modèle que les mécanismes ---- */
 // facettes, dans l'ordre d'affichage ; la carte montre le cadre en tête, puis les facettes descriptives
 // (1.1) le sujet avant le cadre ; « Le joueur incarne » (facette role) et « Atmosphère » (facette ton), codes en base inchangés
-const FACETTES = { sujet:"Sujet", cadre:"Cadre", periode:"Période", realisme:"Réalisme", role:"Le joueur incarne", lieu:"Lieu", ton:"Atmosphère", tag:"Tags du fantastique", reference:"Référence culturelle et géographique" };
+// (1.5) la facette realisme s'intitule « Niveau de réalisme »
+const FACETTES = { sujet:"Sujet", cadre:"Cadre", periode:"Période", realisme:"Niveau de réalisme", role:"Le joueur incarne", lieu:"Lieu", ton:"Atmosphère", tag:"Tags du fantastique", reference:"Référence culturelle et géographique" };
+// (1.5) la phrase d'aide de chaque facette, sous son titre dans le sélecteur
+const AIDES_FACETTES = { sujet:"De quoi parle le jeu : une famille porte le poids, ses sous-sujets la précisent.", cadre:"Le monde dans lequel le jeu se déroule.",
+  periode:"L'époque évoquée.", realisme:"À quel point ce monde ressemble au nôtre.", role:"Qui ou quoi le joueur incarne.", lieu:"Où se passe le jeu.",
+  ton:"L'atmosphère de la partie.", tag:"Les motifs du fantastique présents dans le jeu.", reference:"La culture ou la région dont le jeu s'inspire." };
+// (1.5) le sujet en familles : la famille (sans parent) porte le poids ; un sous-sujet est une simple coche, enregistrée en poids 2
+const estSousSujet = l => l?.facette === "sujet" && !!l.parent;
+const sousSujetsDe = c => TH.lignes.filter(l => l.parent === c);
 const FACETTES_CARTE = ["sujet", "role", "ton", "lieu", "tag", "reference"];   // (2.5) sous le titre ; le sujet n'y garde que ses valeurs non majeures
 const ABSTRAIT = "CAD-ABSTRAIT", FACETTES_TEMPS = ["periode", "realisme"];   // un jeu abstrait n'a ni période ni réalisme
 const TH = { jeu:null, user:null, role:null, ecrit:false, lignes:[], affectes:{}, brouillon:null, apres:null };
@@ -402,34 +430,60 @@ const affectesDe = facette => TH.lignes.filter(l => l.facette === facette && TH.
 // le sélecteur, pour l'évaluateur, l'éditeur et le propriétaire : en fenêtre, comme celui des mécanismes
 const dialogueThemes = () => fenetre("t-dialogue", TH);
 function ouvrirSelecteurThemes(){
-  dialogueThemes();
+  dialogueThemes().classList.add("notion-lavande");   // (1.5) la teinte des thèmes
   TH.brouillon = Object.fromEntries(Object.entries(TH.affectes).map(([c, v]) => [c, { ...v }]));
   $("#t-dialogue-corps").innerHTML = `<h2 id="t-dialogue-titre">Thèmes</h2>
     <p class="question">Décrire de quoi parle le jeu, pas le juger : la qualité du thème se note dans l'évaluation (axe THÈME).</p>
     <p class="m-compteur" id="t-compteur"></p>
-    <div class="m-filtres"><input type="search" id="t-q" placeholder="Chercher un code ou un libellé" aria-label="Chercher un code ou un libellé">
+    <label class="sel-abstrait"><input type="checkbox" id="t-abstrait"${TH.brouillon[ABSTRAIT] ? " checked" : ""}> Jeu abstrait (aucun thème)</label>
+    <div class="m-filtres"><input type="search" id="t-q" placeholder="Chercher un thème" aria-label="Chercher un thème">
       <label><input type="checkbox" id="t-seuls"> n'afficher que les thèmes affectés</label></div>
     <div class="m-choix" id="t-choix"></div>
     <p class="m-actions"><button class="btn plein" type="button" id="t-enregistrer">Enregistrer</button><button class="btn" type="button" id="t-annuler">Annuler</button><span class="m-etat" id="t-etat"></span></p>`;
   const ouverts = new Set(Object.keys(TH.affectes).map(c => ligneTheme(c)?.facette));
   const lister = () => {
     const q = norm($("#t-q").value.trim()), seuls = $("#t-seuls").checked;
+    const trouve = l => !q || norm(l.code + " " + l.libelle + " " + (l.libelle_en || "")).includes(q);
     $("#t-choix").innerHTML = Object.entries(FACETTES).map(([f, nom]) => {
-      const tous = themesRanges(f), L = tous.filter(l => (!q || norm(l.code + " " + l.libelle + " " + (l.libelle_en || "")).includes(q)) && (!seuls || TH.brouillon[l.code]));
-      if (!L.length) return "";
-      const n = tous.filter(l => TH.brouillon[l.code]).length;
-      return `<details class="t-facette" data-facette="${f}"${q || seuls || ouverts.has(f) ? " open" : ""}><summary><b>${esc(nom)}</b> <span class="discret">${tous.length} valeur${tous.length > 1 ? "s" : ""}<span data-nb>${n ? ` · ${n} choisi${n > 1 ? "s" : ""}` : ""}</span></span><span class="t-ignore discret"> · ignoré : le jeu est abstrait</span></summary>${L.map(ligneChoixTheme).join("")}</details>`;
+      // « Abstrait » est la case du haut, plus une ligne du cadre
+      const tous = themesRanges(f).filter(l => l.code !== ABSTRAIT);
+      let corps = "";
+      if (f === "sujet"){
+        // (1.5) une petite carte par famille : ses boutons de poids, puis ses sous-sujets en cases, visibles quand la famille a un poids
+        corps = tous.filter(l => !l.parent).map(fam => {
+          const S = sousSujetsDe(fam.code), choisie = !!TH.brouillon[fam.code];
+          if (!(trouve(fam) || S.some(trouve)) || (seuls && !choisie && !S.some(s => TH.brouillon[s.code]))) return "";
+          const vus = S.filter(s => TH.brouillon[s.code] || (choisie && (trouve(fam) || trouve(s))) || (q && trouve(s)));
+          return `<div class="t-famille">${ligneChoixTheme(fam)}${vus.length ? `<div class="t-sous-cases" role="group" aria-label="Sous-sujets de ${esc(fam.libelle)}">${vus.map(s =>
+            `<label class="t-sous-case" title="${esc(s.code)}${s.definition ? " : " + esc(s.definition) : ""}"><input type="checkbox" data-sous="${esc(s.code)}"${TH.brouillon[s.code] ? " checked" : ""}> ${bilingue(s.libelle, s.libelle_en)}</label>`).join("")}</div>` : ""}</div>`;
+        }).join("");
+      } else corps = tous.filter(l => trouve(l) && (!seuls || TH.brouillon[l.code])).map(ligneChoixTheme).join("");
+      if (!corps) return "";
+      const nbValeurs = f === "sujet" ? tous.filter(l => !l.parent).length : tous.length;
+      return `<details class="t-facette sel-carte" data-facette="${f}"${q || seuls || ouverts.has(f) ? " open" : ""}><summary><b>${esc(nom)}</b> <span class="discret">${nbValeurs} ${f === "sujet" ? "famille" : "valeur"}${nbValeurs > 1 ? "s" : ""}<span data-nb></span></span><span class="t-ignore discret"> · ignoré : le jeu est abstrait</span>${AIDES_FACETTES[f] ? `<span class="sel-aide">${esc(AIDES_FACETTES[f])}</span>` : ""}</summary>${corps}</details>`;
     }).join("") || `<p class="discret">Aucun thème ne correspond à cette recherche.</p>`;
     griser();
   };
+  // redessiner sans perdre la place ni le focus
+  const relister = selecteur => { const boite = $("#t-choix"), haut = boite.scrollTop; lister(); compterThemes(); boite.scrollTop = haut; if (selecteur) boite.querySelector(selecteur)?.focus(); };
   $("#t-choix").addEventListener("toggle", e => { if (e.target.matches?.("details")) e.target.open ? ouverts.add(e.target.dataset.facette) : ouverts.delete(e.target.dataset.facette); }, true);
   ["#t-q", "#t-seuls"].forEach(s => $(s).addEventListener("input", lister));
+  // (1.5) « Jeu abstrait » : grise la période et le niveau de réalisme (leurs choix sont retirés à l'enregistrement)
+  $("#t-abstrait").addEventListener("change", e => { if (e.target.checked) TH.brouillon[ABSTRAIT] = { poids: TH.brouillon[ABSTRAIT]?.poids || 3, remarque:"" }; else delete TH.brouillon[ABSTRAIT]; relister(); });
   $("#t-choix").addEventListener("click", e => {
     const b = e.target.closest("[data-p]"); if (!b) return;
-    const ligne = b.closest(".m-ligne"), c = ligne.dataset.code, p = +b.dataset.p;
-    if (p) TH.brouillon[c] = { poids:p, remarque: TH.brouillon[c]?.remarque || "" }; else delete TH.brouillon[c];
-    ligne.outerHTML = ligneChoixTheme(ligneTheme(c));
-    compterThemes(); griser();
+    const c = b.closest(".m-ligne").dataset.code, p = +b.dataset.p;
+    if (p) TH.brouillon[c] = { poids:p, remarque: TH.brouillon[c]?.remarque || "" };
+    else { delete TH.brouillon[c]; sousSujetsDe(c).forEach(s => delete TH.brouillon[s.code]); }   // une famille retirée emporte ses sous-sujets
+    relister(`.m-ligne[data-code="${CSS.escape(c)}"] [data-p="${p}"]`);
+  });
+  $("#t-choix").addEventListener("change", e => {
+    const x = e.target.closest("[data-sous]"); if (!x) return;
+    const s = ligneTheme(x.dataset.sous);
+    // cocher un sous-sujet sans sa famille donne d'office la famille en « secondaire »
+    if (x.checked){ TH.brouillon[s.code] = { poids:2, remarque: TH.affectes[s.code]?.remarque || "" }; if (!TH.brouillon[s.parent]) TH.brouillon[s.parent] = { poids:2, remarque:"" }; }
+    else delete TH.brouillon[s.code];
+    relister(`[data-sous="${CSS.escape(s.code)}"]`);
   });
   $("#t-choix").addEventListener("input", e => { if (e.target.matches(".m-rem")) TH.brouillon[e.target.closest(".m-ligne").dataset.code].remarque = e.target.value; });
   $("#t-annuler").addEventListener("click", () => { TH.brouillon = null; dialogueThemes().close(); });
@@ -439,7 +493,8 @@ function ouvrirSelecteurThemes(){
 }
 function ligneChoixTheme(l){
   const v = TH.brouillon[l.code], p = v?.poids || 0;
-  return `<div class="m-ligne${p ? " affecte" : ""}${l.parent ? " t-sous" : ""}" data-code="${esc(l.code)}"><div>${bilingue(l.libelle, l.libelle_en)}<span class="m-code">${esc(l.code)}</span></div>
+  // (1.5) le code n'est plus affiché : il reste en info-bulle
+  return `<div class="m-ligne${p ? " affecte" : ""}" data-code="${esc(l.code)}"><div class="m-nom" title="${esc(l.code)}${l.definition ? " : " + esc(l.definition) : ""}">${bilingue(l.libelle, l.libelle_en)}</div>
     <div class="m-poids" role="group" aria-label="Poids de ${esc(l.libelle)}">${[[0, "—"], [1, POIDS[1]], [2, POIDS[2]], [3, POIDS[3]]].map(([n, t]) =>
       `<button type="button" data-p="${n}" aria-pressed="${p === n}"${n ? "" : ' title="absent"'}>${esc(t)}</button>`).join("")}</div>
     ${p ? `<input class="m-rem" type="text" placeholder="Remarque (facultative)" aria-label="Remarque, visible sur la fiche entre parenthèses" value="${esc(v.remarque)}"><span class="m-aide">Visible sur la fiche, entre parenthèses</span>` : ""}</div>`;
@@ -450,19 +505,26 @@ function griser(){
   document.querySelectorAll("#t-choix details.t-facette").forEach(d => {
     const off = abstrait && FACETTES_TEMPS.includes(d.dataset.facette);
     d.classList.toggle("grise", off); d.querySelectorAll("button, input").forEach(x => x.disabled = off);
-    const n = themesRanges(d.dataset.facette).filter(l => TH.brouillon[l.code]).length;
+    // (1.5) le sujet compte ses familles ; Abstrait n'est plus compté dans le cadre (c'est la case du haut)
+    const n = themesRanges(d.dataset.facette).filter(l => TH.brouillon[l.code] && l.code !== ABSTRAIT && !estSousSujet(l)).length;
     d.querySelector("[data-nb]").textContent = n ? ` · ${n} choisi${n > 1 ? "s" : ""}` : "";
   });
 }
 function compterThemes(){
-  const n = { 3:0, 2:0, 1:0 }, abstrait = !!TH.brouillon[ABSTRAIT];
-  Object.entries(TH.brouillon).forEach(([c, v]) => { if (!(abstrait && FACETTES_TEMPS.includes(ligneTheme(c)?.facette))) n[v.poids]++; });
-  $("#t-compteur").textContent = [3, 2, 1].map(p => `${n[p]} ${n[p] > 1 ? POIDS_PLURIEL[p] : POIDS[p]}`).join(" · ");
+  const n = { 3:0, 2:0, 1:0 }, abstrait = !!TH.brouillon[ABSTRAIT]; let sous = 0;
+  Object.entries(TH.brouillon).forEach(([c, v]) => { const l = ligneTheme(c);
+    if (c === ABSTRAIT || (abstrait && FACETTES_TEMPS.includes(l?.facette))) return;
+    if (estSousSujet(l)) sous++; else n[v.poids]++; });
+  $("#t-compteur").textContent = (abstrait ? "Jeu abstrait · " : "") + [3, 2, 1].map(p => `${n[p]} ${n[p] > 1 ? POIDS_PLURIEL[p] : POIDS[p]}`).join(" · ")
+    + (sous ? ` · ${sous} sous-sujet${sous > 1 ? "s" : ""}` : "");
 }
 async function enregistrerThemes(){
   const avant = TH.affectes, apres = { ...TH.brouillon }, etat = $("#t-etat");
   // un jeu abstrait : les périodes et le réalisme sont retirés (supprimés en base s'il y en avait)
   if (apres[ABSTRAIT]) Object.keys(apres).forEach(c => { if (FACETTES_TEMPS.includes(ligneTheme(c)?.facette)) delete apres[c]; });
+  // (1.5) un sous-sujet ne fait que préciser : poids 2 (une remarque déjà saisie est gardée) ; sa famille est toujours enregistrée avec lui
+  Object.keys(apres).forEach(c => { const l = ligneTheme(c); if (!estSousSujet(l)) return;
+    apres[c] = { poids:2, remarque: apres[c].remarque || "" }; if (!apres[l.parent]) apres[l.parent] = { poids:2, remarque:"" }; });
   // l'horodatage (modifie_le, modifie_par) est tenu par la base
   const majs = Object.entries(apres).filter(([c, v]) => !avant[c] || avant[c].poids !== v.poids || avant[c].remarque.trim() !== v.remarque.trim())
     .map(([c, v]) => ({ jeu:TH.jeu, theme:c, poids:v.poids, remarque: v.remarque.trim() || null }));

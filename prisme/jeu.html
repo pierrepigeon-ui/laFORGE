@@ -140,8 +140,9 @@ ul.m-liste li{border-bottom:1px solid var(--line);padding:7px 0}
 .rem{font-weight:400;opacity:.8}
 .cadre-theme{font-size:13px;color:var(--muted);margin:-6px 0 0}
 /* 2.13 (05/11/2026) : les cadres dans la couleur de leur notion (selecteurs.js 1.4) ; dans la carte Thème, une pastille ne se coupe jamais ;
-   les onglets « Jeu de base » / « Jeu all-in » quand l'all-in existe */
-#carte-theme .puces > span,#carte-theme .titre-carte > span{white-space:nowrap}
+   les onglets « Jeu de base » / « Jeu all-in » quand l'all-in existe
+   2.14 (05/11/2026) : carte Thème, la famille de sujet avec ses sous-sujets entre parenthèses ; « Niveau de réalisme » (selecteurs.js 1.5) */
+#carte-theme .puces > span{white-space:nowrap}   /* (2.14) le titre, plus long avec ses sous-sujets, peut passer à la ligne */
 details.pli.notion > summary strong{color:var(--n-titre)}
 .sous-fiches{display:flex;gap:4px;padding:4px;background:var(--neutre);border-radius:10px;align-self:flex-start}
 .sous-fiches a,.sous-fiches b{padding:8px 16px;border-radius:8px;font-size:14px;font-weight:600;text-decoration:none}
@@ -168,9 +169,9 @@ details.pli.notion > summary strong{color:var(--n-titre)}
 </main>
 
 <script src="timeline.js?v=3.12"></script>
-<script src="selecteurs.js?v=1.4"></script>
+<script src="selecteurs.js?v=1.5"></script>
 <script>
-const VERSION = { numero:"2.13", date:"2026-11-05 19:06" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"2.14", date:"2026-11-05 20:06" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -480,18 +481,24 @@ function afficherThemes(){
   const rien = !Object.keys(TH.affectes).length;
   carte.classList.toggle("theme", rien);   // la bordure pointillée disparaît dès qu'un thème est affecté
   // (2.5) la remarque entre parenthèses à la suite du libellé : « Un individu (le pilote) »
-  const puce = (l, cls) => `<span class="${cls} info" tabindex="0">${esc(l.libelle)}${remVisible(TH.affectes[l.code]?.remarque)}<span class="bulle">${l.libelle_en ? `<i>${esc(l.libelle_en)}</i><br>` : ""}${esc(l.definition || "Pas encore de définition.")}</span></span>`;
+  // (2.14) une famille de sujet porte ses sous-sujets cochés entre parenthèses, puis sa remarque : « Conflit (tactique, subtactique) »
+  const precisions = l => { const S = sousSujetsDe(l.code).filter(s => TH.affectes[s.code]);
+    // une remarque ancienne posée sur un sous-sujet le suit : « Construction (aménager, terraformer : son manoir) »
+    return S.length ? ` (${S.map(s => s.libelle.charAt(0).toLowerCase() + s.libelle.slice(1) + (TH.affectes[s.code].remarque ? " : " + TH.affectes[s.code].remarque : "")).join(", ")})` : ""; };
+  const puce = (l, cls) => `<span class="${cls} info" tabindex="0">${esc(l.libelle)}${l.facette === "sujet" ? esc(precisions(l)) : ""}${remVisible(TH.affectes[l.code]?.remarque)}<span class="bulle">${l.facette === "sujet" ? `<b>${esc(POIDS[TH.affectes[l.code].poids])}</b><br>` : ""}${l.libelle_en ? `<i>${esc(l.libelle_en)}</i><br>` : ""}${esc(l.definition || "Pas encore de définition.")}</span></span>`;
   let h = `<div class="surtitre n-titre">Thème</div>`;
   if (rien) h += `<p class="discret" style="margin:0">Aucun thème n'est encore affecté à ce jeu.</p>`;
   else {
     // (2.5) en titre, le ou les sujets majeurs ; dessous, en petit, « Abstrait », ou la ou les périodes et le réalisme
-    const sujets = affectesDe("sujet").filter(l => TH.affectes[l.code].poids === 3);
+    // (2.14) seulement les familles de sujet : les sous-sujets les précisent entre parenthèses
+    const familles = affectesDe("sujet").filter(l => !estSousSujet(l));
+    const sujets = familles.filter(l => TH.affectes[l.code].poids === 3);
     if (sujets.length) h += `<p class="titre-carte">${sujets.map(l => puce(l, "")).join(" · ")}</p>`;
     const cadre = TH.affectes[ABSTRAIT] ? ["Abstrait"] : [...affectesDe("periode").map(l => l.libelle), ...affectesDe("realisme").map(l => l.libelle.toLowerCase())];
     if (cadre.length) h += `<p class="cadre-theme"${sujets.length ? "" : ' style="margin:0"'}>${esc(cadre.join(" · "))}</p>`;
     // (2.13) une facette par ligne, les marginaux affichés (comme pour les mécaniques), sans bouton « + »
     FACETTES_CARTE.forEach(f => {
-      const L = affectesDe(f).filter(l => f !== "sujet" || TH.affectes[l.code].poids !== 3); if (!L.length) return;
+      const L = f === "sujet" ? familles.filter(l => TH.affectes[l.code].poids !== 3) : affectesDe(f); if (!L.length) return;
       h += `<div class="groupe"><span class="etiq">${esc(FACETTES[f])}</span><div class="puces">${L.map(l => {
         const p = TH.affectes[l.code].poids; return puce(l, p === 3 ? "mj" : p === 1 ? "mg" : "pr"); }).join("")}</div></div>`;
     });
@@ -503,7 +510,7 @@ function afficherThemes(){
   if (!facettes.length) dh += `<p class="discret">Aucun thème n'est encore affecté à ce jeu.</p>`;
   facettes.forEach(f => {
     dh += `<h3 class="m-groupe">${esc(FACETTES[f])}</h3><ul class="m-liste">${affectesDe(f).map(l => { const v = TH.affectes[l.code];
-      return `<li>${bilingue(l.libelle, l.libelle_en)}<span class="m-code">${esc(l.code)}</span><span class="m-niv">${esc(POIDS[v.poids])}</span>${l.definition ? `<span class="m-def">${esc(l.definition)}</span>` : ""}${v.remarque ? `<span class="m-rem-lue">${esc(v.remarque)}</span>` : ""}</li>`; }).join("")}</ul>`;
+      return `<li>${bilingue(l.libelle, l.libelle_en)}<span class="m-code">${esc(l.code)}</span><span class="m-niv">${esc(estSousSujet(l) ? "précise " + (ligneTheme(l.parent)?.libelle || l.parent) : POIDS[v.poids])}</span>${l.definition ? `<span class="m-def">${esc(l.definition)}</span>` : ""}${v.remarque ? `<span class="m-rem-lue">${esc(v.remarque)}</span>` : ""}</li>`; }).join("")}</ul>`;
   });
   det.innerHTML = dh;
 }
