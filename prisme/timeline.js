@@ -1,7 +1,8 @@
 /* PRISME — timeline du jeu : jalons, durées, flow, α β γ ω, durée de vie.
    Module partagé par l'encyclopédie et l'outil d'évaluation. Méthode arrêtée le 08/10/2026 (jeu d'essai : Heat) ; modèle à 12 paires le 11/10/2026 ;
    formules refaites phase par phase le 12/10/2026 avec trois jeux de référence (Gloomhaven, Heat, Flip 7). L'unité est la session. */
-const TIMELINE_VERSION = { numero:"3.11", date:"2026-11-03 23:33" };   // à incrémenter à chaque livraison
+const TIMELINE_VERSION = { numero:"3.12", date:"2026-11-05 19:06" };   // à incrémenter à chaque livraison
+// (3.12, 05/11/2026) entreesPourCalcul : une paire dont tous les axes de rang « 1… » sont sans objet dans la description l'est tout entière
 
 const JALONS = [
   { n:0, nom:"identifié", quoi:"Le jeu est connu de loin : critique, vitrine, recommandation." },
@@ -558,6 +559,11 @@ function entreesPourCalcul(saisieFiche, extraFiche, description, axesDescription
   const saisie = { ...saisieFiche };
   axes.filter(a => /^1/.test(a.rang || "")).forEach(a => { const d = D[a.code]; if (!d) return;
     saisie[a.code] = { ...saisieFiche?.[a.code], valeur: d.valeur == null ? null : Number(d.valeur), sans_objet: !!d.sans_objet }; });
+  // (3.12) le « sans objet » se décide dans la description : si tous les axes de rang « 1… » d'une paire le sont,
+  // ses axes de rang « 2… » le sont aussi, quoi qu'en dise la fiche
+  const parPaire = {}; axes.forEach(a => (parPaire[a.paire] ||= []).push(a));
+  Object.values(parPaire).forEach(L => { const un = L.filter(a => /^1/.test(a.rang || "")); if (!un.length || !un.every(a => !!D[a.code]?.sans_objet)) return;
+    L.filter(a => /^2/.test(a.rang || "")).forEach(a => saisie[a.code] = { ...saisie[a.code], valeur: saisie[a.code]?.valeur ?? null, sans_objet:true }); });
   const prix = prixDeGamme(description.prix_gamme, reglages);
   return { saisie, source:"description",
     extra: { ...extraFiche, prix: prix ?? extraFiche?.prix, contenu_unique: !!description.usage_unique, contenu_parties: extraFiche?.contenu_parties } };

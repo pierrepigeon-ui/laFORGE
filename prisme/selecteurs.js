@@ -8,8 +8,10 @@
    et « Atmosphère », le sujet avant le cadre.
    (1.2, 01/11/2026) le sous-groupe « À combien » s'appelle « Solo » ; les aides en italique.
    (1.3, 02/11/2026) les pictogrammes du matériel et des familles d'axes (PICTOS, picto()) ; le matériel en deux groupes
-   (« Ce que les joueurs manipulent », « Ce qui les accueille »), partagé avec decrire.html. */
-const SELECTEURS_VERSION = "1.3";
+   (« Ce que les joueurs manipulent », « Ce qui les accueille »), partagé avec decrire.html.
+   (1.4, 05/11/2026) ce qui est commun aux pages, chargé aussi par evaluation.html : une couleur par notion (NOTIONS), le sommaire collant
+   (sommaire()), la liste complète des paliers d'un axe (listePaliers()) ; le Système en deux engrenages ; le sablier parmi les objets manipulés. */
+const SELECTEURS_VERSION = "1.4";
 (function(){
   const st = document.createElement("style");
   st.textContent = `
@@ -48,7 +50,39 @@ svg.picto{flex:none;vertical-align:-5px;margin-right:6px;color:var(--muted)}
 .m-coche input{width:18px;height:18px;margin:0;cursor:pointer}
 .m-recherche{width:100%;box-sizing:border-box;font:15px var(--sans);padding:9px 12px;margin:0 0 10px;border:1.5px solid var(--trait);border-radius:10px;background:var(--paper);color:var(--ink)}
 .m-aide{grid-column:1 / -1;font-size:12px;font-style:italic;color:var(--muted);margin:-2px 0 0}
-@media (max-width:760px){ .m-ligne{grid-template-columns:1fr} .m-poids button{flex:1;padding:5px 2px} }`;
+@media (max-width:760px){ .m-ligne{grid-template-columns:1fr} .m-poids button{flex:1;padding:5px 2px} }
+/* (1.4) une couleur par notion, la même sur toutes les pages : fond très pâle du cadre, bordure un ton plus soutenu, titre dans la teinte foncée */
+.notion-sable{--n-fond:#FBF6EC;--n-bord:#EADFC8;--n-titre:#6B4E16;--n-fort:#F2E6CB}
+.notion-vert{--n-fond:#EEF7F4;--n-bord:#CFE7DF;--n-titre:#1F5E4D;--n-fort:#DAEEE7}
+.notion-lavande{--n-fond:#F3F0FA;--n-bord:#DDD5F0;--n-titre:#4B3A7A;--n-fort:#E6E0F5}
+.notion-bleu{--n-fond:#EEF3FD;--n-bord:#D3DFF7;--n-titre:#16308F;--n-fort:#DCE6FA}
+.notion-peche{--n-fond:#FDF2EC;--n-bord:#F3D9C9;--n-titre:#8A3A12;--n-fort:#F7DDCC}
+.notion-neutre{--n-fond:var(--panel);--n-bord:var(--line);--n-titre:var(--ink);--n-fort:var(--neutre)}
+@media (prefers-color-scheme: dark){
+  .notion-sable{--n-fond:#29231A;--n-bord:#4A3F2A;--n-titre:#EBCB8E;--n-fort:#433826}
+  .notion-vert{--n-fond:#16271F;--n-bord:#2B4A3F;--n-titre:#9FD9C5;--n-fort:#244136}
+  .notion-lavande{--n-fond:#211D31;--n-bord:#3E3560;--n-titre:#CBBDF3;--n-fort:#352E52}
+  .notion-bleu{--n-fond:#18213A;--n-bord:#2E3D6B;--n-titre:#B9CCFF;--n-fort:#28365E}
+  .notion-peche{--n-fond:#2C1C15;--n-bord:#5A3524;--n-titre:#F5BFA0;--n-fort:#4A2D20} }
+.notion{background:var(--n-fond)!important;border-color:var(--n-bord)!important}
+.notion .n-titre{color:var(--n-titre)}
+/* (1.4) le sommaire collant, sous l'en-tête : une pastille par cadre, dans sa couleur ; le cadre visible en évidence ; « ↑ Haut » à droite */
+.sommaire{position:sticky;top:var(--som-top, var(--ent-h, 0px));z-index:18;display:flex;align-items:center;gap:10px;padding:8px 0;background:var(--paper)}
+.som-pastilles{flex:1;min-width:0;display:flex;gap:6px;overflow-x:auto;scrollbar-width:thin;padding:2px}
+.sommaire .som-p{flex:none;padding:5px 12px;border-radius:999px;border:1px solid var(--n-bord);background:var(--n-fond);color:var(--n-titre);font:600 13px var(--sans);text-decoration:none;white-space:nowrap}
+.sommaire .som-p:hover{border-color:var(--n-titre);color:var(--n-titre)}
+.sommaire .som-p.actif{background:var(--n-titre);border-color:var(--n-titre);color:var(--panel)}
+.sommaire .som-haut{flex:none;min-height:34px;padding:0 12px;border:1px solid var(--trait);border-radius:8px;background:var(--panel);color:var(--ink);font:500 13px var(--sans);cursor:pointer;white-space:nowrap}
+.sommaire .som-haut:hover{border-color:var(--ink)}
+@media (max-width:599px){ .sommaire{position:static} }
+/* (1.4) la liste complète des paliers d'un axe, à côté des trapèzes ; le palier choisi en évidence (une demi-valeur : ses deux voisins) */
+.paliers{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1px;flex:1 1 300px;min-width:0;max-width:600px}
+.paliers button{display:flex;gap:10px;align-items:baseline;width:100%;text-align:left;border:0;background:none;padding:3px 8px;border-radius:6px;font:13px/1.4 var(--sans);color:var(--muted);cursor:pointer}
+.paliers button b{flex:none;min-width:2.4em;font-weight:600;font-variant-numeric:tabular-nums;color:var(--ink)}
+.paliers button:not(:disabled):hover{background:rgba(127,127,127,.12)}
+.paliers button.choisi{background:#F3D9C9;color:var(--ink);font-weight:700} .paliers button.choisi b{font-weight:800}
+@media (prefers-color-scheme: dark){ .paliers button.choisi{background:#5A3524} }
+.paliers button:disabled{cursor:default}`;
   document.head.appendChild(st);
 })();
 // une fenêtre de sélecteur, créée au premier appel ; Échap vaut « Annuler »
@@ -85,6 +119,10 @@ const parSousGroupe = L => [...Object.entries(SOUS_GROUPES).map(([g, t]) => [t, 
 // une remarque, visible entre parenthèses à la suite du nom
 const remVisible = r => r ? ` <span class="rem">(${esc(r)})</span>` : "";
 const norm = s => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+// (1.4) un engrenage au trait : la roue, le moyeu, des dents en rayons (le Système en a deux, un grand et un petit, imbriqués)
+const engrenage = (cx, cy, r, R, n, dec = 0) => `<circle cx="${cx}" cy="${cy}" r="${r}"/><circle cx="${cx}" cy="${cy}" r="${(r * .38).toFixed(2)}"/>`
+  + [...Array(n).keys()].map(i => { const a = dec + i * 2 * Math.PI / n, c = Math.cos(a), s = Math.sin(a), f = v => v.toFixed(2);
+    return `<path d="M${f(cx + r * c)} ${f(cy + r * s)} L${f(cx + R * c)} ${f(cy + R * s)}"/>`; }).join("");
 // (1.3) les pictogrammes, au trait, dans une grille de 24 : le matériel (par code) et les familles d'axes (par code de chapitre)
 const PICTOS = {
   "MAT-CARTES": `<rect x="3" y="5" width="11" height="15" rx="2"/><rect x="10" y="3" width="11" height="15" rx="2"/>`,
@@ -103,20 +141,77 @@ const PICTOS = {
   "MAT-SAC": `<path d="M8 7 Q12 3 16 7 L19 19 Q12 22 5 19 Z"/><path d="M8 7 H16"/>`,
   "MAT-SABLIER": `<path d="M6 3 H18 M6 21 H18 M7 3 Q7 10 12 12 Q17 10 17 3 M7 21 Q7 14 12 12 Q17 14 17 21"/>`,
   "MAT-ECRAN": `<path d="M3 6 L9 4 V18 L3 20 Z M9 4 L15 6 V20 L9 18 M15 6 L21 4 V18 L15 20"/>`,
-  SYS: `<circle cx="12" cy="12" r="3.2"/><path d="M12 2.5 V5.5 M12 18.5 V21.5 M2.5 12 H5.5 M18.5 12 H21.5 M5.3 5.3 L7.4 7.4 M16.6 16.6 L18.7 18.7 M5.3 18.7 L7.4 16.6 M16.6 7.4 L18.7 5.3"/>`,
+  SYS: engrenage(9.3, 9.3, 4.4, 6.7, 8) + engrenage(17.4, 17.4, 2.6, 4.2, 6, Math.PI / 6),
   EXP: `<path d="M12 20 C5 15 3 11 5 8 C7 5 10.5 6 12 8.5 C13.5 6 17 5 19 8 C21 11 19 15 12 20 Z"/>`,
   EDI: `<path d="M3 7.5 L12 3 L21 7.5 L12 12 Z M3 7.5 V16.5 L12 21 V12 M21 7.5 V16.5 L12 21"/>` };
 // un pictogramme en SVG en ligne, de la couleur du texte ; rien si le code n'en a pas
 const picto = (code, t = 22) => PICTOS[code] ? `<svg class="picto" width="${t}" height="${t}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">${PICTOS[code]}</svg>` : "";
 // (1.3) le matériel en deux groupes, dans cet ordre ; une rubrique inconnue va dans « Autre matériel »
-const GROUPES_MATERIEL = [["Ce que les joueurs manipulent", ["MAT-CARTES", "MAT-DES", "MAT-TUILES", "MAT-PIONS", "MAT-JETONS", "MAT-MARQUEURS"]],
-  ["Ce qui les accueille", ["MAT-PLATEAU", "MAT-PLATEAU-JOUEUR", "MAT-FEUILLE", "MAT-SAC", "MAT-SABLIER", "MAT-ECRAN"]]];
+// (1.4) le sablier parmi les objets manipulés
+const GROUPES_MATERIEL = [["Ce que les joueurs manipulent", ["MAT-CARTES", "MAT-DES", "MAT-TUILES", "MAT-PIONS", "MAT-JETONS", "MAT-MARQUEURS", "MAT-SABLIER"]],
+  ["Ce qui les accueille", ["MAT-PLATEAU", "MAT-PLATEAU-JOUEUR", "MAT-FEUILLE", "MAT-SAC", "MAT-ECRAN"]]];
 const rangerMateriel = racines => [...GROUPES_MATERIEL.map(([t, C]) => [t, C.map(c => racines.find(l => l.code === c)).filter(Boolean)]),
   ["Autre matériel", racines.filter(l => !GROUPES_MATERIEL.some(([, C]) => C.includes(l.code)))]].filter(([, G]) => G.length);
 // les sous-rubriques, sous leur rubrique, dans cet ordre ; les autres suivent dans l'ordre de la nomenclature
 const ORDRE_SOUS_MATERIEL = ["MAT-MAIN", "MAT-MEEPLES", "MAT-OUVRIERS", "MAT-FIGURINES"];
 const rangSous = l => { const i = ORDRE_SOUS_MATERIEL.indexOf(l.code); return i < 0 ? 99 : i; };
 const rangerSous = L => [...L].sort((a, b) => rangSous(a) - rangSous(b));
+
+/* ---- (1.4) commun aux pages : notions, sommaire, paliers ---- */
+// une couleur par notion (classe notion-<couleur>, plus « notion » sur un cadre pour en prendre le fond et la bordure)
+const NOTIONS = { bref:"sable", prix:"sable", contenu:"vert", theme:"lavande", meca:"bleu", axes:"peche" };
+const notion = n => "notion notion-" + (NOTIONS[n] || "neutre");
+// le sommaire collant : el reçoit une pastille par cadre ({ id, nom, notion, ouvrir(cadre) facultatif }) et le bouton « ↑ Haut »
+const SOM = { el:null, cadres:[] };
+const hauteurCollee = () => { const el = SOM.el; if (!el) return 0;
+  const cs = getComputedStyle(el); return cs.position === "sticky" ? parseFloat(cs.top) + el.offsetHeight : parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--ent-h")) || 0; };
+function allerA(cadre){ scrollTo({ top: cadre.getBoundingClientRect().top + scrollY - hauteurCollee() - 10, behavior:"smooth" }); }
+function sommaire(el, cadres){
+  Object.assign(SOM, { el, cadres });
+  el.classList.add("sommaire"); el.setAttribute("aria-label", "Sommaire de la page");
+  el.innerHTML = `<div class="som-pastilles">${cadres.map(c => `<a href="#${esc(c.id)}" class="som-p notion-${NOTIONS[c.notion] || "neutre"}" data-som="${esc(c.id)}">${esc(c.nom)}</a>`).join("")}</div>
+    <button type="button" class="som-haut" title="Revenir en haut de la page">↑ Haut</button>`;
+  if (!el.dataset.pret){
+    el.dataset.pret = "1";
+    el.addEventListener("click", e => {
+      if (e.target.closest(".som-haut")){ scrollTo({ top:0, behavior:"smooth" }); return; }
+      const a = e.target.closest("[data-som]"); if (!a) return;
+      e.preventDefault();
+      const c = document.getElementById(a.dataset.som); if (!c) return;
+      SOM.cadres.find(x => x.id === a.dataset.som)?.ouvrir?.(c);
+      allerA(c);
+    });
+    let prevu = false;
+    addEventListener("scroll", () => { if (!prevu){ prevu = true; requestAnimationFrame(() => { prevu = false; majSommaire(); }); } }, { passive:true });
+    addEventListener("resize", majSommaire);
+  }
+  majSommaire();
+}
+// le cadre visible : le dernier dont le haut est passé sous le sommaire
+function majSommaire(){
+  if (!SOM.el) return;
+  const lim = hauteurCollee() + 40; let vu = null;
+  SOM.cadres.forEach(c => { const el = document.getElementById(c.id); if (el && el.offsetParent !== null && el.getBoundingClientRect().top <= lim) vu = c.id; });
+  if (!vu && SOM.cadres.length) vu = SOM.cadres[0].id;
+  SOM.el.querySelectorAll("[data-som]").forEach(a => { const ici = a.dataset.som === vu; a.classList.toggle("actif", ici); ici ? a.setAttribute("aria-current", "true") : a.removeAttribute("aria-current"); });
+}
+// le libellé d'un palier (P : { valeur: libellé }) ; une demi-valeur se dit « entre » ses deux voisins
+// (le point final et la majuscule initiale d'un palier rédigé en phrase s'effacent dans « entre … et … »)
+const milieuPalier = t => t.replace(/\.$/, "").replace(/^\p{Lu}(?!\p{Lu})/u, c => c.toLowerCase());
+function libelleDePalier(P, v){
+  if (v == null) return "";
+  const x = Math.round(v * 2) / 2;
+  return x % 1 === 0 ? P[x] || "" : P[x - .5] && P[x + .5] ? `entre ${milieuPalier(P[x - .5])} et ${milieuPalier(P[x + .5])}` : "";
+}
+// tous les paliers d'un axe, du plus bas au plus haut, chacun précédé de sa valeur (texte(x) l'écrit) ; le choisi en évidence,
+// une demi-valeur met en évidence ses deux paliers encadrants ; un clic choisit la valeur (la page écoute « .paliers button »).
+// Hors de l'ordre de tabulation : au clavier, les flèches sur les trapèzes font la même chose.
+function listePaliers(P, v, texte = x => String(x).replace(".", ","), ro = ""){
+  const V = Object.keys(P).map(Number).filter(x => !Number.isNaN(x)).sort((a, b) => a - b); if (!V.length) return "";
+  const r = v == null ? null : Math.round(v * 2) / 2, choisis = r == null ? [] : r % 1 === 0 ? [r] : [r - .5, r + .5];
+  return `<ol class="paliers">${V.map(x => `<li><button type="button" data-v="${x}" tabindex="-1" class="${choisis.includes(x) ? "choisi" : ""}"${ro}><b>${esc(texte(x))}</b><span>${esc(P[x])}</span></button></li>`).join("")}</ol>`;
+}
+
 const M = { jeu:null, user:null, role:null, ecrit:false, lignes:[], requis:{}, affectes:{}, brouillon:null, apres:null };   // affectes : { code: { poids, remarque } } ; requis : { code: [codes requis] }
 
 // lit la nomenclature, les requis et les mécanismes du jeu dans M ; renvoie le message d'erreur, ou null

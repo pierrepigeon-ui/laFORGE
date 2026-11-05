@@ -139,6 +139,13 @@ ul.m-liste li{border-bottom:1px solid var(--line);padding:7px 0}
 .mode{display:inline-block;padding:5px 13px;border-radius:999px;background:var(--neutre);color:var(--ink);font-size:14px;font-weight:600}
 .rem{font-weight:400;opacity:.8}
 .cadre-theme{font-size:13px;color:var(--muted);margin:-6px 0 0}
+/* 2.13 (05/11/2026) : les cadres dans la couleur de leur notion (selecteurs.js 1.4) ; dans la carte Thème, une pastille ne se coupe jamais ;
+   les onglets « Jeu de base » / « Jeu all-in » quand l'all-in existe */
+#carte-theme .puces > span,#carte-theme .titre-carte > span{white-space:nowrap}
+details.pli.notion > summary strong{color:var(--n-titre)}
+.sous-fiches{display:flex;gap:4px;padding:4px;background:var(--neutre);border-radius:10px;align-self:flex-start}
+.sous-fiches a,.sous-fiches b{padding:8px 16px;border-radius:8px;font-size:14px;font-weight:600;text-decoration:none}
+.sous-fiches b{background:var(--panel);color:var(--ink)} .sous-fiches a{color:var(--accent)}
 
 .version{font-size:12px;color:var(--muted);text-align:right;margin:0}
 @media (max-width:760px){
@@ -160,10 +167,10 @@ ul.m-liste li{border-bottom:1px solid var(--line);padding:7px 0}
   <p class="version"><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p>
 </main>
 
-<script src="timeline.js?v=3.11"></script>
-<script src="selecteurs.js?v=1.2"></script>
+<script src="timeline.js?v=3.12"></script>
+<script src="selecteurs.js?v=1.4"></script>
 <script>
-const VERSION = { numero:"2.12", date:"2026-11-03 23:33" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"2.13", date:"2026-11-05 19:06" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -241,7 +248,7 @@ function courbePetite(c, nom){
   return s + `</svg>`;
 }
 const flecheSVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>`;
-const pli = (titre, sous, corps, id) => `<details class="pli"${id ? ` id="${id}"` : ""}><summary><span><strong>${esc(titre)}</strong> <span class="discret">· ${esc(sous)}</span></span>${flecheSVG}</summary><div class="contenu">${corps}</div></details>`;
+const pli = (titre, sous, corps, id, n) => `<details class="pli${n ? " " + notion(n) : ""}"${id ? ` id="${id}"` : ""}><summary><span><strong>${esc(titre)}</strong> <span class="discret">· ${esc(sous)}</span></span>${flecheSVG}</summary><div class="contenu">${corps}</div></details>`;
 
 async function afficher(user){
   const P = new URLSearchParams(location.search), code = P.get("jeu");
@@ -290,8 +297,16 @@ async function afficher(user){
   }
   // (2.6) les faits, le prix, les mécanismes, les thèmes et les axes descriptifs se saisissent dans « Décrire le jeu »
   if (NIVEAUX[role] >= NIVEAUX.evaluateur) boutons.push(`<a class="btn" href="decrire.html?jeu=${encodeURIComponent(code)}">Décrire le jeu</a>`);
-  // la console ne sait pas ouvrir un jeu par l'adresse : un simple lien (onglet Jeux)
-  if (NIVEAUX[role] >= NIVEAUX.editeur) boutons.push(`<a class="btn" href="console.html" title="La console, onglet Jeux">Modifier les informations du jeu</a>`);
+  // (2.13) plus de bouton « Modifier les informations du jeu » : la console y pourvoit (bouton « Console » de l'en-tête)
+  // (2.13) les sous-fiches : si l'all-in existe, deux onglets « Jeu de base » / « Jeu all-in » en haut de la fiche ; sinon, rien
+  let sousFiches = "";
+  const { data: ici } = await sb.from("prisme_jeux").select("code,configuration,fiche_globale").eq("code", code).maybeSingle();
+  if (ici?.fiche_globale){
+    const { data: fr } = await sb.from("prisme_jeux").select("code,configuration").eq("fiche_globale", ici.fiche_globale);
+    const base = (fr || []).find(f => (f.configuration || "base") === "base"), allin = (fr || []).find(f => f.configuration === "all_in");
+    const onglet = (f, t) => f.code === code ? `<b aria-current="page">${t}</b>` : `<a href="jeu.html?jeu=${encodeURIComponent(f.code)}">${t}</a>`;
+    if (base && allin) sousFiches = `<nav class="sous-fiches" aria-label="Sous-fiches">${onglet(base, "Jeu de base")}${onglet(allin, "Jeu all-in")}</nav>`;
+  }
 
   // la fiche technique (moyennes des fiches finales)
   const m = R?.m, ch = [];
@@ -328,7 +343,7 @@ async function afficher(user){
   }
   const verdict = verdictDe(article);
 
-  let h = `<div class="carte identite">
+  let h = sousFiches + `<div class="carte identite">
     ${jeu.image_url ? `<img class="visuel" src="${esc(jeu.image_url)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'), { className:'visuel' }))">` : `<span class="visuel" aria-hidden="true"></span>`}
     <div class="id-corps">
       <div><div class="surtitre">Fiche du jeu</div><h1>${titre}</h1><div class="technique">${ch.join(" · ")}</div><div class="modes" id="id-modes"></div>${nav}</div>
@@ -356,8 +371,8 @@ async function afficher(user){
   } else pourQui += `<p class="discret" style="margin:0">${!R ? "Pour qui ce jeu est fait paraîtra dès qu'une fiche sera déclarée finale." : !c ? "Le détail par profil paraîtra quand toutes les paires utiles seront notées." : "Le modèle PRISMEplayer n'a pas pu être lu."}</p>`;
   // (2.5) Thème, puis Mécanique, puis Pour qui (empilés dans cet ordre sur téléphone)
   h += `<div class="poles">
-    <div class="carte pole theme" id="carte-theme"><div class="surtitre">Thème</div><p class="discret" style="margin:0">Chargement…</p></div>
-    <div class="carte pole" id="carte-meca"><div class="surtitre">Les mécaniques</div><p class="discret">Chargement…</p></div>
+    <div class="carte pole theme ${notion("theme")}" id="carte-theme"><div class="surtitre n-titre">Thème</div><p class="discret" style="margin:0">Chargement…</p></div>
+    <div class="carte pole ${notion("meca")}" id="carte-meca"><div class="surtitre n-titre">Les mécaniques</div><p class="discret">Chargement…</p></div>
     <div class="carte pole">${pourQui}</div>
   </div>`;
 
@@ -393,10 +408,10 @@ async function afficher(user){
     : `<p class="discret">La timeline paraîtra quand toutes les paires utiles seront notées.</p>`;
   const nbPaires = R ? R.e.paires.length : 0;
   h += `<div class="detail"><div class="surtitre">Le détail</div>
-    ${pli("Les notes, paire par paire", R ? `${nbPaires} paires, ce que le jeu réussit et ce qu'il rate` : "pas encore de fiche finale", paires)}
+    ${pli("Les notes, paire par paire", R ? `${nbPaires} paires, ce que le jeu réussit et ce qu'il rate` : "pas encore de fiche finale", paires, null, "axes")}
     ${pli("Pour chaque profil", "les 20 tempéraments, du mieux au moins servi", profils)}
-    ${pli("Tous les mécanismes", "avec leur définition", `<div id="detail-meca"><p class="discret">Chargement…</p></div>`)}
-    ${pli("Tous les thèmes", "par facette, avec leur définition", `<div id="detail-themes"><p class="discret">Chargement…</p></div>`)}
+    ${pli("Tous les mécanismes", "avec leur définition", `<div id="detail-meca"><p class="discret">Chargement…</p></div>`, null, "meca")}
+    ${pli("Tous les thèmes", "par facette, avec leur définition", `<div id="detail-themes"><p class="discret">Chargement…</p></div>`, null, "theme")}
     ${pli("La timeline complète", "sessions, usure, coût par partie", timeline)}
     ${article ? pli("L'article", "la critique complète", `<div class="article">${articlePropre(article)}</div>`) : ""}
   </div>`;
@@ -411,7 +426,7 @@ async function chargerMecanismes(code, user, role){
   const err = await lireMecanismes(code, user, role);
   if (err){
     const msg = `<p class="discret">Les mécanismes n'ont pas pu être lus (${esc(err)}).</p>`;
-    $("#carte-meca").innerHTML = `<div class="surtitre">Les mécaniques</div>` + msg; $("#detail-meca").innerHTML = msg; return;
+    $("#carte-meca").innerHTML = `<div class="surtitre n-titre">Les mécaniques</div>` + msg; $("#detail-meca").innerHTML = msg; return;
   }
   afficherMecanismes();
 }
@@ -429,7 +444,7 @@ function afficherMecanismes(){
   // trois niveaux : en tête la fin de partie ; puis les mécanismes, marginaux compris ; en bas, en petit, le matériel et les gestes
   const tete = CARTE_TETE.map(([n, t]) => [t, affectesDu(n)]).filter(([, L]) => L.length), bas = CARTE_BAS.map(([n, t]) => [t, affectesDu(n)]).filter(([, L]) => L.length);
   const [L3, L2, L1] = [3, 2, 1].map(parPoids);
-  let h = `<div class="surtitre">Les mécaniques</div><p class="titre-carte">Ce dont il est fait</p>`;
+  let h = `<div class="surtitre n-titre">Les mécaniques</div><p class="titre-carte">Ce dont il est fait</p>`;
   tete.forEach(([t, L]) => { h += `<div class="groupe"><span class="etiq">${esc(t)}</span><div class="puces">${L.map(l => puce(l, "pr")).join("")}</div></div>`; });
   if (!tete.length && !bas.length && !L3.length && !L2.length && !L1.length) h += `<p class="discret" style="margin:0">Aucun mécanisme n'est encore affecté à ce jeu.</p>`;
   if (L3.length) h += `<div class="groupe"><span class="etiq">Majeurs</span><div class="puces" style="gap:8px">${L3.map(l => puce(l, "mj")).join("")}</div></div>`;
@@ -454,7 +469,7 @@ async function chargerThemes(code, user, role){
   const err = await lireThemes(code, user, role);
   if (err){
     const msg = `<p class="discret">Les thèmes n'ont pas pu être lus (${esc(err)}).</p>`;
-    $("#carte-theme").innerHTML = `<div class="surtitre">Thème</div>` + msg; $("#detail-themes").innerHTML = msg; return;
+    $("#carte-theme").innerHTML = `<div class="surtitre n-titre">Thème</div>` + msg; $("#detail-themes").innerHTML = msg; return;
   }
   afficherThemes();
 }
@@ -466,7 +481,7 @@ function afficherThemes(){
   carte.classList.toggle("theme", rien);   // la bordure pointillée disparaît dès qu'un thème est affecté
   // (2.5) la remarque entre parenthèses à la suite du libellé : « Un individu (le pilote) »
   const puce = (l, cls) => `<span class="${cls} info" tabindex="0">${esc(l.libelle)}${remVisible(TH.affectes[l.code]?.remarque)}<span class="bulle">${l.libelle_en ? `<i>${esc(l.libelle_en)}</i><br>` : ""}${esc(l.definition || "Pas encore de définition.")}</span></span>`;
-  let h = `<div class="surtitre">Thème</div>`;
+  let h = `<div class="surtitre n-titre">Thème</div>`;
   if (rien) h += `<p class="discret" style="margin:0">Aucun thème n'est encore affecté à ce jeu.</p>`;
   else {
     // (2.5) en titre, le ou les sujets majeurs ; dessous, en petit, « Abstrait », ou la ou les périodes et le réalisme
@@ -474,24 +489,14 @@ function afficherThemes(){
     if (sujets.length) h += `<p class="titre-carte">${sujets.map(l => puce(l, "")).join(" · ")}</p>`;
     const cadre = TH.affectes[ABSTRAIT] ? ["Abstrait"] : [...affectesDe("periode").map(l => l.libelle), ...affectesDe("realisme").map(l => l.libelle.toLowerCase())];
     if (cadre.length) h += `<p class="cadre-theme"${sujets.length ? "" : ' style="margin:0"'}>${esc(cadre.join(" · "))}</p>`;
-    let nMarg = 0;
+    // (2.13) une facette par ligne, les marginaux affichés (comme pour les mécaniques), sans bouton « + »
     FACETTES_CARTE.forEach(f => {
       const L = affectesDe(f).filter(l => f !== "sujet" || TH.affectes[l.code].poids !== 3); if (!L.length) return;
-      const marg = L.filter(l => TH.affectes[l.code].poids === 1); nMarg += marg.length;
-      const pleins = L.length > marg.length;
-      h += `<div class="groupe"${pleins ? "" : " data-t-marg hidden"}><span class="etiq">${esc(FACETTES[f])}</span><div class="puces">${L.map(l => {
-        const p = TH.affectes[l.code].poids;
-        return p === 1 ? (pleins ? puce(l, "mg").replace('<span class="mg info"', '<span class="mg info" data-t-marg hidden') : puce(l, "mg")) : puce(l, p === 3 ? "mj" : "pr"); }).join("")}</div></div>`;
+      h += `<div class="groupe"><span class="etiq">${esc(FACETTES[f])}</span><div class="puces">${L.map(l => {
+        const p = TH.affectes[l.code].poids; return puce(l, p === 3 ? "mj" : p === 1 ? "mg" : "pr"); }).join("")}</div></div>`;
     });
-    if (nMarg) h += `<button class="lien-btn" type="button" id="t-deplier" aria-expanded="false">+ ${nMarg} ${nMarg > 1 ? POIDS_PLURIEL[1] : POIDS[1]}</button>`;
   }
   carte.innerHTML = h;
-  $("#t-deplier")?.addEventListener("click", e => {
-    const ouvrir = e.currentTarget.getAttribute("aria-expanded") !== "true", n = carte.querySelectorAll(".mg").length;
-    carte.querySelectorAll("[data-t-marg]").forEach(el => el.hidden = !ouvrir);
-    e.currentTarget.setAttribute("aria-expanded", ouvrir);
-    e.currentTarget.textContent = ouvrir ? `− replier les ${POIDS_PLURIEL[1]}` : `+ ${n} ${n > 1 ? POIDS_PLURIEL[1] : POIDS[1]}`;
-  });
   // la liste complète, groupée par facette, avec la définition et la remarque
   let dh = `<p class="question">De quoi parle le jeu, selon la nomenclature PRISMEthemes, en facettes : majeur, secondaire, marginal.</p>`;
   const facettes = Object.keys(FACETTES).filter(f => affectesDe(f).length);

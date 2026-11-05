@@ -10,7 +10,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <style>
 /* 4.0 (03/11/2026) : l'écran ne garde que les avis. Ce qui est vrai du jeu vit dans « Décrire le jeu » et n'est ici qu'affiché (« Décrit ») ;
-   les couleurs, les polices et les trapèzes sont ceux de « Décrire le jeu » (maquette validée, faite sur Heat). */
+   les couleurs, les polices et les trapèzes sont ceux de « Décrire le jeu » (maquette validée, faite sur Heat).
+   4.2 (05/11/2026) : selecteurs.js 1.4 pour ce qui est commun (couleurs des notions, sommaire collant, paliers, pictogrammes) ;
+   tous les paliers à côté des trapèzes, avec l'aide au survol ; plus de case « sans objet » : une paire l'est quand la description le dit ;
+   « À combien ? » dans la carte LIEN, en lignes regroupées au-delà de 8 joueurs ; les codes des axes en info-bulle seulement */
 :root{--ink:#15171C;--muted:#4B5160;--line:#E2E4E9;--trait:#C9CEDB;--paper:#F4F5F7;--panel:#FFFFFF;--neutre:#E8EAF0;--filet:#EEF0F4;
   --accent:#2346C8;--accent-fonce:#16308F;--sur-accent:#FFFFFF;--bleu-fond:#E6EBFB;--bleu-texte:#16308F;--orange-fond:#FBEDE4;--orange-texte:#8A3108;
   --vert-fond:#E7F4EC;--vert-texte:#14532D;--ok:#1E7A46;--warn:#9A5B00;--err:#B42318;--trapeze:#F0F2F6;--trapeze-demi:#E3E6EE;
@@ -83,7 +86,8 @@ table.fiches th[data-tri]{cursor:pointer;user-select:none} table.fiches th[data-
 details.famille{border-top:1px solid var(--filet)} details.famille:first-of-type{border-top:0}
 details.famille > summary{list-style:none;display:flex;align-items:center;gap:12px;padding:10px 0;cursor:pointer}
 details.famille > summary::-webkit-details-marker{display:none}
-.famille .pic{flex:none;width:40px;height:40px;border-radius:10px;background:var(--bleu-fond);color:var(--bleu-texte);display:flex;align-items:center;justify-content:center}
+.famille .pic{flex:none;width:40px;height:40px;border-radius:10px;background:var(--n-fort,var(--bleu-fond));color:var(--n-titre,var(--bleu-texte));display:flex;align-items:center;justify-content:center}
+.famille .pic svg.picto{margin:0;color:inherit} .famille .fam-t b{color:var(--n-titre,var(--ink))}
 .famille .fam-t{flex:1;min-width:0;display:flex;flex-direction:column} .famille .fam-t b{font:600 21px/1.2 var(--serif)} .famille .fam-t i{font-size:13px;color:var(--muted)}
 .famille .fam-note{font:700 22px var(--sans);color:var(--accent);font-variant-numeric:tabular-nums}
 .famille .chev{width:20px;height:20px;flex:none;color:var(--muted);transition:transform .15s} details.famille[open] .chev{transform:rotate(90deg)}
@@ -91,6 +95,18 @@ details.famille > summary::-webkit-details-marker{display:none}
 /* une paire : son nom et sa note, les « Décrit », puis l'avis */
 .paire{border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:12px;background:var(--panel);scroll-margin-top:90px}
 .paire.faite{border-left:4px solid var(--ok)}
+/* (4.2) un fond alterné d'une paire à l'autre (blanc / pêche très pâle), plus d'espace ; une paire sans objet : grisée, réduite à son titre */
+.cartes{gap:16px} .cartes > .paire{border-color:var(--n-bord,var(--line))} .cartes > .paire:nth-child(even){background:var(--n-fond,var(--panel))}
+.paire.so-desc{background:var(--paper)!important;border-style:dashed;padding:12px 18px;opacity:.75}
+.paire.so-desc h3{cursor:default;color:var(--muted)} .paire.so-desc .note-paire{font-style:italic}
+.axe-ligne{display:flex;flex-wrap:wrap;gap:10px 28px;align-items:flex-start}
+.a-combien{border-top:1px solid var(--n-bord,var(--filet));padding-top:12px}
+.a-combien h4{margin:0 0 4px;font:700 16px var(--sans);color:var(--n-titre,var(--ink))}
+/* infobulle des trapèzes : au survol et au focus, comme dans « Décrire le jeu » */
+.echelle button .bulle{display:none;position:absolute;left:0;bottom:calc(100% + 6px);z-index:20;background:var(--ink);color:var(--panel);font:400 12.5px/1.45 var(--sans);padding:7px 10px;border-radius:8px;width:max-content;max-width:min(260px,80vw);white-space:normal;text-align:left;box-shadow:0 4px 14px rgba(0,0,0,.15)}
+.echelle button:hover .bulle,.echelle button:focus .bulle{display:block}
+.echelle{position:relative}
+@media (min-width:600px){ .page .echelle-cadre{overflow:visible} }   /* l'info-bulle passe au-dessus du cadre ; sur téléphone, la rangée défile toujours */
 .paire .tete{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
 .paire h3{margin:0;font:700 18px var(--sans);letter-spacing:.02em;cursor:pointer}
 .paire .note-paire{font-size:13px;color:var(--muted)} .paire .note-paire b{color:var(--ink);font-size:15px}
@@ -144,7 +160,7 @@ details.famille > summary::-webkit-details-marker{display:none}
 .modele p{margin:2px 0} .modele .amorce{font-style:italic}
 .modele button{font:12px var(--sans);padding:1px 8px;border:1px solid var(--line);background:var(--panel);border-radius:5px;cursor:pointer;margin-left:6px}
 /* « À combien ? » et « Parties pour tout exploiter » */
-.effectif{display:grid;grid-template-columns:96px minmax(0,1fr);gap:12px;align-items:center;padding:8px 0;border-top:1px solid var(--filet)}
+.effectif{display:grid;grid-template-columns:150px minmax(0,1fr);gap:12px;align-items:center;padding:8px 0;border-top:1px solid var(--filet)}
 .effectif > span{font-weight:700}
 .meilleur{font-size:14px;padding-top:6px} .meilleur i{color:var(--decrit)}
 .bloc.parties{flex-direction:row;flex-wrap:wrap;align-items:center;gap:12px 16px;padding:20px 24px}
@@ -302,7 +318,7 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
       </div>
     </div>
   </div>
-  <div class="page"><div id="bandeau-desc"></div><div id="grille" style="display:contents"></div></div>
+  <div class="page"><nav id="sommaire"></nav><div id="bandeau-desc"></div><div id="grille" style="display:contents"></div></div>
 </section>
 <div id="pied" class="hidden">
   <div class="pied-int">
@@ -321,15 +337,16 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
 <dialog id="dlg-recap"><div id="recap"></div><p style="text-align:right;margin:12px 0 0"><button class="btn" id="fermer-recap" type="button">Fermer</button></p></dialog>
 <div class="wrap"><p class="version"><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p></div>
 
-<script src="timeline.js?v=3.11"></script>
+<script src="timeline.js?v=3.12"></script>
+<script src="selecteurs.js?v=1.4"></script>
 <script>
-const VERSION = { numero:"4.1", date:"2026-11-03 23:33" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"4.2", date:"2026-11-05 19:06" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const norm = s => String(s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+// (4.2) norm() vient de selecteurs.js, charg\u00e9 pour ce qui est commun aux pages (couleurs, sommaire, paliers, pictogrammes)
 const slug = s => norm(s).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 const fmt = (v, d = 1) => Number(v).toFixed(d).replace(".", ",");
 $("#version").textContent = `Évaluation des jeux ${VERSION.numero}, version du ${VERSION.date.replace(/(\d{4})-(\d\d)-(\d\d) (\d\d):(\d\d)/,"$3/$2/$1 à $4h$5")} · timeline ${TIMELINE_VERSION.numero}`;
@@ -341,7 +358,7 @@ function afficherCompte(u){
   $("#deconnexion")?.addEventListener("click", e => { e.preventDefault(); sb.auth.signOut().then(() => location.href = "../"); });
 }
 
-const M = {};                 // modèle PRISMEgame
+const MOD = {};               // modèle PRISMEgame (4.2 : MOD, le M de selecteurs.js est celui des mécanismes)
 let user = null, role = null, noms = {};
 let toutes = [], valeurs = [];   // toutes les fiches visibles et leurs notes
 let fiche = null;            // { id, jeu, statut, evaluateur, pages… notes_article }
@@ -357,15 +374,19 @@ const titreFiche = f => nomJeu(f.jeu) + (cfgDe(f) ? " — " + cfgDe(f) : "");
 // (4.0) la sous-fiche (prisme_jeux.configuration), les familles et leurs pictogrammes (les mêmes que dans « Décrire le jeu », selecteurs.js)
 const CONFIGS = { base:"jeu de base", all_in:"jeu all-in" };
 const FAMILLES = { SYS:"Comment le jeu fonctionne", EXP:"Ce que le jeu fait vivre", EDI:"Ce que la boîte contient" };
-const PICTOS_FAM = {
-  SYS: `<circle cx="12" cy="12" r="3.2"/><path d="M12 2.5 V5.5 M12 18.5 V21.5 M2.5 12 H5.5 M18.5 12 H21.5 M5.3 5.3 L7.4 7.4 M16.6 16.6 L18.7 18.7 M5.3 18.7 L7.4 16.6 M16.6 7.4 L18.7 5.3"/>`,
-  EXP: `<path d="M12 20 C5 15 3 11 5 8 C7 5 10.5 6 12 8.5 C13.5 6 17 5 19 8 C21 11 19 15 12 20 Z"/>`,
-  EDI: `<path d="M3 7.5 L12 3 L21 7.5 L12 12 Z M3 7.5 V16.5 L12 21 V12 M21 7.5 V16.5 L12 21"/>` };
-const pictoFam = c => PICTOS_FAM[c] ? `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">${PICTOS_FAM[c]}</svg>` : "";
+const pictoFam = c => picto(c, 24);   // (4.2) les pictogrammes de selecteurs.js (le Système en deux engrenages)
 const CHEVRON = `<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>`;
 const virgule = v => String(v).replace(".", ",");
 // (4.0) « À combien ? » : une note par effectif (script du 03/11) ; les noms de la table et de ses colonnes sont ici, et seulement ici
 const EFF = { table:"prisme_evaluations_effectifs", fiche:"evaluation", joueurs:"effectif", note:"note" };
+// (4.2) les lignes de « À combien ? » : de 1 à 8 joueurs, puis trois tranches, enregistrées sous leur premier effectif (9, 13, 21)
+const TRANCHES = [...[1, 2, 3, 4, 5, 6, 7, 8].map(n => ({ n, de:n, a:n })), { n:9, de:9, a:12 }, { n:13, de:13, a:20 }, { n:21, de:21, a:Infinity }];
+const trancheDe = n => TRANCHES.find(t => n >= t.de && n <= t.a) || null;
+// « 2 », « 9 à 12 », « plus de 20 » ; le libellé d'une ligne ajoute « joueur(s) »
+const nomEffectif = n => { const t = trancheDe(Number(n)); return !t ? String(n) : t.a === Infinity ? "plus de 20" : t.de === t.a ? String(t.de) : `${t.de} à ${t.a}`; };
+const ligneEffectif = t => `${nomEffectif(t.n)} joueur${t.a > 1 ? "s" : ""}`;
+// (4.2) une paire est sans objet quand tous ses axes de rang « 1… » le sont dans la description : grisée, réduite à son titre
+const LIEN_ETENDUE = "LIEN1d";
 
 function courbeS(x0){ const t = (x0 + 2) / 9; return t <= .5 ? 10 * t * t : 5 * (1 - 2 * (1 - t) * (1 - t)); }
 
@@ -401,22 +422,22 @@ async function demarrer(){
   }
   try {
     const lire = (t, o) => lireTout(t, q => q.order(o));
-    [M.chapitres, M.paires, M.axes, M.paliers, M.exemples, M.jeux, M.notes] = await Promise.all([lire("prisme_chapitres","ordre"), lire("prisme_paires","ordre"),
+    [MOD.chapitres, MOD.paires, MOD.axes, MOD.paliers, MOD.exemples, MOD.jeux, MOD.notes] = await Promise.all([lire("prisme_chapitres","ordre"), lire("prisme_paires","ordre"),
       lire("prisme_axes","ordre"), lire("prisme_paliers","valeur"), lire("prisme_exemples","ordre"), lire("prisme_jeux","nom"), lire("prisme_notes","ordre")]);
-    try { M.textes = await lire("prisme_textes","ordre"); } catch (e){ M.textes = []; }   // la charte de l'assistant de rédaction
-    M.src = await lireSourceCalcul(sb);   // (3.40) la source des calculs : la fiche, ou la description si bascule_description vaut 1
+    try { MOD.textes = await lire("prisme_textes","ordre"); } catch (e){ MOD.textes = []; }   // la charte de l'assistant de rédaction
+    MOD.src = await lireSourceCalcul(sb);   // (3.40) la source des calculs : la fiche, ou la description si bascule_description vaut 1
     const { data: n } = await sb.rpc("prisme_noms"); (n || []).forEach(x => noms[x.user_id] = x.nom);
     try { [PL.moteurs, PL.temperaments, PL.styles] = await Promise.all([lire("prisme_player_moteurs","ordre"), lire("prisme_player_temperaments","ordre"),
       lire("prisme_player_styles","ordre")]); } catch (e){ PL.erreur = e.message; }
   } catch (e){ $("#accueil").classList.remove("hidden"); $("#msg-accueil").className = "msg err"; $("#msg-accueil").textContent = "Lecture du modèle impossible : " + e.message; return; }
-  M.paires.sort((a, b) => M.chapitres.find(c => c.code === a.chapitre).ordre - M.chapitres.find(c => c.code === b.chapitre).ordre || a.ordre - b.ordre);
+  MOD.paires.sort((a, b) => MOD.chapitres.find(c => c.code === a.chapitre).ordre - MOD.chapitres.find(c => c.code === b.chapitre).ordre || a.ordre - b.ordre);
   remplirJeux(); await chargerFiches();
   ARTICLE_OK = toutes.length ? "article" in toutes[0] : !(await sb.from("prisme_evaluations").select("article").limit(1)).error;
   PUBLI_OK = toutes.length ? "publie" in toutes[0] : !(await sb.from("prisme_evaluations").select("publie").limit(1)).error;
   await completerInstantanes();
   afficherFiches();
   const P = new URLSearchParams(location.search), q = P.get("jeu"), qc = (P.get("config") || "").trim() || null;
-  if (q && M.jeux.some(j => j.code === q)){
+  if (q && MOD.jeux.some(j => j.code === q)){
     if (P.has("evaluer") && role !== "lecteur") ouvrirJeu(q, qc);   // « Évaluer » depuis la fiche du jeu : sa propre fiche, nouvelle au besoin
     else { const C = toutes.filter(e => e.jeu === q && cfgDe(e) === qc);
       const f = C.find(e => e.evaluateur === user.id) || C.find(e => e.statut === "finale") || C[0];
@@ -431,7 +452,7 @@ async function chargerFiches(){
   [toutes, valeurs] = await Promise.all([lireTout("prisme_evaluations", q => q.order("modifie_le", { ascending:false })), lireTout("prisme_evaluation_valeurs")]);
 }
 const PL = { moteurs:[], temperaments:[], styles:[] };   // PRISMEplayer v2, pour le spectromètre
-const nomJeu = c => M.jeux.find(j => j.code === c)?.nom || c;
+const nomJeu = c => MOD.jeux.find(j => j.code === c)?.nom || c;
 const nomDe = id => id === user.id ? "moi" : (noms[id] || "un évaluateur");
 const saisieDe = id => { const s = {}; valeurs.filter(v => v.evaluation === id).forEach(v => s[v.axe] = { valeur: v.valeur == null ? null : Number(v.valeur), sans_objet: v.sans_objet, commentaire: v.commentaire }); return s; };
 
@@ -462,7 +483,7 @@ function afficherFiches(){
   const th = (cle, t) => `<th data-tri="${cle}">${t}${tri.cle === cle ? `<span class="sens">${tri.sens > 0 ? "▲" : "▼"}</span>` : ""}</th>`;
   $("#fiches").innerHTML = `<table class="fiches"><thead><tr>${th("jeu","Jeu")}${th("eval","Évaluateur")}${th("etat","État")}${th("paires","Paires")}${th("note","Note finale")}${th("modifie","Modifiée")}</tr></thead><tbody>
     ${R.map(({ e, c }) => `<tr class="f" data-id="${esc(e.id)}"><td><b>${esc(nomJeu(e.jeu))}</b>${cfgDe(e) ? ` <span class="cfg-nom">— ${esc(cfgDe(e))}</span>` : ""}${estClaude(e) ? ' <span class="badge" title="Pré-remplie par Claude, à revoir">Claude</span>' : ""}${aUnArticle(e) ? ' <span class="badge art" title="Un article est rédigé">article</span>' : ""}${e.publie ? ' <span class="badge pub" title="Publiée sur la vitrine go2games">vitrine</span>' : ""}</td><td>${esc(nomDe(e.evaluateur))}</td>
-      <td><span class="badge ${esc(e.statut)}">${e.statut === "finale" ? "finale" : "brouillon"}</span></td><td style="white-space:nowrap">${c.faites} / ${M.paires.length}</td>
+      <td><span class="badge ${esc(e.statut)}">${e.statut === "finale" ? "finale" : "brouillon"}</span></td><td style="white-space:nowrap">${c.faites} / ${MOD.paires.length}</td>
       <td>${c.finale == null ? "—" : fmt(c.finale, 2)}</td><td style="white-space:nowrap">${new Date(e.modifie_le).toLocaleString("fr-FR", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" })}</td></tr>`).join("")}</tbody></table>`;
   document.querySelectorAll("#fiches tr.f").forEach(tr => tr.addEventListener("click", () => ouvrirFiche(toutes.find(e => e.id === tr.dataset.id))));
   document.querySelectorAll("#fiches th[data-tri]").forEach(h => h.addEventListener("click", () => {
@@ -478,7 +499,7 @@ function doublons(nom, bgg, jeux){
   return { exact, proches };
 }
 function remplirJeux(choix){
-  $("#sel-jeu").innerHTML = `<option value="">Choisir un jeu…</option>` + M.jeux.map(j => `<option value="${esc(j.code)}">${esc(j.nom)}</option>`).join("");
+  $("#sel-jeu").innerHTML = `<option value="">Choisir un jeu…</option>` + MOD.jeux.map(j => `<option value="${esc(j.code)}">${esc(j.nom)}</option>`).join("");
   if (choix) $("#sel-jeu").value = choix;
 }
 let confirmeProche = null;
@@ -490,13 +511,13 @@ $("#creer").addEventListener("click", async () => {
   const nom = $("#nouveau-jeu").value.trim(), bgg = numeroBGG($("#nouveau-bgg").value);
   if (!nom){ m.className = "msg err"; m.textContent = "Indique le nom du jeu."; return; }
   if (bgg === undefined){ m.className = "msg err"; m.textContent = "Lien BoardGameGeek illisible : colle l'adresse de la page du jeu, ou son numéro."; return; }
-  const { exact, proches } = doublons(nom, bgg, M.jeux);
+  const { exact, proches } = doublons(nom, bgg, MOD.jeux);
   if (exact){ remplirJeux(exact.code); $("#form-ajout").classList.add("hidden"); $("#msg-accueil").className = "msg ok"; $("#msg-accueil").textContent = `« ${exact.nom} » est déjà dans la liste : je l'ai sélectionné.`; return; }
   if (proches.length && confirmeProche !== cleJeu(nom)){ confirmeProche = cleJeu(nom); m.className = "msg err"; m.textContent = `Jeux proches déjà présents : ${proches.map(j => j.nom).join(", ")}. Si c'est bien un autre jeu, clique à nouveau sur « Créer ».`; return; }
-  let code = slug(nom), n = 2; while (M.jeux.some(j => j.code === code)) code = slug(nom) + "-" + n++;
+  let code = slug(nom), n = 2; while (MOD.jeux.some(j => j.code === code)) code = slug(nom) + "-" + n++;
   const { data, error } = await sb.from("prisme_jeux").insert({ code, nom, bgg_id: bgg }).select();
   if (error){ m.className = "msg err"; m.textContent = "Ajout du jeu refusé : " + error.message; return; }
-  M.jeux.push(data[0]); M.jeux.sort((a, b) => a.nom.localeCompare(b.nom, "fr"));
+  MOD.jeux.push(data[0]); MOD.jeux.sort((a, b) => a.nom.localeCompare(b.nom, "fr"));
   remplirJeux(code); $("#form-ajout").classList.add("hidden"); $("#nouveau-jeu").value = ""; $("#nouveau-bgg").value = ""; confirmeProche = null;
   ouvrirJeu(code);
 });
@@ -555,7 +576,7 @@ function ouvrirFiche(f, empiler = true){
   verifierDescription(); chargerEffectifs();
 }
 // (4.0) le jeu, sa sous-fiche (« jeu de base », « jeu all-in »), puis la configuration évaluée s'il y en a une
-const titreBarre = f => { const j = M.jeux.find(x => x.code === f.jeu) || {}; return [nomJeu(f.jeu), CONFIGS[j.configuration] || j.configuration || CONFIGS.base, cfgDe(f)].filter(Boolean).join(" · "); };
+const titreBarre = f => { const j = MOD.jeux.find(x => x.code === f.jeu) || {}; return [nomJeu(f.jeu), CONFIGS[j.configuration] || j.configuration || CONFIGS.base, cfgDe(f)].filter(Boolean).join(" · "); };
 function majBarreFiche(){
   $("#titre-jeu").textContent = $("#titre-jeu").title = titreBarre(fiche);
   $("#vers-jeu").href = "jeu.html?jeu=" + encodeURIComponent(fiche.jeu) + (cfgDe(fiche) ? "&config=" + encodeURIComponent(cfgDe(fiche)) : "");
@@ -627,6 +648,8 @@ new MutationObserver(() => {
 }).observe($("#etat"), { childList:true, characterData:true, subtree:true });
 // la marge du bas suit la hauteur de la barre du bas, pour que rien ne soit caché dessous
 if (window.ResizeObserver) new ResizeObserver(() => document.body.style.paddingBottom = ($("#pied").offsetHeight + 24) + "px").observe($("#pied"));
+// (4.2) le sommaire se colle sous la barre de la fiche, elle-même sous l'en-tête de PRISME
+if (window.ResizeObserver) new ResizeObserver(() => document.documentElement.style.setProperty("--som-top", `calc(var(--ent-h, 0px) + ${$("#barre-fiche").offsetHeight}px)`)).observe($("#barre-fiche"));
 $("#retour").addEventListener("click", async () => {
   if (enCours()){ clearTimeout(minuteur); await enregistrer(); }
   if (ARRIVEE){   // retour à la page d'origine (liste des jeux ou fiche du jeu)
@@ -641,8 +664,8 @@ $("#retour").addEventListener("click", async () => {
 });
 
 /* ---------------- la grille ---------------- */
-const axesDe = code => M.axes.filter(a => a.paire === code).sort((a, b) => a.ordre - b.ordre);
-const paliersDe = code => M.paliers.filter(p => p.axe === code).sort((a, b) => a.valeur - b.valeur);
+const axesDe = code => MOD.axes.filter(a => a.paire === code).sort((a, b) => a.ordre - b.ordre);
+const paliersDe = code => MOD.paliers.filter(p => p.axe === code).sort((a, b) => a.valeur - b.valeur);
 const MECA = { liee:"paire liée : l'axe 2 juge l'écart à l'attente", independante:"deux notes indépendantes", crans5:"axe 2 en cinq crans",
   composite:"note composite", moyenne:"axe 2 : moyenne de deux notes", theme:"le thème est une nature : l'abstrait vaut 2,5",
   lien:"justesse et parole, prime à l'étendue" };
@@ -670,9 +693,9 @@ function texteRiche(t){
   return h + (liste ? "</ul>" : "");
 }
 function aidePaire(p){
-  const notes = M.notes.filter(n => n.paire === p.code && n.type !== "historique").sort((a, b) => (a.type === "statut") - (b.type === "statut") || a.ordre - b.ordre);
+  const notes = MOD.notes.filter(n => n.paire === p.code && n.type !== "historique").sort((a, b) => (a.type === "statut") - (b.type === "statut") || a.ordre - b.ordre);
   return `<h4>Ce que mesure la paire</h4><p>${esc(p.definition)}</p>`
-    + axesDe(p.code).map(a => `<h4>${esc(a.code)} — ${esc(a.nom)}</h4>${a.question ? `<p><i>${esc(a.question)}</i></p>` : ""}<p>${esc(a.definition ? a.definition.charAt(0).toUpperCase() + a.definition.slice(1) : "")}</p>`).join("")
+    + axesDe(p.code).map(a => `<h4 title="${esc(a.code)}">${esc(a.nom)}</h4>${a.question ? `<p><i>${esc(a.question)}</i></p>` : ""}<p>${esc(a.definition ? a.definition.charAt(0).toUpperCase() + a.definition.slice(1) : "")}</p>`).join("")
     + notes.map(n => `<h4>${esc(NOM_TYPE[n.type] || n.type)}${n.axe ? " (" + esc(n.axe) + ")" : ""}</h4><p>${esc(n.texte)}</p>`).join("")
     + `<p><a href="encyclopedie.html#p-${esc(p.code)}" target="_blank" rel="noopener">Tout sur cette paire dans l'encyclopédie (grilles, exemples) →</a></p>`;
 }
@@ -734,55 +757,76 @@ function reperes(axe){
     .filter(Boolean).map(t => `<div class="reperes">${t}</div>`).join("");
 }
 /* (4.0) les « Décrit » : les axes de rang « 1… » de la paire, lus dans prisme_descriptions_axes (« Décrire le jeu »), en lecture seule */
-const decritDe = code => M.src?.axes?.[fiche.jeu]?.[code] || null;
+const decritDe = code => MOD.src?.axes?.[fiche.jeu]?.[code] || null;
 const nonDecrit = d => !d || (d.valeur == null && !d.sans_objet);
 // le libellé d'un palier ; une demi-valeur se dit « entre » ses deux voisins, comme dans « Décrire le jeu »
 // (le point final et la majuscule initiale d'un palier rédigé en phrase s'effacent dans « entre … et … »)
-function libellePalier(code, v){
-  if (v == null) return "";
-  const P = Object.fromEntries(paliersDe(code).map(x => [Number(x.valeur), x.libelle])), x = Math.round(v * 2) / 2;
-  const milieu = t => t.replace(/\.$/, "").replace(/^\p{Lu}(?!\p{Lu})/u, c => c.toLowerCase());
-  return x % 1 === 0 ? P[x] || "" : P[x - .5] && P[x + .5] ? `entre ${milieu(P[x - .5])} et ${milieu(P[x + .5])}` : "";
+// (4.2) les paliers d'un axe, { valeur: libellé } ; le libellé et la liste viennent de selecteurs.js 1.4
+const palierMap = code => Object.fromEntries(paliersDe(code).map(x => [Number(x.valeur), x.libelle]));
+const libellePalier = (code, v) => libelleDePalier(palierMap(code), v);
+// (4.2) sans objet pour ce jeu : tous les axes de rang « 1… » de la paire le sont dans la description
+const paireSansObjet = p => { const L = colGauche(p.code); return L.length > 0 && L.every(a => !!decritDe(a.code)?.sans_objet); };
+// (4.2) la plage réelle de joueurs de la description : « de 1 à 6 joueurs », « 2 joueurs »
+function plageJoueurs(){
+  const d = MOD.src?.descriptions?.[fiche.jeu], a = d?.joueurs_min, b = d?.joueurs_max;
+  if (a == null && b == null) return null;
+  if (a == null || b == null || a === b) { const n = a ?? b; return `${n} joueur${n > 1 ? "s" : ""}`; }
+  return `de ${a} à ${b} joueurs`;
 }
 function blocDecrit(p){
   const L = colGauche(p.code); if (!L.length) return "";
   const lien = `<a href="decrire.html?jeu=${encodeURIComponent(fiche.jeu)}">Décrire le jeu</a>`;
   return `<div class="decrits">${L.map(a => { const d = decritDe(a.code), v = d?.valeur == null ? null : Number(d.valeur);
+    // (4.2) l'étendue (LIEN1d) se lit en joueurs : la plage réelle, pas sa valeur calculée
+    if (a.code === LIEN_ETENDUE){ const pl = plageJoueurs();
+      return pl ? `<div class="decrit" title="${esc(a.code)}"><span class="mot">Décrit</span><span class="nom">${esc(a.nom)} : <b>${esc(pl)}</b></span></div>`
+        : `<div class="decrit manque"><span class="mot">Décrit</span><span class="nom">${esc(a.nom)} : nombre de joueurs non décrit</span>${lien}</div>`; }
     if (nonDecrit(d)) return `<div class="decrit manque"><span class="mot">Décrit</span><span class="nom">${esc(a.nom)} : non décrit</span>${lien}</div>`;
     const pal = d.sans_objet ? "" : libellePalier(a.code, v);
-    return `<div class="decrit" title="${esc(a.question || "")}"><span class="mot">Décrit</span><span class="nom">${esc(a.nom)} : <b>${d.sans_objet ? "sans objet" : virgule(v)}</b></span>${pal ? `<span class="pal">${esc(pal)}</span>` : ""}</div>`; }).join("")}</div>`;
+    return `<div class="decrit" title="${esc((a.question ? a.question + " · " : "") + a.code)}"><span class="mot">Décrit</span><span class="nom">${esc(a.nom)} : <b>${d.sans_objet ? "sans objet" : virgule(v)}</b></span>${pal ? `<span class="pal">${esc(pal)}</span>` : ""}</div>`; }).join("")}</div>`;
 }
 /* (4.0) les trapèzes arrondis de « Décrire le jeu » : 0 à 5, ou −2 à +2 pour un écart, avec les demi-valeurs ;
    les entiers en bas (petit côté en haut), les demi-valeurs au-dessus, chacune entre ses deux voisines ;
    un seul bouton dans l'ordre de tabulation (la valeur choisie, sinon 0) : les flèches font le reste, demi-pas par demi-pas */
 const signe = (x, ecart) => ecart ? (x > 0 ? "+" : x < 0 ? "−" : "") + virgule(Math.abs(x)) : virgule(x);
-function echelle(v, ecart, nom, data, bloque){
+// (4.2) P : les paliers de l'axe, pour l'aide au survol et au focus de chaque trapèze (le libellé, ou « entre … et … »)
+function echelle(v, ecart, nom, data, bloque, P = {}){
   const min = ecart ? -2 : 0, max = ecart ? 2 : 5, r = v == null ? null : Math.round(v * 2) / 2, tab = r ?? 0, ro = lectureSeule || bloque ? " disabled" : "";
+  const bulle = x => { const t = libelleDePalier(P, x); return t ? `<span class="bulle" aria-hidden="true">${esc(t)}</span>` : ""; };
   const V = []; for (let x = min; x <= max; x += .5) V.push(x);
   const forme = x => x % 1 !== 0
     ? `<svg viewBox="0 0 44 25" aria-hidden="true"><polygon points="4,4 40,4 31.5,21 12.5,21"/><text x="22" y="15" text-anchor="middle" font-size="10.5">${signe(x, ecart)}</text></svg>`
     : `<svg viewBox="0 0 44 35" aria-hidden="true"><polygon points="12.5,4 31.5,4 40,31 4,31"/><text x="22" y="26" text-anchor="middle" font-size="15">${signe(x, ecart)}</text></svg>`;
   return `<div class="echelle-cadre"><div class="echelle" role="group" aria-label="${esc(nom)}, de ${signe(min, ecart)} à ${signe(max, ecart)}" data-min="${min}" data-max="${max}" ${data} style="grid-template-columns:repeat(${2 * (max - min + 1)},var(--d))">${V.map(x =>
-    `<button type="button" data-v="${x}" class="${x % 1 ? "demi" : ""}" style="grid-row:${x % 1 ? 1 : 2};grid-column-start:${2 * (x - min) + 1}" aria-pressed="${r === x}" aria-label="${signe(x, ecart)}" tabindex="${x === tab ? 0 : -1}"${ro}>${forme(x)}</button>`).join("")}</div></div>`;
+    `<button type="button" data-v="${x}" class="${x % 1 ? "demi" : ""}" style="grid-row:${x % 1 ? 1 : 2};grid-column-start:${2 * (x - min) + 1}" aria-pressed="${r === x}" aria-label="${signe(x, ecart)}" tabindex="${x === tab ? 0 : -1}"${ro}>${forme(x)}${bulle(x)}</button>`).join("")}</div></div>`;
 }
-const textePalierAvis = (a, v, ecart) => v == null ? "" : signe(Math.round(v * 2) / 2, ecart) + (libellePalier(a.code, v) ? " : " + libellePalier(a.code, v) : "");
-// un avis : la question de l'axe de rang « 2… » (ou de chaque sous-axe 2a, 2b), ses trapèzes, le palier choisi
+// (4.2) les trapèzes et, à côté, tous les paliers de l'axe (le choisi en évidence) ; le texte d'une valeur porte son signe pour un écart
+function ligneAvis(a, v, ecart){
+  const P = palierMap(a.code);
+  return `<div class="axe-ligne">${echelle(v, ecart, a.nom, `data-axe-echelle="${esc(a.code)}"`, false, P)}${listePaliers(P, v, x => signe(x, ecart), lectureSeule ? " disabled" : "")}</div>`;
+}
+// un avis : la question de l'axe de rang « 2… » (ou de chaque sous-axe 2a, 2b), ses trapèzes, ses paliers
 function blocAvis(p, a, plusieurs){
   const v = saisie[a.code]?.valeur, ecart = estEcart(p, a);
   return `<div class="axe" data-axe="${esc(a.code)}">${plusieurs ? `<span class="axe-nom">${esc(a.nom)}</span>` : ""}
     <div class="q">${esc(a.question || a.nom)}<button type="button" data-aide-axe="${esc(a.code)}" aria-expanded="false" title="Ce que mesure cet axe, et comment le noter">?</button></div>
     <div class="panneau hidden" id="aide-${esc(a.code)}">${aideAxe(a)}</div>
-    ${echelle(v, ecart, a.nom, `data-axe-echelle="${esc(a.code)}"`)}
-    <p class="palier" id="pal-${esc(a.code)}">${esc(textePalierAvis(a, v, ecart))}</p>${reperes(a.code)}</div>`;
+    ${ligneAvis(a, v, ecart)}${reperes(a.code)}</div>`;
 }
 function cartePaire(p){
-  const ax = axesDe(p.code), a1 = ax.find(a => a.rang === "1"), so = ax.some(a => saisie[a.code]?.sans_objet), D = colDroite(p.code), ro = lectureSeule ? " disabled" : "";
-  return `<article class="paire${so ? " sans-objet" : ""}" id="p-${esc(p.code)}" data-paire="${esc(p.code)}">
+  const ax = axesDe(p.code), a1 = ax.find(a => a.rang === "1"), D = colDroite(p.code), ro = lectureSeule ? " disabled" : "";
+  // (4.2) sans objet d'après la description : grisée, réduite à son titre, sans boutons ; elle ne compte pas dans les notes (timeline.js 3.12)
+  if (paireSansObjet(p)) return `<article class="paire so-desc" id="p-${esc(p.code)}" data-paire="${esc(p.code)}">
+    <div class="tete"><h3>${esc(p.nom)}</h3><span class="note-paire">sans objet pour ce jeu <b id="note-${esc(p.code)}" hidden></b></span></div></article>`;
+  // (4.2) « À combien ? » vit dans la carte LIEN, sous ses boutons
+  const combien = ax.some(a => a.code === LIEN_ETENDUE) ? `<div class="a-combien" id="a-combien"><h4>À combien ?</h4><div id="eff-corps"></div></div>` : "";
+  return `<article class="paire" id="p-${esc(p.code)}" data-paire="${esc(p.code)}">
     <div class="tete"><h3 data-replier="${esc(p.code)}" title="Enrouler ou dérouler la paire">${esc(p.nom)}</h3><span class="note-paire">Note de la paire <b id="note-${esc(p.code)}">—</b></span></div>
     <div class="corps">${blocDecrit(p)}
       ${D.map(a => blocAvis(p, a, D.length > 1)).join("")}
+      ${combien}
       <div class="res" id="res-${esc(p.code)}"></div>
-      <div class="outils-paire"><label class="na-droite"><input type="checkbox" data-na="${esc(p.code)}"${so ? " checked" : ""}${ro}> Sans objet pour ce jeu</label>
+      <div class="outils-paire">
         <button type="button" data-panneau="aidep-${esc(p.code)}" aria-expanded="false">? En savoir plus</button>
         <button type="button" data-panneau="calc-${esc(p.code)}" aria-expanded="false" title="Comment la note de la paire est calculée">Méthode de calcul</button></div>
       <div class="panneau hidden" id="aidep-${esc(p.code)}">${aidePaire(p)}</div><div class="panneau hidden" id="calc-${esc(p.code)}"></div>
@@ -791,20 +835,19 @@ function cartePaire(p){
         <div class="modeles hidden" id="m-${esc(p.code)}"></div></div></div></article>`;
 }
 function construireGrille(){
-  const d = fiche, jeu = M.jeux.find(j => j.code === d.jeu) || {}, ro = lectureSeule ? " disabled" : "";
+  const d = fiche, jeu = MOD.jeux.find(j => j.code === d.jeu) || {}, ro = lectureSeule ? " disabled" : "";
   let ouvert = true; try { ouvert = localStorage.getItem("prisme_assistant") !== "ferme"; } catch (e){}
   $("#aller").innerHTML = '<option value="">…</option>';
   // « Mon avis » : les trois familles, la première dépliée
-  let h = `<section class="bloc" id="mon-avis"><h2>Mon avis</h2><p class="chapo">${M.paires.length} paires, en ${M.chapitres.length} familles. Pour chacune : ce que le jeu annonce (décrit), puis ce que tu en as vécu.</p>`;
-  M.chapitres.forEach((c, i) => {
+  let h = `<section class="bloc ${notion("axes")}" id="mon-avis"><h2 class="n-titre">Mon avis</h2><p class="chapo">${MOD.paires.length} paires, en ${MOD.chapitres.length} familles. Pour chacune : ce que le jeu annonce (décrit), puis ce que tu en as vécu.</p>`;
+  MOD.chapitres.forEach((c, i) => {
     h += `<details class="famille" id="fam-${esc(c.code)}" data-chap="${esc(c.code)}"${i === 0 ? " open" : ""}><summary><span class="pic">${pictoFam(c.code)}</span>
       <span class="fam-t"><b>${esc(c.nom)}</b><i>${esc(FAMILLES[c.code] || "")}</i></span><span class="fam-note" id="moy-${esc(c.code)}"></span>${CHEVRON}</summary><div class="cartes">`;
-    M.paires.filter(p => p.chapitre === c.code).forEach(p => { h += cartePaire(p); $("#aller").insertAdjacentHTML("beforeend", `<option value="p-${esc(p.code)}">${esc(c.nom)} — ${esc(p.nom)}</option>`); });
+    MOD.paires.filter(p => p.chapitre === c.code).forEach(p => { h += cartePaire(p); $("#aller").insertAdjacentHTML("beforeend", `<option value="p-${esc(p.code)}">${esc(c.nom)} — ${esc(p.nom)}</option>`); });
     h += `</div></details>`;
   });
   h += `</section>
-    <section class="bloc" id="a-combien"><h2>À combien ?</h2><div id="eff-corps"></div></section>
-    <section class="bloc parties"><label for="d-contenu_parties"><b>Parties pour tout exploiter</b></label>
+    <section class="bloc parties ${notion("contenu")}" id="parties"><label for="d-contenu_parties"><b>Parties pour tout exploiter</b></label>
       <input id="d-contenu_parties" data-donnee="contenu_parties" type="number" min="0" step="1" value="${esc(d.contenu_parties ?? "")}"${ro}>
       <i>Provisoire : sera calculé à partir de la complexité, du contenu et de la variabilité.</i></section>
     <details class="repli" id="timeline"><summary><span><b>Timeline</b> <i>· sa vie dans le temps</i></span>${CHEVRON}</summary><div class="repli-corps">
@@ -828,10 +871,16 @@ function construireGrille(){
       <div class="carnet"><h3>Carnet d'article</h3>
         <p class="aide">Idées, anecdotes de partie, citations, plan : tout ce qui servira à écrire un article sur ce jeu. Visible par les autres évaluateurs, comme le reste de la fiche.</p>
         <textarea id="carnet"${ro}>${esc(fiche.notes_article || "")}</textarea></div></div></details>`;
-  $("#aller").insertAdjacentHTML("beforeend", '<option value="a-combien">À combien ?</option><option value="timeline">Timeline</option><option value="spectro">Spectromètre</option><option value="article">Article</option>');
+  const pLien = MOD.paires.find(p => !paireSansObjet(p) && axesDe(p.code).some(a => a.code === LIEN_ETENDUE));
+  $("#aller").insertAdjacentHTML("beforeend", (pLien ? `<option value="p-${esc(pLien.code)}">À combien ?</option>` : "")
+    + '<option value="timeline">Timeline</option><option value="spectro">Spectromètre</option><option value="article">Article</option>');
   $("#grille").innerHTML = h;
   $("#art-mots").textContent = ARTICLE_OK ? "· " + motsArticle(fiche.article) : "";
   majToutEnrouler(); appliquerDescription(); dessinerEffectifs();
+  // (4.2) le sommaire collant, sous la barre de la fiche : les trois familles (pêche), les parties (vert), puis les blocs repliés
+  const ouvrir = el => { if (el.tagName === "DETAILS") el.open = true; };
+  sommaire($("#sommaire"), [...MOD.chapitres.map(c => ({ id:"fam-" + c.code, nom:c.nom, notion:"axes", ouvrir })),
+    { id:"parties", nom:"Parties", notion:"contenu" }, { id:"timeline", nom:"Timeline", ouvrir }, { id:"spectro", nom:"Spectromètre", ouvrir }, { id:"article", nom:"Article", ouvrir }]);
 }
 
 /* ---------------- « À combien ? » (4.0) : une note par effectif, de joueurs_min à joueurs_max de la description ----------------
@@ -846,12 +895,13 @@ async function chargerEffectifs(){
   else if (f.id) data.forEach(x => effectifs[Number(x[EFF.joueurs])] = x[EFF.note] == null ? null : Number(x[EFF.note]));
   EFF_LU = true; dessinerEffectifs();
 }
-// les effectifs proposés : ceux de la description (sinon ceux de la fiche), dix lignes au plus, la dernière « n et plus »
+// les effectifs proposés : ceux de la description (sinon ceux de la fiche) ; (4.2) une ligne par effectif de 1 à 8, puis « 9 à 12 », « 13 à 20 », « plus de 20 »,
+// seulement les lignes que la plage du jeu recoupe
 function effectifsProposes(){
-  const d = M.src?.descriptions?.[fiche.jeu], deD = d?.joueurs_min != null && d?.joueurs_max != null;
+  const d = MOD.src?.descriptions?.[fiche.jeu], deD = d?.joueurs_min != null && d?.joueurs_max != null;
   const min = Number(deD ? d.joueurs_min : fiche.joueurs_min), max = Number(deD ? d.joueurs_max : fiche.joueurs_max);
   if (!(min >= 1) || !(max >= min)) return { L:[] };
-  const L = []; for (let n = min; n <= max && L.length < 10; n++) L.push({ n, nom: L.length === 9 && max > n ? `${n} et plus` : `${n} joueur${n > 1 ? "s" : ""}` });
+  const L = TRANCHES.filter(t => t.de <= max && t.a >= min).map(t => ({ n:t.n, nom:ligneEffectif(t) }));
   return { L, min, max, source: deD ? "la description" : "la fiche" };
 }
 function meilleurEffectif(){
@@ -867,7 +917,7 @@ function dessinerEffectifs(){
   if (!EFF_LU){ box.innerHTML = `<p class="aide">Lecture des effectifs…</p>`; return; }
   const { L, min, max, source } = effectifsProposes(), B = meilleurEffectif();
   const lien = `<a href="decrire.html?jeu=${encodeURIComponent(fiche.jeu)}">Décrire le jeu</a>`;
-  const meilleur = B ? `<b>${B.join(" et ")}</b>` : fiche.effectif_reference != null ? `${esc(fiche.effectif_reference)} <i>(la valeur déjà enregistrée dans la fiche)</i>` : `<i>calculé dès qu'un effectif est noté</i>`;
+  const meilleur = B ? `<b>${esc(B.map(nomEffectif).join(" et "))}</b>` : fiche.effectif_reference != null ? `${esc(nomEffectif(fiche.effectif_reference))} <i>(la valeur déjà enregistrée dans la fiche)</i>` : `<i>calculé dès qu'un effectif est noté</i>`;
   box.innerHTML = (L.length ? `<p class="aide" style="font-style:italic;margin:0 0 4px">Ton avis sur chaque effectif que le jeu propose (de ${min} à ${max}, d'après ${source}). Laisse vide ce que tu n'as pas joué. Le meilleur effectif s'en déduit.</p>`
       + L.map(x => `<div class="effectif"><span>${esc(x.nom)}</span>${echelle(effectifs[x.n] ?? null, false, x.nom, `data-eff="${x.n}"`, !!EFF_ERR)}</div>`).join("")
     : `<p class="aide">Le nombre de joueurs n'est pas encore décrit : ${lien}.</p>`)
@@ -875,7 +925,7 @@ function dessinerEffectifs(){
     + (EFF_ERR ? `<p class="msg err">Les notes par effectif ne peuvent pas être lues ni enregistrées pour l'instant : ${esc(EFF_ERR)}</p>` : "");
 }
 /* ---- textes modèles : les exemples rédigés dans le modop (justifications, amorces littéraires) ---- */
-const modelesDe = ax => M.exemples.filter(x => ax.some(a => a.code === x.axe) && (x.justification || x.amorce));
+const modelesDe = ax => MOD.exemples.filter(x => ax.some(a => a.code === x.axe) && (x.justification || x.amorce));
 function boutonModeles(p, ax){
   const n = modelesDe(ax).length;
   return (!lectureSeule && n) ? `<button type="button" class="btn-modeles" data-modeles="${esc(p.code)}">Modèles (${n})</button>` : "";
@@ -902,11 +952,11 @@ function noteDe(p, s){ return noteDePaire(p, s, axesDe(p.code)); }   // calcul p
 const estComplete = (p, s) => noteDe(p, s).complete;
 // (3.40) ce qu'utilisent les calculs : la fiche, ou « Décrire le jeu » quand le réglage bascule_description vaut 1 (timeline.js) ;
 // les valeurs affichées dans la fiche restent celles de la fiche
-const pourCalcul = (f, s) => entreesDeFiche(f, s, M.axes, M.src);
+const pourCalcul = (f, s) => entreesDeFiche(f, s, MOD.axes, MOD.src);
 const saisieCalcul = () => pourCalcul(fiche, saisie).saisie;
 function calculer(s){
   const parChap = {}; let faites = 0;
-  M.paires.forEach(p => { const n = noteDe(p, s); if (n.complete) faites++; (parChap[p.chapitre] ??= []).push({ p, ...n }); });
+  MOD.paires.forEach(p => { const n = noteDe(p, s); if (n.complete) faites++; (parChap[p.chapitre] ??= []).push({ p, ...n }); });
   const moy = L => { const n = L.filter(x => x.note != null).map(x => x.note); return n.length ? n.reduce((a, b) => a + b, 0) / n.length : null; };
   const chap = Object.fromEntries(Object.entries(parChap).map(([c, L]) => [c, moy(L)]));
   const cs = Object.values(chap).filter(x => x != null);
@@ -923,13 +973,13 @@ function recalculer(){
     const calc = document.getElementById("calc-" + p.code); if (calc && !calc.classList.contains("hidden")) calc.innerHTML = methodeCalcul(p);
     document.getElementById("p-" + p.code).classList.toggle("faite", complete);
   });
-  M.chapitres.forEach(ch => { const v = c.chap[ch.code], el = document.getElementById("moy-" + ch.code); if (el) el.textContent = v == null ? "—" : fmt(v, 2); });
-  $("#prog").style.width = (c.faites / M.paires.length * 100) + "%";
-  $("#sous-titre").textContent = `${lectureSeule ? "Fiche de " + nomDe(fiche.evaluateur) : "Ma fiche"} · ${fiche.statut === "finale" ? "finale" : "brouillon"} · ${c.faites} paire${c.faites > 1 ? "s" : ""} sur ${M.paires.length}`;
+  MOD.chapitres.forEach(ch => { const v = c.chap[ch.code], el = document.getElementById("moy-" + ch.code); if (el) el.textContent = v == null ? "—" : fmt(v, 2); });
+  $("#prog").style.width = (c.faites / MOD.paires.length * 100) + "%";
+  $("#sous-titre").textContent = `${lectureSeule ? "Fiche de " + nomDe(fiche.evaluateur) : "Ma fiche"} · ${fiche.statut === "finale" ? "finale" : "brouillon"} · ${c.faites} paire${c.faites > 1 ? "s" : ""} sur ${MOD.paires.length}`;
   $("#pied-finale").textContent = c.finale == null ? "—" : fmt(c.finale, 2);
   // « Détails » : les notes de chapitres, la timeline résumée, le coût par session et le coût d'effort (prototype, 13/10/2026)
   const tl = majTimeline(), k = tl.c ? coutFiche(tl.c) : null, ce = coutEffort(entreesTimeline().n);
-  $("#pied-details").innerHTML = M.chapitres.map(ch => `<div><small>${esc(ch.nom)}</small><b>${c.chap[ch.code] == null ? "—" : fmt(c.chap[ch.code], 2) + "<small>/5</small>"}</b></div>`).join("")
+  $("#pied-details").innerHTML = MOD.chapitres.map(ch => `<div><small>${esc(ch.nom)}</small><b>${c.chap[ch.code] == null ? "—" : fmt(c.chap[ch.code], 2) + "<small>/5</small>"}</b></div>`).join("")
     + `<div title="${tl.c ? esc(syntheseTimeline(tl.c)) : "Timeline incomplète"}"><small>Timeline</small><b>${tl.c ? piedTimeline(tl.c) : "—"}</b></div>`
     + `<div title="${esc(k ? texteCout(k) + " (prix ÷ durée de vie calculée ; un classique est compté sur " + HORIZON_CLASSIQUE + " sessions)" : "Coût par session : il faut le prix et une timeline complète")}"><small>Coût par session</small><b>${k ? texteCout(k).replace(/ par session.*/, "").replace("moins de ", "< ") : "—"}</b></div>`
     + `<div title="Coût d'effort (prototype) : ce qu'il faut investir pour jouer — règles (POID1), manuels (DOC1), logistique (MAN1), hasard (MECA1a, à moitié), renouvellement (VAR1), attente (RYT1). Sur 5 ; c'est la gêne du Triomphant."><small>Coût d'effort <span class="proto">proto</span></small><b>${ce == null ? "—" : fmt(ce, 2) + "<small>/5</small>"}</b></div>`;
@@ -938,7 +988,7 @@ function recalculer(){
 
 /* ---------------- timeline ---------------- */
 // rassemble les notes utiles à la timeline (calcul partagé : timeline.js)
-function entreesTimeline(){ const x = pourCalcul(fiche, saisie), e = entreesFiche(x.saisie, M.paires, M.axes, x.extra); return { n:e.n, manque:e.manque, absents:e.absents }; }
+function entreesTimeline(){ const x = pourCalcul(fiche, saisie), e = entreesFiche(x.saisie, MOD.paires, MOD.axes, x.extra); return { n:e.n, manque:e.manque, absents:e.absents }; }
 // coût par session : prix ÷ durée de vie d'après la timeline (plafonnée à 50 sessions)
 const coutFiche = c => coutParPartie(pourCalcul(fiche, saisie).extra.prix, c, fiche.duree_min, fiche.duree_max);
 // pied de page : α, puis β et γ s'il y a une chute (sinon « pas de chute »), puis la durée de vie
@@ -950,7 +1000,7 @@ function piedTimeline(c){
 function majTimeline(){
   const box = document.getElementById("tl-corps"); if (!box) return {};
   const { n, manque, absents } = entreesTimeline();
-  const nomP = code => M.paires.find(p => p.code === code)?.nom || code;
+  const nomP = code => MOD.paires.find(p => p.code === code)?.nom || code;
   if (manque.length){
     const sb2 = document.getElementById("sp-corps"); if (sb2) sb2.innerHTML = `<p class="tl-attente">Le spectromètre s'affichera avec la timeline.</p>`;
     box.innerHTML = `<p class="tl-attente">La courbe s'affichera quand ces paires seront remplies : ${manque.map(c => `<a href="#p-${esc(c)}" data-ouvrir="${esc(c)}">${esc(nomP(c))}</a>`).join(", ")}.</p>`;
@@ -1014,10 +1064,11 @@ document.addEventListener("click", e => {
 
 /* ---------------- saisie (4.0) : les trapèzes, la case « sans objet », les justifications ---------------- */
 function poser(code, v){
-  const s = saisie[code] || {}, a = M.axes.find(x => x.code === code), p = M.paires.find(x => x.code === a.paire), ecart = estEcart(p, a);
-  saisie[code] = { valeur: v == null ? null : Math.round(v * 10) / 10, sans_objet: s.sans_objet || false, commentaire: s.commentaire ?? null };
+  const s = saisie[code] || {}, a = MOD.axes.find(x => x.code === code), p = MOD.paires.find(x => x.code === a.paire), ecart = estEcart(p, a);
+  // (4.2) le « sans objet » ne se décide plus ici : un avis posé sur un axe de rang « 2… » l'efface
+  saisie[code] = { valeur: v == null ? null : Math.round(v * 10) / 10, sans_objet: a.rang[0] === "2" ? false : s.sans_objet || false, commentaire: s.commentaire ?? null };
   const div = document.querySelector(`.axe[data-axe="${CSS.escape(code)}"]`);
-  if (div){ div.querySelector(".echelle-cadre").outerHTML = echelle(v, ecart, a.nom, `data-axe-echelle="${esc(code)}"`); div.querySelector(".palier").textContent = textePalierAvis(a, v, ecart); }
+  if (div) div.querySelector(".axe-ligne").outerHTML = ligneAvis(a, v, ecart);
   recalculer(); planifier(code);
 }
 // une valeur choisie (ou null : effacée) sur une échelle : l'avis d'un axe, ou la note d'un effectif ; le focus reste sur la valeur
@@ -1028,9 +1079,12 @@ function choisir(ech, v, n){
     document.querySelector(`.echelle[data-eff="${k}"] button[data-v="${n}"]`)?.focus(); }
 }
 $("#grille").addEventListener("click", e => {
-  const b = e.target.closest(".echelle button"); if (!b || b.disabled || lectureSeule) return;
+  const b = e.target.closest(".echelle button, .paliers button"); if (!b || b.disabled || lectureSeule) return;
   const n = Number(b.dataset.v);
-  choisir(b.closest(".echelle"), b.getAttribute("aria-pressed") === "true" ? null : n, n);   // un second clic sur la valeur choisie l'efface
+  // (4.2) un palier de la liste choisit sa valeur, comme son trapèze
+  const ech = b.closest(".echelle") || b.closest(".axe-ligne")?.querySelector(".echelle"); if (!ech) return;
+  const deja = ech.querySelector(`button[data-v="${n}"]`)?.getAttribute("aria-pressed") === "true";
+  choisir(ech, deja ? null : n, n);   // un second clic sur la valeur choisie l'efface
 });
 // au clavier : flèche gauche ou droite, la demi-valeur voisine est choisie
 $("#grille").addEventListener("keydown", e => {
@@ -1054,7 +1108,7 @@ $("#grille").addEventListener("click", e => {
   if (bm){ afficherModeles(bm.dataset.modeles); return; }
   const ins = e.target.closest("[data-inserer]");
   if (ins){
-    const x = M.exemples.find(y => y.code === ins.dataset.ex);
+    const x = MOD.exemples.find(y => y.code === ins.dataset.ex);
     if (ins.dataset.inserer === "justif") ajouterTexte(document.getElementById("j-" + ins.dataset.paire), x.justification);
     else { ajouterTexte($("#carnet"), `${x.amorce}  (modèle : ${nomJeu(x.jeu)})`); ins.textContent = "Ajouté ✓"; }
     return;
@@ -1062,7 +1116,7 @@ $("#grille").addEventListener("click", e => {
   const pan = e.target.closest("[data-panneau], [data-aide-axe]");
   if (pan){
     const id = pan.dataset.panneau || "aide-" + pan.dataset.aideAxe, box = document.getElementById(id), ouvrir = box.classList.contains("hidden");
-    if (ouvrir && id.startsWith("calc-")) box.innerHTML = methodeCalcul(M.paires.find(p => "calc-" + p.code === id));
+    if (ouvrir && id.startsWith("calc-")) box.innerHTML = methodeCalcul(MOD.paires.find(p => "calc-" + p.code === id));
     box.classList.toggle("hidden", !ouvrir); pan.setAttribute("aria-expanded", String(ouvrir)); return;
   }
   const t = e.target.closest("[data-replier]");
@@ -1080,7 +1134,7 @@ function montrerPaire(code){
   el.closest("details.famille").open = true; el.classList.remove("repliee"); majToutEnrouler(); el.scrollIntoView({ behavior:"smooth" });
 }
 $("#suivante").addEventListener("click", () => {
-  const s = saisieCalcul(), p = M.paires.find(x => !estComplete(x, s));
+  const s = saisieCalcul(), p = MOD.paires.find(x => !estComplete(x, s));
   if (!p){ $("#etat").textContent = "Toutes les paires sont remplies."; return; }
   montrerPaire(p.code); document.querySelector(`#p-${CSS.escape(p.code)} .echelle button[tabindex="0"]`)?.focus({ preventScroll:true });
 });
@@ -1115,8 +1169,8 @@ const messageDescription = () => `La description du jeu est à compléter avant 
 function appliquerDescription(){
   const box = $("#bandeau-desc"); if (!fiche || !box) return;
   const bloque = descriptionBloque(), msg = bloque ? messageDescription() : "";
-  const desc = M.src?.descriptions?.[fiche.jeu];
-  const manquent = M.axes.filter(a => /^1/.test(a.rang || "") && M.paires.some(p => p.code === a.paire) && nonDecrit(decritDe(a.code)));
+  const desc = MOD.src?.descriptions?.[fiche.jeu];
+  const manquent = MOD.axes.filter(a => /^1/.test(a.rang || "") && MOD.paires.some(p => p.code === a.paire) && nonDecrit(decritDe(a.code)));
   const quoi = [...(DESC.jeu === fiche.jeu ? DESC.manque : []),
     ...(!desc ? [] : manquent.length ? [`${manquent.length === 1 ? "une note décrite" : manquent.length + " notes décrites"} (${manquent.map(a => a.nom).join(", ")})`] : [])];
   const et = L => L.join(", ").replace(/, ([^,]*)$/, " et $1");
@@ -1191,7 +1245,7 @@ document.addEventListener("toggle", e => {
 
 /* ---------------- assistant de rédaction : demandes pour Claude, et retour de ses réponses ---------------- */
 // la charte : textes de la section « Assistant de rédaction » (prisme_textes), modifiables dans la console
-const charte = code => (M.textes || []).find(t => t.code === "assistant/" + code)?.contenu || "";
+const charte = code => (MOD.textes || []).find(t => t.code === "assistant/" + code)?.contenu || "";
 const CHARTE_DEFAUT = {
   commun: "- Écris en français, dans une langue claire et vivante.\n- L'axe 1 d'une paire décrit ce que le jeu est ; l'axe 2 juge ce qu'il réussit, pour la table à laquelle il est destiné, pas selon le goût de l'évaluateur.\n- Ne contredis jamais les notes : explique-les.\n- N'invente aucun fait sur le jeu ; ce que tu supposes, marque-le [à vérifier].\n- Les mots de l'évaluateur sont la matière première : garde ses idées et ses exemples.\n- Nomme les moteurs (Rassembler, Décrypter, Triompher, S'enflammer, Rayonner), jamais leurs lettres.",
   justification: "- Deux à quatre phrases, 60 mots au plus.\n- D'abord le constat concret à la table, puis ce qu'il vaut.\n- Pas de formule creuse, pas de liste, pas de note chiffrée répétée.",
@@ -1200,11 +1254,11 @@ const regle = code => charte(code) || CHARTE_DEFAUT[code];
 const palierTexte = (a, v) => { const L = paliersDe(a.code); if (!L.length || v == null) return ""; const x = L.reduce((b, y) => Math.abs(y.valeur - v) < Math.abs(b.valeur - v) ? y : b); return x.libelle; };
 const justifDe = p => saisie[axesDe(p.code).find(a => a.rang === "1").code]?.commentaire || "";
 function contexteJeu(){
-  const d = fiche, jeu = M.jeux.find(j => j.code === d.jeu) || {}, c = calculer(saisieCalcul()), tl = majTimeline();
+  const d = fiche, jeu = MOD.jeux.find(j => j.code === d.jeu) || {}, c = calculer(saisieCalcul()), tl = majTimeline();
   const chiffres = [d.pages && `${d.pages} pages de règles`, d.prix != null && d.prix !== "" && `${fmt(d.prix, 0)} €`, d.joueurs_max && `${d.joueurs_min || "?"} à ${d.joueurs_max} joueurs`,
     d.effectif_reference && `meilleur à ${d.effectif_reference}`, d.duree_max && `${d.duree_min || "?"} à ${d.duree_max} minutes`, d.contenu_parties && `${d.contenu_parties} parties pour tout exploiter`].filter(Boolean).join(", ");
   let t = `## Le jeu\n${jeu.nom || d.jeu}${jeu.bgg_id ? ` (BoardGameGeek n° ${jeu.bgg_id})` : ""}${chiffres ? "\n" + chiffres : ""}\n`;
-  t += `Note finale PRISME : ${c.finale == null ? "incomplète" : fmt(c.finale, 2) + " / 5"} (${M.chapitres.map(ch => `${ch.nom} ${c.chap[ch.code] == null ? "—" : fmt(c.chap[ch.code], 2)}`).join(", ")}).\n`;
+  t += `Note finale PRISME : ${c.finale == null ? "incomplète" : fmt(c.finale, 2) + " / 5"} (${MOD.chapitres.map(ch => `${ch.nom} ${c.chap[ch.code] == null ? "—" : fmt(c.chap[ch.code], 2)}`).join(", ")}).\n`;
   if (tl.c) t += `Timeline (la vie du jeu, partie après partie) : ${syntheseTimeline(tl.c)}.\n`;
   if (tl.c && coutFiche(tl.c)) t += `Coût par session (prix ÷ durée de vie, indicatif) : ${texteCout(coutFiche(tl.c))}.\n`;
   if (tl.sp){ const T = tl.sp.moteurs.flatMap(g => g.temperaments).sort((x, y) => y.note - x.note);
@@ -1222,22 +1276,22 @@ function textePaire(p, avecJustif = true){
 }
 const carnetTexte = () => fiche.notes_article?.trim() ? `## Le carnet de l'évaluateur (notes brutes, anecdotes, idées)\n${fiche.notes_article.trim()}\n` : "";
 function demande(type, code){
-  const tete = `Tu aides un évaluateur à rédiger pour PRISME, une méthode d'évaluation des jeux de société par paires d'axes (${M.paires.length} paires, notes de 0 à 5).\n\n## Charte commune\n${regle("commun")}\n\n`;
+  const tete = `Tu aides un évaluateur à rédiger pour PRISME, une méthode d'évaluation des jeux de société par paires d'axes (${MOD.paires.length} paires, notes de 0 à 5).\n\n## Charte commune\n${regle("commun")}\n\n`;
   if (type === "paire"){
-    const p = M.paires.find(x => x.code === code), j = justifDe(p);
-    const autres = M.paires.filter(x => x !== p && justifDe(x)).map(x => `- ${x.nom} : ${justifDe(x)}`).join("\n");
+    const p = MOD.paires.find(x => x.code === code), j = justifDe(p);
+    const autres = MOD.paires.filter(x => x !== p && justifDe(x)).map(x => `- ${x.nom} : ${justifDe(x)}`).join("\n");
     return tete + `## Charte des justifications\n${regle("justification")}\n\n` + contexteJeu() + "\n## La paire à justifier\n" + textePaire(p, false) +
       (autres ? `\n## Les autres justifications de la fiche (pour rester cohérent, ne pas les répéter)\n${autres}\n` : "") + (carnetTexte() ? "\n" + carnetTexte() : "") +
       `\n## Ta tâche\n${j ? `Améliore ce brouillon de l'évaluateur sans changer ce qu'il dit : « ${j} »` : "Rédige la justification de cette paire à partir des notes et du contexte."}\nRéponds uniquement par le texte de la justification, sans titre ni commentaire.`;
   }
   if (type === "justifs"){
-    const L = M.paires.filter(p => !noteDe(p, saisie).so);
+    const L = MOD.paires.filter(p => !noteDe(p, saisie).so);
     return tete + `## Charte des justifications\n${regle("justification")}\n\n` + contexteJeu() + "\n## Les paires\n" + L.map(p => textePaire(p)).join("\n") + (carnetTexte() ? "\n" + carnetTexte() : "") +
       `\n## Ta tâche\nPour chacune des ${L.length} paires ci-dessus, rédige la justification (ou améliore celle de l'évaluateur sans changer ce qu'il dit). Ne traite pas une paire qui n'est pas encore notée.\n` +
       `Réponds exactement dans ce format, une section par paire, sans rien d'autre avant ni après :\n### CODE\ntexte de la justification\n\n(CODE est le code de la paire, par exemple ${L.slice(0, 2).map(p => p.code).join(" ou ")}.)`;
   }
   // article
-  return tete + `## Charte de l'article\n${regle("article")}\n\n` + contexteJeu() + "\n## La fiche complète\n" + M.paires.map(p => textePaire(p)).join("\n") + (carnetTexte() ? "\n" + carnetTexte() : "") +
+  return tete + `## Charte de l'article\n${regle("article")}\n\n` + contexteJeu() + "\n## La fiche complète\n" + MOD.paires.map(p => textePaire(p)).join("\n") + (carnetTexte() ? "\n" + carnetTexte() : "") +
     `\n## Ta tâche\nÉcris un premier jet d'article sur ce jeu, en suivant la charte.\nCommence ta réponse par la ligne « ### ARTICLE », puis l'article (intertitres en « #### »). Ajoute ensuite, si besoin, une section « ### QUESTIONS » : ce qu'il faudrait demander à l'évaluateur pour compléter.`;
 }
 let derniere = null;   // la dernière demande copiée : { type, code }
@@ -1250,7 +1304,7 @@ document.addEventListener("click", async e => {
   e.preventDefault();
   const type = b.dataset.prompt, code = b.dataset.paire, texte = demande(type, code), ok = await copier(texte);
   derniere = { type, code };
-  const quoi = type === "paire" ? `la justification de ${M.paires.find(p => p.code === code).nom}` : type === "justifs" ? "toutes les justifications" : "un article";
+  const quoi = type === "paire" ? `la justification de ${MOD.paires.find(p => p.code === code).nom}` : type === "justifs" ? "toutes les justifications" : "un article";
   const m = $("#ass-msg"); m.className = ok ? "msg ok" : "msg err";
   m.textContent = ok ? `Demande pour ${quoi} copiée (${texte.length.toLocaleString("fr-FR")} caractères). Colle-la dans claude.ai, puis « Coller la réponse de Claude ».` : "Copie impossible dans ce navigateur.";
   if (type === "paire"){ const old = b.textContent; b.textContent = ok ? "Demande copiée ✓" : "Copie impossible"; setTimeout(() => b.textContent = old, 2500); }
@@ -1260,10 +1314,10 @@ function lireReponse(t){
   const sections = [], re = /^#{2,3}\s*([A-ZÉÈ]{2,12})\b[^\n]*\n/gm; let m, prec = null;
   while ((m = re.exec(t))){ if (prec) prec.texte = t.slice(prec.fin, m.index).trim(); prec = { cle:m[1].toUpperCase(), fin:re.lastIndex }; sections.push(prec); }
   if (prec) prec.texte = t.slice(prec.fin).trim();
-  const parCode = c => M.paires.find(p => p.code === c || norm(p.nom).toUpperCase() === norm(c).toUpperCase());
+  const parCode = c => MOD.paires.find(p => p.code === c || norm(p.nom).toUpperCase() === norm(c).toUpperCase());
   const justifs = sections.filter(x => parCode(x.cle) && x.texte).map(x => ({ p:parCode(x.cle), texte:x.texte }));
   const article = sections.find(x => x.cle === "ARTICLE")?.texte, questions = sections.find(x => x.cle === "QUESTIONS")?.texte;
-  if (!justifs.length && !article && derniere?.type === "paire" && t.trim()) justifs.push({ p:M.paires.find(p => p.code === derniere.code), texte:t.trim() });
+  if (!justifs.length && !article && derniere?.type === "paire" && t.trim()) justifs.push({ p:MOD.paires.find(p => p.code === derniere.code), texte:t.trim() });
   if (!justifs.length && !article && derniere?.type === "article" && t.trim()) return { justifs, article:t.trim(), questions };
   return { justifs, article, questions };
 }
@@ -1351,7 +1405,7 @@ function blocArticle(jeu){
 // l'encadré PRISME : ce que la fiche sait du jeu, en langage de joueur
 // la source de l'encadré : ta fiche si elle est complète ; sinon la meilleure autre fiche du même jeu (finale d'abord), dite dans l'encadré
 function sourceEncadre(){
-  const complete = x => { const y = pourCalcul(x.f, x.s); return !entreesFiche(y.saisie, M.paires, M.axes, y.extra).manque.length && calculer(y.saisie).finale != null; };
+  const complete = x => { const y = pourCalcul(x.f, x.s); return !entreesFiche(y.saisie, MOD.paires, MOD.axes, y.extra).manque.length && calculer(y.saisie).finale != null; };
   const propre = { f:fiche, s:saisie, autre:null };
   if (complete(propre)) return propre;
   const C = toutes.filter(e => e.jeu === fiche.jeu && cfgDe(e) === cfgDe(fiche) && e.id !== fiche.id).map(e => ({ f:e, s:saisieDe(e.id), autre:e.evaluateur })).filter(complete);
@@ -1359,14 +1413,14 @@ function sourceEncadre(){
 }
 function encadrePrisme(){
   const src = sourceEncadre(), d = src.f, x = pourCalcul(d, src.s), c = calculer(x.saisie);
-  const e = entreesFiche(x.saisie, M.paires, M.axes, x.extra);
+  const e = entreesFiche(x.saisie, MOD.paires, MOD.axes, x.extra);
   const tl = { c: e.manque.length ? null : flowJeu(e.n) }, k = tl.c ? coutParPartie(x.extra.prix, tl.c, d.duree_min, d.duree_max) : null;
   const L = [];
   const j = d.joueurs_max ? `${d.joueurs_min && d.joueurs_min !== d.joueurs_max ? d.joueurs_min + " à " : ""}${d.joueurs_max} joueur${d.joueurs_max > 1 ? "s" : ""}${d.effectif_reference ? ` (idéal à ${d.effectif_reference})` : ""}` : "";
   const du = d.duree_max ? `${d.duree_min && d.duree_min !== d.duree_max ? d.duree_min + " à " : ""}${d.duree_max} min` : "";
   const ligne1 = [j, du, d.prix ? `environ ${fmt(d.prix, 0)} €` : "", d.pages ? `${d.pages} pages de règles` : ""].filter(Boolean).join(" · ");
   if (ligne1) L.push(ligne1);
-  if (c.finale != null) L.push(`<b>Note PRISME : ${fmt(c.finale, 1)} / 5</b> (${M.chapitres.map(ch => `${esc(ch.nom)} ${c.chap[ch.code] == null ? "—" : fmt(c.chap[ch.code], 1)}`).join(", ")})`);
+  if (c.finale != null) L.push(`<b>Note PRISME : ${fmt(c.finale, 1)} / 5</b> (${MOD.chapitres.map(ch => `${esc(ch.nom)} ${c.chap[ch.code] == null ? "—" : fmt(c.chap[ch.code], 1)}`).join(", ")})`);
   if (tl.c){
     const h = [d.duree_min, d.duree_max].map(Number).filter(v => v > 0), hm = h.length ? h.reduce((a, b) => a + b, 0) / h.length / 60 : null;
     const vie = tl.c.omega != null ? `il lasse vite : abandon vers ${Math.round(tl.c.vie)} parties` : tl.c.vie == null ? "un classique, qu'on ne range pas"
@@ -1441,7 +1495,7 @@ $("#grille").addEventListener("click", e => {
   if (cmd === "copier") return copierWord();
   if (cmd === "telecharger") return telechargerWord();
   if (!ed || lectureSeule) return;
-  const jeu = M.jeux.find(j => j.code === fiche.jeu) || {};
+  const jeu = MOD.jeux.find(j => j.code === fiche.jeu) || {};
   if (cmd === "preparer"){
     if (texteDe(ed.innerHTML) && !confirm("Ton article a déjà du texte. Ajouter l'encadré PRISME et le plan à la fin ?")) return;
     ed.insertAdjacentHTML("beforeend", planArticle(jeu)); majArticle(); ed.focus(); return;
@@ -1478,13 +1532,13 @@ $("#btn-article").addEventListener("click", () => { const a = $("#article"); if 
    des axes ni le modèle, seulement ce résumé. Il est recalculé à chaque enregistrement d'une fiche publiée. */
 let PUBLI_OK = false;
 function publicationDe(f, s){
-  const x = pourCalcul(f, s), c = calculer(x.saisie), e = entreesFiche(x.saisie, M.paires, M.axes, x.extra);
+  const x = pourCalcul(f, s), c = calculer(x.saisie), e = entreesFiche(x.saisie, MOD.paires, MOD.axes, x.extra);
   const tl = e.manque.length ? null : flowJeu(e.n), k = tl ? coutParPartie(x.extra.prix, tl, f.duree_min, f.duree_max) : null;
   const h = [f.duree_min, f.duree_max].map(Number).filter(v => v > 0), hm = h.length ? h.reduce((a, b) => a + b, 0) / h.length / 60 : null;
   const fini = v => Number.isFinite(v) ? Math.round(v * 100) / 100 : null;
   return { v:1, maj: new Date().toISOString(), auteur: noms[f.evaluateur] || null,
     jeu: { joueurs_min:f.joueurs_min ?? null, joueurs_max:f.joueurs_max ?? null, effectif:f.effectif_reference ?? null, duree_min:f.duree_min ?? null, duree_max:f.duree_max ?? null, prix:f.prix ?? null, pages:f.pages ?? null },
-    note: fini(c.finale), chapitres: M.chapitres.map(ch => ({ nom:ch.nom, note:fini(c.chap[ch.code]) })),
+    note: fini(c.finale), chapitres: MOD.chapitres.map(ch => ({ nom:ch.nom, note:fini(c.chap[ch.code]) })),
     vie: tl ? { sessions: tl.vie == null ? null : Math.round(tl.vie), classique: tl.vie == null, abandon: tl.omega != null, epuise: !!tl.epuise,
       heures: tl.vie != null && hm ? Math.round(tl.vie * hm) : null, apogee: { jalon: tl.alpha, sessions: fini(tl.N[tl.alpha]), flow: fini(tl.y[tl.alpha]) } } : null,
     courbe: tl ? { y: tl.y.map(fini), N: tl.N.map(fini), jalons: JALONS.map(j => j.nom), alpha: tl.alpha, omega: tl.omega ?? null } : null,
@@ -1513,21 +1567,21 @@ $("#grille").addEventListener("change", e => {
 /* ---------------- récapitulatif et export ---------------- */
 function lignesRecap(){
   const sc = saisieCalcul();
-  return M.paires.map(p => {
+  return MOD.paires.map(p => {
     const ax = axesDe(p.code), n = noteDe(p, sc), a1 = ax.find(a => a.rang === "1");
-    const notes = ax.filter(a => a.echelle !== "calcule").map(a => { const v = sc[a.code]?.valeur; return `${a.code} ${v == null ? "—" : (estEcart(p, a) && v > 0 ? "+" : "") + fmt(v)}`; }).join(" · ");
-    return { p, n, notes, justif: saisie[a1.code]?.commentaire || "", chap: M.chapitres.find(c => c.code === p.chapitre).nom };
+    const notes = ax.filter(a => a.echelle !== "calcule").map(a => { const v = sc[a.code]?.valeur; return `${a.nom} ${v == null ? "—" : (estEcart(p, a) && v > 0 ? "+" : "") + fmt(v)}`; }).join(" · ");
+    return { p, n, notes, justif: saisie[a1.code]?.commentaire || "", chap: MOD.chapitres.find(c => c.code === p.chapitre).nom };
   });
 }
 $("#btn-recap").addEventListener("click", () => {
   const c = calculer(saisieCalcul()), L = lignesRecap(), manque = L.filter(l => !l.n.complete);
   $("#recap").innerHTML = `<h2>${esc(nomJeu(fiche.jeu))} : récapitulatif</h2>
-    <p class="aide">${manque.length ? `Il manque ${manque.length} paire${manque.length > 1 ? "s" : ""} : ${manque.map(l => esc(l.p.nom)).join(", ")}.` : `Les ${M.paires.length} paires sont remplies.`}
-      Note finale : <b>${c.finale == null ? "—" : fmt(c.finale, 2)}</b> (${M.chapitres.map(ch => `${esc(ch.nom)} ${c.chap[ch.code] == null ? "—" : fmt(c.chap[ch.code], 2)}`).join(", ")}).</p>
+    <p class="aide">${manque.length ? `Il manque ${manque.length} paire${manque.length > 1 ? "s" : ""} : ${manque.map(l => esc(l.p.nom)).join(", ")}.` : `Les ${MOD.paires.length} paires sont remplies.`}
+      Note finale : <b>${c.finale == null ? "—" : fmt(c.finale, 2)}</b> (${MOD.chapitres.map(ch => `${esc(ch.nom)} ${c.chap[ch.code] == null ? "—" : fmt(c.chap[ch.code], 2)}`).join(", ")}).</p>
     ${(() => { const t = majTimeline(), k = t.c && coutFiche(t.c); return `<p class="aide">Timeline : ${t.c ? esc(syntheseTimeline(t.c)) : "incomplète"}.${k ? ` Coût par session : ${esc(texteCout(k))}.` : ""}</p>` +
       (t.sp ? `<p class="aide">Spectromètre (note vue par chaque moteur dominant) : ${t.sp.moteurs.map(g => `${esc(g.m.nom)} ${fmt(g.note, 2)}`).join(" · ")}.</p>` : ""); })()}
     <table class="recap"><thead><tr><th>Paire</th><th>Saisie</th><th>Note</th><th>Justification</th></tr></thead><tbody>
-    ${L.map(l => `<tr class="${l.n.complete ? "" : "manque"}"><td><span class="aller" data-aller="${esc(l.p.code)}">${esc(l.p.nom)}</span></td><td>${l.notes}</td>
+    ${L.map(l => `<tr class="${l.n.complete ? "" : "manque"}"><td><span class="aller" data-aller="${esc(l.p.code)}">${esc(l.p.nom)}</span></td><td>${esc(l.notes)}</td>
       <td>${l.n.so ? "sans objet" : l.n.note == null ? (l.n.na1 || l.n.seuil ? "axe 2 sans objet" : "—") : fmt(l.n.note, 2)}</td><td>${esc(l.justif)}</td></tr>`).join("")}</tbody></table>`;
   $("#recap").querySelectorAll("[data-aller]").forEach(x => x.addEventListener("click", () => {
     $("#dlg-recap").close(); montrerPaire(x.dataset.aller); }));
@@ -1541,12 +1595,12 @@ $("#btn-export").addEventListener("click", () => {
     d.joueurs_max && `${d.joueurs_min || "?"} à ${d.joueurs_max} joueurs`, d.duree_max && `${d.duree_min || "?"} à ${d.duree_max} minutes`].filter(Boolean).join(", ");
   let md = `# ${nomJeu(d.jeu)}\n\nFiche PRISMEgame de ${noms[d.evaluateur] || "l'évaluateur"}, ${d.statut === "finale" ? "finale" : "brouillon"}, exportée le ${new Date().toLocaleDateString("fr-FR")}.\n\n`;
   if (chiffres) md += `**Le jeu en chiffres** : ${chiffres}.\n\n`;
-  md += `**Note finale : ${c.finale == null ? "—" : fmt(c.finale, 2)}** (${M.chapitres.map(ch => `${ch.nom} ${c.chap[ch.code] == null ? "—" : fmt(c.chap[ch.code], 2)}`).join(", ")})\n`;
+  md += `**Note finale : ${c.finale == null ? "—" : fmt(c.finale, 2)}** (${MOD.chapitres.map(ch => `${ch.nom} ${c.chap[ch.code] == null ? "—" : fmt(c.chap[ch.code], 2)}`).join(", ")})\n`;
   const tl = majTimeline();
   if (tl.c) md += `\n**Timeline** : ${syntheseTimeline(tl.c)}.\n\nFlow par jalon : ${tl.c.y.map((v, j) => `${j} ${fmt(v, 2)}`).join(" · ")}\n`;
   if (tl.c && coutFiche(tl.c)) md += `\n**Coût par session** (indicatif) : ${texteCout(coutFiche(tl.c))}.\n`;
   if (tl.sp) md += `\n**Spectromètre** (note vue par chaque moteur dominant) : ${tl.sp.moteurs.map(g => `${g.m.nom} ${fmt(g.note, 2)}`).join(" · ")}. Le profil le mieux servi : ${tl.sp.lignes[0].st.nom} (${fmt(tl.sp.lignes[0].note, 2)}) ; le moins bien : ${tl.sp.lignes.at(-1).st.nom} (${fmt(tl.sp.lignes.at(-1).note, 2)}).\n`;
-  M.chapitres.forEach(ch => {
+  MOD.chapitres.forEach(ch => {
     md += `\n## ${ch.nom}\n`;
     L.filter(l => l.p.chapitre === ch.code).forEach(l => {
       md += `\n### ${l.p.nom} : ${l.n.so || l.n.na1 || l.n.seuil ? "sans objet" : l.n.note == null ? "—" : fmt(l.n.note, 2)}\n\n${l.notes}\n`;
