@@ -1,7 +1,9 @@
 /* PRISME — timeline du jeu : jalons, durées, flow, α β γ ω, durée de vie.
    Module partagé par l'encyclopédie et l'outil d'évaluation. Méthode arrêtée le 08/10/2026 (jeu d'essai : Heat) ; modèle à 12 paires le 11/10/2026 ;
    formules refaites phase par phase le 12/10/2026 avec trois jeux de référence (Gloomhaven, Heat, Flip 7). L'unité est la session. */
-const TIMELINE_VERSION = { numero:"3.12", date:"2026-11-05 19:06" };   // à incrémenter à chaque livraison
+const TIMELINE_VERSION = { numero:"3.13", date:"2026-11-06 21:32" };   // à incrémenter à chaque livraison
+// (3.13, 06/11/2026) un jeu = une fiche globale : lireJeuxEvalues ne garde dans « fiches » qu'une sous-fiche par jeu (l'all-in s'il a des fiches,
+// sinon la base) ; toutes les sous-fiches restent dans « fichesSousFiches » ; nomJeuGlobal() donne le nom du jeu sans « (all-in) »
 // (3.12, 05/11/2026) entreesPourCalcul : une paire dont tous les axes de rang « 1… » sont sans objet dans la description l'est tout entière
 
 const JALONS = [
@@ -619,6 +621,12 @@ function jeuxPourJoueurs(fiches, paires, axes, pl, codes, src){
 // à défaut (script 25 pas encore passé), les tables, avec les droits d'avant
 // la configuration évaluée par une fiche (« toutes extensions »…) ; null : la boîte de base
 const configDe = f => String(f?.configuration ?? "").trim() || null;
+// (3.13) les sous-fiches d'un jeu : même fiche globale (prisme_jeux.fiche_globale ; sans elle, le jeu est seul) ; configuration « base » ou « all_in »
+const ficheGlobaleDe = j => j?.fiche_globale || j?.code;
+const sousFicheDe = j => j?.configuration || "base";
+const sousFichesDe = (code, jeux) => { const j = jeux.find(x => x.code === code); return j ? jeux.filter(x => ficheGlobaleDe(x) === ficheGlobaleDe(j)) : []; };
+// le nom du jeu : celui de sa sous-fiche de base (« Obsession », pas « Obsession (all-in) »)
+const nomJeuGlobal = (code, jeux) => { const S = sousFichesDe(code, jeux); return (S.find(x => sousFicheDe(x) === "base") || S.find(x => x.code === code))?.nom || code; };
 const estJeuComplet = nom => /toutes?\s+(les\s+)?extensions|jeu\s+complet/i.test(nom || "");
 async function lireJeuxEvalues(sb){
   // (18/10/2026) toutes les lectures partent en même temps ; une table de plus de 1000 lignes est lue par pages, elles aussi en parallèle
@@ -642,8 +650,15 @@ async function lireJeuxEvalues(sb){
     // (18/10/2026) le jeu complet est la référence : quand une configuration « toutes extensions » existe, c'est elle que lisent
     // la liste des jeux, la note pour vous, les profils et la rosace ; sinon, la boîte de base
     const reference = {}; configurations.forEach(f => { if (estJeuComplet(f.configuration)) reference[f.jeu] ??= f.configuration; });
-    const fiches = [...base.filter(f => !reference[f.jeu]), ...configurations.filter(f => reference[f.jeu] && f.configuration === reference[f.jeu])];
-    return { paires, axes, jeux, fiches, fichesBase: base, configurations, reference, src, duree: performance.now() - t0 };
+    const fichesSousFiches = [...base.filter(f => !reference[f.jeu]), ...configurations.filter(f => reference[f.jeu] && f.configuration === reference[f.jeu])];
+    // (3.13) une seule sous-fiche par jeu, pour ne jamais proposer deux fois le même : l'all-in s'il a des fiches, sinon la base
+    const avec = new Set(fichesSousFiches.map(f => f.jeu)), retenue = {};
+    jeux.forEach(j => { const g = ficheGlobaleDe(j); if (g in retenue) return;
+      const S = jeux.filter(x => ficheGlobaleDe(x) === g && avec.has(x.code));
+      retenue[g] = (S.find(x => sousFicheDe(x) === "all_in") || S.find(x => sousFicheDe(x) === "base") || S[0])?.code ?? null; });
+    const globale = Object.fromEntries(jeux.map(j => [j.code, ficheGlobaleDe(j)]));
+    const fiches = fichesSousFiches.filter(f => retenue[globale[f.jeu] ?? f.jeu] === f.jeu || !(f.jeu in globale));
+    return { paires, axes, jeux, fiches, fichesSousFiches, fichesBase: base, configurations, reference, src, duree: performance.now() - t0 };
   } catch (e){ return { refus:true }; }
 }
 // la moyenne de plusieurs fiches d'un même jeu : axe par axe (une valeur sans objet dans toutes les fiches reste sans objet) ; données du jeu moyennées
@@ -676,7 +691,7 @@ const codeDeResultat = r => r ? (r.style || (r.classement ? r.classement[0] + ".
 // L : résultat de jeuxPourJoueurs ; d : résultat de lireJeuxEvalues ; qui : « lui », « vous »…
 function tableJeuxHTML(L, d, qui, moyenne){
   const e = s => String(s ?? "").replace(/[&<>"']/g, k => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[k]));
-  const nom = c => d.jeux.find(j => j.code === c)?.nom || c, f = (v, k = 2) => Number(v).toFixed(k).replace(".", ",");
+  const nom = c => nomJeuGlobal(c, d.jeux), f = (v, k = 2) => Number(v).toFixed(k).replace(".", ",");   // (3.13) le nom du jeu, sans « (all-in) »
   if (!L.length) return `<p class="pj-discret">Aucun jeu n'a encore de fiche complète.</p>`;
   const ecart = x => { const v = x.note - x.base; return `<span class="pj-ecart ${v >= .005 ? "plus" : v <= -.005 ? "moins" : ""}">${Math.abs(v) < .005 ? "±" : v > 0 ? "+" : "−"}${f(Math.abs(v))}</span>`; };
   const ligne = (x, i) => `<tr><td class="rang">${i}</td><td><a href="evaluation.html?jeu=${encodeURIComponent(x.jeu)}">${e(nom(x.jeu))}</a>${x.finale ? "" : ' <small class="pj-discret">brouillon</small>'}</td>

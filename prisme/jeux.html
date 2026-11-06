@@ -42,6 +42,12 @@ tr.attente td{color:var(--muted)}
 .vide{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:30px 26px;font:italic 18px/1.5 var(--serif);color:var(--muted)}
 .vide a{color:var(--ink)}
 .version{font-size:12px;color:var(--muted);text-align:right;margin-top:24px}
+/* (1.12) une ligne par jeu : la ligne ouvre la sous-fiche de référence ; les pastilles « base » / « all-in » ouvrent chacune la leur */
+table.jeux tr[data-href]{cursor:pointer} table.jeux tr[data-href]:hover td{background:color-mix(in srgb, var(--ink) 4%, transparent)}
+.cellule{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.sf{display:flex;gap:4px;flex:none}
+.sf a{font:500 12px var(--sans);padding:2px 9px;border:1px solid var(--line);border-radius:999px;text-decoration:none;color:var(--muted);background:var(--paper)}
+.sf a:hover{border-color:var(--ink);color:var(--ink)} .sf a.ref{border-color:var(--accent);color:var(--accent)}
 @media (max-width:700px){ main{padding:8px 12px 30px} table.jeux th,table.jeux td{padding:8px} .col-sec{display:none} }
 </style>
 </head>
@@ -55,9 +61,10 @@ tr.attente td{color:var(--muted)}
   <p class="version"><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p>
 </main>
 
-<script src="timeline.js?v=3.11"></script>
+<script src="timeline.js?v=3.13"></script>
 <script>
-const VERSION = { numero:"1.11", date:"2026-11-03 23:33" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.12", date:"2026-11-06 21:32" };   // à incrémenter à chaque livraison
+// (1.12, 06/11/2026) une ligne par jeu (fiche globale) : le nom de la base, les pastilles « base » / « all-in », les valeurs de la sous-fiche de référence
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -104,13 +111,22 @@ async function demarrer(user){
   if (NIVEAUX[role] >= NIVEAUX.lecteur) toutes = toutesBrutes || [];
   etape("Calcul des courbes…"); await new Promise(ok => setTimeout(ok, 0));   // laisse le message s'afficher
   const t2 = performance.now();
-  const parJeu = {}; d.fiches.forEach(f => (parJeu[f.jeu] ??= []).push(f));
-  lignes = d.jeux.map(j => {
-    const F = parJeu[j.code] || [], r2 = resumeJeu(F, d.paires, d.axes, profil, d.src);
-    const T = toutes.filter(f => f.jeu === j.code);
+  // (1.12) toutes les sous-fiches (base et all-in), puis une ligne par fiche globale
+  const parJeu = {}; (d.fichesSousFiches || d.fiches).forEach(f => (parJeu[f.jeu] ??= []).push(f));
+  const resume = j => resumeJeu(parJeu[j.code] || [], d.paires, d.axes, profil, d.src);
+  const groupes = {}; d.jeux.forEach(j => (groupes[ficheGlobaleDe(j)] ??= []).push(j));
+  lignes = Object.values(groupes).map(S => {
+    const base = S.find(x => sousFicheDe(x) === "base"), allin = S.find(x => sousFicheDe(x) === "all_in");
+    // la ligne ouvre l'all-in s'il existe, sinon la base ; ses valeurs sont celles de l'all-in quand il a des fiches finales, sinon celles de la base
+    const ouvre = allin || base || S[0], j = (allin && parJeu[allin.code]?.length ? allin : null) || base || ouvre;
+    const F = parJeu[j.code] || [], r2 = resume(j);
+    const T = toutes.filter(f => S.some(x => x.code === f.jeu));
     const cfg = new Set((d.configurations || []).filter(f => f.jeu === j.code).map(configDe)).size, refJ = d.reference?.[j.code];
-    return { j, n:F.length, r:r2, toutes:T.length, mienne:T.find(f => f.evaluateur === user.id && configDe(f) === (refJ || null)) || T.find(f => f.evaluateur === user.id), cfg, refJ };
-  }).sort((a, b) => a.j.nom.localeCompare(b.j.nom, "fr", { sensitivity:"base" }));
+    const sf = base && allin ? [[base, "base"], [allin, "all-in"]].map(([x, t]) => ({ x, t, r: x === j ? r2 : resume(x) })) : [];
+    const nom = (base || j).nom, autres = S.map(x => x.nom).join(" ");   // la recherche lit aussi le nom de l'all-in
+    return { j, nom, autres, ouvre, sf, image: (base || j).image_url || ouvre.image_url, n:F.length, r:r2, toutes:T.length,
+      mienne:T.find(f => f.jeu === j.code && f.evaluateur === user.id && configDe(f) === (refJ || null)) || T.find(f => f.evaluateur === user.id), cfg, refJ };
+  }).sort((a, b) => a.nom.localeCompare(b.nom, "fr", { sensitivity:"base" }));
   temps.calcul = performance.now() - t2;
   $("#liens").innerHTML = (NIVEAUX[role] >= NIVEAUX.evaluateur ? `<a class="btn" href="evaluation.html?ajout=1">Ajouter un jeu</a>` : "")
     + (NIVEAUX[role] >= NIVEAUX.lecteur ? `<a class="btn" href="evaluation.html" title="Toutes les fiches d'évaluation, brouillons compris">Toutes les fiches</a>` : "");
@@ -123,14 +139,14 @@ async function demarrer(user){
 $("#cherche").addEventListener("input", afficher); $("#evalues").addEventListener("change", afficher);
 // tri par colonne (18/10/2026) : un clic sur l'en-tête trie, un second inverse ; les jeux sans valeur restent en bas
 let tri = { cle:"nom", sens:1 };
-const CLES = { nom: l => sansAccent(l.j.nom), note: l => l.r?.finale, pour: l => l.r?.notePour, apogee: l => l.r?.c ? l.r.c.y[l.r.c.alpha] : null,
+const CLES = { nom: l => sansAccent(l.nom), note: l => l.r?.finale, pour: l => l.r?.notePour, apogee: l => l.r?.c ? l.r.c.y[l.r.c.alpha] : null,
   vie: l => l.r?.c ? (l.r.c.vie ?? 1e9) : null, cout: l => l.r?.cout?.parPartie };
 const sansAccent = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 function afficher(){
   const q = sansAccent($("#cherche").value.trim());
-  const L = lignes.filter(l => (!q || sansAccent(l.j.nom).includes(q)) && (!$("#evalues").checked || l.n));
+  const L = lignes.filter(l => (!q || sansAccent(l.autres).includes(q)) && (!$("#evalues").checked || l.n));
   const k = CLES[tri.cle];
-  L.sort((a, b) => { const u = k(a), v = k(b); if (u == null && v == null) return sansAccent(a.j.nom) < sansAccent(b.j.nom) ? -1 : 1;
+  L.sort((a, b) => { const u = k(a), v = k(b); if (u == null && v == null) return sansAccent(a.nom) < sansAccent(b.nom) ? -1 : 1;
     if (u == null) return 1; if (v == null) return -1; return (u < v ? -1 : u > v ? 1 : 0) * tri.sens; });
   const th = (cle, t, cls = "", titre = "") => `<th class="${cls}" data-tri="${cle}"${titre ? ` title="${titre}"` : ""}>${t}${tri.cle === cle ? `<span class="sens">${tri.sens > 0 ? "▲" : "▼"}</span>` : ""}</th>`;
   const evalues = lignes.filter(l => l.n).length;
@@ -144,15 +160,20 @@ function afficher(){
   $("#contenu").innerHTML = `<div class="cadre"><table class="jeux"><thead><tr>${th("nom","Jeu")}${th("note","Note PRISME /5","n")}${profil ? th("pour","Pour vous /5","n") : ""}
     ${th("apogee","Apogée /10","n col-sec","Le flow le plus haut de la timeline")}${th("vie","Durée de vie (sessions)","n col-sec","∞ : un classique")}${th("cout","Coût (€/session)","n col-sec")}${lecteur ? "<th>Évaluation</th>" : ""}</tr></thead><tbody>
     ${L.map(l => {
-      const img = l.j.image_url ? `<img src="${esc(l.j.image_url)}" alt="" loading="lazy">` : `<span class="sans-image"></span>`;
-      const nom = `<a class="jeu" href="jeu.html?jeu=${encodeURIComponent(l.j.code)}">${img}<span><b>${esc(l.j.nom)}</b><small>${l.n ? `${l.n} fiche${l.n > 1 ? "s" : ""} finale${l.n > 1 ? "s" : ""}` : "pas encore évalué"}${l.refJ ? " · jeu complet" : l.cfg ? ` · + ${l.cfg} configuration${l.cfg > 1 ? "s" : ""}` : ""}</small></span></a>`;
+      const img = l.image ? `<img src="${esc(l.image)}" alt="" loading="lazy">` : `<span class="sans-image"></span>`;
+      const lien = "jeu.html?jeu=" + encodeURIComponent(l.ouvre.code);
+      // (1.12) les pastilles « base » / « all-in », chacune vers sa sous-fiche, avec sa note au survol
+      const sf = l.sf.length ? `<span class="sf">${l.sf.map(s => `<a href="jeu.html?jeu=${encodeURIComponent(s.x.code)}"${s.x === l.j ? ' class="ref"' : ""} title="${esc(s.t === "base" ? "Jeu de base" : "Jeu all-in")} : ${s.r?.finale != null ? "note " + fmt(s.r.finale) + " / 5" : "pas encore de fiche finale"}">${s.t}</a>`).join("")}</span>` : "";
+      const nom = `<div class="cellule"><a class="jeu" href="${lien}">${img}<span><b>${esc(l.nom)}</b><small>${l.n ? `${l.n} fiche${l.n > 1 ? "s" : ""} finale${l.n > 1 ? "s" : ""}` : "pas encore évalué"}${l.refJ ? " · jeu complet" : l.cfg ? ` · + ${l.cfg} configuration${l.cfg > 1 ? "s" : ""}` : ""}</small></span></a>${sf}</div>`;
       const ev = !lecteur ? "" : `<td class="discret">${l.mienne ? `ma fiche (${l.mienne.statut === "finale" ? "finale" : "brouillon"})` : ""}${l.mienne && l.toutes > 1 ? " · " : ""}${!l.mienne || l.toutes > 1 ? (l.toutes ? `${l.toutes} fiche${l.toutes > 1 ? "s" : ""}` : "") : ""}</td>`;
-      if (!l.r || !l.r.complet) return `<tr class="${l.n ? "" : "attente"}"><td>${nom}</td><td class="n">${l.r?.finale != null ? fmt(l.r.finale) : "—"}</td>${profil ? '<td class="n">—</td>' : ""}<td class="n col-sec">—</td><td class="n col-sec">—</td><td class="n col-sec">—</td>${ev}</tr>`;
-      return `<tr><td>${nom}</td><td class="n"><b>${fmt(l.r.finale)}</b></td>${profil ? `<td class="n"><b>${fmt(l.r.notePour)}</b>${ecart(l.r.notePour, l.r.finale)}</td>` : ""}
+      if (!l.r || !l.r.complet) return `<tr class="${l.n ? "" : "attente"}" data-href="${lien}"><td>${nom}</td><td class="n">${l.r?.finale != null ? fmt(l.r.finale) : "—"}</td>${profil ? '<td class="n">—</td>' : ""}<td class="n col-sec">—</td><td class="n col-sec">—</td><td class="n col-sec">—</td>${ev}</tr>`;
+      return `<tr data-href="${lien}"><td>${nom}</td><td class="n"><b>${fmt(l.r.finale)}</b></td>${profil ? `<td class="n"><b>${fmt(l.r.notePour)}</b>${ecart(l.r.notePour, l.r.finale)}</td>` : ""}
         <td class="n col-sec">${fmt(l.r.c.y[l.r.c.alpha])}</td><td class="n col-sec">${vie(l.r.c)}</td><td class="n col-sec">${cout(l.r.cout)}</td>${ev}</tr>`;
     }).join("")}</tbody></table></div>
     <p class="discret" style="font-size:12px">Chargé en ${secondes(performance.now() - T0)} : connexion ${secondes(temps.connexion)}, base ${secondes(temps.base)}, calcul ${secondes(temps.calcul)}.</p>
     <p class="discret">Un clic sur un en-tête trie la colonne. Notes sur 5, moyenne des fiches finales ; pour un jeu évalué avec toutes ses extensions, c'est le jeu complet qui compte. Apogée : le flow le plus haut de la timeline, sur 10 (le flow n'est pas une note : il mesure le plaisir net à un moment de la vie du jeu). Durée de vie : en sessions, jusqu'à l'abandon ou jusqu'au jeu rangé ; ∞ pour un classique.</p>`;
+  // (1.12) un clic sur la ligne ouvre la sous-fiche de référence (les liens de la ligne gardent leur propre cible)
+  document.querySelectorAll("table.jeux tr[data-href]").forEach(tr => tr.addEventListener("click", e => { if (!e.target.closest("a")) location.href = tr.dataset.href; }));
   document.querySelectorAll("table.jeux th[data-tri]").forEach(h => h.addEventListener("click", () => {
     const c = h.dataset.tri; tri = { cle:c, sens: tri.cle === c ? -tri.sens : (c === "nom" || c === "cout" ? 1 : -1) }; afficher(); }));
 }
