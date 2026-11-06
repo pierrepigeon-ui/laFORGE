@@ -13,7 +13,9 @@
    les couleurs, les polices et les trapèzes sont ceux de « Décrire le jeu » (maquette validée, faite sur Heat).
    4.2 (05/11/2026) : selecteurs.js 1.4 pour ce qui est commun (couleurs des notions, sommaire collant, paliers, pictogrammes) ;
    tous les paliers à côté des trapèzes, avec l'aide au survol ; plus de case « sans objet » : une paire l'est quand la description le dit ;
-   « À combien ? » dans la carte LIEN, en lignes regroupées au-delà de 8 joueurs ; les codes des axes en info-bulle seulement */
+   « À combien ? » dans la carte LIEN, en lignes regroupées au-delà de 8 joueurs ; les codes des axes en info-bulle seulement
+   4.3 (06/11/2026) : entre le jeu de base et le jeu all-in (sous-fiches sœurs) : partir de sa fiche de la sœur (prisme_dupliquer_evaluation),
+   comparer avec elle (repères discrets, masquables dans « Outils ») ; « Les fiches » groupées par sous-fiche */
 :root{--ink:#15171C;--muted:#4B5160;--line:#E2E4E9;--trait:#C9CEDB;--paper:#F4F5F7;--panel:#FFFFFF;--neutre:#E8EAF0;--filet:#EEF0F4;
   --accent:#2346C8;--accent-fonce:#16308F;--sur-accent:#FFFFFF;--bleu-fond:#E6EBFB;--bleu-texte:#16308F;--orange-fond:#FBEDE4;--orange-texte:#8A3108;
   --vert-fond:#E7F4EC;--vert-texte:#14532D;--ok:#1E7A46;--warn:#9A5B00;--err:#B42318;--trapeze:#F0F2F6;--trapeze-demi:#E3E6EE;
@@ -106,7 +108,17 @@ details.famille > summary::-webkit-details-marker{display:none}
 .echelle button .bulle{display:none;position:absolute;left:0;bottom:calc(100% + 6px);z-index:20;background:var(--ink);color:var(--panel);font:400 12.5px/1.45 var(--sans);padding:7px 10px;border-radius:8px;width:max-content;max-width:min(260px,80vw);white-space:normal;text-align:left;box-shadow:0 4px 14px rgba(0,0,0,.15)}
 .echelle button:hover .bulle,.echelle button:focus .bulle{display:block}
 .echelle{position:relative}
-@media (min-width:600px){ .page .echelle-cadre{overflow:visible} }   /* l'info-bulle passe au-dessus du cadre ; sur téléphone, la rangée défile toujours */
+@media (min-width:600px){ .page .echelle-cadre{overflow:visible} }
+/* (4.3) la fiche sœur (jeu de base / jeu all-in) : l'encart pour en partir, les repères discrets pour comparer */
+.encart-soeur{display:flex;flex-direction:column;gap:10px;padding:14px 18px;border-radius:12px;border:1px solid var(--bleu-bord, var(--trait));background:var(--bleu-fond);color:var(--ink)}
+.encart-soeur p{margin:0} .encart-soeur .encart-boutons{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.avis-gauche{display:flex;flex-direction:column;gap:4px;align-items:flex-start}
+.soeur{font-size:12.5px;color:var(--muted);font-weight:400;white-space:nowrap}
+.soeur .plus{color:var(--ok);font-weight:600} .soeur .moins{color:var(--err);font-weight:600}
+body:not(.avec-soeur) .soeur{display:none!important}
+.famille .fam-note .soeur{display:block;font-size:12px;text-align:right}
+#pied-details div.soeur{font-size:14px}
+table.fiches-groupe{margin:0 0 14px} h3.fiches-groupe{font:600 17px var(--serif);margin:14px 0 6px} h3.fiches-groupe:first-of-type{margin-top:4px}   /* l'info-bulle passe au-dessus du cadre ; sur téléphone, la rangée défile toujours */
 .paire .tete{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
 .paire h3{margin:0;font:700 18px var(--sans);letter-spacing:.02em;cursor:pointer}
 .paire .note-paire{font-size:13px;color:var(--muted)} .paire .note-paire b{color:var(--ink);font-size:15px}
@@ -298,6 +310,7 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
       <button class="btn ghost" id="outils-btn" type="button" aria-expanded="false" aria-controls="outils-menu" aria-haspopup="true">Outils<span class="etat-mini" id="etat-mini" aria-hidden="true"></span> ▾</button>
       <div id="outils-menu" class="hidden">
         <button type="button" id="m-fiches">Les fiches de ce jeu</button>
+        <label id="cmp-soeur-lab" class="hidden"><input type="checkbox" id="cmp-soeur" checked> <span id="cmp-soeur-t">Comparer avec ma fiche du jeu de base</span></label>
         <a id="vers-jeu" href="jeux.html" title="La fiche du jeu, telle que la voient les joueurs">Fiche du jeu</a>
         <a id="vers-decrire" href="decrire.html">Décrire le jeu</a>
         <button type="button" id="btn-config" class="hidden" title="Évaluer le jeu avec ses extensions : une fiche liée, qui reprend celle-ci">+ Configuration (avec extensions)</button>
@@ -318,7 +331,7 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
       </div>
     </div>
   </div>
-  <div class="page"><nav id="sommaire"></nav><div id="bandeau-desc"></div><div id="grille" style="display:contents"></div></div>
+  <div class="page"><nav id="sommaire"></nav><div id="encart-soeur"></div><div id="bandeau-desc"></div><div id="grille" style="display:contents"></div></div>
 </section>
 <div id="pied" class="hidden">
   <div class="pied-int">
@@ -334,13 +347,14 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
   <p style="margin:8px 0"><button class="btn ghost" type="button" id="coller-lire">Lire la réponse</button></p>
   <div id="coller-apercu"></div>
   <p style="text-align:right;margin:12px 0 0;display:flex;gap:10px;justify-content:flex-end"><button class="btn ghost" type="button" id="coller-fermer">Fermer</button><button class="btn" type="button" id="coller-appliquer" disabled>Appliquer la sélection</button></p></dialog>
+<dialog id="dlg-fiches" aria-labelledby="dlg-fiches-titre"><div id="fiches-soeurs"></div><p style="text-align:right;margin:12px 0 0"><button class="btn" id="fermer-fiches" type="button">Fermer</button></p></dialog>
 <dialog id="dlg-recap"><div id="recap"></div><p style="text-align:right;margin:12px 0 0"><button class="btn" id="fermer-recap" type="button">Fermer</button></p></dialog>
 <div class="wrap"><p class="version"><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p></div>
 
 <script src="timeline.js?v=3.12"></script>
 <script src="selecteurs.js?v=1.4"></script>
 <script>
-const VERSION = { numero:"4.2", date:"2026-11-05 19:06" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"4.3", date:"2026-11-06 14:17" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -387,6 +401,27 @@ const nomEffectif = n => { const t = trancheDe(Number(n)); return !t ? String(n)
 const ligneEffectif = t => `${nomEffectif(t.n)} joueur${t.a > 1 ? "s" : ""}`;
 // (4.2) une paire est sans objet quand tous ses axes de rang « 1… » le sont dans la description : grisée, réduite à son titre
 const LIEN_ETENDUE = "LIEN1d";
+/* (4.3) les sous-fiches sœurs : le jeu de base et le jeu all-in d'une même fiche globale (prisme_jeux.fiche_globale, configuration) */
+const sousFiche = j => j?.configuration || "base";
+const COURT = { base:"base", all_in:"all-in" };   // dans les repères : « base : 3 », « all-in : 3,5 »
+function soeurDe(code){
+  const j = MOD.jeux.find(x => x.code === code); if (!j?.fiche_globale || !(sousFiche(j) in COURT)) return null;
+  return MOD.jeux.find(x => x.code !== code && x.fiche_globale === j.fiche_globale && sousFiche(x) in COURT && sousFiche(x) !== sousFiche(j)) || null;
+}
+// ma fiche sur la sœur de la fiche ouverte (même configuration évaluée : boîte seule, ou « toutes extensions »…)
+const maFicheSoeur = f => { const s = f && soeurDe(f.jeu); return s ? toutes.find(e => e.jeu === s.code && e.evaluateur === user.id && cfgDe(e) === cfgDe(f)) || null : null; };
+// ce qu'affichent les repères : la fiche sœur, sa saisie, ses notes ; null s'il n'y en a pas
+let SOEUR = null, comparer = true, encartRefuse = new Set();
+try { comparer = localStorage.getItem("prisme_comparer_soeur") !== "non"; } catch (e){}
+function lireSoeur(){
+  const f = maFicheSoeur(fiche); if (!f){ SOEUR = null; return; }
+  const s = saisieDe(f.id), j = MOD.jeux.find(x => x.code === f.jeu);
+  SOEUR = { f, s, c: calculer(pourCalcul(f, s).saisie), court: COURT[sousFiche(j)], long: CONFIGS[sousFiche(j)] };
+}
+// « base : 3 », puis l'écart de ma valeur à la sienne, en couleur, s'il diffère
+const ecartSoeur = (moi, elle, d) => moi == null || elle == null || Math.abs(moi - elle) < .005 ? ""
+  : ` <span class="${moi > elle ? "plus" : "moins"}">${moi > elle ? "+" : "−"}${fmt(Math.abs(moi - elle), d)}</span>`;
+const repereSoeur = (texte, moi, elle, d) => `<span class="soeur">${esc(SOEUR.court)} : ${texte}${ecartSoeur(moi, elle, d)}</span>`;
 
 function courbeS(x0){ const t = (x0 + 2) / 9; return t <= .5 ? 10 * t * t : 5 * (1 - 2 * (1 - t) * (1 - t)); }
 
@@ -568,7 +603,8 @@ function ouvrirFiche(f, empiler = true){
   effectifs = {}; effAttente = new Set(); EFF_LU = false; EFF_ERR = null;
   lectureSeule = f.evaluateur !== user.id || role === "lecteur";
   $("#accueil").classList.add("hidden"); $("#fiche").classList.remove("hidden"); $("#pied").classList.remove("hidden");
-  majBarreFiche();
+  lireSoeur();   // (4.3) avant la grille : les repères s'y dessinent
+  majBarreFiche(); majEncart();
   $("#lecture").textContent = lectureSeule ? `Fiche de ${nomDe(f.evaluateur)}, en lecture seule` : "";
   $("#suivante").classList.toggle("hidden", lectureSeule); $("#btn-enregistrer").classList.toggle("hidden", lectureSeule);
   $("#etat").textContent = lectureSeule ? "" : (f.id ? "Fiche reprise." : "Nouvelle fiche : elle sera créée à la première saisie.");
@@ -585,7 +621,39 @@ function majBarreFiche(){
   $("#btn-supprimer").classList.toggle("hidden", role !== "proprietaire" || !fiche.id);
   $("#btn-finale").classList.toggle("hidden", lectureSeule);
   $("#btn-finale").textContent = fiche.statut === "finale" ? "Repasser la fiche en brouillon" : "Rendre la fiche finale";
+  // (4.3) la case de comparaison, seulement s'il y a une fiche sœur
+  $("#cmp-soeur-lab").classList.toggle("hidden", !SOEUR);
+  if (SOEUR) $("#cmp-soeur-t").textContent = `Comparer avec ma fiche du ${SOEUR.long}`;
+  $("#cmp-soeur").checked = comparer; document.body.classList.toggle("avec-soeur", !!SOEUR && comparer);
 }
+/* (4.3) partir de sa fiche de la sœur : l'encart n'apparaît que sur une fiche pas encore créée, à soi, quand on a une fiche sur la sœur ;
+   jamais d'écrasement : la fonction de la base crée une nouvelle fiche (brouillon) et renvoie son id */
+function majEncart(){
+  const box = $("#encart-soeur"); if (!box) return;
+  const ok = fiche && !fiche.id && !lectureSeule && SOEUR && !encartRefuse.has(fiche.jeu + "|" + (cfgDe(fiche) || ""));
+  box.innerHTML = ok ? `<div class="encart-soeur" role="region" aria-label="Partir de ma fiche du ${esc(SOEUR.long)}">
+      <p><b>Tu as déjà évalué le ${esc(SOEUR.long)}.</b> Partir de cette fiche ? Tes avis, tes notes par effectif et ton carnet seront repris ; la nouvelle fiche sera un brouillon, à relire.</p>
+      <p class="encart-boutons"><button type="button" class="btn plein" id="dup-partir">Partir de ma fiche</button><button type="button" class="btn ghost" id="dup-vide">Commencer vide</button><span class="msg" id="dup-msg" role="status"></span></p></div>` : "";
+}
+$("#encart-soeur").addEventListener("click", async e => {
+  if (e.target.closest("#dup-vide")){ encartRefuse.add(fiche.jeu + "|" + (cfgDe(fiche) || "")); majEncart(); return; }
+  const b = e.target.closest("#dup-partir"); if (!b || !SOEUR || fiche?.id) return;
+  const msg = $("#dup-msg"), jeu = fiche.jeu;
+  b.disabled = true; msg.className = "msg"; msg.textContent = "Création de la fiche…";
+  const { data, error } = await sb.rpc("prisme_dupliquer_evaluation", { source: SOEUR.f.id, jeu });
+  if (error){ b.disabled = false; msg.className = "msg err"; msg.textContent = "La fiche n'a pas pu être reprise : " + error.message; return; }
+  const id = typeof data === "string" ? data : data?.id || data?.[0]?.id || null;
+  await chargerFiches();
+  const neuve = (id && toutes.find(x => x.id === id)) || toutes.find(x => x.jeu === jeu && x.evaluateur === user.id && cfgDe(x) === cfgDe(fiche));
+  if (!neuve){ b.disabled = false; msg.className = "msg err"; msg.textContent = "La fiche semble créée, mais introuvable : recharge la page."; return; }
+  ouvrirFiche(neuve);
+  $("#etat").textContent = `Fiche reprise de ton ${SOEUR?.long || "autre sous-fiche"} : un brouillon, à relire.`;
+});
+// (4.3) masquer ou montrer les repères de la fiche sœur
+$("#cmp-soeur").addEventListener("change", e => {
+  comparer = e.target.checked; document.body.classList.toggle("avec-soeur", !!SOEUR && comparer);
+  try { localStorage.setItem("prisme_comparer_soeur", comparer ? "oui" : "non"); } catch (x){}
+});
 $("#btn-config").addEventListener("click", () => { outils(false); nouvelleConfiguration(); });
 // suppression sécurisée (18/10/2026, script 28) : propriétaire seulement, confirmation en deux temps, archive avant suppression
 $("#btn-supprimer").addEventListener("click", async () => {
@@ -616,13 +684,27 @@ $(".menu-outils").addEventListener("keydown", e => { if (e.key === "Escape" && !
 document.addEventListener("click", e => { if (!outilsMenu.classList.contains("hidden") && !e.target.closest(".menu-outils")) outils(false); });
 outilsMenu.addEventListener("click", e => { if (e.target.closest("#suivante, #tout-enrouler, #btn-article, #btn-recap, #btn-export, #m-fiches")) outils(false); });
 $("#aller").addEventListener("change", () => outils(false));
-// les fiches de ce jeu : la liste des fiches, filtrée sur ce jeu, toutes fiches confondues
+// (4.3) les fiches de ce jeu : celles des deux sous-fiches (jeu de base, jeu all-in), groupées, avec évaluateur, état et note ;
+// un clic ouvre la fiche (en lecture seule si elle n'est pas à soi)
 $("#m-fiches").addEventListener("click", async () => {
   if (enCours()){ clearTimeout(minuteur); await enregistrer(); }
-  const nom = nomJeu(fiche.jeu); afficherListe(); try { history.replaceState(null, "", location.pathname); } catch (e){}
-  const toutesR = document.querySelector('input[name="qui"][value="toutes"]'); if (toutesR) toutesR.checked = true;
-  $("#f-texte").value = nom; fiche = null; await chargerFiches(); afficherFiches(); window.scrollTo(0, 0);
+  await chargerFiches();
+  const ici = MOD.jeux.find(j => j.code === fiche.jeu), s = soeurDe(fiche.jeu);
+  const groupes = [ici, s].filter(Boolean).sort((a, b) => (sousFiche(a) === "base" ? 0 : 1) - (sousFiche(b) === "base" ? 0 : 1));
+  const ligne = e => { const c = calculer(pourCalcul(e, saisieDe(e.id)).saisie);
+    return `<tr class="f" data-id="${esc(e.id)}"${e.id === fiche.id ? ' style="font-weight:600"' : ""}><td>${esc(nomDe(e.evaluateur))}${cfgDe(e) ? ` <span class="cfg-nom">— ${esc(cfgDe(e))}</span>` : ""}${e.id === fiche.id ? " <small>(ouverte)</small>" : ""}</td>
+      <td><span class="badge ${esc(e.statut)}">${e.statut === "finale" ? "finale" : "brouillon"}</span></td><td style="white-space:nowrap">${c.faites} / ${MOD.paires.length}</td><td>${c.finale == null ? "—" : fmt(c.finale, 2)}</td></tr>`; };
+  $("#fiches-soeurs").innerHTML = `<h2 id="dlg-fiches-titre">Les fiches de ${esc(nomJeu(fiche.jeu))}</h2>` + groupes.map(j => { const L = toutes.filter(e => e.jeu === j.code);
+    return `<h3 class="fiches-groupe">${esc(maj1(CONFIGS[sousFiche(j)] || sousFiche(j)))}</h3>${L.length ? `<table class="fiches fiches-groupe"><thead><tr><th>Évaluateur</th><th>État</th><th>Paires</th><th>Note finale</th></tr></thead><tbody>${L.map(ligne).join("")}</tbody></table>`
+      : `<p class="aide">Aucune fiche pour l'instant.</p>`}`; }).join("");
+  $("#dlg-fiches").showModal();
 });
+const maj1 = t => t.charAt(0).toUpperCase() + t.slice(1);   // « jeu de base » → « Jeu de base »
+$("#fiches-soeurs").addEventListener("click", e => {
+  const tr = e.target.closest("tr.f"); if (!tr) return;
+  $("#dlg-fiches").close(); const f = toutes.find(x => x.id === tr.dataset.id); if (f && f.id !== fiche?.id) ouvrirFiche(f);
+});
+$("#fermer-fiches").addEventListener("click", () => $("#dlg-fiches").close());
 // rendre la fiche finale : bloqué tant que la description est incomplète (l'explication s'affiche dessous)
 $("#btn-finale").addEventListener("click", () => {
   if (lectureSeule || !fiche) return;
@@ -803,7 +885,9 @@ function echelle(v, ecart, nom, data, bloque, P = {}){
 // (4.2) les trapèzes et, à côté, tous les paliers de l'axe (le choisi en évidence) ; le texte d'une valeur porte son signe pour un écart
 function ligneAvis(a, v, ecart){
   const P = palierMap(a.code);
-  return `<div class="axe-ligne">${echelle(v, ecart, a.nom, `data-axe-echelle="${esc(a.code)}"`, false, P)}${listePaliers(P, v, x => signe(x, ecart), lectureSeule ? " disabled" : "")}</div>`;
+  // (4.3) sous les trapèzes, mon avis sur la sous-fiche sœur : « base : 3 +0,5 »
+  const vs = SOEUR?.s[a.code]?.valeur, rep = SOEUR && vs != null ? repereSoeur(esc(signe(Math.round(vs * 2) / 2, ecart)), v ?? null, vs, 1) : "";
+  return `<div class="axe-ligne"><div class="avis-gauche">${echelle(v, ecart, a.nom, `data-axe-echelle="${esc(a.code)}"`, false, P)}${rep}</div>${listePaliers(P, v, x => signe(x, ecart), lectureSeule ? " disabled" : "")}</div>`;
 }
 // un avis : la question de l'axe de rang « 2… » (ou de chaque sous-axe 2a, 2b), ses trapèzes, ses paliers
 function blocAvis(p, a, plusieurs){
@@ -821,7 +905,7 @@ function cartePaire(p){
   // (4.2) « À combien ? » vit dans la carte LIEN, sous ses boutons
   const combien = ax.some(a => a.code === LIEN_ETENDUE) ? `<div class="a-combien" id="a-combien"><h4>À combien ?</h4><div id="eff-corps"></div></div>` : "";
   return `<article class="paire" id="p-${esc(p.code)}" data-paire="${esc(p.code)}">
-    <div class="tete"><h3 data-replier="${esc(p.code)}" title="Enrouler ou dérouler la paire">${esc(p.nom)}</h3><span class="note-paire">Note de la paire <b id="note-${esc(p.code)}">—</b></span></div>
+    <div class="tete"><h3 data-replier="${esc(p.code)}" title="Enrouler ou dérouler la paire">${esc(p.nom)}</h3><span class="note-paire">Note de la paire <b id="note-${esc(p.code)}">—</b> <span id="soeur-p-${esc(p.code)}"></span></span></div>
     <div class="corps">${blocDecrit(p)}
       ${D.map(a => blocAvis(p, a, D.length > 1)).join("")}
       ${combien}
@@ -842,7 +926,7 @@ function construireGrille(){
   let h = `<section class="bloc ${notion("axes")}" id="mon-avis"><h2 class="n-titre">Mon avis</h2><p class="chapo">${MOD.paires.length} paires, en ${MOD.chapitres.length} familles. Pour chacune : ce que le jeu annonce (décrit), puis ce que tu en as vécu.</p>`;
   MOD.chapitres.forEach((c, i) => {
     h += `<details class="famille" id="fam-${esc(c.code)}" data-chap="${esc(c.code)}"${i === 0 ? " open" : ""}><summary><span class="pic">${pictoFam(c.code)}</span>
-      <span class="fam-t"><b>${esc(c.nom)}</b><i>${esc(FAMILLES[c.code] || "")}</i></span><span class="fam-note" id="moy-${esc(c.code)}"></span>${CHEVRON}</summary><div class="cartes">`;
+      <span class="fam-t"><b>${esc(c.nom)}</b><i>${esc(FAMILLES[c.code] || "")}</i></span><span class="fam-note"><span id="moy-${esc(c.code)}"></span><span id="soeur-c-${esc(c.code)}"></span></span>${CHEVRON}</summary><div class="cartes">`;
     MOD.paires.filter(p => p.chapitre === c.code).forEach(p => { h += cartePaire(p); $("#aller").insertAdjacentHTML("beforeend", `<option value="p-${esc(p.code)}">${esc(c.nom)} — ${esc(p.nom)}</option>`); });
     h += `</div></details>`;
   });
@@ -974,12 +1058,21 @@ function recalculer(){
     document.getElementById("p-" + p.code).classList.toggle("faite", complete);
   });
   MOD.chapitres.forEach(ch => { const v = c.chap[ch.code], el = document.getElementById("moy-" + ch.code); if (el) el.textContent = v == null ? "—" : fmt(v, 2); });
+  // (4.3) les notes de ma fiche sœur, à côté des miennes : chaque paire, chaque famille, puis la note finale (dans « Détails »)
+  if (SOEUR){
+    const noteS = code => Object.values(SOEUR.c.parChap).flat().find(x => x.p.code === code)?.note ?? null;
+    Object.values(c.parChap).flat().forEach(({ p, note }) => { const el = document.getElementById("soeur-p-" + p.code), ns = noteS(p.code);
+      if (el) el.innerHTML = ns == null ? "" : repereSoeur(fmt(ns, 2), note, ns, 2); });
+    MOD.chapitres.forEach(ch => { const el = document.getElementById("soeur-c-" + ch.code), ns = SOEUR.c.chap[ch.code];
+      if (el) el.innerHTML = ns == null ? "" : repereSoeur(fmt(ns, 2), c.chap[ch.code], ns, 2); });
+  }
   $("#prog").style.width = (c.faites / MOD.paires.length * 100) + "%";
   $("#sous-titre").textContent = `${lectureSeule ? "Fiche de " + nomDe(fiche.evaluateur) : "Ma fiche"} · ${fiche.statut === "finale" ? "finale" : "brouillon"} · ${c.faites} paire${c.faites > 1 ? "s" : ""} sur ${MOD.paires.length}`;
   $("#pied-finale").textContent = c.finale == null ? "—" : fmt(c.finale, 2);
   // « Détails » : les notes de chapitres, la timeline résumée, le coût par session et le coût d'effort (prototype, 13/10/2026)
   const tl = majTimeline(), k = tl.c ? coutFiche(tl.c) : null, ce = coutEffort(entreesTimeline().n);
-  $("#pied-details").innerHTML = MOD.chapitres.map(ch => `<div><small>${esc(ch.nom)}</small><b>${c.chap[ch.code] == null ? "—" : fmt(c.chap[ch.code], 2) + "<small>/5</small>"}</b></div>`).join("")
+  $("#pied-details").innerHTML = (SOEUR ? `<div class="soeur"><small>Ma fiche du ${esc(SOEUR.long)}</small><b>${SOEUR.c.finale == null ? "—" : fmt(SOEUR.c.finale, 2) + "<small>/5</small>"}${ecartSoeur(c.finale, SOEUR.c.finale, 2)}</b></div>` : "")
+    + MOD.chapitres.map(ch => `<div><small>${esc(ch.nom)}</small><b>${c.chap[ch.code] == null ? "—" : fmt(c.chap[ch.code], 2) + "<small>/5</small>"}</b></div>`).join("")
     + `<div title="${tl.c ? esc(syntheseTimeline(tl.c)) : "Timeline incomplète"}"><small>Timeline</small><b>${tl.c ? piedTimeline(tl.c) : "—"}</b></div>`
     + `<div title="${esc(k ? texteCout(k) + " (prix ÷ durée de vie calculée ; un classique est compté sur " + HORIZON_CLASSIQUE + " sessions)" : "Coût par session : il faut le prix et une timeline complète")}"><small>Coût par session</small><b>${k ? texteCout(k).replace(/ par session.*/, "").replace("moins de ", "< ") : "—"}</b></div>`
     + `<div title="Coût d'effort (prototype) : ce qu'il faut investir pour jouer — règles (POID1), manuels (DOC1), logistique (MAN1), hasard (MECA1a, à moitié), renouvellement (VAR1), attente (RYT1). Sur 5 ; c'est la gêne du Triomphant."><small>Coût d'effort <span class="proto">proto</span></small><b>${ce == null ? "—" : fmt(ce, 2) + "<small>/5</small>"}</b></div>`;
@@ -1206,6 +1299,7 @@ async function enregistrer(){
     const { data, error } = await sb.from("prisme_evaluations").insert({ jeu: fiche.jeu, statut: fiche.statut, version_appli: VERSION.numero, notes_article: fiche.notes_article ?? null, ...champs }).select();
     if (error){ $("#etat").textContent = "Création de la fiche refusée : " + error.message; return; }
     fiche.id = data[0].id; fiche.evaluateur = data[0].evaluateur; ficheModifiee = false;
+    majEncart();   // (4.3) la fiche existe : plus d'encart « Partir de ma fiche »
     if (!ARRIVEE) try { history.pushState({ fiche: fiche.id }, "", "?fiche=" + fiche.id); } catch (e){}   // l'adresse suit la fiche (3.31) ; Précédent ramène d'où l'on vient
   } else if (ficheModifiee || enAttente.size){
     ficheModifiee = false;
