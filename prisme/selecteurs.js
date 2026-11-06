@@ -13,8 +13,10 @@
    (sommaire()), la liste complète des paliers d'un axe (listePaliers()) ; le Système en deux engrenages ; le sablier parmi les objets manipulés.
    (1.5, 05/11/2026) les sélecteurs lisibles : dans la teinte de leur notion (lavande, bleu), une carte repliable par facette ou par niveau,
    avec sa phrase d'aide ; plus de codes visibles (info-bulle) ; « Jeu abstrait (aucun thème) » en tête ; le sujet en familles pesées,
-   les sous-sujets en simples coches (poids 2) ; « Niveau de réalisme » ; le matériel ne se saisit plus que dans « Décrire le jeu ». */
-const SELECTEURS_VERSION = "1.5";
+   les sous-sujets en simples coches (poids 2) ; « Niveau de réalisme » ; le matériel ne se saisit plus que dans « Décrire le jeu ».
+   (1.6, 06/11/2026) le sélecteur des mécaniques : « Les plus courants » en tête (les 15 mécanismes et combinaisons les plus affectés,
+   comptés en direct), des sous-groupes par famille d'origine dans « Mécanisme », les lignes en ordre alphabétique partout. */
+const SELECTEURS_VERSION = "1.6";
 (function(){
   const st = document.createElement("style");
   st.textContent = `
@@ -247,11 +249,13 @@ const M = { jeu:null, user:null, role:null, ecrit:false, lignes:[], requis:{}, a
 // lit la nomenclature, les requis et les mécanismes du jeu dans M ; renvoie le message d'erreur, ou null
 async function lireMecanismes(code, user, role){
   Object.assign(M, { jeu:code, user, role, ecrit: NIVEAUX[role] >= NIVEAUX.evaluateur, brouillon:null });
-  const [l, a, rq] = await Promise.all([
+  const [l, a, rq, fr] = await Promise.all([
     sb.from("prisme_mecanismes").select("code,nom,nom_en,niveau,sous_groupe,categorie,statut,fusion_vers,famille_recolte,ordre,definition").order("ordre"),
     sb.from("prisme_jeux_mecanismes").select("mecanisme,poids,remarque").eq("jeu", code),
-    sb.from("prisme_mecanismes_requis").select("mecanisme,requis")]);
+    sb.from("prisme_mecanismes_requis").select("mecanisme,requis"),
+    M.ecrit ? frequencesMecanismes() : {}]);
   if (l.error || a.error) return (l.error || a.error).message;
+  M.frequences = fr;
   M.lignes = l.data || [];
   // sans les requis, le sélecteur propose tout (comme « Tout afficher »)
   if (rq.error) console.warn("PRISME : requis des mécanismes illisibles, le sélecteur propose toutes les lignes", rq.error.message);
@@ -259,6 +263,24 @@ async function lireMecanismes(code, user, role){
   M.affectes = Object.fromEntries((a.data || []).map(x => [x.mecanisme, { poids:x.poids, remarque:x.remarque || "" }]));
   return null;
 }
+// (1.6) combien de jeux ont chaque mécanisme, compté en direct dans prisme_jeux_mecanismes (lu par pages de 1000) ; {} si illisible
+async function frequencesMecanismes(){
+  const N = {};
+  try {
+    for (let debut = 0; ; debut += 1000){
+      const { data, error } = await sb.from("prisme_jeux_mecanismes").select("jeu,mecanisme").order("jeu").order("mecanisme").range(debut, debut + 999);
+      if (error) throw error;
+      data.forEach(x => N[x.mecanisme] = (N[x.mecanisme] || 0) + 1);
+      if (data.length < 1000) return N;
+    }
+  } catch (e){ console.warn("PRISME : fréquence des mécanismes illisible, pas de groupe « Les plus courants »", e.message); return {}; }
+}
+// (1.6) l'ordre alphabétique du nom français, sans tenir compte des accents ni de la casse
+const alphaMeca = (a, b) => String(a.nom || "").localeCompare(String(b.nom || ""), "fr", { sensitivity:"base" });
+// (1.6) les sous-groupes de « Mécanisme » : par famille d'origine (famille_recolte), dans l'ordre alphabétique ; sans famille, « Autres », en dernier
+const parFamilleRecolte = L => { const F = [...new Set(L.map(l => l.famille_recolte).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr", { sensitivity:"base" }));
+  return [...F.map(f => [f, L.filter(l => l.famille_recolte === f)]), ["Autres", L.filter(l => !l.famille_recolte)]].filter(([, G]) => G.length); };
+const COURANTS = 15;
 const aideMeca = `<p class="question">Ce dont le jeu est fait, selon la nomenclature PRISMEmechanics. Le matériel, les gestes, le mode de jeu et la fin de partie se cochent ; le reste se pèse : majeur (le jeu repose dessus), secondaire, marginal.</p>`;
 const ligneMeca = c => M.lignes.find(l => l.code === c);
 const badgesMeca = l => `<span class="m-code">${esc(l.code)}</span>${l.niveau ? `<span class="m-niv">${esc(NIVEAUX_MECA[l.niveau] || l.niveau)}</span>` : ""}`;
@@ -308,20 +330,29 @@ function ouvrirSelecteur(){
     <p class="m-actions"><button class="btn plein" type="button" id="m-enregistrer">Enregistrer</button><button class="btn" type="button" id="m-annuler">Annuler</button><span class="m-etat" id="m-etat"></span></p>`;
   // (2.4) tous les groupes repliés, sauf ceux qui ont déjà une ligne choisie ; une recherche déplie ceux qui ont un résultat
   const ouverts = new Set(Object.keys(M.brouillon).map(c => ligneMeca(c)?.niveau));
+  // (1.6) les plus courants : les 15 mécanismes et combinaisons les plus affectés, du plus au moins fréquent ; ils restent aussi dans leur catégorie
+  const F = M.frequences || {};
+  const courants = proposees.filter(l => (l.niveau === "mecanisme" || l.niveau === "assemblage") && F[l.code]).sort((a, b) => F[b.code] - F[a.code] || alphaMeca(a, b)).slice(0, COURANTS);
+  ouverts.add("courants");   // la carte des plus courants est dépliée par défaut
   const lister = () => {
     const q = norm($("#m-q").value.trim()), niv = $("#m-niv").value, fam = $("#m-fam").value, seuls = $("#m-seuls").checked, tout = $("#m-tout").checked;
     const acquis = acquisDe(M.brouillon);
     const garde = l => (!q || norm(l.code + " " + l.nom + " " + (l.nom_en || "")).includes(q)) && (!fam || l.famille_recolte === fam) && (!seuls || M.brouillon[l.code]);
     let masques = 0;
     // (1.5) une carte par niveau, sa phrase d'aide sous le titre ; une ligne affectée reste toujours visible
-    const groupes = ordre.filter(n => !niv || n === niv).map(n => {
-      const tous = proposees.filter(l => l.niveau === n), L = tous.filter(garde);
+    const visible = l => tout || M.brouillon[l.code] || !requisManquants(l.code, acquis).length;
+    // (1.6) en tête, « Les plus courants » (sans filtre de niveau)
+    const C = niv ? [] : courants.filter(l => garde(l) && visible(l));
+    const tete = C.length ? `<details class="t-facette sel-carte" data-niveau="courants"${q || seuls || ouverts.has("courants") ? " open" : ""}><summary><b>Les plus courants</b> <span class="discret">${C.length} mécanisme${C.length > 1 ? "s" : ""}</span><span class="sel-aide">Les mécanismes et combinaisons les plus souvent affectés aux jeux de PRISME ; ils restent aussi à leur place, plus bas.</span></summary>${C.map(l => ligneChoix(l, acquis)).join("")}</details>` : "";
+    const groupes = tete + ordre.filter(n => !niv || n === niv).map(n => {
+      const tous = proposees.filter(l => l.niveau === n), L = tous.filter(garde).sort(alphaMeca);   // (1.6) en ordre alphabétique
       const vis = L.filter(l => tout || M.brouillon[l.code] || !requisManquants(l.code, acquis).length);
       masques += L.length - vis.length;
       if (!vis.length) return "";
       const nb = tous.filter(l => M.brouillon[l.code]).length;
       return `<details class="t-facette sel-carte" data-niveau="${esc(n)}"${q || seuls || ouverts.has(n) ? " open" : ""}><summary><b>${esc(niveaux[n])}</b> <span class="discret">${vis.length} proposé${vis.length > 1 ? "s" : ""}${nb ? ` · ${nb} choisi${nb > 1 ? "s" : ""}` : ""}</span>${AIDES_NIVEAUX[n] ? `<span class="sel-aide">${esc(AIDES_NIVEAUX[n])}</span>` : ""}</summary>${n === "aspect"
         ? parSousGroupe(vis).map(([t, G]) => `<h4 class="m-sg">${esc(t)}</h4>${G.map(l => ligneChoix(l, acquis)).join("")}`).join("")
+        : n === "mecanisme" ? parFamilleRecolte(vis).map(([t, G]) => `<h4 class="m-sg">${esc(t)}</h4>${G.map(l => ligneChoix(l, acquis)).join("")}`).join("")   // (1.6) sous-groupes
         : vis.map(l => ligneChoix(l, acquis)).join("")}</details>`;
     }).join("");
     $("#m-choix").innerHTML = groupes || `<p class="discret">Aucun mécanisme ne correspond à ces filtres.</p>`;
@@ -334,9 +365,10 @@ function ouvrirSelecteur(){
     const c = b.closest(".m-ligne").dataset.code, coche = b.matches("[data-coche]"), p = coche ? (b.checked ? 2 : 0) : +b.dataset.p;
     if (p) M.brouillon[c] = { poids:p, remarque: coche ? "" : M.brouillon[c]?.remarque || "" }; else delete M.brouillon[c];
     // un choix peut faire apparaître ou disparaître des lignes : on redessine, sans perdre la place ni le focus
-    const boite = $("#m-choix"), haut = boite.scrollTop;
+    // (1.6) une ligne peut figurer deux fois (« Les plus courants » et sa catégorie) : le focus revient dans la carte cliquée
+    const boite = $("#m-choix"), haut = boite.scrollTop, carte = b.closest("details")?.dataset.niveau;
     lister(); compter(); boite.scrollTop = haut;
-    boite.querySelector(`.m-ligne[data-code="${CSS.escape(c)}"] ${coche ? "[data-coche]" : `[data-p="${p}"]`}`)?.focus();
+    boite.querySelector(`${carte ? `details[data-niveau="${CSS.escape(carte)}"] ` : ""}.m-ligne[data-code="${CSS.escape(c)}"] ${coche ? "[data-coche]" : `[data-p="${p}"]`}`)?.focus({ preventScroll:true });
   });
   $("#m-choix").addEventListener("input", e => { if (e.target.matches(".m-rem")) M.brouillon[e.target.closest(".m-ligne").dataset.code].remarque = e.target.value; });
   $("#m-annuler").addEventListener("click", () => { M.brouillon = null; dialogue().close(); });
