@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PRISME — Fiche de rédaction</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
+<style>
+/* 1.0 (07/11/2026) : la fiche de rédaction, d'après la maquette faite sur Heat : une page à garder ouverte sur un second écran,
+   qui donne les mots du modèle (les libellés des paliers), dépliable paire par paire, imprimable sur une page A4 et copiable en texte */
+:root{--ink:#15171C;--muted:#4B5160;--line:#E2E4E9;--trait:#C9CEDB;--paper:#F4F5F7;--panel:#FFFFFF;--neutre:#E8EAF0;
+  --accent:#2346C8;--accent-fonce:#16308F;--sur-accent:#FFFFFF;--bleu-fond:#E6EBFB;--bleu-texte:#16308F;
+  --ok:#1E7A46;--warn:#B7791F;--err:#B42318;--annonce:#7F1D1D;--vecu:#2346C8;
+  --serif:"Source Serif 4",Georgia,"Times New Roman",serif;--sans:"IBM Plex Sans","Segoe UI",Arial,sans-serif}
+@media (prefers-color-scheme: dark){:root{--ink:#E6E9EE;--muted:#A3ADBB;--line:#2C3542;--trait:#3A4555;--paper:#11161D;--panel:#171D25;--neutre:#252D38;
+  --accent:#7C9BFF;--accent-fonce:#A9BDFF;--sur-accent:#0B1020;--bleu-fond:#1F2A4D;--bleu-texte:#C9D6FF;
+  --ok:#5CC98A;--warn:#E0A84A;--err:#F2837A;--annonce:#F2A3A3;--vecu:#9DB4FF}}
+*{box-sizing:border-box} html,body{margin:0} [hidden]{display:none!important} body{background:var(--neutre);color:var(--ink);font:15px/1.5 var(--sans)}
+a{color:var(--accent)} a:hover{color:var(--accent-fonce)}
+.marque{font:600 19px/1 "Source Serif 4",Georgia,serif;letter-spacing:.08em;color:var(--ink)!important;text-decoration:none}
+.barre{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:12px 20px;font-size:13px;color:var(--muted)}
+.barre a{text-decoration:none;color:var(--muted)} #qui a{margin-left:10px}
+main{max-width:1100px;margin:0 auto;padding:8px 24px 48px;display:flex;flex-direction:column;gap:12px}
+.vide{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:30px 26px;font:italic 18px/1.5 var(--serif);color:var(--muted);margin:0}
+.vide a{color:var(--ink)}
+.discret{color:var(--muted)}
+.btn{display:inline-flex;align-items:center;min-height:40px;font:600 13px var(--sans);padding:0 14px;border-radius:8px;border:1px solid var(--trait);background:var(--panel);color:var(--ink);text-decoration:none;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--ink);color:var(--ink)}
+.btn.plein{background:var(--accent);border-color:var(--accent);color:var(--sur-accent)} .btn.plein:hover{background:var(--accent-fonce);border-color:var(--accent-fonce);color:var(--sur-accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* la barre d'outils, hors de la feuille */
+.outils{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px 12px}
+.outils > div{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.retour{font-size:13.5px;color:var(--muted);text-decoration:none} .retour:hover{text-decoration:underline}
+.sous-fiches{display:flex;gap:4px;padding:4px;background:var(--paper);border-radius:10px}
+.sous-fiches a,.sous-fiches b{padding:5px 12px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none}
+.sous-fiches b{background:var(--panel);color:var(--ink)} .sous-fiches a{color:var(--accent)}
+#copie{font-size:13px;color:var(--ok)}
+
+/* la feuille */
+.feuille{background:var(--panel);border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,.12);padding:28px 32px;display:flex;flex-direction:column;gap:16px;font-size:14px;line-height:1.45}
+.f-tete{display:flex;gap:18px;align-items:flex-start}
+.vignette{flex:0 0 76px;width:76px;height:96px;border-radius:6px;background:var(--neutre);object-fit:cover;display:block}
+.f-id{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.surtitre{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.f-id h1{margin:0;font:600 28px/1.1 var(--serif)}
+.faits{font-size:13px;color:var(--muted)}
+.f-note{text-align:right;flex:none}
+.f-note b{display:block;font:600 40px/1 var(--serif);color:var(--accent);font-variant-numeric:tabular-nums}
+.f-note span{font-size:12px;color:var(--muted)}
+/* les trois pôles, dans la teinte de leur notion (selecteurs.js) */
+.poles{display:flex;flex-wrap:wrap;gap:10px}
+.pole{flex:1 1 260px;min-width:0;padding:10px 12px;border-radius:10px;border:1px solid transparent;font-size:13px}
+.pole .surtitre{padding-bottom:3px}
+/* les douze paires en trois colonnes */
+.familles{display:flex;flex-wrap:wrap;gap:22px}
+.famille{flex:1 1 300px;min-width:0;display:flex;flex-direction:column}
+.famille h2{display:flex;justify-content:space-between;align-items:baseline;margin:0;border-bottom:2px solid var(--ink);padding-bottom:4px;font:600 17px var(--serif)}
+.famille h2 span:last-child{color:var(--accent);font-variant-numeric:tabular-nums}
+details.paire{border-bottom:1px solid var(--line)}
+details.paire > summary{list-style:none;cursor:pointer;padding:8px 4px;display:flex;flex-direction:column;gap:3px;border-radius:6px}
+details.paire > summary::-webkit-details-marker{display:none}
+details.paire > summary:hover{background:var(--paper)}
+.p-tete{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.p-nom{font-size:12.5px;font-weight:600;letter-spacing:.04em}
+.p-note{font-size:12px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.fl{display:inline-block;transition:transform .15s} details.paire[open] .fl{transform:rotate(90deg)}
+.l{font-size:12.5px;line-height:1.4}
+.l .an{color:var(--annonce);font-weight:700} .l .ve{color:var(--vecu);font-weight:700}
+.l.manque,details.paire.so .l{color:var(--muted);font-style:italic}
+/* le détail déplié d'une paire : valeurs exactes, paliers voisins, commentaires */
+.p-detail{padding:4px 4px 10px;display:flex;flex-direction:column;gap:6px;font-size:12.5px}
+.d-axe .code{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.d-axe .voisins{display:block;color:var(--muted);font-size:12px}
+.com{margin:0;padding:4px 8px;border-left:3px solid var(--trait);color:var(--ink)}
+.com b{font-weight:600}
+/* le pied de la feuille */
+.f-pied{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:13px;padding-top:2px}
+.pastille{padding:4px 10px;border-radius:999px;background:var(--neutre)}
+.pastille.forte{background:var(--ink);color:var(--panel);font-weight:600}
+.verdict{font-style:italic;color:var(--muted)}
+.mention{font-size:11px;color:var(--muted);border-top:1px solid var(--line);padding-top:8px;margin:0}
+.version{font-size:12px;color:var(--muted);text-align:right;margin:0}
+@media (max-width:760px){
+  main{padding:8px 12px 30px}
+  .feuille{padding:18px}
+  .f-tete{flex-wrap:wrap} .f-note{text-align:left}
+}
+</style>
+<!-- Imprimer / PDF : seulement la feuille, sur une page A4 portrait, en couleurs, les détails dépliés masqués -->
+<style media="print" id="impression">
+@page{size:A4 portrait;margin:12mm}
+:root{--ink:#15171C;--muted:#4B5160;--line:#E2E4E9;--trait:#C9CEDB;--paper:#F4F5F7;--panel:#FFFFFF;--neutre:#E8EAF0;--accent:#2346C8;--annonce:#7F1D1D;--vecu:#2346C8}
+*{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{background:#FFFFFF;font-size:9pt}
+body > :not(main),main > :not(#contenu){display:none!important}
+main{max-width:none;padding:0;margin:0}
+.feuille{box-shadow:none;border-radius:0;padding:0;gap:3.2mm;font-size:8.4pt;line-height:1.32}
+.f-tete{gap:4mm}
+.vignette{flex-basis:15mm;width:15mm;height:19mm}
+.surtitre{font-size:6.8pt}
+.f-id h1{font-size:17pt}
+.faits{font-size:8pt}
+.f-note b{font-size:24pt}
+.f-note span{font-size:7.5pt}
+.poles{flex-wrap:nowrap;gap:2.5mm}
+.pole{flex:1 1 0;padding:1.8mm 2.4mm;font-size:7.8pt;break-inside:avoid}
+.familles{flex-wrap:nowrap;gap:5mm}
+.famille{flex:1 1 0}
+.famille h2{font-size:11pt;padding-bottom:1mm}
+details.paire{break-inside:avoid}
+details.paire > summary{padding:1.4mm 0;gap:.6mm}
+.p-nom{font-size:7.6pt} .p-note{font-size:7.4pt} .fl{display:none}
+.l{font-size:7.4pt;line-height:1.3}
+.p-detail{display:none!important}
+.f-pied{font-size:7.8pt;gap:2mm}
+.pastille{padding:.6mm 2.4mm}
+.mention{font-size:6.8pt;padding-top:1.6mm}
+</style>
+</head>
+<body>
+<div class="barre"><a href="index.html" class="marque" title="Accueil de PRISME">PRISME</a><span id="qui"></span></div>
+<main>
+  <div class="outils" id="outils" hidden>
+    <div><a class="retour" id="retour" href="jeux.html">← La fiche du jeu</a><span id="sous-fiches"></span></div>
+    <div><span id="copie" role="status"></span><button class="btn" type="button" id="copier">Copier le texte</button><button class="btn plein" type="button" id="imprimer">Imprimer / PDF</button></div>
+  </div>
+  <div id="contenu"><p class="vide">Chargement…</p></div>
+  <p class="version"><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p>
+</main>
+
+<script src="timeline.js?v=3.12"></script>
+<script src="selecteurs.js?v=1.6"></script>
+<script>
+const VERSION = { numero:"1.0", date:"2026-11-07 17:41" };   // à incrémenter à chaque livraison
+const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
+const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = (v, k = 2) => v == null || Number.isNaN(v) ? "—" : Number(v).toFixed(k).replace(".", ",").replace("-", "−");
+const maj = t => { t = String(t ?? ""); return t.charAt(0).toUpperCase() + t.slice(1); };
+const minuscule = t => String(t ?? "").replace(/^\p{Lu}(?!\p{Lu})/u, c => c.toLowerCase());   // « Choix simultanés » → « choix simultanés », « XXe siècle » intact
+$("#version").textContent = `Fiche de rédaction ${VERSION.numero}, version du ${VERSION.date.replace(/(\d{4})-(\d\d)-(\d\d) (\d\d):(\d\d)/,"$3/$2/$1 à $4h$5")} · timeline ${TIMELINE_VERSION.numero}`;
+
+/* ---- connexion : tout passe par la Forge ---- */
+const versForge = () => "../?retour=" + encodeURIComponent(location.href);
+function afficherCompte(u){
+  $("#qui").innerHTML = u ? `<span>${esc(u.email)}</span> <a href="#" id="deconnexion">Se déconnecter</a>` : `<a href="${versForge()}">Se connecter</a>`;
+  const d = $("#deconnexion"); if (d) d.addEventListener("click", e => { e.preventDefault(); sb.auth.signOut().then(() => location.href = "../"); });
+}
+let demarre = false;
+sb.auth.onAuthStateChange((_e, session) => {
+  if (!session?.user){ location.replace(versForge()); return; }
+  afficherCompte(session.user);
+  if (!demarre){ demarre = true; setTimeout(() => afficher(session.user), 0); }
+});
+const vide = html => $("#contenu").innerHTML = `<p class="vide">${html}</p>`;
+const NIVEAUX = { joueur:0, lecteur:1, evaluateur:2, editeur:3, proprietaire:4 };
+
+/* ---- comme dans la fiche du jeu (jeu.html 2.15) : réglages, usure, gamme de prix, coût, verdict ---- */
+const REGLAGES_DEFAUT = { ecart_profils_net:.3, ecart_profils_fort:.8, usure_moderee:.3, usure_rapide:.8 };
+function usureDe(c){
+  const fin = c.omega ?? 7, a = c.alpha;
+  if (a >= fin || c.x[fin] <= c.x[a]) return 0;
+  return Math.max(0, (c.y[a] - c.y[fin]) / (c.x[fin] - c.x[a])) / 2;
+}
+const texteUsure = (u, S) => u < S.usure_moderee ? "S'use à peine" : u > S.usure_rapide ? "S'use vite" : "Usure modérée";
+// la phrase de l'écart, en court : « Plaît largement », « Plaît davantage à certains profils », « Divise »
+const texteEcart = (e, S) => e < S.ecart_profils_net ? "Plaît largement" : e > S.ecart_profils_fort ? "Divise" : "Plaît davantage à certains profils";
+const GAMMES_PRIX_NOMS = { A:"une bagatelle", B:"un petit plaisir", C:"un coup de cœur", D:"un achat réfléchi", E:"un achat pesé", F:"un achat rare", G:"une folie", H:"le jeu d'une vie", I:"une pièce de collection" };
+function coutCourt(k){
+  if (!k) return null;
+  const e = v => v < 1 ? v.toFixed(2).replace(".", ",") : v < 10 ? v.toFixed(1).replace(".", ",") : String(Math.round(v));
+  return `${k.classique ? "moins de " : ""}${e(k.parPartie)} € la partie`;
+}
+function verdictDe(html){
+  if (!html) return null;
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const h = [...doc.querySelectorAll("h1,h2,h3,h4")].find(x => /^\s*verdict\s*$/i.test(x.textContent));
+  let p = h?.nextElementSibling; while (p && p.tagName !== "P") p = p.nextElementSibling;
+  const t = p?.textContent.trim(); if (!t) return null;
+  return (t.match(/^.+?[.!?…](?=\s|$)/) || [t])[0];
+}
+
+/* ---- les mots du modèle : le palier le plus proche d'une valeur ---- */
+const PAL = {};   // { axe: [{ valeur, libelle }] }, du plus bas au plus haut
+function plusProche(axe, v){
+  const L = PAL[axe] || []; if (v == null || !L.length) return -1;
+  let i = 0; L.forEach((p, k) => { if (Math.abs(p.valeur - v) < Math.abs(L[i].valeur - v)) i = k; });   // à égalité (une demi-valeur), le palier du dessous, comme la maquette
+  return i;
+}
+// plusieurs libellés en une phrase : « Compétition indirecte ; interdépendance fréquente. »
+const enPhrase = L => { L = L.filter(Boolean).map(t => t.replace(/\.$/, "")); return L.length ? L.map((t, i) => i ? milieuPalier(t) : t).join(" ; ") + "." : ""; };
+const valeurAxe = (a, v) => v == null ? "—" : (a.echelle === "ecart" && v > 0 ? "+" : "") + fmt(v, Number.isInteger(Math.round(v * 100) / 100) ? 0 : v * 10 % 1 ? 2 : 1);
+const plage = (a, b) => a == null && b == null ? null : a == null || b == null || a === b ? `${a ?? b} joueur${(a ?? b) > 1 ? "s" : ""}` : `de ${a} à ${b} joueurs`;
+
+async function afficher(user){
+  const P = new URLSearchParams(location.search);
+  let code = P.get("jeu");
+  if (!code) return vide('Aucun jeu choisi. <a href="jeux.html">Voir tous les jeux</a>.');
+  const lirePL = t => sb.from(t).select("*").order("ordre");
+  const [{ data: r }, { data: chapitres }, d, pm, pt, ps, pal, nm] = await Promise.all([
+    sb.rpc("prisme_mon_role"),
+    sb.from("prisme_chapitres").select("code,nom,ordre").order("ordre"),
+    lireJeuxEvalues(sb),
+    lirePL("prisme_player_moteurs"), lirePL("prisme_player_temperaments"), lirePL("prisme_player_styles"),
+    sb.from("prisme_paliers").select("axe,valeur,libelle"), sb.rpc("prisme_noms")]);
+  const role = r || "joueur";
+  // les contenus réservés, comme dans la fiche du jeu : lecteur et au-delà
+  if (NIVEAUX[role] < NIVEAUX.lecteur) return vide("La fiche de rédaction est réservée aux lecteurs, évaluateurs et éditeurs de PRISME.");
+  if (d.refus) return vide("Les jeux évalués n'ont pas pu être lus.");
+  // la sous-fiche : celle demandée (config=base ou all_in), sinon la référence (all-in s'il existe, sinon base)
+  const S0 = sousFichesDe(code, d.jeux);
+  if (!S0.length) return vide('Ce jeu n\'existe pas. <a href="jeux.html">Voir tous les jeux</a>.');
+  const base = S0.find(x => sousFicheDe(x) === "base"), allin = S0.find(x => sousFicheDe(x) === "all_in");
+  const voulue = P.get("config") ? S0.find(x => sousFicheDe(x) === P.get("config")) : allin || base;
+  if (voulue && voulue.code !== code){ code = voulue.code; history.replaceState(null, "", "recap.html?jeu=" + encodeURIComponent(code) + "&config=" + sousFicheDe(voulue)); }
+  const jeu = d.jeux.find(j => j.code === code), nom = nomJeuGlobal(code, d.jeux), sf = sousFicheDe(jeu) === "all_in" ? "jeu all-in" : "jeu de base";
+  document.title = `PRISME — Fiche de rédaction — ${nom}`;
+  (pal.data || []).forEach(x => (PAL[x.axe] ||= []).push({ valeur:Number(x.valeur), libelle:x.libelle }));
+  Object.values(PAL).forEach(L => L.sort((a, b) => a.valeur - b.valeur));
+  const noms = Object.fromEntries((nm.data || []).map(x => [x.user_id, x.nom]));
+  const PL = { moteurs: pm.data || [], temperaments: pt.data || [], styles: ps.data || [] };
+  const S = { ...REGLAGES_DEFAUT }; Object.keys(S).forEach(k => { const v = d.src?.reglages?.[k]; if (v != null) S[k] = Number(v); });
+
+  // les fiches finales et leur résumé : exactement comme la fiche du jeu, sans profil
+  const cfg = d.reference?.[code] || null;
+  const F = cfg ? (d.configurations || []).filter(f => f.jeu === code && configDe(f) === cfg) : (d.fichesBase || d.fiches).filter(f => f.jeu === code);
+  const R = resumeJeu(F, d.paires, d.axes, null, d.src), m = R?.m;
+  const desc = !cfg ? d.src?.descriptions?.[code] || null : null, DA = !cfg ? d.src?.axes?.[code] || {} : {};
+
+  // les mécanismes, les thèmes, l'article, les commentaires (description et fiches finales)
+  const ids = F.map(f => f.id).filter(Boolean);
+  const [errMeca, errThemes, art, dc, ev, vc] = await Promise.all([lireMecanismes(code, user, role), lireThemes(code, user, role),
+    sb.from("prisme_vitrine").select("article,publie_le").eq("jeu", code).order("publie_le", { ascending:false }).limit(1),
+    sb.from("prisme_descriptions_axes").select("axe,commentaire,modifie_par").eq("jeu", code).not("commentaire", "is", null),
+    ids.length ? sb.from("prisme_evaluations").select("id,evaluateur").in("id", ids) : { data:[] },
+    ids.length ? sb.from("prisme_evaluation_valeurs").select("evaluation,axe,commentaire").in("evaluation", ids).not("commentaire", "is", null) : { data:[] }]);
+  const auteur = Object.fromEntries((ev.data || []).map(x => [x.id, x.evaluateur]));
+  const COM = {};   // { axe: [{ qui, texte, ou }] }
+  (dc.data || []).forEach(x => { if (x.commentaire?.trim()) (COM[x.axe] ||= []).push({ qui: noms[x.modifie_par] || "un évaluateur", texte: x.commentaire.trim(), ou:"description" }); });
+  (vc.data || []).forEach(x => { if (x.commentaire?.trim()) (COM[x.axe] ||= []).push({ qui: noms[auteur[x.evaluation]] || "un évaluateur", texte: x.commentaire.trim(), ou:"fiche" }); });
+  const TXT = [];   // le texte à copier, ligne à ligne
+
+  // la barre d'outils : retour, sous-fiches, copier, imprimer
+  $("#outils").hidden = false;
+  $("#retour").href = "jeu.html?jeu=" + encodeURIComponent(code);
+  if (base && allin) $("#sous-fiches").innerHTML = `<nav class="sous-fiches" aria-label="Sous-fiches">${[[base, "base"], [allin, "all-in"]].map(([f, t]) => f.code === code
+    ? `<b aria-current="page">${t}</b>` : `<a href="recap.html?jeu=${encodeURIComponent(f.code)}&config=${sousFicheDe(f)}">${t}</a>`).join("")}</nav>`;
+
+  // l'en-tête : vignette, nom, faits, note finale
+  const modes = errMeca ? [] : M.lignes.filter(l => l.niveau === "aspect" && M.affectes[l.code]).map(l => minuscule(l.nom));
+  const F2 = desc || m, faits = [];
+  if (F2){
+    const j = plage(F2.joueurs_min, F2.joueurs_max)?.replace(/^de /, "");
+    if (j) faits.push(j + (m?.effectif_reference != null ? `, meilleur à ${Math.round(m.effectif_reference)}` : ""));
+    if (F2.duree_max != null) faits.push(`${F2.duree_min != null && Math.round(F2.duree_min) !== Math.round(F2.duree_max) ? `${Math.round(F2.duree_min)} à ${Math.round(F2.duree_max)}` : Math.round(F2.duree_max)} min`);
+    if (desc?.prix_gamme) faits.push(`${desc.prix_gamme}, ${GAMMES_PRIX_NOMS[desc.prix_gamme] || "gamme inconnue"}`);
+    else if (!desc && m?.prix != null) faits.push(`${fmt(m.prix, 0)} €`);
+  }
+  if (modes.length) faits.push(modes.join(", "));
+  const nbF = R ? F.length : 0;
+  const tete = `<header class="f-tete">
+      ${jeu.image_url ? `<img class="vignette" src="${esc(jeu.image_url)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'), { className:'vignette' }))">` : `<span class="vignette" aria-hidden="true"></span>`}
+      <div class="f-id"><div class="surtitre">Fiche de rédaction · ${sf}</div><h1>${esc(nom)}</h1><div class="faits">${esc(faits.join(" · "))}</div></div>
+      <div class="f-note">${R?.finale != null ? `<b>${fmt(R.finale, 1)}</b><span>sur 5 · ${nbF} fiche${nbF > 1 ? "s" : ""} finale${nbF > 1 ? "s" : ""}</span>` : `<span>pas encore de fiche finale</span>`}</div></header>`;
+  TXT.push(`${nom} — ${sf}`, faits.join(" · "), R?.finale != null ? `Note finale : ${fmt(R.finale, 1)} sur 5 (${nbF} fiche${nbF > 1 ? "s" : ""} finale${nbF > 1 ? "s" : ""})` : "Pas encore de fiche finale", "");
+
+  // les trois pôles
+  const gras = (t, p) => p === 3 ? `<b>${esc(t)}</b>` : esc(t);
+  const avecRem = (t, rem) => t + (rem ? ` (${rem})` : "");
+  let theme = "";
+  if (errThemes) theme = `<span class="discret">Les thèmes n'ont pas pu être lus.</span>`;
+  else if (!Object.keys(TH.affectes).length) theme = `<span class="discret">Aucun thème n'est encore affecté à ce jeu.</span>`;
+  else {
+    const P1 = [];
+    // le sujet : chaque famille, ses sous-sujets cochés et sa remarque entre parenthèses (comme la carte Thème de la fiche)
+    const familles = affectesDe("sujet").filter(l => !estSousSujet(l));
+    if (familles.length) P1.push(familles.map(l => { const sous = sousSujetsDe(l.code).filter(s => TH.affectes[s.code]).map(s => minuscule(s.libelle));
+      const prec = [...sous, TH.affectes[l.code].remarque].filter(Boolean);
+      return gras(l.libelle, TH.affectes[l.code].poids) + (prec.length ? ` (${esc(prec.join(", "))})` : ""); }).join(", "));
+    const cadre = TH.affectes[ABSTRAIT] ? ["abstrait"] : [...affectesDe("periode").map(l => l.libelle), ...affectesDe("realisme").map(l => minuscule(l.libelle))];
+    if (cadre.length) P1.push(esc(cadre.join(", ")));
+    const facette = (f, avant) => { const L = affectesDe(f); if (L.length) P1.push(`${avant} ${L.map(l => gras(avecRem(minuscule(l.libelle), TH.affectes[l.code].remarque), TH.affectes[l.code].poids)).join(", ")}`); };
+    facette("role", "le joueur incarne"); facette("ton", "atmosphère");
+    theme = P1.join(" · ");
+  }
+  let meca = "";
+  if (errMeca) meca = `<span class="discret">Les mécanismes n'ont pas pu être lus.</span>`;
+  else {
+    const L3 = parPoids(3).map((l, i) => avecRem(i ? minuscule(l.nom) : l.nom, M.affectes[l.code].remarque));
+    const fin = M.lignes.filter(l => l.niveau === "fin_de_partie" && M.affectes[l.code]).map(l => minuscule(l.nom));
+    meca = (L3.length ? esc(L3.join(" · ")) + "." : `<span class="discret">Aucun mécanisme majeur.</span>`) + (fin.length ? ` <span class="discret">Fin : ${esc(fin.join(", "))}.</span>` : "");
+  }
+  let pourQui;
+  if (R?.complet && PL.temperaments.length){
+    const sp = spectrometre(R.e.n, R.e.paires, PL), T20 = sp.moteurs.flatMap(g => g.temperaments).sort((x, y) => y.note - x.note);
+    const nomsT = L => esc(L.map(x => x.t.nom).join(", "));
+    pourQui = `${esc(texteEcart(T20[0].note - T20.at(-1).note, S))}. <b>Mieux servis</b> : ${nomsT(T20.slice(0, 3))}. <b>Moins</b> : ${nomsT(T20.slice(-3).reverse())}.`;
+  } else pourQui = `<span class="discret">${!R ? "Paraîtra dès qu'une fiche sera déclarée finale." : !R.complet ? "Paraîtra quand toutes les paires utiles seront notées." : "Le modèle PRISMEplayer n'a pas pu être lu."}</span>`;
+  const pole = (n, titre, corps) => `<div class="pole ${n ? notion(n) : ""}"><div class="surtitre">${titre}</div><div>${corps}</div></div>`;
+  const poles = `<div class="poles">${pole("theme", "Thème", theme)}${pole("meca", "Mécaniques majeures", meca)}${pole("bref", "Pour qui", pourQui)}</div>`;
+  const texte = html => { const t = document.createElement("div"); t.innerHTML = html; return t.textContent.replace(/\s+/g, " ").trim(); };
+  TXT.push(`THÈME : ${texte(theme)}`, `MÉCANIQUES MAJEURES : ${texte(meca)}`, `POUR QUI : ${texte(pourQui)}`);
+
+  // les douze paires, par famille : Annonce (la description, axes de rang « 1… »), Vécu (les fiches finales, axes de rang « 2… »)
+  const notePaire = c => R?.e.paires.find(p => p.code === c)?.note ?? null;
+  const ligneAxe = (a, v, source) => { const i = plusProche(a.code, v), L = PAL[a.code] || [], p = L[i];
+    const voisin = (k, t) => L[k] ? `${t} (${valeurAxe(a, L[k].valeur)}) : ${esc(L[k].libelle)}` : "";
+    return `<div class="d-axe"><b>${esc(a.nom)}</b> <span class="code">${esc(a.code)}</span> · ${source} : <b>${esc(valeurAxe(a, v))}</b>${p ? ` → ${esc(p.libelle)}` : ""}
+      ${p ? `<span class="voisins">${[voisin(i - 1, "au-dessous"), voisin(i + 1, "au-dessus")].filter(Boolean).join(" · ")}</span>` : ""}</div>`; };
+  const colonnes = (chapitres || []).map(ch => {
+    const Pa = d.paires.filter(p => p.chapitre === ch.code); if (!Pa.length) return "";
+    TXT.push("", `${ch.nom.toUpperCase()}${R?.chap[ch.code] != null ? ` (${fmt(R.chap[ch.code])})` : ""}`);
+    return `<div class="famille"><h2><span>${esc(ch.nom)}</span><span>${R?.chap[ch.code] != null ? fmt(R.chap[ch.code]) : ""}</span></h2>${Pa.map(p => {
+      const A1 = d.axes.filter(a => a.paire === p.code && /^1/.test(a.rang || "")), A2 = d.axes.filter(a => a.paire === p.code && /^2/.test(a.rang || "") && a.echelle !== "calcule");
+      const annonceDe = a => DA[a.code] || (m?.saisie[a.code] ? { valeur: m.saisie[a.code].valeur, sans_objet: m.saisie[a.code].sans_objet } : null);
+      const so = (A1.length && A1.every(a => annonceDe(a)?.sans_objet)) || !!R?.e.absents.includes(p.code);
+      const note = notePaire(p.code), noteTxt = note != null ? fmt(note) : so ? "s. o." : "—";
+      let annonce = "", vecu = "", detail = "";
+      if (so) annonce = "sans objet pour ce jeu";
+      else {
+        // l'étendue (LIEN1d) se dit par la plage de joueurs de la description
+        annonce = enPhrase(A1.filter(a => !annonceDe(a)?.sans_objet).map(a => a.code === "LIEN1d" && desc && plage(desc.joueurs_min, desc.joueurs_max)
+          ? plage(desc.joueurs_min, desc.joueurs_max) : PAL[a.code]?.[plusProche(a.code, annonceDe(a)?.valeur)]?.libelle)) || "—";
+        vecu = !R ? "" : enPhrase(A2.filter(a => !m.saisie[a.code]?.sans_objet).map(a => PAL[a.code]?.[plusProche(a.code, m.saisie[a.code]?.valeur)]?.libelle)) || "—";
+        detail = A1.map(a => ligneAxe(a, annonceDe(a)?.sans_objet ? null : annonceDe(a)?.valeur, "description")).join("")
+          + (R ? A2.map(a => ligneAxe(a, m.saisie[a.code]?.sans_objet ? null : m.saisie[a.code]?.valeur, `moyenne de ${nbF > 1 ? `${nbF} fiches finales` : "la fiche finale"}`)).join("") : "");
+      }
+      const C = [...A1, ...A2, ...d.axes.filter(a => a.paire === p.code && a.echelle === "calcule")].flatMap(a => (COM[a.code] || []).map(x => ({ ...x, axe:a.nom })));
+      detail += C.length ? C.map(x => `<p class="com"><b>${esc(x.qui)}</b> <span class="discret">(${esc(x.axe)}, ${x.ou})</span> : ${esc(x.texte)}</p>`).join("") : `<p class="discret" style="margin:0">Pas de commentaire sur ces axes.</p>`;
+      TXT.push(`${p.nom} (${noteTxt}) — ${so ? "sans objet pour ce jeu" : `Annonce : ${annonce} — Vécu : ${R ? vecu : "pas encore de fiche finale"}`}`);
+      return `<details class="paire${so ? " so" : ""}"><summary>
+        <div class="p-tete"><span class="p-nom">${esc(p.nom)}</span><span class="p-note">${noteTxt} <span class="fl" aria-hidden="true">▸</span></span></div>
+        ${so ? `<div class="l">sans objet pour ce jeu</div>` : `<div class="l"><span class="an">Annonce</span> · ${esc(annonce)}</div>
+        ${R ? `<div class="l"><span class="ve">Vécu</span> · ${esc(vecu)}</div>` : `<div class="l manque"><span class="ve">Vécu</span> · pas encore de fiche finale</div>`}`}
+      </summary><div class="p-detail">${detail}</div></details>`; }).join("")}</div>`;
+  }).join("");
+
+  // le pied : classe de vie, usure, coût par partie, verdict de l'article
+  const c = R?.complet ? R.c : null, pastilles = [];
+  if (c){
+    pastilles.push(c.vie == null ? "Un classique : un jeu qu'on garde" : maj(c.classe));
+    pastilles.push(texteUsure(usureDe(c), S));
+    // (comme jeu.html 2.15) le coût par partie suit la description : sa gamme de prix et sa durée, sinon celles des fiches
+    const cout = desc ? coutParPartie(prixDeGamme(desc.prix_gamme, d.src?.reglages) ?? m.prix, c, desc.duree_min ?? m.duree_min, desc.duree_max ?? m.duree_max) : R.cout;
+    const cc = coutCourt(cout); if (cc) pastilles.push(cc);
+  }
+  const verdict = verdictDe(art.data?.[0]?.article || null);
+  TXT.push("");
+  if (pastilles.length) TXT.push(`VIE : ${pastilles.join(" · ")}`);
+  if (verdict) TXT.push(`VERDICT : « ${verdict} »`);
+  TXT.push("", "© 2026 Pierre Pigeon, tous droits réservés");
+
+  $("#contenu").innerHTML = `<article class="feuille">${tete}${poles}<div class="familles">${colonnes}</div>
+    ${pastilles.length || verdict ? `<div class="f-pied">${pastilles.map((t, i) => `<span class="pastille${i ? "" : " forte"}">${esc(t)}</span>`).join("")}${verdict ? `<span class="verdict">« ${esc(verdict)} »</span>` : ""}</div>` : ""}
+    <p class="mention">Cliquer sur une paire pour le détail : valeurs, paliers voisins, commentaires des évaluateurs. © 2026 Pierre Pigeon, tous droits réservés.</p></article>`;
+  RECAP.texte = TXT.join("\n").replace(/\n{3,}/g, "\n\n");
+}
+
+/* ---- copier le texte, imprimer ---- */
+const RECAP = { texte:"" };
+$("#imprimer").addEventListener("click", () => window.print());
+$("#copier").addEventListener("click", async () => {
+  const e = $("#copie");
+  try { await navigator.clipboard.writeText(RECAP.texte); }
+  catch {   // sans accès au presse-papiers : par une zone de texte sélectionnée
+    const t = Object.assign(document.createElement("textarea"), { value:RECAP.texte }); document.body.appendChild(t); t.select();
+    const ok = document.execCommand("copy"); t.remove();
+    if (!ok){ e.style.color = "var(--err)"; e.textContent = "Le texte n'a pas pu être copié."; return; }
+  }
+  e.style.color = ""; e.textContent = "Texte copié"; clearTimeout(e._t); e._t = setTimeout(() => e.textContent = "", 2500);
+});
+</script>
+<script src="entete.js?v=1.6"></script>
+</body>
+</html>

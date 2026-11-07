@@ -143,7 +143,8 @@ ul.m-liste li{border-bottom:1px solid var(--line);padding:7px 0}
    les onglets « Jeu de base » / « Jeu all-in » quand l'all-in existe
    2.14 (05/11/2026) : carte Thème, la famille de sujet avec ses sous-sujets entre parenthèses ; « Niveau de réalisme » (selecteurs.js 1.5)
    2.15 (06/11/2026) : les faits du jeu (joueurs, durée, pages, poids BGG, gamme de prix) lus dans la description de la sous-fiche,
-   la moyenne des fiches seulement à défaut ; le sommaire collant et « ↑ Haut » (selecteurs.js 1.6) */
+   la moyenne des fiches seulement à défaut ; le sommaire collant et « ↑ Haut » (selecteurs.js 1.6)
+   2.16 (07/11/2026) : le bouton « Fiche de rédaction » (recap.html), pour les lecteurs et au-delà */
 #carte-theme .puces > span{white-space:nowrap}   /* (2.14) le titre, plus long avec ses sous-sujets, peut passer à la ligne */
 details.pli.notion > summary strong{color:var(--n-titre)}
 .sous-fiches{display:flex;gap:4px;padding:4px;background:var(--neutre);border-radius:10px;align-self:flex-start}
@@ -174,7 +175,7 @@ details.pli.notion > summary strong{color:var(--n-titre)}
 <script src="timeline.js?v=3.12"></script>
 <script src="selecteurs.js?v=1.6"></script>
 <script>
-const VERSION = { numero:"2.15", date:"2026-11-06 21:20" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"2.16", date:"2026-11-07 17:41" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -317,6 +318,8 @@ async function afficher(user){
     const onglet = (f, t) => f.code === code ? `<b aria-current="page">${t}</b>` : `<a href="jeu.html?jeu=${encodeURIComponent(f.code)}">${t}</a>`;
     if (base && allin) sousFiches = `<nav class="sous-fiches" aria-label="Sous-fiches">${onglet(base, "Jeu de base")}${onglet(allin, "Jeu all-in")}</nav>`;
   }
+  // (2.16) la fiche de rédaction de la sous-fiche affichée (recap.html), pour les lecteurs et au-delà
+  if (NIVEAUX[role] >= NIVEAUX.lecteur) boutons.push(`<a class="btn" href="recap.html?jeu=${encodeURIComponent(code)}&config=${ici?.configuration === "all_in" ? "all_in" : "base"}">Fiche de rédaction</a>`);
 
   // la fiche technique : (2.15) les faits viennent de la description de la sous-fiche affichée (« Décrire le jeu ») ;
   // la moyenne des fiches finales seulement si la description manque (ou pour une configuration « toutes extensions », qui n'en a pas) ;
