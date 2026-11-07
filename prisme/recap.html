@@ -10,7 +10,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <style>
 /* 1.0 (07/11/2026) : la fiche de rédaction, d'après la maquette faite sur Heat : une page à garder ouverte sur un second écran,
-   qui donne les mots du modèle (les libellés des paliers), dépliable paire par paire, imprimable sur une page A4 et copiable en texte */
+   qui donne les mots du modèle (les libellés des paliers), dépliable paire par paire, imprimable sur une page A4 et copiable en texte
+   1.1 (07/11/2026) : « Avec les extensions », les écarts de la base à l'all-in (timeline.js 3.14), à l'écran, à l'impression et dans le texte copié */
 :root{--ink:#15171C;--muted:#4B5160;--line:#E2E4E9;--trait:#C9CEDB;--paper:#F4F5F7;--panel:#FFFFFF;--neutre:#E8EAF0;
   --accent:#2346C8;--accent-fonce:#16308F;--sur-accent:#FFFFFF;--bleu-fond:#E6EBFB;--bleu-texte:#16308F;
   --ok:#1E7A46;--warn:#B7791F;--err:#B42318;--annonce:#7F1D1D;--vecu:#2346C8;
@@ -78,6 +79,10 @@ details.paire > summary:hover{background:var(--paper)}
 .d-axe .voisins{display:block;color:var(--muted);font-size:12px}
 .com{margin:0;padding:4px 8px;border-left:3px solid var(--trait);color:var(--ink)}
 .com b{font-weight:600}
+/* (1.1) avec les extensions : repliable, dépliée à l'écran ; à l'impression, une ligne de résumé si elle ne tient pas sur la page */
+details.avec-ext{border-top:2px solid var(--ink);padding-top:6px}
+details.avec-ext > summary{cursor:pointer;font:600 17px var(--serif);padding:2px 0 8px}
+.ec-resume{display:none;margin:0;font-size:13px}
 /* le pied de la feuille */
 .f-pied{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:13px;padding-top:2px}
 .pastille{padding:4px 10px;border-radius:999px;background:var(--neutre)}
@@ -98,7 +103,7 @@ details.paire > summary:hover{background:var(--paper)}
 *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 body{background:#FFFFFF;font-size:9pt}
 body > :not(main),main > :not(#contenu){display:none!important}
-main{max-width:none;padding:0;margin:0}
+main{max-width:none;width:186mm;padding:0;margin:0}
 .feuille{box-shadow:none;border-radius:0;padding:0;gap:3.2mm;font-size:8.4pt;line-height:1.32}
 .f-tete{gap:4mm}
 .vignette{flex-basis:15mm;width:15mm;height:19mm}
@@ -120,6 +125,12 @@ details.paire > summary{padding:1.4mm 0;gap:.6mm}
 .f-pied{font-size:7.8pt;gap:2mm}
 .pastille{padding:.6mm 2.4mm}
 .mention{font-size:6.8pt;padding-top:1.6mm}
+details.avec-ext{padding-top:1.2mm;break-inside:avoid} details.avec-ext > summary{font-size:10pt;padding:0 0 1.2mm;list-style:none}
+details.avec-ext > summary::-webkit-details-marker{display:none}
+.ec-grille{grid-template-columns:repeat(3,minmax(0,1fr));gap:1.6mm 5mm}
+.ec-groupe h4{font-size:6.8pt;margin-bottom:.6mm} .ec-groupe ul{font-size:7.4pt;padding-left:3.5mm;gap:0}
+.ec-p{font-size:7.2pt;padding:.3mm 2mm} .ec-ps{gap:1mm}
+.feuille.ext-court .ec-corps{display:none} .feuille.ext-court .ec-resume{display:block;font-size:7.8pt}
 </style>
 </head>
 <body>
@@ -133,10 +144,10 @@ details.paire > summary{padding:1.4mm 0;gap:.6mm}
   <p class="version"><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p>
 </main>
 
-<script src="timeline.js?v=3.12"></script>
+<script src="timeline.js?v=3.14"></script>
 <script src="selecteurs.js?v=1.6"></script>
 <script>
-const VERSION = { numero:"1.0", date:"2026-11-07 17:41" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.1", date:"2026-11-07 19:10" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -227,6 +238,10 @@ async function afficher(user){
   const noms = Object.fromEntries((nm.data || []).map(x => [x.user_id, x.nom]));
   const PL = { moteurs: pm.data || [], temperaments: pt.data || [], styles: ps.data || [] };
   const S = { ...REGLAGES_DEFAUT }; Object.keys(S).forEach(k => { const v = d.src?.reglages?.[k]; if (v != null) S[k] = Number(v); });
+  // (1.1) les écarts de la base à l'all-in (null si le jeu n'a qu'une sous-fiche) ; la vie en texte, comme le pied de cette feuille
+  const vieDe = (R2, de) => ({ classe: R2.c.vie == null ? "un classique" : R2.c.classe, usure: texteUsure(usureDe(R2.c), S),
+    cout: coutCourt(de ? coutParPartie(prixDeGamme(de.prix_gamme, d.src?.reglages) ?? R2.m.prix, R2.c, de.duree_min ?? R2.m.duree_min, de.duree_max ?? R2.m.duree_max) : R2.cout)?.replace(/ la partie$/, "") || "—" });
+  const pEcarts = base && allin ? lireEcartsExtensions(sb, code, d, PL, vieDe) : Promise.resolve(null);
 
   // les fiches finales et leur résumé : exactement comme la fiche du jeu, sans profil
   const cfg = d.reference?.[code] || null;
@@ -342,6 +357,18 @@ async function afficher(user){
       </summary><div class="p-detail">${detail}</div></details>`; }).join("")}</div>`;
   }).join("");
 
+  // (1.1) avec les extensions, sous les paires ; à l'impression, si la section déborde de la page, une ligne de résumé la remplace
+  const E = await pEcarts;
+  let avecExt = "";
+  if (E){
+    const fin = E.notes?.find(x => x.genre === "finale");
+    const resume = E.erreur ? "Les écarts n'ont pas pu être lus." : E.identiques ? "Avec les extensions : aucun écart avec le jeu de base."
+      : `Avec les extensions : ${fin ? `note finale ${noteExt(fin.avant)} → ${noteExt(fin.apres)} (${signeExt(fin.ecart)}) · ` : ""}${E.nb} écart${E.nb > 1 ? "s" : ""}, le détail à l'écran.`;
+    avecExt = `<details class="avec-ext" open><summary>Avec les extensions <span class="discret" style="font:400 13px var(--sans)">· de la base à l'all-in, seulement ce qui change</span></summary>
+      <div class="ec-corps">${ecartsHTML(E)}</div><p class="ec-resume">${esc(resume)}</p></details>`;
+    TXT.push("", "AVEC LES EXTENSIONS (de la base à l'all-in)", ...ecartsTexte(E));
+  }
+
   // le pied : classe de vie, usure, coût par partie, verdict de l'article
   const c = R?.complet ? R.c : null, pastilles = [];
   if (c){
@@ -357,7 +384,7 @@ async function afficher(user){
   if (verdict) TXT.push(`VERDICT : « ${verdict} »`);
   TXT.push("", "© 2026 Pierre Pigeon, tous droits réservés");
 
-  $("#contenu").innerHTML = `<article class="feuille">${tete}${poles}<div class="familles">${colonnes}</div>
+  $("#contenu").innerHTML = `<article class="feuille">${tete}${poles}<div class="familles">${colonnes}</div>${avecExt}
     ${pastilles.length || verdict ? `<div class="f-pied">${pastilles.map((t, i) => `<span class="pastille${i ? "" : " forte"}">${esc(t)}</span>`).join("")}${verdict ? `<span class="verdict">« ${esc(verdict)} »</span>` : ""}</div>` : ""}
     <p class="mention">Cliquer sur une paire pour le détail : valeurs, paliers voisins, commentaires des évaluateurs. © 2026 Pierre Pigeon, tous droits réservés.</p></article>`;
   RECAP.texte = TXT.join("\n").replace(/\n{3,}/g, "\n\n");
@@ -366,6 +393,17 @@ async function afficher(user){
 /* ---- copier le texte, imprimer ---- */
 const RECAP = { texte:"" };
 $("#imprimer").addEventListener("click", () => window.print());
+// (1.1) avant d'imprimer : la section « Avec les extensions » dépliée ; si la feuille ainsi imprimée dépasse une page A4
+// (273 mm utiles), une ligne de résumé la remplace. La mesure se fait avec la feuille de style d'impression, le temps d'un calcul.
+const PAGE_UTILE_MM = 273;
+function preparerImpression(){
+  const f = $(".feuille"), x = $("details.avec-ext"), st = $("#impression"); if (!f || !x) return;
+  x.dataset.ouvert = x.open ? "1" : ""; x.open = true; f.classList.remove("ext-court");
+  st.media = "all"; const mm = f.getBoundingClientRect().height / 96 * 25.4; st.media = "print";
+  f.classList.toggle("ext-court", mm > PAGE_UTILE_MM);
+}
+addEventListener("beforeprint", preparerImpression);
+addEventListener("afterprint", () => { const x = $("details.avec-ext"); if (x) x.open = x.dataset.ouvert === "1"; });
 $("#copier").addEventListener("click", async () => {
   const e = $("#copie");
   try { await navigator.clipboard.writeText(RECAP.texte); }

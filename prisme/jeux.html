@@ -48,6 +48,9 @@ table.jeux tr[data-href]{cursor:pointer} table.jeux tr[data-href]:hover td{backg
 .sf{display:flex;gap:4px;flex:none}
 .sf a{font:500 12px var(--sans);padding:2px 9px;border:1px solid var(--line);border-radius:999px;text-decoration:none;color:var(--muted);background:var(--paper)}
 .sf a:hover{border-color:var(--ink);color:var(--ink)} .sf a.ref{border-color:var(--accent);color:var(--accent)}
+/* (1.13) sur la pastille « all-in », l'écart de note finale avec la base : vert s'il monte, orangé s'il baisse */
+.sf .ec{margin-left:4px;font-weight:600;font-variant-numeric:tabular-nums} .sf .ec.plus{color:var(--plus)} .sf .ec.baisse{color:#B4540A}
+@media (prefers-color-scheme: dark){ .sf .ec.baisse{color:#F2A25C} }
 @media (max-width:700px){ main{padding:8px 12px 30px} table.jeux th,table.jeux td{padding:8px} .col-sec{display:none} }
 </style>
 </head>
@@ -61,9 +64,10 @@ table.jeux tr[data-href]{cursor:pointer} table.jeux tr[data-href]:hover td{backg
   <p class="version"><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p>
 </main>
 
-<script src="timeline.js?v=3.13"></script>
+<script src="timeline.js?v=3.14"></script>
 <script>
-const VERSION = { numero:"1.12", date:"2026-11-06 21:32" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.13", date:"2026-11-07 19:10" };   // à incrémenter à chaque livraison
+// (1.13, 07/11/2026) sur la pastille « all-in », l'écart de note finale avec la base (à partir de 0,1)
 // (1.12, 06/11/2026) une ligne par jeu (fiche globale) : le nom de la base, les pastilles « base » / « all-in », les valeurs de la sous-fiche de référence
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
@@ -163,7 +167,10 @@ function afficher(){
       const img = l.image ? `<img src="${esc(l.image)}" alt="" loading="lazy">` : `<span class="sans-image"></span>`;
       const lien = "jeu.html?jeu=" + encodeURIComponent(l.ouvre.code);
       // (1.12) les pastilles « base » / « all-in », chacune vers sa sous-fiche, avec sa note au survol
-      const sf = l.sf.length ? `<span class="sf">${l.sf.map(s => `<a href="jeu.html?jeu=${encodeURIComponent(s.x.code)}"${s.x === l.j ? ' class="ref"' : ""} title="${esc(s.t === "base" ? "Jeu de base" : "Jeu all-in")} : ${s.r?.finale != null ? "note " + fmt(s.r.finale) + " / 5" : "pas encore de fiche finale"}">${s.t}</a>`).join("")}</span>` : "";
+      // (1.13) l'all-in porte son écart de note finale avec la base, s'il atteint 0,1 et que les deux sous-fiches sont notées
+      const nb = l.sf[0]?.r?.finale, na = l.sf[1]?.r?.finale, ecExt = nb != null && na != null && Math.abs(na - nb) >= .1 - 1e-9
+        ? ` <span class="ec ${na > nb ? "plus" : "baisse"}">${na > nb ? "+" : "−"}${fmt(Math.abs(na - nb), 1)}</span>` : "";
+      const sf = l.sf.length ? `<span class="sf">${l.sf.map(s => `<a href="jeu.html?jeu=${encodeURIComponent(s.x.code)}"${s.x === l.j ? ' class="ref"' : ""} title="${esc(s.t === "base" ? "Jeu de base" : "Jeu all-in")} : ${s.r?.finale != null ? "note " + fmt(s.r.finale) + " / 5" : "pas encore de fiche finale"}">${s.t}${s.t === "all-in" ? ecExt : ""}</a>`).join("")}</span>` : "";
       const nom = `<div class="cellule"><a class="jeu" href="${lien}">${img}<span><b>${esc(l.nom)}</b><small>${l.n ? `${l.n} fiche${l.n > 1 ? "s" : ""} finale${l.n > 1 ? "s" : ""}` : "pas encore évalué"}${l.refJ ? " · jeu complet" : l.cfg ? ` · + ${l.cfg} configuration${l.cfg > 1 ? "s" : ""}` : ""}</small></span></a>${sf}</div>`;
       const ev = !lecteur ? "" : `<td class="discret">${l.mienne ? `ma fiche (${l.mienne.statut === "finale" ? "finale" : "brouillon"})` : ""}${l.mienne && l.toutes > 1 ? " · " : ""}${!l.mienne || l.toutes > 1 ? (l.toutes ? `${l.toutes} fiche${l.toutes > 1 ? "s" : ""}` : "") : ""}</td>`;
       if (!l.r || !l.r.complet) return `<tr class="${l.n ? "" : "attente"}" data-href="${lien}"><td>${nom}</td><td class="n">${l.r?.finale != null ? fmt(l.r.finale) : "—"}</td>${profil ? '<td class="n">—</td>' : ""}<td class="n col-sec">—</td><td class="n col-sec">—</td><td class="n col-sec">—</td>${ev}</tr>`;

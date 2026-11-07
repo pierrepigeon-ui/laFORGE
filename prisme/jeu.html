@@ -144,7 +144,10 @@ ul.m-liste li{border-bottom:1px solid var(--line);padding:7px 0}
    2.14 (05/11/2026) : carte Thème, la famille de sujet avec ses sous-sujets entre parenthèses ; « Niveau de réalisme » (selecteurs.js 1.5)
    2.15 (06/11/2026) : les faits du jeu (joueurs, durée, pages, poids BGG, gamme de prix) lus dans la description de la sous-fiche,
    la moyenne des fiches seulement à défaut ; le sommaire collant et « ↑ Haut » (selecteurs.js 1.6)
-   2.16 (07/11/2026) : le bouton « Fiche de rédaction » (recap.html), pour les lecteurs et au-delà */
+   2.16 (07/11/2026) : le bouton « Fiche de rédaction » (recap.html), pour les lecteurs et au-delà
+   2.17 (07/11/2026) : le cadre « Ce que changent les extensions », quand le jeu a ses deux sous-fiches (timeline.js 3.14) ;
+   une teinte neutre : il compare, ce n'est pas une notion */
+.carte.ecarts{display:flex;flex-direction:column;gap:10px;background:color-mix(in srgb, var(--neutre) 40%, var(--panel))}
 #carte-theme .puces > span{white-space:nowrap}   /* (2.14) le titre, plus long avec ses sous-sujets, peut passer à la ligne */
 details.pli.notion > summary strong{color:var(--n-titre)}
 .sous-fiches{display:flex;gap:4px;padding:4px;background:var(--neutre);border-radius:10px;align-self:flex-start}
@@ -172,10 +175,10 @@ details.pli.notion > summary strong{color:var(--n-titre)}
   <p class="version"><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p>
 </main>
 
-<script src="timeline.js?v=3.12"></script>
+<script src="timeline.js?v=3.14"></script>
 <script src="selecteurs.js?v=1.6"></script>
 <script>
-const VERSION = { numero:"2.16", date:"2026-11-07 17:41" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"2.17", date:"2026-11-07 19:10" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -397,6 +400,9 @@ async function afficher(user){
     <div class="carte pole ${notion("meca")}" id="carte-meca"><div class="surtitre n-titre">Les mécaniques</div><p class="discret">Chargement…</p></div>
     <div class="carte pole" id="carte-pourqui">${pourQui}</div>
   </div>`;
+  // (2.17) ce que changent les extensions : seulement quand les deux sous-fiches existent, quelle que soit celle affichée
+  const deux = !!sousFiches;
+  if (deux) h += `<div class="carte ecarts" id="carte-ecarts"><div class="surtitre">Ce que changent les extensions</div><p class="discret" style="margin:0">Chargement…</p></div>`;
 
   // 3. sa vie dans le temps, en petit
   h += `<div class="carte vie" id="carte-vie"><div class="surtitre">Sa vie dans le temps</div>
@@ -441,9 +447,20 @@ async function afficher(user){
   // (2.15) le sommaire collant, comme dans « Décrire le jeu » et l'évaluation : une pastille par cadre, dans la couleur de sa notion
   $("#sommaire").hidden = false;
   sommaire($("#sommaire"), [{ id:"carte-theme", nom:"Thème", notion:"theme" }, { id:"carte-meca", nom:"Les mécaniques", notion:"meca" },
-    { id:"carte-pourqui", nom:"Pour qui" }, { id:"carte-vie", nom:"Sa vie dans le temps" }, { id:"le-detail", nom:"Le détail" }]);
+    { id:"carte-pourqui", nom:"Pour qui" }, ...(deux ? [{ id:"carte-ecarts", nom:"Avec les extensions" }] : []), { id:"carte-vie", nom:"Sa vie dans le temps" }, { id:"le-detail", nom:"Le détail" }]);
   chargerMecanismes(code, user, role);
   chargerThemes(code, user, role);
+  if (deux) chargerEcarts(code, d, PL, S);
+}
+
+// (2.17) le cadre « Ce que changent les extensions » : les écarts de la base à l'all-in, calculés et affichés par timeline.js ;
+// la vie dans le temps, en texte, telle que cette page l'écrit dans ses pastilles
+async function chargerEcarts(code, d, PL, S){
+  const vieDe = (R, desc) => ({ classe: R.c.vie == null ? "un classique" : R.c.classe, usure: texteUsure(usureDe(R.c), S),
+    cout: coutCourt(desc ? coutParPartie(prixDeGamme(desc.prix_gamme, d.src?.reglages) ?? R.m.prix, R.c, desc.duree_min ?? R.m.duree_min, desc.duree_max ?? R.m.duree_max) : R.cout)?.replace(/ la partie$/, "") || "—" });
+  const E = await lireEcartsExtensions(sb, code, d, PL, vieDe), el = $("#carte-ecarts"); if (!el) return;
+  el.innerHTML = `<div class="surtitre">Ce que changent les extensions</div><p class="titre-carte">De la base à l'all-in</p>
+    <p class="discret" style="margin:0">Seulement ce qui diffère d'une sous-fiche à l'autre.</p>${ecartsHTML(E)}`;
 }
 
 /* ---- les mécanismes du jeu (nomenclature PRISMEmechanics, 28/10/2026) ----

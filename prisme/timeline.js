@@ -1,7 +1,9 @@
 /* PRISME — timeline du jeu : jalons, durées, flow, α β γ ω, durée de vie.
    Module partagé par l'encyclopédie et l'outil d'évaluation. Méthode arrêtée le 08/10/2026 (jeu d'essai : Heat) ; modèle à 12 paires le 11/10/2026 ;
    formules refaites phase par phase le 12/10/2026 avec trois jeux de référence (Gloomhaven, Heat, Flip 7). L'unité est la session. */
-const TIMELINE_VERSION = { numero:"3.13", date:"2026-11-06 21:32" };   // à incrémenter à chaque livraison
+const TIMELINE_VERSION = { numero:"3.14", date:"2026-11-07 19:10" };   // à incrémenter à chaque livraison
+// (3.14, 07/11/2026) ce que changent les extensions : ecartsExtensions() compare la base et l'all-in d'un jeu ; lireEcartsExtensions() la nourrit
+// à partir de ce que les pages calculent déjà ; ecartsHTML() et ecartsTexte() l'affichent pareil dans la fiche du jeu et la fiche de rédaction
 // (3.13, 06/11/2026) un jeu = une fiche globale : lireJeuxEvalues ne garde dans « fiches » qu'une sous-fiche par jeu (l'all-in s'il a des fiches,
 // sinon la base) ; toutes les sous-fiches restent dans « fichesSousFiches » ; nomJeuGlobal() donne le nom du jeu sans « (all-in) »
 // (3.12, 05/11/2026) entreesPourCalcul : une paire dont tous les axes de rang « 1… » sont sans objet dans la description l'est tout entière
@@ -711,5 +713,155 @@ table.pj-jeux td{border-bottom:1px solid var(--line);padding:5px;vertical-align:
 table.pj-jeux td.rang{color:var(--muted);width:1.6em} table.pj-jeux tbody.bas td{border-bottom-color:transparent}
 .pj-ecart{font-size:12px;color:var(--muted)} .pj-ecart.plus{color:#1E7A46} .pj-ecart.moins{color:#B42318}
 @media (prefers-color-scheme: dark){.pj-ecart.plus{color:#5CC98A} .pj-ecart.moins{color:#F2837A}}`;
+  document.head.appendChild(st);
+})();
+
+/* ---------------- (3.14, 07/11/2026) ce que changent les extensions : de la base à l'all-in ----------------
+   Une sous-fiche, telle que les pages la calculent déjà : { jeu, R (resumeJeu), desc (prisme_descriptions), DA ({ axe: { valeur, sans_objet } }),
+   meca ({ code: { poids } }), themes ({ code: { poids } }), T20 ([{ code, nom, note }], les tempéraments), vie ({ classe, cout, usure }, en texte) }.
+   ctx : { paires, axes, chapitres, paliers ({ axe: [{ valeur, libelle }] }), meca ({ code: { nom, niveau } }), themes ({ code: libelle }) }.
+   Sans fiche finale d'un côté ou de l'autre : seuls les écarts de description, de mécaniques et de thèmes. */
+const SEUIL_ECART_EXT = .1;   // une paire ou un tempérament compte s'il bouge d'au moins 0,1
+const POIDS_EXT = { 3:"majeur", 2:"secondaire", 1:"marginal" };
+const COCHES_EXT = ["materiel", "geste", "aspect", "fin_de_partie"];   // comme COCHE (selecteurs.js) : de simples coches, sans poids
+const NOMS_GAMMES = { A:"une bagatelle", B:"un petit plaisir", C:"un coup de cœur", D:"un achat réfléchi", E:"un achat pesé", F:"un achat rare", G:"une folie", H:"le jeu d'une vie", I:"une pièce de collection" };
+// le palier le plus proche d'une valeur (L : du plus bas au plus haut) ; à égalité, celui du dessous (comme la fiche de rédaction)
+function palierProche(L, v){
+  if (v == null || !L?.length) return null;
+  let i = 0; L.forEach((p, k) => { if (Math.abs(p.valeur - v) < Math.abs(L[i].valeur - v)) i = k; });
+  return L[i];
+}
+function ecartsExtensions(base, allIn, ctx){
+  const E = { notes:[], libelles:[], description:[], mecaniques:[], themes:[], pourQui:null, vie:[] };
+  // les paires dans l'ordre des familles (Système, Expérience, Édition), comme sur la fiche
+  const rangCh = c => ctx.chapitres.findIndex(x => x.code === c);
+  const paires = [...ctx.paires].sort((a, b) => rangCh(a.chapitre) - rangCh(b.chapitre));
+  const avecNotes = base.R?.finale != null && allIn.R?.finale != null;
+  // les notes : la note finale et les familles dès qu'elles bougent, les paires d'au moins 0,1
+  if (avecNotes){
+    const note = (nom, genre, a, b, seuil) => { if (a != null && b != null && Math.abs(b - a) >= seuil) E.notes.push({ nom, genre, avant:a, apres:b, ecart:b - a }); };
+    const deP = (s, c) => s.R.e.paires.find(p => p.code === c)?.note;
+    note("Note finale", "finale", base.R.finale, allIn.R.finale, .005);
+    ctx.chapitres.forEach(c => note(c.nom, "famille", base.R.chap[c.code], allIn.R.chap[c.code], .005));
+    paires.forEach(p => note(p.nom, "paire", deP(base, p.code), deP(allIn, p.code), SEUIL_ECART_EXT - 1e-9));
+  }
+  // les libellés : le palier le plus proche, pour l'annonce (rang « 1… », la description) et le vécu (rang « 2… », la moyenne des fiches finales)
+  const annonce = (s, a) => { const x = s.DA?.[a.code] || s.R?.m.saisie[a.code]; return x?.sans_objet ? null : x?.valeur ?? null; };
+  const vecu = (s, a) => { const x = s.R?.m.saisie[a.code]; return x?.sans_objet ? null : x?.valeur ?? null; };
+  paires.forEach(p => ctx.axes.filter(a => a.paire === p.code).forEach(a => {
+    const un = /^1/.test(a.rang || ""), deux = /^2/.test(a.rang || "") && a.echelle !== "calcule";
+    if ((!un && !deux) || a.code === "LIEN1d" || (deux && !avecNotes)) return;   // l'étendue suit les joueurs : elle est dans la description
+    const lu = un ? annonce : vecu, pa = palierProche(ctx.paliers[a.code], lu(base, a)), pb = palierProche(ctx.paliers[a.code], lu(allIn, a));
+    if ((pa || pb) && pa !== pb) E.libelles.push({ paire:p.nom, axe:a.nom, quoi: un ? "Annonce" : "Vécu", avant: pa?.libelle || "sans objet", apres: pb?.libelle || "sans objet" });
+  }));
+  // la description : seulement ce qui change
+  const D = s => s.desc || {}, vu = v => v != null && v !== "";
+  const etendue = (a, b, u) => !vu(a) && !vu(b) ? "—" : !vu(a) || !vu(b) || a === b ? `${vu(a) ? a : b}${u}` : `${a} à ${b}${u}`;
+  [["Joueurs", s => etendue(D(s).joueurs_min, D(s).joueurs_max, "")], ["Durée", s => etendue(D(s).duree_min, D(s).duree_max, " min")],
+   ["Gamme de prix", s => D(s).prix_gamme ? `${D(s).prix_gamme} · ${NOMS_GAMMES[D(s).prix_gamme] || "gamme inconnue"}` : "—"],
+   ["Contenus distincts", s => [D(s).contenus_nombre, D(s).contenus_nature].filter(vu).join(" ") || "—"], ["Usage unique", s => D(s).usage_unique ? "oui" : "non"]]
+    .forEach(([nom, t]) => { const a = t(base), b = t(allIn); if (a !== b) E.description.push({ nom, avant:a, apres:b }); });
+  // les mécaniques et les thèmes : ajoutés (avec leur poids), retirés, poids changé
+  const comparer = (A, B, noms, nomDe, coche) => [...new Set([...Object.keys(noms), ...Object.keys(A), ...Object.keys(B)])].flatMap(c => {
+    const a = A[c], b = B[c], nom = nomDe(c), sansPoids = coche(c);
+    if (!a && b) return [{ signe:"+", nom, poids: sansPoids ? null : POIDS_EXT[b.poids] }];
+    if (a && !b) return [{ signe:"−", nom }];
+    if (a && b && a.poids !== b.poids && !sansPoids) return [{ signe:"~", nom, avant:POIDS_EXT[a.poids], apres:POIDS_EXT[b.poids] }];
+    return [];
+  });
+  E.mecaniques = comparer(base.meca || {}, allIn.meca || {}, ctx.meca, c => ctx.meca[c]?.nom || c, c => COCHES_EXT.includes(ctx.meca[c]?.niveau));
+  E.themes = comparer(base.themes || {}, allIn.themes || {}, ctx.themes, c => ctx.themes[c] || c, () => false);
+  // pour qui : les trois tempéraments qui gagnent le plus, les trois qui perdent le plus
+  if (avecNotes && base.T20 && allIn.T20){
+    const N = Object.fromEntries(base.T20.map(x => [x.code, x.note]));
+    const L = allIn.T20.filter(x => N[x.code] != null).map(x => ({ nom:x.nom, ecart:x.note - N[x.code] })).sort((x, y) => y.ecart - x.ecart);
+    const gagnent = L.filter(x => x.ecart >= SEUIL_ECART_EXT - 1e-9).slice(0, 3), perdent = L.filter(x => x.ecart <= -SEUIL_ECART_EXT + 1e-9).reverse().slice(0, 3);
+    if (gagnent.length || perdent.length) E.pourQui = { gagnent, perdent };
+  }
+  // la vie dans le temps : classe de vie, coût par partie, usure
+  if (base.vie && allIn.vie) [["Classe de vie", "classe"], ["Coût par partie", "cout"], ["Usure", "usure"]]
+    .forEach(([nom, k]) => { if (base.vie[k] !== allIn.vie[k]) E.vie.push({ nom, avant:base.vie[k], apres:allIn.vie[k] }); });
+  E.nb = E.notes.length + E.libelles.length + E.description.length + E.mecaniques.length + E.themes.length + (E.pourQui ? E.pourQui.gagnent.length + E.pourQui.perdent.length : 0) + E.vie.length;
+  E.identiques = E.nb === 0;
+  return E;
+}
+// les deux sous-fiches d'un jeu, calculées comme la fiche du jeu, puis leurs écarts ; null si le jeu n'a pas ses deux sous-fiches
+// d : lireJeuxEvalues ; PL : les tables PRISMEplayer (facultatif) ; vieDe(R, desc) : la vie en texte { classe, cout, usure }, comme la page l'affiche
+async function lireEcartsExtensions(sb, code, d, PL, vieDe){
+  const S = sousFichesDe(code, d.jeux), base = S.find(x => sousFicheDe(x) === "base"), allIn = S.find(x => sousFicheDe(x) === "all_in");
+  if (!base || !allIn) return null;
+  const codes = [base.code, allIn.code];
+  const L = await Promise.all([sb.from("prisme_jeux_mecanismes").select("jeu,mecanisme,poids").in("jeu", codes), sb.from("prisme_jeux_themes").select("jeu,theme,poids").in("jeu", codes),
+    sb.from("prisme_mecanismes").select("code,nom,niveau").order("ordre"), sb.from("prisme_themes").select("code,libelle").order("ordre"),
+    sb.from("prisme_paliers").select("axe,valeur,libelle"), sb.from("prisme_chapitres").select("code,nom,ordre").order("ordre")]);
+  const err = L.find(x => x.error); if (err) return { erreur: err.error.message };
+  const [jm, jt, nm, nt, pal, ch] = L.map(x => x.data || []);
+  const paliers = {}; pal.forEach(x => (paliers[x.axe] ||= []).push({ valeur:Number(x.valeur), libelle:x.libelle })); Object.values(paliers).forEach(P => P.sort((a, b) => a.valeur - b.valeur));
+  const ctx = { paires:d.paires, axes:d.axes, chapitres:ch, paliers, meca:Object.fromEntries(nm.map(x => [x.code, x])), themes:Object.fromEntries(nt.map(x => [x.code, x.libelle])) };
+  const sous = j => {
+    const cfg = d.reference?.[j.code] || null;   // comme la fiche du jeu : une ancienne configuration « toutes extensions » reste la référence
+    const F = cfg ? (d.configurations || []).filter(f => f.jeu === j.code && configDe(f) === cfg) : (d.fichesBase || d.fiches).filter(f => f.jeu === j.code);
+    const R = resumeJeu(F, d.paires, d.axes, null, d.src), desc = !cfg ? d.src?.descriptions?.[j.code] || null : null;
+    const parCode = (T, k) => Object.fromEntries(T.filter(x => x.jeu === j.code).map(x => [x[k], { poids:x.poids }]));
+    const T20 = R?.complet && PL?.temperaments?.length ? spectrometre(R.e.n, R.e.paires, PL).moteurs.flatMap(g => g.temperaments).map(x => ({ code:x.t.code, nom:x.t.nom, note:x.note })) : null;
+    return { jeu:j, R, desc, DA: !cfg ? d.src?.axes?.[j.code] || {} : {}, meca:parCode(jm, "mecanisme"), themes:parCode(jt, "theme"), T20, vie: R?.complet && vieDe ? vieDe(R, desc) : null };
+  };
+  const b = sous(base), a = sous(allIn);
+  return { base:b, allIn:a, ...ecartsExtensions(b, a, ctx) };
+}
+// l'affichage, commun à la fiche du jeu et à la fiche de rédaction : des groupes de quelques lignes ; le signe toujours écrit
+const signeExt = v => (v > 0 ? "+" : v < 0 ? "−" : "±") + Math.abs(v).toFixed(2).replace(".", ",");
+const noteExt = v => Number(v).toFixed(2).replace(".", ",");
+function ecartsHTML(E){
+  const e = s => String(s ?? "").replace(/[&<>"']/g, k => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[k]));
+  if (!E) return "";
+  if (E.erreur) return `<p class="ec-vide">Les écarts n'ont pas pu être lus (${e(E.erreur)}).</p>`;
+  if (E.identiques) return `<p class="ec-vide">L'all-in n'a pas encore été retouché : aucun écart avec le jeu de base.</p>`;
+  const ec = v => `<span class="${v > 0 ? "ec-plus" : "ec-moins"}">(${signeExt(v)})</span>`;
+  const passe = (a, b) => `${e(a)} <span class="ec-fl">→</span> ${e(b)}`;
+  const groupe = (t, corps) => corps ? `<div class="ec-groupe"><h4>${t}</h4>${corps}</div>` : "";
+  const liste = L => L.length ? `<ul>${L.join("")}</ul>` : "";
+  const pastille = x => x.signe === "+" ? `<span class="ec-p ajout">+ ${e(x.nom)}${x.poids ? ` (${e(x.poids)})` : ""}</span>` : x.signe === "−" ? `<span class="ec-p retrait">− ${e(x.nom)}</span>`
+    : `<span class="ec-p">${e(x.nom)} : ${passe(x.avant, x.apres)}</span>`;
+  const temp = L => L.map(x => `${e(x.nom)} ${ec(x.ecart)}`).join(", ");
+  return `<div class="ec-grille">${[
+    groupe("Notes", liste(E.notes.map(x => `<li${x.genre === "paire" ? "" : ' class="ec-fort"'}><b>${e(x.nom)}</b> ${noteExt(x.avant)} → ${noteExt(x.apres)} ${ec(x.ecart)}</li>`))),
+    groupe("Description", liste(E.description.map(x => `<li><b>${e(x.nom)}</b> : ${passe(x.avant, x.apres)}</li>`))),
+    groupe("Mécaniques", E.mecaniques.length ? `<div class="ec-ps">${E.mecaniques.map(pastille).join("")}</div>` : ""),
+    groupe("Thèmes", E.themes.length ? `<div class="ec-ps">${E.themes.map(pastille).join("")}</div>` : ""),
+    groupe("Pour qui", E.pourQui ? liste([E.pourQui.gagnent.length ? `<li><b>Gagnent</b> : ${temp(E.pourQui.gagnent)}</li>` : "", E.pourQui.perdent.length ? `<li><b>Perdent</b> : ${temp(E.pourQui.perdent)}</li>` : ""].filter(Boolean)) : ""),
+    groupe("Vie dans le temps", liste(E.vie.map(x => `<li><b>${e(x.nom)}</b> : ${passe(x.avant, x.apres)}</li>`))),
+    groupe("Les mots du modèle", liste(E.libelles.map(x => `<li><b>${e(x.paire)}</b> · ${x.quoi} (${e(x.axe)}) : ${passe(x.avant, x.apres)}</li>`)))].join("")}</div>`;
+}
+// le même contenu en texte simple, une ligne par groupe (les libellés, plus longs, une ligne chacun)
+function ecartsTexte(E){
+  if (!E || E.erreur) return [];
+  if (E.identiques) return ["L'all-in n'a pas encore été retouché : aucun écart avec le jeu de base."];
+  const T = [], ligne = (t, L) => { if (L.length) T.push(`${t} : ${L.join(" ; ")}`); };
+  const coche = x => x.signe === "~" ? `${x.nom} ${x.avant} → ${x.apres}` : `${x.signe} ${x.nom}${x.poids ? ` (${x.poids})` : ""}`;
+  ligne("Notes", E.notes.map(x => `${x.nom} ${noteExt(x.avant)} → ${noteExt(x.apres)} (${signeExt(x.ecart)})`));
+  ligne("Description", E.description.map(x => `${x.nom.toLowerCase()} ${x.avant} → ${x.apres}`));
+  ligne("Mécaniques", E.mecaniques.map(coche));
+  ligne("Thèmes", E.themes.map(coche));
+  if (E.pourQui) ligne("Pour qui", [E.pourQui.gagnent.length ? "gagnent " + E.pourQui.gagnent.map(x => `${x.nom} ${signeExt(x.ecart)}`).join(", ") : "",
+    E.pourQui.perdent.length ? "perdent " + E.pourQui.perdent.map(x => `${x.nom} ${signeExt(x.ecart)}`).join(", ") : ""].filter(Boolean));
+  ligne("Vie dans le temps", E.vie.map(x => `${x.nom.toLowerCase()} ${x.avant} → ${x.apres}`));
+  E.libelles.forEach(x => T.push(`${x.paire}, ${x.quoi.toLowerCase()} (${x.axe}) : ${x.avant} → ${x.apres}`));
+  return T;
+}
+(function(){
+  const st = document.createElement("style");
+  st.textContent = `.ec-grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px 22px}
+.ec-groupe h4{margin:0 0 4px;font:600 12px var(--sans, inherit);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.ec-groupe ul{margin:0;padding-left:16px;font-size:13.5px;display:flex;flex-direction:column;gap:2px}
+.ec-groupe li.ec-fort{font-weight:500}
+.ec-fl{color:var(--muted)}
+.ec-plus{color:#1E7A46;font-weight:600} .ec-moins{color:#B4540A;font-weight:600}
+.ec-ps{display:flex;flex-wrap:wrap;gap:6px}
+.ec-p{display:inline-block;padding:3px 10px;border-radius:999px;font-size:13px;border:1px solid var(--line);background:var(--panel)}
+.ec-p.ajout{background:#E7F4EC;border-color:#C5E4D1;color:#14532D} .ec-p.retrait{background:#FBEDE4;border-color:#F0D2BF;color:#8A3108}
+.ec-vide{margin:0;font-style:italic;color:var(--muted)}
+@media (prefers-color-scheme: dark){ .ec-plus{color:#5CC98A} .ec-moins{color:#F2A25C}
+  .ec-p.ajout{background:#16301F;border-color:#2B4A3F;color:#A6E3BC} .ec-p.retrait{background:#3D2618;border-color:#5A3524;color:#F5C3A3} }`;
   document.head.appendChild(st);
 })();
