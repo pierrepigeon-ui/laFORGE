@@ -16,7 +16,9 @@
    « À combien ? » dans la carte LIEN, en lignes regroupées au-delà de 8 joueurs ; les codes des axes en info-bulle seulement
    4.3 (06/11/2026) : entre le jeu de base et le jeu all-in (sous-fiches sœurs) : partir de sa fiche de la sœur (prisme_dupliquer_evaluation),
    comparer avec elle (repères discrets, masquables dans « Outils ») ; « Les fiches » groupées par sous-fiche
-   4.4 (06/11/2026) : prisme_dupliquer_evaluation appelée avec ses vrais paramètres, p_source et p_jeu */
+   4.4 (06/11/2026) : prisme_dupliquer_evaluation appelée avec ses vrais paramètres, p_source et p_jeu
+   4.5 (08/11/2026) : « Reprendre mes avis du jeu de base / all-in » dans « Outils » (prisme_recopier_evaluation), quand on a une fiche
+   sur les deux sous-fiches ; selecteurs.js 1.7 : les info-bulles des trapèzes ne restent plus affichées (une seule à la fois) */
 :root{--ink:#15171C;--muted:#4B5160;--line:#E2E4E9;--trait:#C9CEDB;--paper:#F4F5F7;--panel:#FFFFFF;--neutre:#E8EAF0;--filet:#EEF0F4;
   --accent:#2346C8;--accent-fonce:#16308F;--sur-accent:#FFFFFF;--bleu-fond:#E6EBFB;--bleu-texte:#16308F;--orange-fond:#FBEDE4;--orange-texte:#8A3108;
   --vert-fond:#E7F4EC;--vert-texte:#14532D;--ok:#1E7A46;--warn:#9A5B00;--err:#B42318;--trapeze:#F0F2F6;--trapeze-demi:#E3E6EE;
@@ -105,9 +107,14 @@ details.famille > summary::-webkit-details-marker{display:none}
 .axe-ligne{display:flex;flex-wrap:wrap;gap:10px 28px;align-items:flex-start}
 .a-combien{border-top:1px solid var(--n-bord,var(--filet));padding-top:12px}
 .a-combien h4{margin:0 0 4px;font:700 16px var(--sans);color:var(--n-titre,var(--ink))}
-/* infobulle des trapèzes : au survol et au focus, comme dans « Décrire le jeu » */
+/* infobulle des trapèzes : au survol, au focus (clavier) et au toucher, comme dans « Décrire le jeu » ; (4.5) ouverte et fermée par selecteurs.js 1.7 */
 .echelle button .bulle{display:none;position:absolute;left:0;bottom:calc(100% + 6px);z-index:20;background:var(--ink);color:var(--panel);font:400 12.5px/1.45 var(--sans);padding:7px 10px;border-radius:8px;width:max-content;max-width:min(260px,80vw);white-space:normal;text-align:left;box-shadow:0 4px 14px rgba(0,0,0,.15)}
-.echelle button:hover .bulle,.echelle button:focus .bulle{display:block}
+.echelle button.bulle-ouverte .bulle{display:block}
+/* (4.5) la fenêtre « Reprendre mes avis » */
+#dlg-reprendre{width:min(540px,94vw)}
+#dlg-reprendre p{margin:0 0 10px} #dlg-reprendre .avert{padding:10px 14px;border-radius:10px;background:var(--orange-fond);color:var(--orange-texte)}
+#dlg-reprendre label{display:flex;align-items:center;gap:8px;min-height:40px;cursor:pointer} #dlg-reprendre label input{width:18px;height:18px;margin:0}
+#dlg-reprendre .boutons{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end;margin:12px 0 0}
 .echelle{position:relative}
 @media (min-width:600px){ .page .echelle-cadre{overflow:visible} }
 /* (4.3) la fiche sœur (jeu de base / jeu all-in) : l'encart pour en partir, les repères discrets pour comparer */
@@ -315,6 +322,7 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
         <a id="vers-jeu" href="jeux.html" title="La fiche du jeu, telle que la voient les joueurs">Fiche du jeu</a>
         <a id="vers-decrire" href="decrire.html">Décrire le jeu</a>
         <button type="button" id="btn-config" class="hidden" title="Évaluer le jeu avec ses extensions : une fiche liée, qui reprend celle-ci">+ Configuration (avec extensions)</button>
+        <button type="button" id="btn-reprendre" class="hidden">Reprendre mes avis du jeu de base</button>
         <hr>
         <button type="button" id="suivante">Paire suivante à remplir</button>
         <label>Aller à <select id="aller" aria-label="Aller à une paire"><option value="">…</option></select></label>
@@ -350,12 +358,17 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
   <p style="text-align:right;margin:12px 0 0;display:flex;gap:10px;justify-content:flex-end"><button class="btn ghost" type="button" id="coller-fermer">Fermer</button><button class="btn" type="button" id="coller-appliquer" disabled>Appliquer la sélection</button></p></dialog>
 <dialog id="dlg-fiches" aria-labelledby="dlg-fiches-titre"><div id="fiches-soeurs"></div><p style="text-align:right;margin:12px 0 0"><button class="btn" id="fermer-fiches" type="button">Fermer</button></p></dialog>
 <dialog id="dlg-recap"><div id="recap"></div><p style="text-align:right;margin:12px 0 0"><button class="btn" id="fermer-recap" type="button">Fermer</button></p></dialog>
+<dialog id="dlg-reprendre" aria-labelledby="dlg-reprendre-titre"><h2 id="dlg-reprendre-titre">Reprendre mes avis</h2>
+  <p class="avert">Tes avis, tes notes par effectif et tes parties pour tout exploiter seront <b>remplacés</b> ici par ceux de l'autre fiche.</p>
+  <p class="avert hidden" id="rep-finale">Cette fiche est finale : ses notes publiées changeront.</p>
+  <label><input type="checkbox" id="rep-carnet"> reprendre aussi le carnet de notes</label>
+  <div class="boutons"><span class="msg" id="rep-msg" role="status"></span><button class="btn ghost" type="button" id="rep-annuler">Annuler</button><button class="btn plein" type="button" id="rep-ok">Reprendre</button></div></dialog>
 <div class="wrap"><p class="version"><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p></div>
 
 <script src="timeline.js?v=3.12"></script>
-<script src="selecteurs.js?v=1.4"></script>
+<script src="selecteurs.js?v=1.7"></script>
 <script>
-const VERSION = { numero:"4.4", date:"2026-11-06 14:26" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"4.5", date:"2026-11-08 00:10" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -625,6 +638,9 @@ function majBarreFiche(){
   // (4.3) la case de comparaison, seulement s'il y a une fiche sœur
   $("#cmp-soeur-lab").classList.toggle("hidden", !SOEUR);
   if (SOEUR) $("#cmp-soeur-t").textContent = `Comparer avec ma fiche du ${SOEUR.long}`;
+  // (4.5) reprendre ses avis de la sœur : sa propre fiche, enregistrée, quand on en a une aussi sur l'autre sous-fiche
+  $("#btn-reprendre").classList.toggle("hidden", !SOEUR || lectureSeule || !fiche.id);
+  if (SOEUR) $("#btn-reprendre").textContent = `Reprendre mes avis du ${SOEUR.long}`;
   $("#cmp-soeur").checked = comparer; document.body.classList.toggle("avec-soeur", !!SOEUR && comparer);
 }
 /* (4.3) partir de sa fiche de la sœur : l'encart n'apparaît que sur une fiche pas encore créée, à soi, quand on a une fiche sur la sœur ;
@@ -656,6 +672,26 @@ $("#cmp-soeur").addEventListener("change", e => {
   try { localStorage.setItem("prisme_comparer_soeur", comparer ? "oui" : "non"); } catch (x){}
 });
 $("#btn-config").addEventListener("click", () => { outils(false); nouvelleConfiguration(); });
+/* (4.5) reprendre ses avis de la fiche sœur dans la fiche ouverte : prisme_recopier_evaluation(source, cible, carnet) remplace les avis,
+   les notes par effectif et les parties pour tout exploiter (le carnet seulement si la case est cochée) ; puis la page est rechargée */
+$("#btn-reprendre").addEventListener("click", () => {
+  outils(false);
+  if (!SOEUR || lectureSeule || !fiche?.id) return;
+  $("#dlg-reprendre-titre").textContent = `Reprendre mes avis du ${SOEUR.long}`;
+  $("#rep-finale").classList.toggle("hidden", fiche.statut !== "finale");
+  $("#rep-carnet").checked = false; $("#rep-msg").textContent = ""; $("#rep-ok").disabled = false;
+  $("#dlg-reprendre").showModal();
+});
+$("#rep-annuler").addEventListener("click", () => $("#dlg-reprendre").close());
+$("#rep-ok").addEventListener("click", async () => {
+  if (!SOEUR || !fiche?.id) return;
+  const msg = $("#rep-msg"), id = fiche.id;
+  $("#rep-ok").disabled = true; msg.className = "msg"; msg.textContent = "Reprise…";
+  if (enCours()){ clearTimeout(minuteur); await enregistrer(); }   // ce qui attend d'être enregistré part d'abord (puis sera remplacé)
+  const { error } = await sb.rpc("prisme_recopier_evaluation", { p_source: SOEUR.f.id, p_cible: id, p_carnet: $("#rep-carnet").checked });
+  if (error){ $("#rep-ok").disabled = false; msg.className = "msg err"; msg.textContent = "Rien n'a été repris : " + error.message; return; }
+  location.replace("evaluation.html?fiche=" + encodeURIComponent(id));
+});
 // suppression sécurisée (18/10/2026, script 28) : propriétaire seulement, confirmation en deux temps, archive avant suppression
 $("#btn-supprimer").addEventListener("click", async () => {
   outils(false);

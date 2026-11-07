@@ -15,8 +15,11 @@
    avec sa phrase d'aide ; plus de codes visibles (info-bulle) ; « Jeu abstrait (aucun thème) » en tête ; le sujet en familles pesées,
    les sous-sujets en simples coches (poids 2) ; « Niveau de réalisme » ; le matériel ne se saisit plus que dans « Décrire le jeu ».
    (1.6, 06/11/2026) le sélecteur des mécaniques : « Les plus courants » en tête (les 15 mécanismes et combinaisons les plus affectés,
-   comptés en direct), des sous-groupes par famille d'origine dans « Mécanisme », les lignes en ordre alphabétique partout. */
-const SELECTEURS_VERSION = "1.6";
+   comptés en direct), des sous-groupes par famille d'origine dans « Mécanisme », les lignes en ordre alphabétique partout.
+   (1.7, 08/11/2026) les info-bulles des sélecteurs : définition, exemples et nom anglais de chaque mécanisme (définition des thèmes),
+   au survol, au focus clavier et au toucher d'un « ⓘ » ; un seul gestionnaire pour toutes les info-bulles maison des pages (une seule ouverte,
+   fermée quand la souris sort, quand le focus part, à Échap, au défilement, au toucher ailleurs). */
+const SELECTEURS_VERSION = "1.7";
 (function(){
   const st = document.createElement("style");
   st.textContent = `
@@ -108,9 +111,53 @@ details.sel-carte h4.m-sg{margin:12px 14px 2px}
 .t-sous-cases{display:flex;flex-wrap:wrap;gap:4px 18px;padding:0 14px 12px 36px}
 .t-sous-case{display:flex;align-items:center;gap:7px;min-height:30px;font-size:14px;cursor:pointer}
 .t-sous-case input{width:17px;height:17px;margin:0;cursor:pointer}
-.t-sous-case:has(input:checked){font-weight:600}`;
+.t-sous-case:has(input:checked){font-weight:600}
+/* (1.7) les info-bulles des sélecteurs : un « ⓘ » à droite du nom ; la bulle, placée par le script sous la ligne (au-dessus faute de place),
+   ne s'affiche que quand le gestionnaire l'ouvre (classe bulle-ouverte) */
+.m-i{display:inline-block;margin-left:6px;padding:0 2px;color:var(--accent);font-style:normal;font-weight:400;cursor:help;border-radius:4px}
+.t-sous-hote{display:inline-flex;align-items:center}
+.info > .bulle.bulle-sel{position:fixed;left:0;top:0;z-index:60;background:var(--ink);color:var(--panel);font:400 12.5px/1.45 var(--sans);font-style:normal;padding:7px 10px;border-radius:8px;width:max-content;max-width:min(360px,86vw);white-space:normal;text-align:left;box-shadow:0 4px 14px rgba(0,0,0,.15)}
+.info:not(.bulle-ouverte) > .bulle.bulle-sel{display:none!important}
+.info.bulle-ouverte > .bulle.bulle-sel{display:block!important}`;
   document.head.appendChild(st);
 })();
+
+/* ---- (1.7) les info-bulles maison, pour toutes les pages qui chargent ce fichier ----
+   Un hôte est un élément .info (ou un trapèze .echelle button) qui contient une .bulle ; la page n'affiche que la bulle de l'hôte
+   qui porte la classe « bulle-ouverte ». Une seule ouverte à la fois. Ouverture : survol à la souris, focus au clavier, toucher.
+   Fermeture : la souris sort de l'hôte, le focus le quitte, Échap, la page (ou une liste) défile, un toucher ailleurs ou un second toucher. */
+const BULLES = { ouverte:null, depuis:0, figee:false, x:0, y:0 };   // figee : après un défilement, rien ne s'ouvre avant que la souris bouge
+const hoteBulle = el => { const h = el?.closest?.(".info, .echelle button"); return h && h.querySelector(".bulle") ? h : null; };
+function fermerBulle(){ const h = BULLES.ouverte; BULLES.ouverte = null; h?.classList.remove("bulle-ouverte"); }
+function ouvrirBulle(h, clavier = false){
+  if (BULLES.ouverte === h) return;
+  fermerBulle(); BULLES.ouverte = h; BULLES.depuis = clavier ? performance.now() : 0; h.classList.add("bulle-ouverte");
+  // une bulle « fixe » (dans une liste qui défile) : sous l'hôte, au-dessus s'il n'y a pas la place, sans sortir de l'écran
+  const b = h.querySelector(".bulle");
+  if (getComputedStyle(b).position === "fixed"){
+    const r = h.getBoundingClientRect(), m = 8, w = b.offsetWidth, ht = b.offsetHeight;
+    const top = r.bottom + 6 + ht > innerHeight - m && r.top - ht - 6 >= m ? r.top - ht - 6 : r.bottom + 6;
+    b.style.top = top + "px"; b.style.left = Math.max(m, Math.min(r.left, innerWidth - w - m)) + "px";
+  }
+}
+// la souris : ouvre en entrant, ferme en sortant (passer de l'hôte à sa bulle, qui est dedans, ne ferme pas)
+document.addEventListener("pointerover", e => { if (e.pointerType !== "mouse" || BULLES.figee) return; const h = hoteBulle(e.target); if (h) ouvrirBulle(h); });
+// après un défilement, le navigateur signale l'élément arrivé sous la souris immobile : il ne s'ouvre qu'une fois la souris bougée
+document.addEventListener("pointermove", e => { if (e.pointerType !== "mouse") return;
+  if (BULLES.figee && (e.clientX !== BULLES.x || e.clientY !== BULLES.y)){ BULLES.figee = false; const h = hoteBulle(e.target); if (h) ouvrirBulle(h); }
+  BULLES.x = e.clientX; BULLES.y = e.clientY; });
+document.addEventListener("pointerout", e => { const h = BULLES.ouverte;
+  if (e.pointerType === "mouse" && h && h.contains(e.target) && !h.contains(e.relatedTarget)) fermerBulle(); });
+// le clavier : le focus visible ouvre (un clic, qui donne aussi le focus, n'ouvre rien de plus que le survol) ; le focus qui part ferme
+document.addEventListener("focusin", e => { const h = hoteBulle(e.target); if (h && e.target.matches(":focus-visible")) ouvrirBulle(h, true); });
+document.addEventListener("focusout", e => { const h = BULLES.ouverte; if (h && h.contains(e.target) && !h.contains(e.relatedTarget)) fermerBulle(); });
+// Échap ferme d'abord la bulle (une fenêtre ouverte dessous reste ouverte : un second Échap la ferme)
+document.addEventListener("keydown", e => { if (e.key === "Escape" && BULLES.ouverte){ e.preventDefault(); fermerBulle(); } }, true);
+// le défilement, de la page ou d'une liste, ferme ; sauf dans l'instant qui suit une ouverture au clavier (le focus fait parfois défiler jusqu'à l'élément)
+addEventListener("scroll", () => { if (BULLES.ouverte && performance.now() - BULLES.depuis <= 250) return; fermerBulle(); BULLES.figee = true; }, { capture:true, passive:true });
+// le toucher : un toucher sur un hôte ouvre sa bulle, un second la ferme ; un toucher ailleurs ferme
+document.addEventListener("pointerup", e => { if (e.pointerType === "mouse") return;
+  const h = hoteBulle(e.target); if (!h || h === BULLES.ouverte) fermerBulle(); else ouvrirBulle(h); }, true);
 // une fenêtre de sélecteur, créée au premier appel ; Échap vaut « Annuler »
 function fenetre(id, etat){
   let d = document.getElementById(id);
@@ -136,6 +183,12 @@ const AIDES_NIVEAUX = { geste:"Les actions élémentaires des joueurs : piocher,
   support:"La forme de l'espace de jeu.", parole:"La place que le jeu laisse à la parole entre joueurs.", hors_modele:"Hors de la nomenclature PRISMEmechanics." };
 // un nom et son anglais : « nom (name) », l'anglais en italique et en gris
 const bilingue = (fr, en) => esc(fr) + (en ? ` <span class="en">(${esc(en)})</span>` : "");
+// (1.7) l'info-bulle d'une ligne de sélecteur : la définition, les exemples s'il y en a, le nom anglais (et le code, en petit) ;
+// le « ⓘ », à droite du nom, la rend atteignable au clavier et au toucher ; une ligne sans définition n'a ni « ⓘ » ni bulle
+const iBulle = (nom, def, ex, en, code) => def ? `<span class="m-i" tabindex="0" role="button" aria-label="${esc(nom)} : ${esc(def)}${ex ? ` Exemples : ${esc(ex)}.` : ""}">ⓘ</span>`
+  + `<span class="bulle bulle-sel" aria-hidden="true">${esc(def)}${ex ? `<br><b>Exemples :</b> ${esc(ex)}` : ""}${en || code ? `<br><i>${[en, code].filter(Boolean).map(esc).join(" · ")}</i>` : ""}</span>` : "";
+// l'hôte de la bulle : avec une définition, la classe « info » ; sans, le code reste en info-bulle du navigateur
+const hoteNom = (def, code) => def ? ` info"` : `" title="${esc(code)}"`;
 const legendeDML = `<p class="legende"><span class="info" tabindex="0" aria-label="D déplacement : un composant change de zone (piocher, poser, payer). M modification : il change d'état sur place (lancer, retourner, incliner). L lecture : une règle lit la situation (majorité, série complète, fin de partie).">D déplacement · M modification · L lecture<span class="bulle" aria-hidden="true">D : un composant change de zone (piocher, poser, payer).<br>M : il change d'état sur place (lancer, retourner, incliner).<br>L : une règle lit la situation (majorité, série complète, fin de partie).</span></span></p>`;
 // (2.3) simples coches : pour ces niveaux le poids n'a pas de sens ; cochée = une ligne de poids 2, sans remarque
 const COCHE = ["materiel", "geste", "aspect", "fin_de_partie"];
@@ -250,7 +303,7 @@ const M = { jeu:null, user:null, role:null, ecrit:false, lignes:[], requis:{}, a
 async function lireMecanismes(code, user, role){
   Object.assign(M, { jeu:code, user, role, ecrit: NIVEAUX[role] >= NIVEAUX.evaluateur, brouillon:null });
   const [l, a, rq, fr] = await Promise.all([
-    sb.from("prisme_mecanismes").select("code,nom,nom_en,niveau,sous_groupe,categorie,statut,fusion_vers,famille_recolte,ordre,definition").order("ordre"),
+    sb.from("prisme_mecanismes").select("code,nom,nom_en,niveau,sous_groupe,categorie,statut,fusion_vers,famille_recolte,ordre,definition,exemples").order("ordre"),   // (1.7) les exemples, pour l'info-bulle
     sb.from("prisme_jeux_mecanismes").select("mecanisme,poids,remarque").eq("jeu", code),
     sb.from("prisme_mecanismes_requis").select("mecanisme,requis"),
     M.ecrit ? frequencesMecanismes() : {}]);
@@ -381,7 +434,8 @@ function ligneChoix(l, acquis, prof = 0){
   const manque = requisManquants(l.code, acquis).map(r => ligneMeca(r)?.nom || r);
   const retrait = prof ? ` style="padding-left:${22 * prof}px"` : "";   // une sous-rubrique du matériel, en retrait sous sa rubrique
   // (1.5) ni code ni badge de niveau (la carte le dit) : le code reste en info-bulle
-  const nom = `<div class="m-nom" title="${esc(l.code)}">${prof ? "↳ " : ""}${l.niveau === "materiel" ? picto(l.code, 20) : ""}${bilingue(l.nom, l.nom_en)}${manque.length ? `<span class="m-manque">suppose : ${esc(manque.join(", "))} (non coché)</span>` : ""}</div>`;
+  // (1.7) la définition, les exemples et le nom anglais en info-bulle, avec un « ⓘ » à droite du nom
+  const nom = `<div class="m-nom${hoteNom(l.definition, l.code)}>${prof ? "↳ " : ""}${l.niveau === "materiel" ? picto(l.code, 20) : ""}${bilingue(l.nom, l.nom_en)}${iBulle(l.nom, l.definition, l.exemples, l.nom_en, l.code)}${manque.length ? `<span class="m-manque">suppose : ${esc(manque.join(", "))} (non coché)</span>` : ""}</div>`;
   // simple coche : une case, sans poids ni remarque
   if (estCoche(l)) return `<div class="m-ligne${p ? " affecte" : ""}" data-code="${esc(l.code)}"${retrait}>${nom}
     <label class="m-coche"><input type="checkbox" data-coche${p ? " checked" : ""} aria-label="${esc(l.nom)} : dans le jeu"> dans le jeu</label></div>`;
@@ -487,7 +541,8 @@ function ouvrirSelecteurThemes(){
           if (!(trouve(fam) || S.some(trouve)) || (seuls && !choisie && !S.some(s => TH.brouillon[s.code]))) return "";
           const vus = S.filter(s => TH.brouillon[s.code] || (choisie && (trouve(fam) || trouve(s))) || (q && trouve(s)));
           return `<div class="t-famille">${ligneChoixTheme(fam)}${vus.length ? `<div class="t-sous-cases" role="group" aria-label="Sous-sujets de ${esc(fam.libelle)}">${vus.map(s =>
-            `<label class="t-sous-case" title="${esc(s.code)}${s.definition ? " : " + esc(s.definition) : ""}"><input type="checkbox" data-sous="${esc(s.code)}"${TH.brouillon[s.code] ? " checked" : ""}> ${bilingue(s.libelle, s.libelle_en)}</label>`).join("")}</div>` : ""}</div>`;
+            // (1.7) la définition en info-bulle, le « ⓘ » hors de l'étiquette (le toucher ne coche pas la case)
+            `<span class="t-sous-hote${hoteNom(s.definition, s.code)}><label class="t-sous-case"><input type="checkbox" data-sous="${esc(s.code)}"${TH.brouillon[s.code] ? " checked" : ""}> ${bilingue(s.libelle, s.libelle_en)}</label>${iBulle(s.libelle, s.definition, null, s.libelle_en, s.code)}</span>`).join("")}</div>` : ""}</div>`;
         }).join("");
       } else corps = tous.filter(l => trouve(l) && (!seuls || TH.brouillon[l.code])).map(ligneChoixTheme).join("");
       if (!corps) return "";
@@ -525,8 +580,8 @@ function ouvrirSelecteurThemes(){
 }
 function ligneChoixTheme(l){
   const v = TH.brouillon[l.code], p = v?.poids || 0;
-  // (1.5) le code n'est plus affiché : il reste en info-bulle
-  return `<div class="m-ligne${p ? " affecte" : ""}" data-code="${esc(l.code)}"><div class="m-nom" title="${esc(l.code)}${l.definition ? " : " + esc(l.definition) : ""}">${bilingue(l.libelle, l.libelle_en)}</div>
+  // (1.5) le code n'est plus affiché : il reste en info-bulle ; (1.7) la définition aussi, avec un « ⓘ » à droite du nom
+  return `<div class="m-ligne${p ? " affecte" : ""}" data-code="${esc(l.code)}"><div class="m-nom${hoteNom(l.definition, l.code)}>${bilingue(l.libelle, l.libelle_en)}${iBulle(l.libelle, l.definition, null, l.libelle_en, l.code)}</div>
     <div class="m-poids" role="group" aria-label="Poids de ${esc(l.libelle)}">${[[0, "—"], [1, POIDS[1]], [2, POIDS[2]], [3, POIDS[3]]].map(([n, t]) =>
       `<button type="button" data-p="${n}" aria-pressed="${p === n}"${n ? "" : ' title="absent"'}>${esc(t)}</button>`).join("")}</div>
     ${p ? `<input class="m-rem" type="text" placeholder="Remarque (facultative)" aria-label="Remarque, visible sur la fiche entre parenthèses" value="${esc(v.remarque)}"><span class="m-aide">Visible sur la fiche, entre parenthèses</span>` : ""}</div>`;

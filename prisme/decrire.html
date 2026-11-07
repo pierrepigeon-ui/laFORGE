@@ -20,7 +20,9 @@
    en arborescence de cases ; la liste complète des paliers à côté des trapèzes ; les codes des axes en info-bulle ; LIEN1d calculé en silence ;
    les onglets « Jeu de base » / « Jeu all-in » et « + Générer l'all-in »
    1.7 (05/11/2026) : « + Générer l'all-in » appelle prisme_generer_all_in avec son vrai paramètre, p_base
-   1.8 (05/11/2026) : selecteurs.js 1.5 (sélecteurs lisibles, sujets en familles, « Niveau de réalisme ») */
+   1.8 (05/11/2026) : selecteurs.js 1.5 (sélecteurs lisibles, sujets en familles, « Niveau de réalisme »)
+   1.9 (08/11/2026) : « Recopier depuis le jeu de base / all-in » (prisme_recopier_description), bloc par bloc ; selecteurs.js 1.7 :
+   les info-bulles des mécanismes et des thèmes, et des info-bulles qui ne restent plus affichées (une seule à la fois, gérées par selecteurs.js) */
 :root{--ink:#15171C;--muted:#4B5160;--line:#E2E4E9;--trait:#C9CEDB;--paper:#F4F5F7;--panel:#FFFFFF;--neutre:#E8EAF0;--filet:#EEF0F4;
   --accent:#2346C8;--accent-fonce:#16308F;--sur-accent:#FFFFFF;--bleu-fond:#E6EBFB;--bleu-bord:#C9D3F5;--bleu-texte:#16308F;--orange-fond:#FBEDE4;--orange-texte:#8A3108;
   --vert-fond:#E7F4EC;--vert-texte:#14532D;--ok:#1E7A46;--warn:#B7791F;--err:#B42318;--trapeze:#F0F2F6;--trapeze-demi:#E3E6EE;
@@ -45,10 +47,10 @@ main{max-width:1080px;margin:0 auto;padding:8px 24px 120px;display:flex;flex-dir
 .btn.plein{background:var(--accent);border-color:var(--accent);color:var(--sur-accent);font-weight:600} .btn.plein:hover{background:var(--accent-fonce);border-color:var(--accent-fonce)}
 .btn.contour{min-height:40px;padding:0 16px;border-color:var(--accent);color:var(--accent);font-weight:600} .btn.contour:hover{background:var(--bleu-fond)}
 .btn:disabled{opacity:.5;cursor:default}
-/* infobulle : au survol et au focus (clavier), comme sur la fiche du jeu */
+/* infobulle : au survol, au focus (clavier) et au toucher ; (1.9) ouverte et fermée par selecteurs.js 1.7 (classe bulle-ouverte), une seule à la fois */
 .info{position:relative;cursor:default}
 .info .bulle{display:none;position:absolute;left:0;top:calc(100% + 6px);z-index:20;background:var(--ink);color:var(--panel);font:400 12.5px/1.45 var(--sans);padding:7px 10px;border-radius:8px;width:max-content;max-width:min(340px,80vw);white-space:normal;text-align:left;box-shadow:0 4px 14px rgba(0,0,0,.15)}
-.info:hover .bulle,.info:focus .bulle,.info:focus-within .bulle{display:block}
+.info.bulle-ouverte .bulle{display:block}
 
 /* l'en-tête */
 .tete{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:16px}
@@ -61,6 +63,13 @@ main{max-width:1080px;margin:0 auto;padding:8px 24px 120px;display:flex;flex-dir
 .configs b{background:var(--panel);color:var(--ink)} .configs a{color:var(--accent)}
 .configs button{padding:8px 14px;border:1px dashed var(--accent);border-radius:8px;background:none;color:var(--accent);font:600 14px var(--sans);cursor:pointer}
 .configs button:hover{background:var(--bleu-fond)} .configs button:disabled{opacity:.5;cursor:default}
+/* (1.9) les onglets et, dessous, « Recopier depuis… » ; sa fenêtre : quatre cases, l'avertissement */
+.tete-droite{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+#dlg-recopier{width:min(520px,94vw)}
+#dlg-recopier .case{align-items:flex-start;min-height:0;padding:6px 0} #dlg-recopier .case input{margin-top:2px}
+#dlg-recopier .case span{display:flex;flex-direction:column} #dlg-recopier .case small{font-size:12.5px;font-style:italic;color:var(--muted)}
+#dlg-recopier .avert{margin:12px 0 0;padding:10px 14px;border-radius:10px;background:var(--orange-fond);color:var(--orange-texte);font-size:14px}
+#dlg-recopier .m-actions .m-etat.err{color:var(--err)}
 /* le bandeau d'état */
 .etat{display:flex;align-items:flex-start;gap:10px;padding:12px 16px;border-radius:12px;font-size:14px;margin:0}
 .etat.ok{background:var(--vert-fond);color:var(--vert-texte)} .etat.manque{background:var(--orange-fond);color:var(--orange-texte)}
@@ -194,9 +203,11 @@ details.com textarea{display:block;width:100%;margin-top:6px;padding:7px 10px;bo
   <div class="boutons" id="enr-boutons"><button class="btn" type="button" id="annuler">Annuler</button><button class="btn plein" type="button" id="enregistrer">Enregistrer</button></div>
 </div></div>
 
-<script src="selecteurs.js?v=1.5"></script>
+<dialog class="fenetre" id="dlg-recopier" aria-labelledby="dlg-recopier-titre"></dialog>
+
+<script src="selecteurs.js?v=1.7"></script>
 <script>
-const VERSION = { numero:"1.8", date:"2026-11-05 20:06" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.9", date:"2026-11-08 00:10" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -325,7 +336,11 @@ function dessiner(){
   const onglets = [base && onglet(base), allin ? onglet(allin) : base && base.code === D.code && NIVEAUX[D.role] >= NIVEAUX.editeur
       ? `<button type="button" id="generer-allin" title="Créer la sous-fiche « Jeu all-in » à partir de ce jeu de base">+ Générer l'all-in</button>` : "",
     ...S.filter(f => f !== base && f !== allin).map(onglet)].filter(Boolean);
-  const configs = `<nav class="configs" aria-label="Sous-fiches">${onglets.join("") || `<b>${esc(nomCfg(D.jeu.configuration))}</b>`}</nav>`;
+  // (1.9) « Recopier depuis le jeu de base » (ou « … all-in ») : quand le jeu a les deux sous-fiches, pour l'éditeur et le propriétaire
+  D.source = base && allin ? (D.code === allin.code ? base : D.code === base.code ? allin : null) : null;
+  const recopier = D.source && NIVEAUX[D.role] >= NIVEAUX.editeur
+    ? `<button type="button" class="btn contour" id="recopier" title="Remplacer ici des blocs de la description par ceux de l'autre sous-fiche">Recopier depuis le ${esc(nomCfg(D.source.configuration).toLowerCase())}</button>` : "";
+  const configs = `<div class="tete-droite"><nav class="configs" aria-label="Sous-fiches">${onglets.join("") || `<b>${esc(nomCfg(D.jeu.configuration))}</b>`}</nav>${recopier}</div>`;
   const montant = l => l === "I" ? (D.prix.H != null ? `> ${D.prix.H} €` : "") : (D.prix[l] != null ? `≤ ${D.prix[l]} €` : "");
   const prix = GAMMES.map(([g, L]) => `<div class="groupe-prix"><span>${esc(g)}</span>${L.map(([l, n]) =>
     `<label class="tranche"><input type="radio" name="prix" value="${l}"${d.prix_gamme === l ? " checked" : ""}${ro}><span>${l} · ${esc(n)}</span><small>${esc(montant(l))}</small></label>`).join("")}</div>`).join("");
@@ -368,6 +383,7 @@ function dessiner(){
   sommaire($("#sommaire"), [["c-bref", "En bref", "bref"], ["c-prix", "Le prix", "prix"], ["c-contenu", "Le contenu et le matériel", "contenu"],
     ["c-theme", "Le thème", "theme"], ["c-meca", "Les mécaniques", "meca"], ["c-axes", "Les axes", "axes"]].map(([id, nom, n]) => ({ id, nom, notion:n })));
   $("#generer-allin")?.addEventListener("click", genererAllIn);
+  $("#recopier")?.addEventListener("click", ouvrirRecopier);
   $("#modifier-meca")?.addEventListener("click", () => { if (D.errMeca) return;
     // (1.4) le sélecteur part de ce qui est enregistré : le matériel coché ici doit l'être d'abord
     if (materielModifie()){ const e = $("#enr-etat"); e.className = "err"; e.textContent = "Enregistre d'abord le matériel coché (ou annule), puis modifie les mécanismes."; return; }
@@ -602,6 +618,33 @@ async function genererAllIn(){
   if (!code){ b.disabled = false; etat.className = "err"; etat.textContent = "L'all-in semble créé, mais introuvable : recharge la page."; return; }
   D.part = true; location.href = "decrire.html?jeu=" + encodeURIComponent(code);
 }
+// (1.9) recopier depuis l'autre sous-fiche : quatre blocs à cocher (aucun au départ) ; ce qui est coché est remplacé ici
+// par prisme_recopier_description(source, cible, faits, mécanismes, thèmes, axes), puis la page est rechargée
+const BLOCS_RECOPIE = [["faits", "Faits et prix", "En bref, le prix, le nombre et la nature des contenus."],
+  ["mecanismes", "Mécaniques", "Avec le matériel coché, qui est rangé parmi les mécanismes."],
+  ["themes", "Thèmes", ""], ["axes", "Axes descriptifs", "Valeurs, « sans objet » et commentaires."]];
+function ouvrirRecopier(){
+  const d = $("#dlg-recopier"), de = nomCfgMin(D.source.configuration);
+  d.innerHTML = `<h2 id="dlg-recopier-titre">Recopier depuis le ${esc(de)}</h2>
+    <p class="question">Choisis ce qui doit être repris du ${esc(de)} dans cette sous-fiche.</p>
+    ${BLOCS_RECOPIE.map(([k, t, a]) => `<label class="case"><input type="checkbox" data-bloc="${k}"><span>${esc(t)}${a ? `<small>${esc(a)}</small>` : ""}</span></label>`).join("")}
+    <p class="avert">Ce que tu coches sera <b>remplacé</b> ici par le contenu de l'autre sous-fiche. L'ancien contenu reste dans le journal de la Forge.</p>
+    <p class="m-actions"><button class="btn plein" type="button" id="rec-ok" disabled>Recopier</button><button class="btn" type="button" id="rec-annuler">Annuler</button><span class="m-etat" id="rec-etat" role="status"></span></p>`;
+  const coches = () => Object.fromEntries(BLOCS_RECOPIE.map(([k]) => [k, d.querySelector(`[data-bloc="${k}"]`).checked]));
+  d.onchange = () => { $("#rec-ok").disabled = !Object.values(coches()).some(Boolean); };   // « Recopier » dès qu'une case est cochée
+  $("#rec-annuler").addEventListener("click", () => d.close());
+  $("#rec-ok").addEventListener("click", async () => {
+    const c = coches(), etat = $("#rec-etat");
+    if (modifie() && !confirm("Des modifications ne sont pas enregistrées ici : elles seront perdues. Continuer ?")) return;
+    $("#rec-ok").disabled = true; etat.className = "m-etat discret"; etat.textContent = "Recopie…";
+    const { error } = await sb.rpc("prisme_recopier_description", { p_source: D.source.code, p_cible: D.code,
+      p_faits: c.faits, p_mecanismes: c.mecanismes, p_themes: c.themes, p_axes: c.axes });
+    if (error){ $("#rec-ok").disabled = false; etat.className = "m-etat err"; etat.textContent = "Rien n'a été recopié : " + error.message; return; }
+    D.part = true; location.reload();
+  });
+  d.showModal();
+}
+const nomCfgMin = c => (CONFIGS[c] || "Jeu de base").toLowerCase();
 // prévenir si l'on quitte la page avec des changements non enregistrés
 addEventListener("beforeunload", e => { if (D.ecrit && !D.part && modifie()){ e.preventDefault(); e.returnValue = ""; } });
 </script>
