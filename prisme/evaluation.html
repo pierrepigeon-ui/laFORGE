@@ -18,7 +18,9 @@
    comparer avec elle (repères discrets, masquables dans « Outils ») ; « Les fiches » groupées par sous-fiche
    4.4 (06/11/2026) : prisme_dupliquer_evaluation appelée avec ses vrais paramètres, p_source et p_jeu
    4.5 (08/11/2026) : « Reprendre mes avis du jeu de base / all-in » dans « Outils » (prisme_recopier_evaluation), quand on a une fiche
-   sur les deux sous-fiches ; selecteurs.js 1.7 : les info-bulles des trapèzes ne restent plus affichées (une seule à la fois) */
+   sur les deux sous-fiches ; selecteurs.js 1.7 : les info-bulles des trapèzes ne restent plus affichées (une seule à la fois)
+   4.6 (08/11/2026) : le bandeau du jeu (vignette, nom, sous-fiche) en tête du sommaire collant ; selecteurs.js 1.8, timeline.js 3.16
+   (le prix en douze tranches dans les calculs) */
 :root{--ink:#15171C;--muted:#4B5160;--line:#E2E4E9;--trait:#C9CEDB;--paper:#F4F5F7;--panel:#FFFFFF;--neutre:#E8EAF0;--filet:#EEF0F4;
   --accent:#2346C8;--accent-fonce:#16308F;--sur-accent:#FFFFFF;--bleu-fond:#E6EBFB;--bleu-texte:#16308F;--orange-fond:#FBEDE4;--orange-texte:#8A3108;
   --vert-fond:#E7F4EC;--vert-texte:#14532D;--ok:#1E7A46;--warn:#9A5B00;--err:#B42318;--trapeze:#F0F2F6;--trapeze-demi:#E3E6EE;
@@ -365,10 +367,10 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
   <div class="boutons"><span class="msg" id="rep-msg" role="status"></span><button class="btn ghost" type="button" id="rep-annuler">Annuler</button><button class="btn plein" type="button" id="rep-ok">Reprendre</button></div></dialog>
 <div class="wrap"><p class="version"><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p></div>
 
-<script src="timeline.js?v=3.12"></script>
-<script src="selecteurs.js?v=1.7"></script>
+<script src="timeline.js?v=3.16"></script>
+<script src="selecteurs.js?v=1.8"></script>
 <script>
-const VERSION = { numero:"4.5", date:"2026-11-08 00:10" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"4.6", date:"2026-11-08 01:30" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -1000,8 +1002,11 @@ function construireGrille(){
   majToutEnrouler(); appliquerDescription(); dessinerEffectifs();
   // (4.2) le sommaire collant, sous la barre de la fiche : les trois familles (pêche), les parties (vert), puis les blocs repliés
   const ouvrir = el => { if (el.tagName === "DETAILS") el.open = true; };
+  // (4.6) en tête, le bandeau du jeu : le nom de la base (sans « (all-in) ») et la sous-fiche de cette fiche
+  const jf = MOD.jeux.find(x => x.code === fiche.jeu), jb = jf?.fiche_globale ? MOD.jeux.find(x => x.fiche_globale === jf.fiche_globale && sousFiche(x) === "base") : null;
   sommaire($("#sommaire"), [...MOD.chapitres.map(c => ({ id:"fam-" + c.code, nom:c.nom, notion:"axes", ouvrir })),
-    { id:"parties", nom:"Parties", notion:"contenu" }, { id:"timeline", nom:"Timeline", ouvrir }, { id:"spectro", nom:"Spectromètre", ouvrir }, { id:"article", nom:"Article", ouvrir }]);
+    { id:"parties", nom:"Parties", notion:"contenu" }, { id:"timeline", nom:"Timeline", ouvrir }, { id:"spectro", nom:"Spectromètre", ouvrir }, { id:"article", nom:"Article", ouvrir }],
+    { image:jf?.image_url, nom:(jb || jf)?.nom || nomJeu(fiche.jeu), sousFiche: sousFiche(jf) === "all_in" ? "jeu all-in" : "jeu de base" });
 }
 
 /* ---------------- « À combien ? » (4.0) : une note par effectif, de joueurs_min à joueurs_max de la description ----------------

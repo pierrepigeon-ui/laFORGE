@@ -22,7 +22,9 @@
    1.7 (05/11/2026) : « + Générer l'all-in » appelle prisme_generer_all_in avec son vrai paramètre, p_base
    1.8 (05/11/2026) : selecteurs.js 1.5 (sélecteurs lisibles, sujets en familles, « Niveau de réalisme »)
    1.9 (08/11/2026) : « Recopier depuis le jeu de base / all-in » (prisme_recopier_description), bloc par bloc ; selecteurs.js 1.7 :
-   les info-bulles des mécanismes et des thèmes, et des info-bulles qui ne restent plus affichées (une seule à la fois, gérées par selecteurs.js) */
+   les info-bulles des mécanismes et des thèmes, et des info-bulles qui ne restent plus affichées (une seule à la fois, gérées par selecteurs.js)
+   1.10 (08/11/2026) : le prix en douze tranches, quatre colonnes (une par groupe), la lettre et le montant ; le bandeau du jeu en tête
+   du sommaire collant (selecteurs.js 1.8) */
 :root{--ink:#15171C;--muted:#4B5160;--line:#E2E4E9;--trait:#C9CEDB;--paper:#F4F5F7;--panel:#FFFFFF;--neutre:#E8EAF0;--filet:#EEF0F4;
   --accent:#2346C8;--accent-fonce:#16308F;--sur-accent:#FFFFFF;--bleu-fond:#E6EBFB;--bleu-bord:#C9D3F5;--bleu-texte:#16308F;--orange-fond:#FBEDE4;--orange-texte:#8A3108;
   --vert-fond:#E7F4EC;--vert-texte:#14532D;--ok:#1E7A46;--warn:#B7791F;--err:#B42318;--trapeze:#F0F2F6;--trapeze-demi:#E3E6EE;
@@ -106,10 +108,12 @@ section.bloc{background:var(--panel);border:1px solid var(--line);border-radius:
 .mat-case:has(input:disabled){cursor:default}
 .mat-case.sous::before{content:"↳";color:var(--muted);margin-right:-2px}
 .sous-bloc{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--n-bord,var(--filet));padding-top:14px}
-/* le prix : trois colonnes, une par comportement d'achat */
-.tranches{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+/* le prix : (1.10) quatre colonnes, une par groupe, son titre en gras ; deux colonnes, puis une, sur écran étroit */
+.tranches{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
 .groupe-prix{display:flex;flex-direction:column;gap:8px}
-.groupe-prix > span{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.groupe-prix > span{font-size:13.5px;font-weight:700;color:var(--ink)}
+@media (max-width:900px){ .tranches{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (max-width:520px){ .tranches{grid-template-columns:minmax(0,1fr)} }
 .tranche{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-size:14px}
 .tranche input{position:absolute;opacity:0;width:1px;height:1px}
 .tranche small{font-size:12px;color:var(--muted);white-space:nowrap}
@@ -184,7 +188,7 @@ details.com textarea{display:block;width:100%;margin-top:6px;padding:7px 10px;bo
   .rang > .etiq{width:100%}
   .colonnes{grid-template-columns:1fr}
   .echelle{--d:24px}
-  .materiel,.tranches{grid-template-columns:minmax(0,1fr)} .mat-case{margin-left:calc(var(--prof, 0) * 18px)}
+  .materiel{grid-template-columns:minmax(0,1fr)} .mat-case{margin-left:calc(var(--prof, 0) * 18px)}
   .axe{padding:14px 10px}
   .enr{padding:10px 12px} .enr .boutons{flex:1} .enr .boutons .btn{flex:1}
 }
@@ -205,9 +209,9 @@ details.com textarea{display:block;width:100%;margin-top:6px;padding:7px 10px;bo
 
 <dialog class="fenetre" id="dlg-recopier" aria-labelledby="dlg-recopier-titre"></dialog>
 
-<script src="selecteurs.js?v=1.7"></script>
+<script src="selecteurs.js?v=1.8"></script>
 <script>
-const VERSION = { numero:"1.9", date:"2026-11-08 00:10" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.10", date:"2026-11-08 01:30" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -232,10 +236,7 @@ const vide = html => $("#contenu").innerHTML = `<p class="vide">${html}</p>`;
 const NIVEAUX = { joueur:0, lecteur:1, evaluateur:2, editeur:3, proprietaire:4 };
 
 /* ---- le modèle de la page : un seul endroit pour changer un mot ---- */
-// les neuf gammes de prix, groupées par comportement d'achat, en trois colonnes (1.6) ; les montants sont dans prisme_reglages (prix_A_max … prix_H_max)
-const GAMMES = [["Sur un coup de tête", [["A", "Une bagatelle"], ["B", "Un petit plaisir"], ["C", "Un coup de cœur"]]],
-  ["On vérifie le budget", [["D", "Un achat réfléchi"], ["E", "Un achat pesé"], ["F", "Un achat rare"]]],
-  ["Les grandes occasions", [["G", "Une folie"], ["H", "Le jeu d'une vie"], ["I", "Une pièce de collection"]]]];
+// (1.10) les douze gammes de prix, en quatre groupes de trois : GROUPES_PRIX et montantPrix() dans selecteurs.js ; montants dans prisme_reglages
 // (1.4) « Pour t'aider » : ce que la description dit déjà, lu en direct, sous cinq axes
 const DECLENCHES = ["ECO-06", "ECO-12", "ECO-14", "INC-09", "INC-12", "STR-28", "TOUR-05", "TOUR-09"];   // les mécanismes que le jeu déclenche lui-même (MECA1b)
 const minus = L => L.map(l => (l.nom || l.libelle).toLowerCase()).join(", ");
@@ -268,7 +269,7 @@ async function afficher(user){
   Object.assign(D, { code, user });
   const [{ data: r }, j, ch, pa, ax, rg, nm, pl] = await Promise.all([
     sb.rpc("prisme_mon_role"),
-    sb.from("prisme_jeux").select("code,nom,configuration,fiche_globale").eq("code", code).maybeSingle(),
+    sb.from("prisme_jeux").select("code,nom,configuration,fiche_globale,image_url").eq("code", code).maybeSingle(),
     sb.from("prisme_chapitres").select("code,nom,ordre").order("ordre"),
     sb.from("prisme_paires").select("code,chapitre,ordre").order("ordre"),
     sb.from("prisme_axes").select("code,paire,rang,nom,question,definition,ordre").order("ordre"),
@@ -284,7 +285,7 @@ async function afficher(user){
   // les libellés des paliers, par axe et par valeur ; sans eux, les cases restent muettes
   if (pl.error) console.warn("PRISME : paliers illisibles", pl.error.message);
   (pl.data || []).forEach(x => (D.paliers[x.axe] ||= {})[Number(x.valeur)] = x.libelle);
-  (rg.data || []).forEach(x => { const m = /^prix_([A-H])_max$/.exec(x.cle); if (m && x.valeur != null) D.prix[m[1]] = Number(x.valeur); });
+  (rg.data || []).forEach(x => { if (/^prix_[A-K]_max$/.test(x.cle)) D.prix[x.cle] = x.valeur; });   // (1.10) les montants, lus par montantPrix()
   // les axes descriptifs (« note 1 » : rang 1, 1b, 1c, 1d), par chapitre puis dans l'ordre des paires et des axes
   const paire = Object.fromEntries((pa.data || []).map(p => [p.code, p]));
   D.chapitres = ch.data || [];
@@ -293,7 +294,7 @@ async function afficher(user){
     .sort((a, b) => ordreCh(a.chap) - ordreCh(b.chap) || paire[a.paire].ordre - paire[b.paire].ordre || a.ordre - b.ordre);
   // les sous-fiches de la même fiche globale (jeu de base, all-in)
   if (D.jeu.fiche_globale){
-    const { data: fr } = await sb.from("prisme_jeux").select("code,configuration").eq("fiche_globale", D.jeu.fiche_globale);
+    const { data: fr } = await sb.from("prisme_jeux").select("code,nom,configuration").eq("fiche_globale", D.jeu.fiche_globale);
     D.freres = (fr || []).sort((a, b) => (a.configuration === "base" ? 0 : 1) - (b.configuration === "base" ? 0 : 1));
   }
   const [err] = await Promise.all([lireDescription(), lireMecanismes(code, user, r || "joueur").then(e => D.errMeca = e), lireThemes(code, user, r || "joueur").then(e => D.errThemes = e)]);
@@ -341,9 +342,9 @@ function dessiner(){
   const recopier = D.source && NIVEAUX[D.role] >= NIVEAUX.editeur
     ? `<button type="button" class="btn contour" id="recopier" title="Remplacer ici des blocs de la description par ceux de l'autre sous-fiche">Recopier depuis le ${esc(nomCfg(D.source.configuration).toLowerCase())}</button>` : "";
   const configs = `<div class="tete-droite"><nav class="configs" aria-label="Sous-fiches">${onglets.join("") || `<b>${esc(nomCfg(D.jeu.configuration))}</b>`}</nav>${recopier}</div>`;
-  const montant = l => l === "I" ? (D.prix.H != null ? `> ${D.prix.H} €` : "") : (D.prix[l] != null ? `≤ ${D.prix[l]} €` : "");
-  const prix = GAMMES.map(([g, L]) => `<div class="groupe-prix"><span>${esc(g)}</span>${L.map(([l, n]) =>
-    `<label class="tranche"><input type="radio" name="prix" value="${l}"${d.prix_gamme === l ? " checked" : ""}${ro}><span>${l} · ${esc(n)}</span><small>${esc(montant(l))}</small></label>`).join("")}</div>`).join("");
+  // (1.10) une colonne par groupe, son nom en titre ; chaque tranche : sa lettre et son montant (« G · ≤ 200 € »)
+  const prix = GROUPES_PRIX.map(([g, L]) => `<div class="groupe-prix"><span>${esc(g.charAt(0).toUpperCase() + g.slice(1))}</span>${[...L].map(l =>
+    `<label class="tranche"><input type="radio" name="prix" value="${l}"${d.prix_gamme === l ? " checked" : ""}${ro}><span>${esc([l, montantPrix(l, D.prix, true)].filter(Boolean).join(" · "))}</span></label>`).join("")}</div>`).join("");
   if (D.A[CALCULE]) D.A[CALCULE].valeur = etendue(d.joueurs_min, d.joueurs_max);   // (1.4) l'étendue suit le nombre de joueurs enregistré
   // (1.6) l'étendue (LIEN1d) n'apparaît plus : elle reste calculée et enregistrée en silence
   const axes = D.chapitres.map(c => { const L = D.axes.filter(a => a.chap === c.code && a.code !== CALCULE); if (!L.length) return "";
@@ -381,7 +382,9 @@ function dessiner(){
   // (1.6) le sommaire collant : une pastille par cadre, dans sa couleur
   $("#sommaire").hidden = false;
   sommaire($("#sommaire"), [["c-bref", "En bref", "bref"], ["c-prix", "Le prix", "prix"], ["c-contenu", "Le contenu et le matériel", "contenu"],
-    ["c-theme", "Le thème", "theme"], ["c-meca", "Les mécaniques", "meca"], ["c-axes", "Les axes", "axes"]].map(([id, nom, n]) => ({ id, nom, notion:n })));
+    ["c-theme", "Le thème", "theme"], ["c-meca", "Les mécaniques", "meca"], ["c-axes", "Les axes", "axes"]].map(([id, nom, n]) => ({ id, nom, notion:n })),
+    // (1.10) en tête, le bandeau du jeu : le nom de la base, la sous-fiche affichée
+    { image:D.jeu.image_url, nom:(D.freres.find(f => (f.configuration || "base") === "base") || D.jeu).nom, sousFiche: D.jeu.configuration === "all_in" ? "jeu all-in" : "jeu de base" });
   $("#generer-allin")?.addEventListener("click", genererAllIn);
   $("#recopier")?.addEventListener("click", ouvrirRecopier);
   $("#modifier-meca")?.addEventListener("click", () => { if (D.errMeca) return;

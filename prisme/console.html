@@ -314,10 +314,11 @@ dialog h2{font:600 22px var(--serif);margin:0 0 16px}
   <footer><span class="version" data-version></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></footer>
 </section>
 
-<script src="timeline.js?v=3.11"></script>   <!-- (3.12) les calculs partagés, pour le contrôle de la bascule -->
+<script src="timeline.js?v=3.16"></script>   <!-- (3.12) les calculs partagés, pour le contrôle de la bascule ; (3.14) le prix en douze tranches -->
 <script>
 /* ================= configuration ================= */
-const VERSION = { numero:"3.13", date:"2026-11-03 23:33" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.14", date:"2026-11-08 01:30" };   // à incrémenter à chaque livraison
+// (3.14, 08/11/2026) le prix en douze tranches : les onze montants des réglages restent dans l'ordre (chacun inférieur au suivant)
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 
@@ -987,7 +988,9 @@ function afficherReglages(){
   $("#reglages-pane").innerHTML = h + "</div>";
 }
 // dans chaque paire, le premier seuil reste inférieur au second
-const PAIRES_REGLAGES = [["ecart_profils_net", "ecart_profils_fort"], ["usure_moderee", "usure_rapide"]];
+// (3.14) les onze montants du prix (prix_A_max … prix_K_max) : chacun inférieur au suivant
+const PAIRES_REGLAGES = [["ecart_profils_net", "ecart_profils_fort"], ["usure_moderee", "usure_rapide"],
+  ...[..."ABCDEFGHIJ"].map((l, i) => ["prix_" + l + "_max", "prix_" + "BCDEFGHIJK"[i] + "_max"])];
 function controleReglage(cle, valeur){
   if (valeur == null || Number.isNaN(valeur)) return "Indique une valeur.";
   const reg = c => state.reglages.find(r => r.cle === c);

@@ -18,8 +18,10 @@
    comptés en direct), des sous-groupes par famille d'origine dans « Mécanisme », les lignes en ordre alphabétique partout.
    (1.7, 08/11/2026) les info-bulles des sélecteurs : définition, exemples et nom anglais de chaque mécanisme (définition des thèmes),
    au survol, au focus clavier et au toucher d'un « ⓘ » ; un seul gestionnaire pour toutes les info-bulles maison des pages (une seule ouverte,
-   fermée quand la souris sort, quand le focus part, à Échap, au défilement, au toucher ailleurs). */
-const SELECTEURS_VERSION = "1.7";
+   fermée quand la souris sort, quand le focus part, à Échap, au défilement, au toucher ailleurs).
+   (1.8, 08/11/2026) le prix en douze tranches, quatre groupes de trois nommés (GROUPES_PRIX, textePrix()) ; le sommaire collant
+   commence par le bandeau du jeu (vignette, nom, sous-fiche), toujours visible au défilement. */
+const SELECTEURS_VERSION = "1.8";
 (function(){
   const st = document.createElement("style");
   st.textContent = `
@@ -82,6 +84,12 @@ svg.picto{flex:none;vertical-align:-5px;margin-right:6px;color:var(--muted)}
 .sommaire .som-p.actif{background:var(--n-titre);border-color:var(--n-titre);color:var(--panel)}
 .sommaire .som-haut{flex:none;min-height:34px;padding:0 12px;border:1px solid var(--trait);border-radius:8px;background:var(--panel);color:var(--ink);font:500 13px var(--sans);cursor:pointer;white-space:nowrap}
 .sommaire .som-haut:hover{border-color:var(--ink)}
+/* (1.8) le bandeau du jeu, en tête du sommaire : petite vignette, nom, sous-fiche */
+.som-jeu{flex:none;display:flex;align-items:center;gap:8px;max-width:min(280px,45vw);padding-right:10px;border-right:1px solid var(--line)}
+.som-jeu img,.som-jeu .som-vide{flex:none;width:28px;height:34px;border-radius:4px;object-fit:cover;background:var(--neutre)}
+.som-jeu span{display:flex;flex-direction:column;min-width:0;line-height:1.2}
+.som-jeu b{font:600 14px var(--serif);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.som-jeu small{font-size:11.5px;color:var(--muted)}
 @media (max-width:599px){ .sommaire{position:static} }
 /* (1.4) la liste complète des paliers d'un axe, à côté des trapèzes ; le palier choisi en évidence (une demi-valeur : ses deux voisins) */
 .paliers{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1px;flex:1 1 300px;min-width:0;max-width:600px}
@@ -246,15 +254,31 @@ const rangerSous = L => [...L].sort((a, b) => rangSous(a) - rangSous(b));
 // une couleur par notion (classe notion-<couleur>, plus « notion » sur un cadre pour en prendre le fond et la bordure)
 const NOTIONS = { bref:"sable", prix:"sable", contenu:"vert", theme:"lavande", meca:"bleu", axes:"peche" };
 const notion = n => "notion notion-" + (NOTIONS[n] || "neutre");
-// le sommaire collant : el reçoit une pastille par cadre ({ id, nom, notion, ouvrir(cadre) facultatif }) et le bouton « ↑ Haut »
+// (1.8) le prix en douze tranches : quatre groupes de trois, sans libellé par tranche, seul le groupe est nommé ;
+// les montants sont dans prisme_reglages (prix_A_max … prix_K_max) ; L : au-delà de prix_K_max
+const GROUPES_PRIX = [["sur un coup de tête", "ABC"], ["on vérifie le budget", "DEF"], ["les grandes occasions", "GHI"], ["les pièces de collection", "JKL"]];
+const groupePrix = g => GROUPES_PRIX.find(([, L]) => L.includes(g || "?"))?.[0] || null;
+// le montant d'une tranche ; reglages : { cle: valeur } ; court : « ≤ 200 € » / « > 800 € », sinon « jusqu'à 200 € » / « plus de 800 € »
+function montantPrix(g, reglages, court = false){
+  const v = reglages?.["prix_" + (g === "L" ? "K" : g) + "_max"];
+  if (v == null || v === "" || Number.isNaN(Number(v))) return "";
+  const e = String(Number(v)).replace(".", ",");
+  return g === "L" ? `${court ? ">" : "plus de"} ${e} €` : `${court ? "≤" : "jusqu'à"} ${e} €`;
+}
+// la gamme en clair, la même partout : « G · jusqu'à 200 € · les grandes occasions »
+const textePrix = (g, reglages) => g ? [g, montantPrix(g, reglages), groupePrix(g) || "gamme inconnue"].filter(Boolean).join(" · ") : "";
+// le sommaire collant : el reçoit une pastille par cadre ({ id, nom, notion, ouvrir(cadre) facultatif }) et le bouton « ↑ Haut » ;
+// (1.8) jeu ({ image, nom, sousFiche }), facultatif : le bandeau du jeu en tête, pour que son nom reste visible au défilement
 const SOM = { el:null, cadres:[] };
 const hauteurCollee = () => { const el = SOM.el; if (!el) return 0;
   const cs = getComputedStyle(el); return cs.position === "sticky" ? parseFloat(cs.top) + el.offsetHeight : parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--ent-h")) || 0; };
 function allerA(cadre){ scrollTo({ top: cadre.getBoundingClientRect().top + scrollY - hauteurCollee() - 10, behavior:"smooth" }); }
-function sommaire(el, cadres){
+function sommaire(el, cadres, jeu){
   Object.assign(SOM, { el, cadres });
   el.classList.add("sommaire"); el.setAttribute("aria-label", "Sommaire de la page");
-  el.innerHTML = `<div class="som-pastilles">${cadres.map(c => `<a href="#${esc(c.id)}" class="som-p notion-${NOTIONS[c.notion] || "neutre"}" data-som="${esc(c.id)}">${esc(c.nom)}</a>`).join("")}</div>
+  const bandeau = jeu ? `<div class="som-jeu">${jeu.image ? `<img src="${esc(jeu.image)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'), { className:'som-vide' }))">` : `<span class="som-vide"></span>`}
+    <span><b title="${esc(jeu.nom)}">${esc(jeu.nom)}</b>${jeu.sousFiche ? `<small>${esc(jeu.sousFiche)}</small>` : ""}</span></div>` : "";
+  el.innerHTML = bandeau + `<div class="som-pastilles">${cadres.map(c => `<a href="#${esc(c.id)}" class="som-p notion-${NOTIONS[c.notion] || "neutre"}" data-som="${esc(c.id)}">${esc(c.nom)}</a>`).join("")}</div>
     <button type="button" class="som-haut" title="Revenir en haut de la page">↑ Haut</button>`;
   if (!el.dataset.pret){
     el.dataset.pret = "1";

@@ -146,7 +146,9 @@ ul.m-liste li{border-bottom:1px solid var(--line);padding:7px 0}
    la moyenne des fiches seulement à défaut ; le sommaire collant et « ↑ Haut » (selecteurs.js 1.6)
    2.16 (07/11/2026) : le bouton « Fiche de rédaction » (recap.html), pour les lecteurs et au-delà
    2.17 (07/11/2026) : le cadre « Ce que changent les extensions », quand le jeu a ses deux sous-fiches (timeline.js 3.14) ;
-   une teinte neutre : il compare, ce n'est pas une notion */
+   une teinte neutre : il compare, ce n'est pas une notion
+   2.18 (08/11/2026) : le prix en douze tranches (« G · jusqu'à 200 € · les grandes occasions ») ; le bandeau du jeu en tête du sommaire
+   collant (selecteurs.js 1.8, timeline.js 3.16) */
 .carte.ecarts{display:flex;flex-direction:column;gap:10px;background:color-mix(in srgb, var(--neutre) 40%, var(--panel))}
 #carte-theme .puces > span{white-space:nowrap}   /* (2.14) le titre, plus long avec ses sous-sujets, peut passer à la ligne */
 details.pli.notion > summary strong{color:var(--n-titre)}
@@ -175,10 +177,10 @@ details.pli.notion > summary strong{color:var(--n-titre)}
   <p class="version"><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p>
 </main>
 
-<script src="timeline.js?v=3.14"></script>
-<script src="selecteurs.js?v=1.6"></script>
+<script src="timeline.js?v=3.16"></script>
+<script src="selecteurs.js?v=1.8"></script>
 <script>
-const VERSION = { numero:"2.17", date:"2026-11-07 19:10" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"2.18", date:"2026-11-08 01:30" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -221,12 +223,7 @@ function usureDe(c){
 const texteUsure = (u, S) => u < S.usure_moderee ? "S'use à peine" : u > S.usure_rapide ? "S'use vite" : "Usure modérée";
 const texteEcart = (e, S) => e < S.ecart_profils_net ? "Plaît largement : peu d'écart d'un profil à l'autre"
   : e > S.ecart_profils_fort ? "Divise : fort écart entre profils" : "Plaît davantage à certains profils : écart net";
-// (2.15) la gamme de prix de la description, comme dans « Décrire le jeu » : « D · un achat réfléchi (≤ 70 €) » ; montants des réglages (prix_A_max … prix_H_max)
-const GAMMES_PRIX_NOMS = { A:"une bagatelle", B:"un petit plaisir", C:"un coup de cœur", D:"un achat réfléchi", E:"un achat pesé", F:"un achat rare", G:"une folie", H:"le jeu d'une vie", I:"une pièce de collection" };
-function texteGamme(g, reglages){
-  const P = L => reglages?.["prix_" + L + "_max"], m = g === "I" ? (P("H") != null ? `> ${P("H")} €` : "") : (P(g) != null ? `≤ ${P(g)} €` : "");
-  return esc(`${g} · ${GAMMES_PRIX_NOMS[g] || "gamme inconnue"}`) + (m ? ` <span class="discret">(${esc(m)})</span>` : "");
-}
+// (2.18) la gamme de prix de la description : textePrix() de selecteurs.js, « G · jusqu'à 200 € · les grandes occasions »
 // le coût en court, pour la pastille : « 0,06 € la partie »
 function coutCourt(k){
   if (!k) return null;
@@ -335,7 +332,7 @@ async function afficher(user){
     if (F2.duree_max != null) ch.push(`${F2.duree_min != null && Math.round(F2.duree_min) !== Math.round(F2.duree_max) ? `${Math.round(F2.duree_min)} à ${Math.round(F2.duree_max)}` : Math.round(F2.duree_max)} min`);
     if (F2.pages != null) ch.push(`${Math.round(F2.pages)} pages de règles`);
     if (F2.poids_bgg != null) ch.push(`poids BGG ${fmt(F2.poids_bgg, 2)}`);
-    if (desc){ if (desc.prix_gamme) ch.push(texteGamme(desc.prix_gamme, d.src?.reglages)); }
+    if (desc){ if (desc.prix_gamme) ch.push(esc(textePrix(desc.prix_gamme, d.src?.reglages))); }
     else if (m.prix != null) ch.push(`${fmt(m.prix, 0)} €`);
   }
   if (!R) ch.push("Pas encore de fiche finale");
@@ -446,8 +443,10 @@ async function afficher(user){
   $("#contenu").innerHTML = h;
   // (2.15) le sommaire collant, comme dans « Décrire le jeu » et l'évaluation : une pastille par cadre, dans la couleur de sa notion
   $("#sommaire").hidden = false;
+  // (2.18) en tête du sommaire, le bandeau du jeu : son nom (sans « (all-in) ») et la sous-fiche affichée
+  const bandeau = { image:jeu.image_url, nom:nomJeuGlobal(code, d.jeux), sousFiche: ici?.configuration === "all_in" ? "jeu all-in" : "jeu de base" };
   sommaire($("#sommaire"), [{ id:"carte-theme", nom:"Thème", notion:"theme" }, { id:"carte-meca", nom:"Les mécaniques", notion:"meca" },
-    { id:"carte-pourqui", nom:"Pour qui" }, ...(deux ? [{ id:"carte-ecarts", nom:"Avec les extensions" }] : []), { id:"carte-vie", nom:"Sa vie dans le temps" }, { id:"le-detail", nom:"Le détail" }]);
+    { id:"carte-pourqui", nom:"Pour qui" }, ...(deux ? [{ id:"carte-ecarts", nom:"Avec les extensions" }] : []), { id:"carte-vie", nom:"Sa vie dans le temps" }, { id:"le-detail", nom:"Le détail" }], bandeau);
   chargerMecanismes(code, user, role);
   chargerThemes(code, user, role);
   if (deux) chargerEcarts(code, d, PL, S);

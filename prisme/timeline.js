@@ -1,7 +1,8 @@
 /* PRISME — timeline du jeu : jalons, durées, flow, α β γ ω, durée de vie.
    Module partagé par l'encyclopédie et l'outil d'évaluation. Méthode arrêtée le 08/10/2026 (jeu d'essai : Heat) ; modèle à 12 paires le 11/10/2026 ;
    formules refaites phase par phase le 12/10/2026 avec trois jeux de référence (Gloomhaven, Heat, Flip 7). L'unité est la session. */
-const TIMELINE_VERSION = { numero:"3.15", date:"2026-11-08 01:00" };   // à incrémenter à chaque livraison
+const TIMELINE_VERSION = { numero:"3.16", date:"2026-11-08 01:30" };   // à incrémenter à chaque livraison
+// (3.16, 08/11/2026) le prix en douze tranches : prixDeGamme lit A à L (L = prix_K_max × 1,5) ; la gamme des écarts d'extensions au format de selecteurs.js
 // (3.15, 08/11/2026) pour un profil, la meilleure version de chaque jeu (meilleureVersion) et sa mention « · all-in » dans le tableau « ses jeux »
 // (3.14, 07/11/2026) ce que changent les extensions : ecartsExtensions() compare la base et l'all-in d'un jeu ; lireEcartsExtensions() la nourrit
 // à partir de ce que les pages calculent déjà ; ecartsHTML() et ecartsTexte() l'affichent pareil dans la fiche du jeu et la fiche de rédaction
@@ -546,12 +547,12 @@ function entreesFiche(s, paires, axes, extra){
    Après la bascule, les « note 1 » (axes de rang 1…), la gamme de prix et l'usage unique viennent de la description de la sous-fiche ;
    les « note 2 » et le nombre de parties pour tout exploiter restent ceux de la fiche. Aucune formule ne change, seule la source.
    L'interrupteur : le réglage bascule_description (0 : la fiche, comme avant ; 1 : la description). */
-const GAMMES_PRIX = "ABCDEFGHI";
-// le prix d'une gamme : le milieu de sa tranche (A : de 0 à prix_A_max ; I : prix_H_max × 1,5) ; null si un montant manque
+const GAMMES_PRIX = "ABCDEFGHIJKL";   // (3.16) douze tranches (selecteurs.js : quatre groupes de trois)
+// le prix d'une gamme : le milieu de sa tranche (A : de 0 à prix_A_max ; L, la dernière : prix_K_max × 1,5) ; null si un montant manque
 function prixDeGamme(g, reglages){
   const i = GAMMES_PRIX.indexOf(g || "?"), P = L => reglages?.["prix_" + L + "_max"], ok = v => v != null && v !== "" && !Number.isNaN(Number(v));
   if (i < 0) return null;
-  if (i === 8) return ok(P("H")) ? Number(P("H")) * 1.5 : null;
+  if (i === GAMMES_PRIX.length - 1){ const K = GAMMES_PRIX[i - 1]; return ok(P(K)) ? Number(P(K)) * 1.5 : null; }
   const haut = P(GAMMES_PRIX[i]), bas = i === 0 ? 0 : P(GAMMES_PRIX[i - 1]);
   return ok(haut) && ok(bas) ? (Number(bas) + Number(haut)) / 2 : null;
 }
@@ -744,12 +745,11 @@ table.pj-jeux td.rang{color:var(--muted);width:1.6em} table.pj-jeux tbody.bas td
 /* ---------------- (3.14, 07/11/2026) ce que changent les extensions : de la base à l'all-in ----------------
    Une sous-fiche, telle que les pages la calculent déjà : { jeu, R (resumeJeu), desc (prisme_descriptions), DA ({ axe: { valeur, sans_objet } }),
    meca ({ code: { poids } }), themes ({ code: { poids } }), T20 ([{ code, nom, note }], les tempéraments), vie ({ classe, cout, usure }, en texte) }.
-   ctx : { paires, axes, chapitres, paliers ({ axe: [{ valeur, libelle }] }), meca ({ code: { nom, niveau } }), themes ({ code: libelle }) }.
+   ctx : { paires, axes, chapitres, paliers ({ axe: [{ valeur, libelle }] }), reglages ({ cle: valeur }), meca ({ code: { nom, niveau } }), themes ({ code: libelle }) }.
    Sans fiche finale d'un côté ou de l'autre : seuls les écarts de description, de mécaniques et de thèmes. */
 const SEUIL_ECART_EXT = .1;   // une paire ou un tempérament compte s'il bouge d'au moins 0,1
 const POIDS_EXT = { 3:"majeur", 2:"secondaire", 1:"marginal" };
 const COCHES_EXT = ["materiel", "geste", "aspect", "fin_de_partie"];   // comme COCHE (selecteurs.js) : de simples coches, sans poids
-const NOMS_GAMMES = { A:"une bagatelle", B:"un petit plaisir", C:"un coup de cœur", D:"un achat réfléchi", E:"un achat pesé", F:"un achat rare", G:"une folie", H:"le jeu d'une vie", I:"une pièce de collection" };
 // le palier le plus proche d'une valeur (L : du plus bas au plus haut) ; à égalité, celui du dessous (comme la fiche de rédaction)
 function palierProche(L, v){
   if (v == null || !L?.length) return null;
@@ -783,7 +783,8 @@ function ecartsExtensions(base, allIn, ctx){
   const D = s => s.desc || {}, vu = v => v != null && v !== "";
   const etendue = (a, b, u) => !vu(a) && !vu(b) ? "—" : !vu(a) || !vu(b) || a === b ? `${vu(a) ? a : b}${u}` : `${a} à ${b}${u}`;
   [["Joueurs", s => etendue(D(s).joueurs_min, D(s).joueurs_max, "")], ["Durée", s => etendue(D(s).duree_min, D(s).duree_max, " min")],
-   ["Gamme de prix", s => D(s).prix_gamme ? `${D(s).prix_gamme} · ${NOMS_GAMMES[D(s).prix_gamme] || "gamme inconnue"}` : "—"],
+   // (3.16) la gamme en clair, au format de selecteurs.js (« G · jusqu'à 200 € · les grandes occasions ») quand la page le charge
+   ["Gamme de prix", s => !D(s).prix_gamme ? "—" : typeof textePrix === "function" ? textePrix(D(s).prix_gamme, ctx.reglages) : D(s).prix_gamme],
    ["Contenus distincts", s => [D(s).contenus_nombre, D(s).contenus_nature].filter(vu).join(" ") || "—"], ["Usage unique", s => D(s).usage_unique ? "oui" : "non"]]
     .forEach(([nom, t]) => { const a = t(base), b = t(allIn); if (a !== b) E.description.push({ nom, avant:a, apres:b }); });
   // les mécaniques et les thèmes : ajoutés (avec leur poids), retirés, poids changé
@@ -822,7 +823,7 @@ async function lireEcartsExtensions(sb, code, d, PL, vieDe){
   const err = L.find(x => x.error); if (err) return { erreur: err.error.message };
   const [jm, jt, nm, nt, pal, ch] = L.map(x => x.data || []);
   const paliers = {}; pal.forEach(x => (paliers[x.axe] ||= []).push({ valeur:Number(x.valeur), libelle:x.libelle })); Object.values(paliers).forEach(P => P.sort((a, b) => a.valeur - b.valeur));
-  const ctx = { paires:d.paires, axes:d.axes, chapitres:ch, paliers, meca:Object.fromEntries(nm.map(x => [x.code, x])), themes:Object.fromEntries(nt.map(x => [x.code, x.libelle])) };
+  const ctx = { paires:d.paires, axes:d.axes, chapitres:ch, paliers, reglages:d.src?.reglages, meca:Object.fromEntries(nm.map(x => [x.code, x])), themes:Object.fromEntries(nt.map(x => [x.code, x.libelle])) };
   const sous = j => {
     const cfg = d.reference?.[j.code] || null;   // comme la fiche du jeu : une ancienne configuration « toutes extensions » reste la référence
     const F = cfg ? (d.configurations || []).filter(f => f.jeu === j.code && configDe(f) === cfg) : (d.fichesBase || d.fiches).filter(f => f.jeu === j.code);

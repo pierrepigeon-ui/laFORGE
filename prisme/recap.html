@@ -11,7 +11,9 @@
 <style>
 /* 1.0 (07/11/2026) : la fiche de rédaction, d'après la maquette faite sur Heat : une page à garder ouverte sur un second écran,
    qui donne les mots du modèle (les libellés des paliers), dépliable paire par paire, imprimable sur une page A4 et copiable en texte
-   1.1 (07/11/2026) : « Avec les extensions », les écarts de la base à l'all-in (timeline.js 3.14), à l'écran, à l'impression et dans le texte copié */
+   1.1 (07/11/2026) : « Avec les extensions », les écarts de la base à l'all-in (timeline.js 3.14), à l'écran, à l'impression et dans le texte copié
+   1.2 (08/11/2026) : le prix en douze tranches (selecteurs.js 1.8) ; le bandeau du jeu, collant en haut de l'écran, absent de l'impression */
+#sommaire{background:var(--neutre)}
 :root{--ink:#15171C;--muted:#4B5160;--line:#E2E4E9;--trait:#C9CEDB;--paper:#F4F5F7;--panel:#FFFFFF;--neutre:#E8EAF0;
   --accent:#2346C8;--accent-fonce:#16308F;--sur-accent:#FFFFFF;--bleu-fond:#E6EBFB;--bleu-texte:#16308F;
   --ok:#1E7A46;--warn:#B7791F;--err:#B42318;--annonce:#7F1D1D;--vecu:#2346C8;
@@ -140,14 +142,15 @@ details.avec-ext > summary::-webkit-details-marker{display:none}
     <div><a class="retour" id="retour" href="jeux.html">← La fiche du jeu</a><span id="sous-fiches"></span></div>
     <div><span id="copie" role="status"></span><button class="btn" type="button" id="copier">Copier le texte</button><button class="btn plein" type="button" id="imprimer">Imprimer / PDF</button></div>
   </div>
+  <nav id="sommaire" hidden></nav>
   <div id="contenu"><p class="vide">Chargement…</p></div>
   <p class="version"><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p>
 </main>
 
-<script src="timeline.js?v=3.14"></script>
-<script src="selecteurs.js?v=1.6"></script>
+<script src="timeline.js?v=3.16"></script>
+<script src="selecteurs.js?v=1.8"></script>
 <script>
-const VERSION = { numero:"1.1", date:"2026-11-07 19:10" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.2", date:"2026-11-08 01:30" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -183,7 +186,6 @@ function usureDe(c){
 const texteUsure = (u, S) => u < S.usure_moderee ? "S'use à peine" : u > S.usure_rapide ? "S'use vite" : "Usure modérée";
 // la phrase de l'écart, en court : « Plaît largement », « Plaît davantage à certains profils », « Divise »
 const texteEcart = (e, S) => e < S.ecart_profils_net ? "Plaît largement" : e > S.ecart_profils_fort ? "Divise" : "Plaît davantage à certains profils";
-const GAMMES_PRIX_NOMS = { A:"une bagatelle", B:"un petit plaisir", C:"un coup de cœur", D:"un achat réfléchi", E:"un achat pesé", F:"un achat rare", G:"une folie", H:"le jeu d'une vie", I:"une pièce de collection" };
 function coutCourt(k){
   if (!k) return null;
   const e = v => v < 1 ? v.toFixed(2).replace(".", ",") : v < 10 ? v.toFixed(1).replace(".", ",") : String(Math.round(v));
@@ -275,7 +277,7 @@ async function afficher(user){
     const j = plage(F2.joueurs_min, F2.joueurs_max)?.replace(/^de /, "");
     if (j) faits.push(j + (m?.effectif_reference != null ? `, meilleur à ${Math.round(m.effectif_reference)}` : ""));
     if (F2.duree_max != null) faits.push(`${F2.duree_min != null && Math.round(F2.duree_min) !== Math.round(F2.duree_max) ? `${Math.round(F2.duree_min)} à ${Math.round(F2.duree_max)}` : Math.round(F2.duree_max)} min`);
-    if (desc?.prix_gamme) faits.push(`${desc.prix_gamme}, ${GAMMES_PRIX_NOMS[desc.prix_gamme] || "gamme inconnue"}`);
+    if (desc?.prix_gamme) faits.push(textePrix(desc.prix_gamme, d.src?.reglages));   // (1.2) « G · jusqu'à 200 € · les grandes occasions »
     else if (!desc && m?.prix != null) faits.push(`${fmt(m.prix, 0)} €`);
   }
   if (modes.length) faits.push(modes.join(", "));
@@ -388,6 +390,9 @@ async function afficher(user){
     ${pastilles.length || verdict ? `<div class="f-pied">${pastilles.map((t, i) => `<span class="pastille${i ? "" : " forte"}">${esc(t)}</span>`).join("")}${verdict ? `<span class="verdict">« ${esc(verdict)} »</span>` : ""}</div>` : ""}
     <p class="mention">Cliquer sur une paire pour le détail : valeurs, paliers voisins, commentaires des évaluateurs. © 2026 Pierre Pigeon, tous droits réservés.</p></article>`;
   RECAP.texte = TXT.join("\n").replace(/\n{3,}/g, "\n\n");
+  // (1.2) le bandeau du jeu, collant en haut de l'écran, comme sur les autres pages (ici sans pastilles : la feuille se lit d'un trait)
+  $("#sommaire").hidden = false;
+  sommaire($("#sommaire"), [], { image:jeu.image_url, nom, sousFiche:sf });
 }
 
 /* ---- copier le texte, imprimer ---- */
