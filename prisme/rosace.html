@@ -66,10 +66,11 @@ aside .vous-badge{display:inline-block;font:600 12px var(--sans);color:#fff;back
 </div>
 <p class="version"><span id="credit"></span><br><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p>
 
-<script src="timeline.js?v=3.13"></script>
+<script src="timeline.js?v=3.15"></script>
 <script src="totems.js?v=4"></script>
 <script>
-const VERSION = { numero:"3.18", date:"2026-11-06 21:32" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.19", date:"2026-11-08 01:00" };   // à incrémenter à chaque livraison
+// (3.19, 08/11/2026) timeline.js 3.15 : dans « ses jeux », la version (base ou all-in) la mieux notée pour ce profil
 // (3.18, 06/11/2026) timeline.js 3.13 : une seule sous-fiche par jeu dans « ses jeux »
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
@@ -261,7 +262,7 @@ async function afficherJeux(code, N){
   const box = document.getElementById("jeux-joueur"); J ??= await lireJeuxEvalues(sb);
   if (choisi !== code || !box?.isConnected) return;
   if (J.refus){ box.innerHTML = `<span class="lib">Ses jeux</span><p class="pj-discret">Les jeux évalués sont réservés aux membres de PRISME.</p>`; return; }
-  const L = jeuxPourJoueurs(J.fiches, J.paires, J.axes, null, stylesDe(code), J.src);
+  const L = meilleureVersion(jeuxPourJoueurs(J.fichesSousFiches || J.fiches, J.paires, J.axes, null, stylesDe(code), J.src), J.jeux);   // (3.19) toutes les sous-fiches, la meilleure pour ce profil
   box.innerHTML = `<span class="lib">Ses jeux</span>` + tableJeuxHTML(L, J, N === "moteur" ? "ses douze profils" : "ses trois profils", true);
 }
 function montrerAccueil(connecte){

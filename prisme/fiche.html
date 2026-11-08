@@ -91,10 +91,11 @@ details.repli > section{border:0;margin:0;padding-top:0}
 <main id="contenu"><p class="vide">Chargement…</p></main>
 <main><p class="version"><span id="credit"></span><br><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p></main>
 
-<script src="timeline.js?v=3.13"></script>
+<script src="timeline.js?v=3.15"></script>
 <script src="totems.js?v=4"></script>
 <script>
-const VERSION = { numero:"3.15", date:"2026-11-06 21:32" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.16", date:"2026-11-08 01:00" };   // à incrémenter à chaque livraison
+// (3.16, 08/11/2026) timeline.js 3.15 : dans « vos jeux » et « pour vous deux », la version (base ou all-in) la mieux notée pour ce profil
 // (3.15, 06/11/2026) timeline.js 3.13 : une seule sous-fiche par jeu dans « vos jeux » ; le nom du jeu sans « (all-in) »
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
@@ -231,17 +232,19 @@ function blocTemperament(code){
 async function afficherVosJeux(code, autre){
   const box = $("#vos-jeux-corps"), d = await lireJeuxEvalues(sb), rj = $("#rival-jeux");
   if (d.refus){ box.innerHTML = `<p class="pj-discret">Les jeux évalués sont réservés aux membres de PRISME pour l'instant.</p>`; if (rj) rj.innerHTML = box.innerHTML; return; }
-  const L = jeuxPourJoueurs(d.fiches, d.paires, d.axes, null, [code], d.src);
-  box.innerHTML = tableJeuxHTML(L, d, autre ? "ce joueur" : "vous", false);
+  // (3.16) toutes les sous-fiches, puis pour chaque jeu la version qui obtient la meilleure note pour ce profil (timeline.js 3.15)
+  const T = jeuxPourJoueurs(d.fichesSousFiches || d.fiches, d.paires, d.axes, null, [code], d.src);
+  box.innerHTML = tableJeuxHTML(meilleureVersion(T, d.jeux), d, autre ? "ce joueur" : "vous", false);
   if (!rj) return;
   // quels jeux pour vous deux : la note du rival est la moyenne de ses trois styles ; on classe selon la plus basse des deux notes
+  // (3.16) la même version pour les deux, celle dont la plus basse des deux notes est la meilleure
   const rival = code[4].toUpperCase() + "/" + code[0].toLowerCase();
-  const R2 = Object.fromEntries(jeuxPourJoueurs(d.fiches, d.paires, d.axes, null, stylesDe(rival), d.src).map(x => [x.jeu, x]));
-  const D = L.filter(x => R2[x.jeu]).map(x => ({ jeu:x.jeu, finale:x.finale, a:x.note, b:R2[x.jeu].note, n:Math.min(x.note, R2[x.jeu].note) })).sort((x, y) => y.n - x.n);
+  const R2 = Object.fromEntries(jeuxPourJoueurs(d.fichesSousFiches || d.fiches, d.paires, d.axes, null, stylesDe(rival), d.src).map(x => [x.jeu, x]));
+  const D = meilleureVersion(T.filter(x => R2[x.jeu]).map(x => ({ jeu:x.jeu, finale:x.finale, a:x.note, b:R2[x.jeu].note, n:Math.min(x.note, R2[x.jeu].note) })), d.jeux, "n");
   const nom = c => nomJeuGlobal(c, d.jeux), f = v => Number(v).toFixed(2).replace(".", ",");   // (3.15) sans « (all-in) »
   rj.innerHTML = D.length ? `<p class="pj-discret">Classés selon la note la plus basse des deux : le jeu qui ne laisse personne sur le bord.</p>
     <table class="pj-jeux"><thead><tr><th></th><th>Jeu</th><th class="n">${autre ? "Pour lui" : "Pour vous"}</th><th class="n">${autre ? "Pour son rival" : "Pour votre rival"}</th><th class="n">Ensemble</th></tr></thead><tbody>
-    ${D.slice(0, 8).map((x, i) => `<tr><td class="rang">${i + 1}</td><td><a href="evaluation.html?jeu=${encodeURIComponent(x.jeu)}">${esc(nom(x.jeu))}</a>${x.finale ? "" : ' <small class="pj-discret">brouillon</small>'}</td>
+    ${D.slice(0, 8).map((x, i) => `<tr><td class="rang">${i + 1}</td><td><a href="evaluation.html?jeu=${encodeURIComponent(x.jeu)}">${esc(nom(x.jeu))}</a>${mentionVersion(x)}${x.finale ? "" : ' <small class="pj-discret">brouillon</small>'}</td>
       <td class="n">${f(x.a)}</td><td class="n">${f(x.b)}</td><td class="n"><b>${f(x.n)}</b></td></tr>`).join("")}</tbody></table>`
     : `<p class="pj-discret">Aucun jeu n'a encore de fiche complète.</p>`;
 }

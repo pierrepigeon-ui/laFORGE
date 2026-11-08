@@ -1,7 +1,8 @@
 /* PRISME — timeline du jeu : jalons, durées, flow, α β γ ω, durée de vie.
    Module partagé par l'encyclopédie et l'outil d'évaluation. Méthode arrêtée le 08/10/2026 (jeu d'essai : Heat) ; modèle à 12 paires le 11/10/2026 ;
    formules refaites phase par phase le 12/10/2026 avec trois jeux de référence (Gloomhaven, Heat, Flip 7). L'unité est la session. */
-const TIMELINE_VERSION = { numero:"3.14", date:"2026-11-07 19:10" };   // à incrémenter à chaque livraison
+const TIMELINE_VERSION = { numero:"3.15", date:"2026-11-08 01:00" };   // à incrémenter à chaque livraison
+// (3.15, 08/11/2026) pour un profil, la meilleure version de chaque jeu (meilleureVersion) et sa mention « · all-in » dans le tableau « ses jeux »
 // (3.14, 07/11/2026) ce que changent les extensions : ecartsExtensions() compare la base et l'all-in d'un jeu ; lireEcartsExtensions() la nourrit
 // à partir de ce que les pages calculent déjà ; ecartsHTML() et ecartsTexte() l'affichent pareil dans la fiche du jeu et la fiche de rédaction
 // (3.13, 06/11/2026) un jeu = une fiche globale : lireJeuxEvalues ne garde dans « fiches » qu'une sous-fiche par jeu (l'all-in s'il a des fiches,
@@ -617,6 +618,26 @@ function jeuxPourJoueurs(fiches, paires, axes, pl, codes, src){
     return { jeu, fiches:F.length, finale:F[0].finale, note:m("note"), base:m("base"), alpha:m("alpha"), vie:m("vie") };
   }).sort((a, b) => b.note - a.note);
 }
+// (3.15) pour un profil, la meilleure version de chaque jeu : L, calculé sur toutes les sous-fiches (d.fichesSousFiches), ne garde par fiche globale
+// que la sous-fiche la mieux notée selon cle ; quand le jeu a ses deux sous-fiches, la ligne porte version (« base », « all-in ») et autre ({ version, note })
+const nomVersion = j => sousFicheDe(j) === "all_in" ? "all-in" : "base";
+function meilleureVersion(L, jeux, cle = "note"){
+  const parGlobale = {};
+  L.forEach(x => { const j = jeux.find(y => y.code === x.jeu); (parGlobale[ficheGlobaleDe(j) ?? x.jeu] ??= []).push({ x, j }); });
+  return Object.values(parGlobale).map(G => {
+    G.sort((a, b) => b.x[cle] - a.x[cle]);
+    const { x, j } = G[0], S = sousFichesDe(x.jeu, jeux);
+    if (!j || S.length < 2) return x;
+    const autreJ = S.find(y => y.code !== x.jeu), autre = G.find(g => g.x.jeu === autreJ?.code);
+    return { ...x, version: nomVersion(j), autre: { version: nomVersion(autreJ), note: autre ? autre.x[cle] : null } };
+  }).sort((a, b) => b[cle] - a[cle]);
+}
+// la mention de version après le nom : « · all-in » ; au survol ou au focus, la note de l'autre version pour ce profil
+function mentionVersion(x){
+  if (!x.version) return "";
+  const autre = `${x.autre.version} : ${x.autre.note == null ? "pas de fiche complète" : Number(x.autre.note).toFixed(2).replace(".", ",")}`;
+  return ` <small class="pj-version" tabindex="0" aria-label="Version retenue : ${x.version} ; ${autre}">· ${x.version}<span class="pj-bulle" aria-hidden="true">${autre}</span></small>`;
+}
 
 /* ---------------- lecture des jeux évalués et tableau « ses jeux » (partagé : rosace, fiche du joueur) ---------------- */
 // les résultats publiés (fiches finales, sans justification) : les vues du script 25, lisibles par tout compte connecté (rôle joueur) ;
@@ -696,7 +717,8 @@ function tableJeuxHTML(L, d, qui, moyenne){
   const nom = c => nomJeuGlobal(c, d.jeux), f = (v, k = 2) => Number(v).toFixed(k).replace(".", ",");   // (3.13) le nom du jeu, sans « (all-in) »
   if (!L.length) return `<p class="pj-discret">Aucun jeu n'a encore de fiche complète.</p>`;
   const ecart = x => { const v = x.note - x.base; return `<span class="pj-ecart ${v >= .005 ? "plus" : v <= -.005 ? "moins" : ""}">${Math.abs(v) < .005 ? "±" : v > 0 ? "+" : "−"}${f(Math.abs(v))}</span>`; };
-  const ligne = (x, i) => `<tr><td class="rang">${i}</td><td><a href="evaluation.html?jeu=${encodeURIComponent(x.jeu)}">${e(nom(x.jeu))}</a>${x.finale ? "" : ' <small class="pj-discret">brouillon</small>'}</td>
+  // (3.15) le lien ouvre la version retenue (x.jeu), nommée après le nom du jeu
+  const ligne = (x, i) => `<tr><td class="rang">${i}</td><td><a href="evaluation.html?jeu=${encodeURIComponent(x.jeu)}">${e(nom(x.jeu))}</a>${mentionVersion(x)}${x.finale ? "" : ' <small class="pj-discret">brouillon</small>'}</td>
     <td class="n"><b>${f(x.note)}</b> ${ecart(x)}</td><td class="n">${f(x.alpha)}</td><td class="n">${x.vie >= 1e7 ? "∞" : Math.round(x.vie)}</td></tr>`;
   const haut = L.slice(0, 8), bas = L.length > 11 ? L.slice(-3) : [];
   return `<p class="pj-discret">${L.length} jeu${L.length > 1 ? "x" : ""} évalué${L.length > 1 ? "s" : ""}, classé${L.length > 1 ? "s" : ""} ${qui === "vous" ? "selon la note qu'ils obtiennent pour vous" : "selon la note vue par " + e(qui) + (moyenne ? " (en moyenne)" : "")} ; l'écart se lit par rapport à la note pour tous.</p>
@@ -712,6 +734,9 @@ table.pj-jeux th{font-weight:500;font-size:12px;color:var(--muted);text-align:le
 table.pj-jeux td{border-bottom:1px solid var(--line);padding:5px;vertical-align:baseline} table.pj-jeux .n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
 table.pj-jeux td.rang{color:var(--muted);width:1.6em} table.pj-jeux tbody.bas td{border-bottom-color:transparent}
 .pj-ecart{font-size:12px;color:var(--muted)} .pj-ecart.plus{color:#1E7A46} .pj-ecart.moins{color:#B42318}
+.pj-version{position:relative;font-size:12px;color:var(--muted);cursor:help;white-space:nowrap}
+.pj-version .pj-bulle{display:none;position:absolute;left:0;top:calc(100% + 4px);z-index:20;background:var(--ink);color:var(--panel);font-size:12.5px;padding:5px 9px;border-radius:6px;white-space:nowrap}
+.pj-version:hover .pj-bulle,.pj-version:focus .pj-bulle{display:block}
 @media (prefers-color-scheme: dark){.pj-ecart.plus{color:#5CC98A} .pj-ecart.moins{color:#F2837A}}`;
   document.head.appendChild(st);
 })();
