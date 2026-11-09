@@ -20,8 +20,12 @@
    au survol, au focus clavier et au toucher d'un « ⓘ » ; un seul gestionnaire pour toutes les info-bulles maison des pages (une seule ouverte,
    fermée quand la souris sort, quand le focus part, à Échap, au défilement, au toucher ailleurs).
    (1.8, 08/11/2026) le prix en douze tranches, quatre groupes de trois nommés (GROUPES_PRIX, textePrix()) ; le sommaire collant
-   commence par le bandeau du jeu (vignette, nom, sous-fiche), toujours visible au défilement. */
-const SELECTEURS_VERSION = "1.8";
+   commence par le bandeau du jeu (vignette, nom, sous-fiche), toujours visible au défilement.
+   (1.9, 09/11/2026) les libellés des catégories de mécaniques, définis ici seulement : « Hasard et information », « Parole et communication »,
+   « Grands systèmes », et le nouveau niveau « Ordre du tour » (simple coche, à part sur la fiche comme la fin de partie) ; l'ordre des catégories
+   dans le sélecteur ; les tags juste après le niveau de réalisme, actifs seulement en alternatif ou fantastique ; « Guerre » et ses échelles
+   (precisionsSujet() : « Guerre (échelles opérationnelle et tactique) »), avec son aide dans le sélecteur. */
+const SELECTEURS_VERSION = "1.9";
 (function(){
   const st = document.createElement("style");
   st.textContent = `
@@ -120,6 +124,7 @@ details.sel-carte h4.m-sg{margin:12px 14px 2px}
 .t-sous-case{display:flex;align-items:center;gap:7px;min-height:30px;font-size:14px;cursor:pointer}
 .t-sous-case input{width:17px;height:17px;margin:0;cursor:pointer}
 .t-sous-case:has(input:checked){font-weight:600}
+.t-aide-fam{margin:-4px 14px 8px 36px;font-size:13px;font-style:italic;color:var(--muted)}   /* (1.9) l'aide sous une famille de sujet (Guerre) */
 /* (1.7) les info-bulles des sélecteurs : un « ⓘ » à droite du nom ; la bulle, placée par le script sous la ligne (au-dessus faute de place),
    ne s'affiche que quand le gestionnaire l'ouvre (classe bulle-ouverte) */
 .m-i{display:inline-block;margin-left:6px;padding:0 2px;color:var(--accent);font-style:normal;font-weight:400;cursor:help;border-radius:4px}
@@ -182,13 +187,18 @@ function fenetre(id, etat){
 const POIDS = { 3:"majeur", 2:"secondaire", 1:"marginal" };   // (2.5) « secondaire » au lieu de « présent » ; valeurs en base inchangées
 const POIDS_PLURIEL = { 3:"majeurs", 2:"secondaires", 1:"marginaux" };
 // les niveaux, dans l'ordre d'affichage (29/10/2026 : le niveau « paramètre » n'existe plus)
-const NIVEAUX_MECA = { materiel:"Matériel", geste:"Gestes de base", mecanisme:"Mécanisme", hasard:"Hasard", assemblage:"Combinaison", aspect:"Mode de jeu", structure:"Déroulement", fin_de_partie:"Fin de partie", mise_en_place:"Mise en place", support:"Plateau et formes", parole:"Parole", hors_modele:"Hors modèle" };
+// (1.9) l'ordre du sélecteur : mode de jeu, ordre du tour, fin de partie, mécanisme, hasard et information, grands systèmes, déroulement,
+// parole et communication, mise en place, plateau et formes, gestes de base (le matériel se coche dans « Le contenu et le matériel »)
+const NIVEAUX_MECA = { materiel:"Matériel", aspect:"Mode de jeu", ordre_tour:"Ordre du tour", fin_de_partie:"Fin de partie", mecanisme:"Mécanisme",
+  hasard:"Hasard et information", assemblage:"Grands systèmes", structure:"Déroulement", parole:"Parole et communication", mise_en_place:"Mise en place",
+  support:"Plateau et formes", geste:"Gestes de base", hors_modele:"Hors modèle" };
 // (1.5) la phrase d'aide de chaque niveau, sous son titre dans le sélecteur
 const AIDES_NIVEAUX = { geste:"Les actions élémentaires des joueurs : piocher, poser, payer…", mecanisme:"Les règles qui organisent les choix des joueurs.",
-  hasard:"D'où vient l'incertitude que les joueurs ne maîtrisent pas.", assemblage:"Des mécanismes qui forment ensemble un système reconnaissable.",
+  hasard:"D'où vient l'incertitude que les joueurs ne maîtrisent pas : le hasard, et ce qu'ils ignorent (l'information cachée).",
+  assemblage:"Des mécanismes qui forment ensemble un grand système reconnaissable.", ordre_tour:"Dans quel ordre les joueurs agissent.",
   aspect:"La forme de la partie : contre qui, en solo, dans la durée.", structure:"Comment s'enchaînent les tours, les manches, les phases.",
   fin_de_partie:"Ce qui déclenche la fin de la partie.", mise_en_place:"Ce qui change d'une partie à l'autre avant de commencer.",
-  support:"La forme de l'espace de jeu.", parole:"La place que le jeu laisse à la parole entre joueurs.", hors_modele:"Hors de la nomenclature PRISMEmechanics." };
+  support:"La forme de l'espace de jeu.", parole:"La place que le jeu laisse à la parole et à la communication entre joueurs.", hors_modele:"Hors de la nomenclature PRISMEmechanics." };
 // un nom et son anglais : « nom (name) », l'anglais en italique et en gris
 const bilingue = (fr, en) => esc(fr) + (en ? ` <span class="en">(${esc(en)})</span>` : "");
 // (1.7) l'info-bulle d'une ligne de sélecteur : la définition, les exemples s'il y en a, le nom anglais (et le code, en petit) ;
@@ -199,10 +209,11 @@ const iBulle = (nom, def, ex, en, code) => def ? `<span class="m-i" tabindex="0"
 const hoteNom = (def, code) => def ? ` info"` : `" title="${esc(code)}"`;
 const legendeDML = `<p class="legende"><span class="info" tabindex="0" aria-label="D déplacement : un composant change de zone (piocher, poser, payer). M modification : il change d'état sur place (lancer, retourner, incliner). L lecture : une règle lit la situation (majorité, série complète, fin de partie).">D déplacement · M modification · L lecture<span class="bulle" aria-hidden="true">D : un composant change de zone (piocher, poser, payer).<br>M : il change d'état sur place (lancer, retourner, incliner).<br>L : une règle lit la situation (majorité, série complète, fin de partie).</span></span></p>`;
 // (2.3) simples coches : pour ces niveaux le poids n'a pas de sens ; cochée = une ligne de poids 2, sans remarque
-const COCHE = ["materiel", "geste", "aspect", "fin_de_partie"];
+const COCHE = ["materiel", "geste", "aspect", "ordre_tour", "fin_de_partie"];   // (1.9) l'ordre du tour aussi
 const estCoche = l => COCHE.includes(l?.niveau);
 // (2.5) la carte Mécanique : en tête la fin de partie (le mode de jeu est monté dans la carte d'identité) ; en bas, en petit, le matériel et les gestes
-const CARTE_TETE = [["fin_de_partie", "Fin de partie"]], CARTE_BAS = [["materiel", "Matériel"], ["geste", "Gestes"]];
+// (1.9) en tête, l'ordre du tour puis la fin de partie
+const CARTE_TETE = [["ordre_tour", NIVEAUX_MECA.ordre_tour], ["fin_de_partie", NIVEAUX_MECA.fin_de_partie]], CARTE_BAS = [["materiel", "Matériel"], ["geste", "Gestes"]];
 // modes par défaut, comme la base pour tout nouveau jeu : sans mode de jeu, Compétitif (2.4) ; sans partie indépendante, campagne ni legacy, Partie indépendante (2.5)
 const COMPETITIF = "STR-22", PARTIE_INDEPENDANTE = "STR-26", FORMATS = ["STR-26", "STR-13", "STR-05"];
 // (1.1) les modes de jeu, rangés selon prisme_mecanismes.sous_groupe ; « Autres » seulement s'il en reste sans sous-groupe
@@ -358,7 +369,7 @@ const alphaMeca = (a, b) => String(a.nom || "").localeCompare(String(b.nom || ""
 const parFamilleRecolte = L => { const F = [...new Set(L.map(l => l.famille_recolte).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr", { sensitivity:"base" }));
   return [...F.map(f => [f, L.filter(l => l.famille_recolte === f)]), ["Autres", L.filter(l => !l.famille_recolte)]].filter(([, G]) => G.length); };
 const COURANTS = 15;
-const aideMeca = `<p class="question">Ce dont le jeu est fait, selon la nomenclature PRISMEmechanics. Le matériel, les gestes, le mode de jeu et la fin de partie se cochent ; le reste se pèse : majeur (le jeu repose dessus), secondaire, marginal.</p>`;
+const aideMeca = `<p class="question">Ce dont le jeu est fait, selon la nomenclature PRISMEmechanics. Le matériel, les gestes, le mode de jeu, l'ordre du tour et la fin de partie se cochent ; le reste se pèse : majeur (le jeu repose dessus), secondaire, marginal.</p>`;
 const ligneMeca = c => M.lignes.find(l => l.code === c);
 const badgesMeca = l => `<span class="m-code">${esc(l.code)}</span>${l.niveau ? `<span class="m-niv">${esc(NIVEAUX_MECA[l.niveau] || l.niveau)}</span>` : ""}`;
 const fusionMeca = l => { if (l.statut !== "fusionner") return ""; const cible = l.fusion_vers ? ligneMeca(l.fusion_vers) : null;
@@ -407,7 +418,7 @@ function ouvrirSelecteur(){
     <p class="m-actions"><button class="btn plein" type="button" id="m-enregistrer">Enregistrer</button><button class="btn" type="button" id="m-annuler">Annuler</button><span class="m-etat" id="m-etat"></span></p>`;
   // (2.4) tous les groupes repliés, sauf ceux qui ont déjà une ligne choisie ; une recherche déplie ceux qui ont un résultat
   const ouverts = new Set(Object.keys(M.brouillon).map(c => ligneMeca(c)?.niveau));
-  // (1.6) les plus courants : les 15 mécanismes et combinaisons les plus affectés, du plus au moins fréquent ; ils restent aussi dans leur catégorie
+  // (1.6) les plus courants : les 15 mécanismes et grands systèmes les plus affectés, du plus au moins fréquent ; ils restent aussi dans leur catégorie
   const F = M.frequences || {};
   const courants = proposees.filter(l => (l.niveau === "mecanisme" || l.niveau === "assemblage") && F[l.code]).sort((a, b) => F[b.code] - F[a.code] || alphaMeca(a, b)).slice(0, COURANTS);
   ouverts.add("courants");   // la carte des plus courants est dépliée par défaut
@@ -420,7 +431,7 @@ function ouvrirSelecteur(){
     const visible = l => tout || M.brouillon[l.code] || !requisManquants(l.code, acquis).length;
     // (1.6) en tête, « Les plus courants » (sans filtre de niveau)
     const C = niv ? [] : courants.filter(l => garde(l) && visible(l));
-    const tete = C.length ? `<details class="t-facette sel-carte" data-niveau="courants"${q || seuls || ouverts.has("courants") ? " open" : ""}><summary><b>Les plus courants</b> <span class="discret">${C.length} mécanisme${C.length > 1 ? "s" : ""}</span><span class="sel-aide">Les mécanismes et combinaisons les plus souvent affectés aux jeux de PRISME ; ils restent aussi à leur place, plus bas.</span></summary>${C.map(l => ligneChoix(l, acquis)).join("")}</details>` : "";
+    const tete = C.length ? `<details class="t-facette sel-carte" data-niveau="courants"${q || seuls || ouverts.has("courants") ? " open" : ""}><summary><b>Les plus courants</b> <span class="discret">${C.length} mécanisme${C.length > 1 ? "s" : ""}</span><span class="sel-aide">Les mécanismes et grands systèmes les plus souvent affectés aux jeux de PRISME ; ils restent aussi à leur place, plus bas.</span></summary>${C.map(l => ligneChoix(l, acquis)).join("")}</details>` : "";
     const groupes = tete + ordre.filter(n => !niv || n === niv).map(n => {
       const tous = proposees.filter(l => l.niveau === n), L = tous.filter(garde).sort(alphaMeca);   // (1.6) en ordre alphabétique
       const vis = L.filter(l => tout || M.brouillon[l.code] || !requisManquants(l.code, acquis).length);
@@ -504,8 +515,8 @@ async function enregistrerMecanismes(){
 /* ---- les thèmes du jeu (nomenclature PRISMEthemes, 29/10/2026) : même modèle que les mécanismes ---- */
 // facettes, dans l'ordre d'affichage ; la carte montre le cadre en tête, puis les facettes descriptives
 // (1.1) le sujet avant le cadre ; « Le joueur incarne » (facette role) et « Atmosphère » (facette ton), codes en base inchangés
-// (1.5) la facette realisme s'intitule « Niveau de réalisme »
-const FACETTES = { sujet:"Sujet", cadre:"Cadre", periode:"Période", realisme:"Niveau de réalisme", role:"Le joueur incarne", lieu:"Lieu", ton:"Atmosphère", tag:"Tags du fantastique", reference:"Référence culturelle et géographique" };
+// (1.5) la facette realisme s'intitule « Niveau de réalisme » ; (1.9) les tags la suivent immédiatement
+const FACETTES = { sujet:"Sujet", cadre:"Cadre", periode:"Période", realisme:"Niveau de réalisme", tag:"Tags du fantastique", role:"Le joueur incarne", lieu:"Lieu", ton:"Atmosphère", reference:"Référence culturelle et géographique" };
 // (1.5) la phrase d'aide de chaque facette, sous son titre dans le sélecteur
 const AIDES_FACETTES = { sujet:"De quoi parle le jeu : une famille porte le poids, ses sous-sujets la précisent.", cadre:"Le monde dans lequel le jeu se déroule.",
   periode:"L'époque évoquée.", realisme:"À quel point ce monde ressemble au nôtre.", role:"Qui ou quoi le joueur incarne.", lieu:"Où se passe le jeu.",
@@ -515,6 +526,23 @@ const estSousSujet = l => l?.facette === "sujet" && !!l.parent;
 const sousSujetsDe = c => TH.lignes.filter(l => l.parent === c);
 const FACETTES_CARTE = ["sujet", "role", "ton", "lieu", "tag", "reference"];   // (2.5) sous le titre ; le sujet n'y garde que ses valeurs non majeures
 const ABSTRAIT = "CAD-ABSTRAIT", FACETTES_TEMPS = ["periode", "realisme"];   // un jeu abstrait n'a ni période ni réalisme
+// (1.9) les tags ne valent que pour un monde alternatif ou fantastique : grisés sinon, et leurs choix retirés à l'enregistrement
+const REALISMES_TAGS = ["REA-ALTERE", "REA-FANTASTIQUE"];
+const tagsActifs = choisis => !choisis[ABSTRAIT] && REALISMES_TAGS.some(c => choisis[c]);
+const facetteIgnoree = (f, choisis) => (!!choisis[ABSTRAIT] && FACETTES_TEMPS.includes(f)) || (f === "tag" && !tagsActifs(choisis));
+// (1.9) « Guerre » (SUJ-CONFLIT) : ses sous-sujets sont des échelles, accordées avec le mot (« échelles opérationnelle et tactique »)
+const GUERRE = "SUJ-CONFLIT", AIDE_GUERRE = "Choisis l'échelle du conflit : de la grande stratégie (des empires) à la subtactique (quelques combattants).";
+const ECHELLES = { "SUJ-CONFLIT-GRANDE-STRATEGIE":"de grande stratégie", "SUJ-CONFLIT-OPERATIONNEL":"opérationnelle" };
+const enListe = L => L.length > 1 ? L.slice(0, -1).join(", ") + " et " + L.at(-1) : L.join("");
+const minusInit = t => t.charAt(0).toLowerCase() + t.slice(1);
+// les précisions d'une famille de sujet, d'après ses sous-sujets cochés (affectes : { code: { remarque } }) ; une remarque ancienne posée
+// sur un sous-sujet le suit : « Construction (aménager, terraformer : son manoir) » ; Guerre : « (échelle tactique) » ; rien sans sous-sujet
+function precisionsSujet(l, affectes){
+  const S = TH.lignes.filter(s => s.parent === l.code && affectes[s.code]); if (!S.length) return "";
+  const rem = s => affectes[s.code].remarque ? " : " + affectes[s.code].remarque : "";
+  if (l.code === GUERRE) return ` (échelle${S.length > 1 ? "s" : ""} ${enListe(S.map(s => (ECHELLES[s.code] || minusInit(s.libelle)) + rem(s)))})`;
+  return ` (${S.map(s => minusInit(s.libelle) + rem(s)).join(", ")})`;
+}
 const TH = { jeu:null, user:null, role:null, ecrit:false, lignes:[], affectes:{}, brouillon:null, apres:null };
 
 // lit la nomenclature et les thèmes du jeu dans TH ; renvoie le message d'erreur, ou null
@@ -564,14 +592,15 @@ function ouvrirSelecteurThemes(){
           const S = sousSujetsDe(fam.code), choisie = !!TH.brouillon[fam.code];
           if (!(trouve(fam) || S.some(trouve)) || (seuls && !choisie && !S.some(s => TH.brouillon[s.code]))) return "";
           const vus = S.filter(s => TH.brouillon[s.code] || (choisie && (trouve(fam) || trouve(s))) || (q && trouve(s)));
-          return `<div class="t-famille">${ligneChoixTheme(fam)}${vus.length ? `<div class="t-sous-cases" role="group" aria-label="Sous-sujets de ${esc(fam.libelle)}">${vus.map(s =>
+          // (1.9) Guerre : l'aide sur les échelles, sous la famille
+          return `<div class="t-famille">${ligneChoixTheme(fam)}${fam.code === GUERRE ? `<p class="t-aide-fam">${esc(AIDE_GUERRE)}</p>` : ""}${vus.length ? `<div class="t-sous-cases" role="group" aria-label="Sous-sujets de ${esc(fam.libelle)}">${vus.map(s =>
             // (1.7) la définition en info-bulle, le « ⓘ » hors de l'étiquette (le toucher ne coche pas la case)
             `<span class="t-sous-hote${hoteNom(s.definition, s.code)}><label class="t-sous-case"><input type="checkbox" data-sous="${esc(s.code)}"${TH.brouillon[s.code] ? " checked" : ""}> ${bilingue(s.libelle, s.libelle_en)}</label>${iBulle(s.libelle, s.definition, null, s.libelle_en, s.code)}</span>`).join("")}</div>` : ""}</div>`;
         }).join("");
       } else corps = tous.filter(l => trouve(l) && (!seuls || TH.brouillon[l.code])).map(ligneChoixTheme).join("");
       if (!corps) return "";
       const nbValeurs = f === "sujet" ? tous.filter(l => !l.parent).length : tous.length;
-      return `<details class="t-facette sel-carte" data-facette="${f}"${q || seuls || ouverts.has(f) ? " open" : ""}><summary><b>${esc(nom)}</b> <span class="discret">${nbValeurs} ${f === "sujet" ? "famille" : "valeur"}${nbValeurs > 1 ? "s" : ""}<span data-nb></span></span><span class="t-ignore discret"> · ignoré : le jeu est abstrait</span>${AIDES_FACETTES[f] ? `<span class="sel-aide">${esc(AIDES_FACETTES[f])}</span>` : ""}</summary>${corps}</details>`;
+      return `<details class="t-facette sel-carte" data-facette="${f}"${q || seuls || ouverts.has(f) ? " open" : ""}><summary><b>${esc(nom)}</b> <span class="discret">${nbValeurs} ${f === "sujet" ? "famille" : "valeur"}${nbValeurs > 1 ? "s" : ""}<span data-nb></span></span><span class="t-ignore discret"> · ${f === "tag" ? "seulement pour un monde alternatif ou fantastique" : "ignoré : le jeu est abstrait"}</span>${AIDES_FACETTES[f] ? `<span class="sel-aide">${esc(AIDES_FACETTES[f])}</span>` : ""}</summary>${corps}</details>`;
     }).join("") || `<p class="discret">Aucun thème ne correspond à cette recherche.</p>`;
     griser();
   };
@@ -610,11 +639,11 @@ function ligneChoixTheme(l){
       `<button type="button" data-p="${n}" aria-pressed="${p === n}"${n ? "" : ' title="absent"'}>${esc(t)}</button>`).join("")}</div>
     ${p ? `<input class="m-rem" type="text" placeholder="Remarque (facultative)" aria-label="Remarque, visible sur la fiche entre parenthèses" value="${esc(v.remarque)}"><span class="m-aide">Visible sur la fiche, entre parenthèses</span>` : ""}</div>`;
 }
-// Abstrait coché (poids quelconque) : Période et Réalisme grisées, leurs choix ignorés à l'enregistrement
+// Abstrait coché (poids quelconque) : Période et Réalisme grisées, leurs choix ignorés à l'enregistrement ;
+// (1.9) les tags grisés tant que ni « Alternatif » ni « Fantastique » n'est choisi
 function griser(){
-  const abstrait = !!TH.brouillon[ABSTRAIT];
   document.querySelectorAll("#t-choix details.t-facette").forEach(d => {
-    const off = abstrait && FACETTES_TEMPS.includes(d.dataset.facette);
+    const off = facetteIgnoree(d.dataset.facette, TH.brouillon);
     d.classList.toggle("grise", off); d.querySelectorAll("button, input").forEach(x => x.disabled = off);
     // (1.5) le sujet compte ses familles ; Abstrait n'est plus compté dans le cadre (c'est la case du haut)
     const n = themesRanges(d.dataset.facette).filter(l => TH.brouillon[l.code] && l.code !== ABSTRAIT && !estSousSujet(l)).length;
@@ -624,15 +653,16 @@ function griser(){
 function compterThemes(){
   const n = { 3:0, 2:0, 1:0 }, abstrait = !!TH.brouillon[ABSTRAIT]; let sous = 0;
   Object.entries(TH.brouillon).forEach(([c, v]) => { const l = ligneTheme(c);
-    if (c === ABSTRAIT || (abstrait && FACETTES_TEMPS.includes(l?.facette))) return;
+    if (c === ABSTRAIT || facetteIgnoree(l?.facette, TH.brouillon)) return;
     if (estSousSujet(l)) sous++; else n[v.poids]++; });
   $("#t-compteur").textContent = (abstrait ? "Jeu abstrait · " : "") + [3, 2, 1].map(p => `${n[p]} ${n[p] > 1 ? POIDS_PLURIEL[p] : POIDS[p]}`).join(" · ")
     + (sous ? ` · ${sous} sous-sujet${sous > 1 ? "s" : ""}` : "");
 }
 async function enregistrerThemes(){
   const avant = TH.affectes, apres = { ...TH.brouillon }, etat = $("#t-etat");
-  // un jeu abstrait : les périodes et le réalisme sont retirés (supprimés en base s'il y en avait)
-  if (apres[ABSTRAIT]) Object.keys(apres).forEach(c => { if (FACETTES_TEMPS.includes(ligneTheme(c)?.facette)) delete apres[c]; });
+  // un jeu abstrait : les périodes et le réalisme sont retirés (supprimés en base s'il y en avait) ;
+  // (1.9) sans « Alternatif » ni « Fantastique », les tags aussi
+  Object.keys(apres).forEach(c => { if (facetteIgnoree(ligneTheme(c)?.facette, TH.brouillon)) delete apres[c]; });
   // (1.5) un sous-sujet ne fait que préciser : poids 2 (une remarque déjà saisie est gardée) ; sa famille est toujours enregistrée avec lui
   Object.keys(apres).forEach(c => { const l = ligneTheme(c); if (!estSousSujet(l)) return;
     apres[c] = { poids:2, remarque: apres[c].remarque || "" }; if (!apres[l.parent]) apres[l.parent] = { poids:2, remarque:"" }; });

@@ -46,13 +46,12 @@ main{max-width:1180px;margin:0 auto;padding:8px 24px 48px;display:flex;flex-dire
 .visuel{width:200px;height:250px;border-radius:12px;background:var(--neutre);object-fit:cover;display:block}
 .id-corps{display:flex;flex-direction:column;gap:16px;min-width:0}
 .id-corps h1{font:600 clamp(28px,4.5vw,40px)/1.1 var(--serif);margin:2px 0 4px}
-.id-corps h1 .cfg{font-weight:400;color:var(--muted)}
+>>>>
+
 .technique{color:var(--muted)}
 .actions{display:flex;flex-direction:column;gap:8px;align-items:stretch}
-.configs{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0;font-size:13.5px}
-.configs a,.configs b{border:1px solid var(--line);border-radius:999px;padding:3px 11px;text-decoration:none;color:var(--ink)}
-.configs b{background:var(--ink);color:var(--panel);border-color:var(--ink);font-weight:500}
-.configs small.brouillon{font-size:11px;opacity:.75;margin-left:3px}
+>>>>
+
 .notation{display:flex;flex-wrap:wrap;gap:28px;align-items:center}
 .note-g{display:flex;align-items:baseline;gap:4px}
 .note-g b{font:600 64px/1 var(--serif);color:var(--accent);font-variant-numeric:tabular-nums}
@@ -148,7 +147,14 @@ ul.m-liste li{border-bottom:1px solid var(--line);padding:7px 0}
    2.17 (07/11/2026) : le cadre « Ce que changent les extensions », quand le jeu a ses deux sous-fiches (timeline.js 3.14) ;
    une teinte neutre : il compare, ce n'est pas une notion
    2.18 (08/11/2026) : le prix en douze tranches (« G · jusqu'à 200 € · les grandes occasions ») ; le bandeau du jeu en tête du sommaire
-   collant (selecteurs.js 1.8, timeline.js 3.16) */
+   collant (selecteurs.js 1.8, timeline.js 3.16)
+   2.19 (09/11/2026) : fin de l'ancienne configuration (prisme_evaluations.configuration : plus de pastilles « Boîte de base » /
+   « toutes extensions ») ; base et all-in ne passent plus que par les onglets des sous-fiches ; carte Mécaniques sans sous-titre,
+   l'ordre du tour à part en tête comme la fin de partie ; pastilles et légendes centrées sur leur ligne ; le sujet du thème plus visible ;
+   « Guerre (échelle …) » (selecteurs.js 1.9) */
+.puces{align-items:center}   /* (2.19) des pastilles de tailles différentes, centrées sur leur ligne */
+.ligne-tete{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px} .ligne-tete > .etiq{font-size:13px;font-weight:600}
+#carte-theme .titre-carte{font:700 24px/1.25 var(--serif);color:var(--n-titre)}   /* (2.19) le sujet, en titre de la carte */
 .carte.ecarts{display:flex;flex-direction:column;gap:10px;background:color-mix(in srgb, var(--neutre) 40%, var(--panel))}
 #carte-theme .puces > span{white-space:nowrap}   /* (2.14) le titre, plus long avec ses sous-sujets, peut passer à la ligne */
 details.pli.notion > summary strong{color:var(--n-titre)}
@@ -178,9 +184,9 @@ details.pli.notion > summary strong{color:var(--n-titre)}
 </main>
 
 <script src="timeline.js?v=3.16"></script>
-<script src="selecteurs.js?v=1.8"></script>
+<script src="selecteurs.js?v=1.9"></script>
 <script>
-const VERSION = { numero:"2.18", date:"2026-11-08 01:30" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"2.19", date:"2026-11-09 23:45" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -263,7 +269,6 @@ const pli = (titre, sous, corps, id, n) => `<details class="pli${n ? " " + notio
 
 async function afficher(user){
   const P = new URLSearchParams(location.search), code = P.get("jeu");
-  let cfg = (P.get("config") || "").trim() || null;   // config= vide : la boîte de base, demandée explicitement
   if (!code) return vide('Aucun jeu choisi. <a href="jeux.html">Voir tous les jeux</a>.');
   const lirePL = t => sb.from(t).select("*").order("ordre");
   const [{ data: r }, { data: res }, { data: chapitres }, d, S, pm, pt, ps, art] = await Promise.all([
@@ -272,7 +277,7 @@ async function afficher(user){
     sb.from("prisme_chapitres").select("code,nom,ordre").order("ordre"),
     lireJeuxEvalues(sb), lireReglages(),
     lirePL("prisme_player_moteurs"), lirePL("prisme_player_temperaments"), lirePL("prisme_player_styles"),
-    sb.from("prisme_vitrine").select("article,configuration,publie_le").eq("jeu", code).order("publie_le", { ascending:false }).limit(1)]);
+    sb.from("prisme_vitrine").select("article,publie_le").eq("jeu", code).order("publie_le", { ascending:false }).limit(1)]);
   const role = r || "joueur";
   if (d.refus) return vide("La fiche des jeux n'est pas encore ouverte aux joueurs : le script 25 doit être passé dans la base.");
   const jeu = d.jeux.find(j => j.code === code);
@@ -281,26 +286,17 @@ async function afficher(user){
   const profil = codeDeResultat(res?.[0]);
   const PL = { moteurs: pm.data || [], temperaments: pt.data || [], styles: ps.data || [] };
   const article = art.data?.[0]?.article || null;
-  // la boîte de base, ou une configuration (« toutes extensions »…) : ses propres fiches, sa propre courbe (17/10/2026)
-  // lecteurs et au-delà : toutes les fiches du jeu, brouillons compris (une configuration en cours de saisie doit se retrouver ici)
+  // (2.19) les fiches de cette sous-fiche ; l'ancienne configuration (« toutes extensions ») n'existe plus : base et all-in sont deux sous-fiches
+  // lecteurs et au-delà : toutes les fiches du jeu, brouillons compris
   const T0 = NIVEAUX[role] >= NIVEAUX.lecteur ? ((await sb.from("prisme_evaluations").select("*").eq("jeu", code)).data || []) : [];
-  const finales = new Set((d.configurations || []).filter(f => f.jeu === code).map(configDe));
-  const noms = [...new Set([...finales, ...T0.map(configDe).filter(Boolean)])].sort((a, b) => a.localeCompare(b, "fr"));
-  // (18/10/2026) sans choix explicite, la configuration de référence : le jeu complet quand il existe
-  const ref = d.reference?.[code] || null;
-  if (!P.has("config") && ref) cfg = ref;
-  const F = cfg ? (d.configurations || []).filter(f => f.jeu === code && configDe(f) === cfg) : (d.fichesBase || d.fiches).filter(f => f.jeu === code), R = resumeJeu(F, d.paires, d.axes, profil, d.src);
-  const lienCfg = c => "jeu.html?jeu=" + encodeURIComponent(code) + "&config=" + (c ? encodeURIComponent(c) : "");
-  const liste = [null, ...noms, ...(cfg && !noms.includes(cfg) ? [cfg] : [])];
-  const nomCfg = n => esc(n || "Boîte de base") + (n && !finales.has(n) ? ' <small class="brouillon">brouillon</small>' : "") + (n && n === ref ? ' <small class="brouillon" title="Configuration de référence : celle que lisent la liste des jeux et les profils">référence</small>' : "");
-  const nav = liste.length > 1 ? `<p class="configs">${liste.map(n => n === cfg ? `<b>${nomCfg(n)}</b>` : `<a href="${lienCfg(n)}">${nomCfg(n)}</a>`).join("")}</p>` : "";
-  const titre = esc(jeu.nom) + (cfg ? ` <span class="cfg">— ${esc(cfg)}</span>` : "");
+  const F = (d.fichesBase || d.fiches).filter(f => f.jeu === code), R = resumeJeu(F, d.paires, d.axes, profil, d.src);
+  const titre = esc(jeu.nom);
 
   // les boutons d'action : l'évaluation (mêmes rôles qu'en 1.7), les informations du jeu (éditeur et propriétaire)
   const boutons = [];
   if (NIVEAUX[role] >= NIVEAUX.lecteur){
-    const T = T0.filter(f => configDe(f) === cfg);
-    const mienne = T.find(f => f.evaluateur === user.id), url = "evaluation.html?jeu=" + encodeURIComponent(code) + (cfg ? "&config=" + encodeURIComponent(cfg) : "");
+    const T = T0;
+    const mienne = T.find(f => f.evaluateur === user.id), url = "evaluation.html?jeu=" + encodeURIComponent(code);
     if (NIVEAUX[role] >= NIVEAUX.evaluateur){
       boutons.push(mienne ? `<a class="btn plein" href="${url}">Mon évaluation</a>` : `<a class="btn plein" href="${url}&evaluer=1">Évaluer ce jeu</a>`);
       if (!mienne && T.length) boutons.push(`<a class="btn" href="${url}">Voir l'évaluation</a>`);
@@ -322,9 +318,9 @@ async function afficher(user){
   if (NIVEAUX[role] >= NIVEAUX.lecteur) boutons.push(`<a class="btn" href="recap.html?jeu=${encodeURIComponent(code)}&config=${ici?.configuration === "all_in" ? "all_in" : "base"}">Fiche de rédaction</a>`);
 
   // la fiche technique : (2.15) les faits viennent de la description de la sous-fiche affichée (« Décrire le jeu ») ;
-  // la moyenne des fiches finales seulement si la description manque (ou pour une configuration « toutes extensions », qui n'en a pas) ;
+  // la moyenne des fiches finales seulement si la description manque ;
   // le « meilleur à N » reste lu dans les évaluations : c'est un avis
-  const m = R?.m, ch = [], desc = !cfg ? d.src?.descriptions?.[code] || null : null;
+  const m = R?.m, ch = [], desc = d.src?.descriptions?.[code] || null;
   const F2 = desc || m;   // la source des faits
   if (F2){
     const jmin = F2.joueurs_min, jmax = F2.joueurs_max;
@@ -368,7 +364,7 @@ async function afficher(user){
   let h = sousFiches + `<div class="carte identite">
     ${jeu.image_url ? `<img class="visuel" src="${esc(jeu.image_url)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'), { className:'visuel' }))">` : `<span class="visuel" aria-hidden="true"></span>`}
     <div class="id-corps">
-      <div><div class="surtitre">Fiche du jeu</div><h1>${titre}</h1><div class="technique">${ch.join(" · ")}</div><div class="modes" id="id-modes"></div>${nav}</div>
+      <div><div class="surtitre">Fiche du jeu</div><h1>${titre}</h1><div class="technique">${ch.join(" · ")}</div><div class="modes" id="id-modes"></div></div>
       ${notation}
       ${pastilles.length ? `<div class="pastilles">${pastilles.join("")}</div>` : ""}
       ${verdict ? `<p class="verdict">« ${esc(verdict)} »</p>` : ""}
@@ -483,11 +479,12 @@ function afficherMecanismes(){
   // (2.5) les modes de jeu, en pastilles sous le titre du jeu
   const modes = $("#id-modes");
   if (modes) modes.innerHTML = affectesDu("aspect").map(l => puce(l, "mode")).join("");
-  // trois niveaux : en tête la fin de partie ; puis les mécanismes, marginaux compris ; en bas, en petit, le matériel et les gestes
+  // trois niveaux : en tête l'ordre du tour et la fin de partie ; puis les mécanismes, marginaux compris ; en bas, en petit, le matériel et les gestes
   const tete = CARTE_TETE.map(([n, t]) => [t, affectesDu(n)]).filter(([, L]) => L.length), bas = CARTE_BAS.map(([n, t]) => [t, affectesDu(n)]).filter(([, L]) => L.length);
   const [L3, L2, L1] = [3, 2, 1].map(parPoids);
-  let h = `<div class="surtitre n-titre">Les mécaniques</div><p class="titre-carte">Ce dont il est fait</p>`;
-  tete.forEach(([t, L]) => { h += `<div class="groupe"><span class="etiq">${esc(t)}</span><div class="puces">${L.map(l => puce(l, "pr")).join("")}</div></div>`; });
+  // (2.19) plus de sous-titre ; l'ordre du tour et la fin de partie, chacun sur sa ligne : « Ordre du tour : … », « Fin de partie : … »
+  let h = `<div class="surtitre n-titre">Les mécaniques</div>`;
+  tete.forEach(([t, L]) => { h += `<div class="ligne-tete"><span class="etiq">${esc(t)} :</span>${L.map(l => puce(l, "pr")).join("")}</div>`; });
   if (!tete.length && !bas.length && !L3.length && !L2.length && !L1.length) h += `<p class="discret" style="margin:0">Aucun mécanisme n'est encore affecté à ce jeu.</p>`;
   if (L3.length) h += `<div class="groupe"><span class="etiq">Majeurs</span><div class="puces" style="gap:8px">${L3.map(l => puce(l, "mj")).join("")}</div></div>`;
   if (L2.length) h += `<div class="groupe"><span class="etiq">Secondaires</span><div class="puces">${L2.map(l => puce(l, "pr")).join("")}</div></div>`;
@@ -522,10 +519,9 @@ function afficherThemes(){
   const rien = !Object.keys(TH.affectes).length;
   carte.classList.toggle("theme", rien);   // la bordure pointillée disparaît dès qu'un thème est affecté
   // (2.5) la remarque entre parenthèses à la suite du libellé : « Un individu (le pilote) »
-  // (2.14) une famille de sujet porte ses sous-sujets cochés entre parenthèses, puis sa remarque : « Conflit (tactique, subtactique) »
-  const precisions = l => { const S = sousSujetsDe(l.code).filter(s => TH.affectes[s.code]);
-    // une remarque ancienne posée sur un sous-sujet le suit : « Construction (aménager, terraformer : son manoir) »
-    return S.length ? ` (${S.map(s => s.libelle.charAt(0).toLowerCase() + s.libelle.slice(1) + (TH.affectes[s.code].remarque ? " : " + TH.affectes[s.code].remarque : "")).join(", ")})` : ""; };
+  // (2.14) une famille de sujet porte ses sous-sujets cochés entre parenthèses, puis sa remarque : « Construction (aménager, terraformer) »
+  // (2.19) precisionsSujet() de selecteurs.js 1.9 : « Guerre (échelles opérationnelle et tactique) »
+  const precisions = l => precisionsSujet(l, TH.affectes);
   const puce = (l, cls) => `<span class="${cls} info" tabindex="0">${esc(l.libelle)}${l.facette === "sujet" ? esc(precisions(l)) : ""}${remVisible(TH.affectes[l.code]?.remarque)}<span class="bulle">${l.facette === "sujet" ? `<b>${esc(POIDS[TH.affectes[l.code].poids])}</b><br>` : ""}${l.libelle_en ? `<i>${esc(l.libelle_en)}</i><br>` : ""}${esc(l.definition || "Pas encore de définition.")}</span></span>`;
   let h = `<div class="surtitre n-titre">Thème</div>`;
   if (rien) h += `<p class="discret" style="margin:0">Aucun thème n'est encore affecté à ce jeu.</p>`;

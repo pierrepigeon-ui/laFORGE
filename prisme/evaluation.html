@@ -20,7 +20,10 @@
    4.5 (08/11/2026) : « Reprendre mes avis du jeu de base / all-in » dans « Outils » (prisme_recopier_evaluation), quand on a une fiche
    sur les deux sous-fiches ; selecteurs.js 1.7 : les info-bulles des trapèzes ne restent plus affichées (une seule à la fois)
    4.6 (08/11/2026) : le bandeau du jeu (vignette, nom, sous-fiche) en tête du sommaire collant ; selecteurs.js 1.8, timeline.js 3.16
-   (le prix en douze tranches dans les calculs) */
+   (le prix en douze tranches dans les calculs)
+   4.7 (09/11/2026) : fin de l'ancienne configuration (prisme_evaluations.configuration n'est plus lue ni écrite : plus de filtre
+   « Boîte de base / Configurations », plus de « + Configuration ») ; base et all-in ne passent plus que par les sous-fiches ;
+   les trois familles repliées à l'ouverture ; selecteurs.js 1.9 */
 :root{--ink:#15171C;--muted:#4B5160;--line:#E2E4E9;--trait:#C9CEDB;--paper:#F4F5F7;--panel:#FFFFFF;--neutre:#E8EAF0;--filet:#EEF0F4;
   --accent:#2346C8;--accent-fonce:#16308F;--sur-accent:#FFFFFF;--bleu-fond:#E6EBFB;--bleu-texte:#16308F;--orange-fond:#FBEDE4;--orange-texte:#8A3108;
   --vert-fond:#E7F4EC;--vert-texte:#14532D;--ok:#1E7A46;--warn:#9A5B00;--err:#B42318;--trapeze:#F0F2F6;--trapeze-demi:#E3E6EE;
@@ -56,7 +59,6 @@ table.fiches th[data-tri]{cursor:pointer;user-select:none} table.fiches th[data-
 #recherche input,#recherche select{font:14px var(--sans);padding:6px 9px;border:1px solid var(--trait);border-radius:8px;background:var(--panel);color:var(--ink)}
 #recherche input{min-width:220px} #f-compte{color:var(--muted);font-size:13px;margin-left:auto}
 #filtre{display:flex;gap:14px;align-items:center;font-size:14px;margin:18px 0 8px} #filtre h2{font:600 20px var(--serif);margin:0;margin-right:auto}
-.cfg-nom{font-weight:400;color:var(--muted)}
 .version{font-size:12px;color:var(--muted);text-align:right;margin:26px 0 0}
 @media (max-width:640px){ h1{font-size:28px} .choix select,.choix input{min-width:0;width:100%} }
 
@@ -305,7 +307,6 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
     <input type="search" id="f-texte" placeholder="Chercher un jeu…" aria-label="Chercher un jeu">
     <select id="f-eval" aria-label="Évaluateur"><option value="">Tous les évaluateurs</option></select>
     <select id="f-etat" aria-label="État"><option value="">Brouillons et finales</option><option value="brouillon">Brouillons</option><option value="finale">Finales</option><option value="article">Avec un article</option></select>
-    <select id="f-cfg" aria-label="Configuration"><option value="">Base et configurations</option><option value="base">Boîte de base</option><option value="cfg">Configurations</option></select>
     <select id="f-origine" aria-label="Origine"><option value="">Toutes origines</option><option value="claude">Pré-remplies par Claude</option><option value="humain">Saisies à la main</option></select>
     <span id="f-compte"></span></div>
   <div id="fiches"></div>
@@ -323,7 +324,6 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
         <label id="cmp-soeur-lab" class="hidden"><input type="checkbox" id="cmp-soeur" checked> <span id="cmp-soeur-t">Comparer avec ma fiche du jeu de base</span></label>
         <a id="vers-jeu" href="jeux.html" title="La fiche du jeu, telle que la voient les joueurs">Fiche du jeu</a>
         <a id="vers-decrire" href="decrire.html">Décrire le jeu</a>
-        <button type="button" id="btn-config" class="hidden" title="Évaluer le jeu avec ses extensions : une fiche liée, qui reprend celle-ci">+ Configuration (avec extensions)</button>
         <button type="button" id="btn-reprendre" class="hidden">Reprendre mes avis du jeu de base</button>
         <hr>
         <button type="button" id="suivante">Paire suivante à remplir</button>
@@ -368,9 +368,9 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
 <div class="wrap"><p class="version"><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p></div>
 
 <script src="timeline.js?v=3.16"></script>
-<script src="selecteurs.js?v=1.8"></script>
+<script src="selecteurs.js?v=1.9"></script>
 <script>
-const VERSION = { numero:"4.6", date:"2026-11-08 01:30" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"4.7", date:"2026-11-09 23:45" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -398,9 +398,9 @@ let enAttente = new Set(), ficheModifiee = false, minuteur = null;
 const enCours = () => enAttente.size || ficheModifiee || effAttente.size;   // (4.0) quelque chose reste à enregistrer
 const DONNEES = [["pages","Pages des règles"],["prix","Prix (€)"],["prix_source","Source du prix (enseigne, date)","texte"],["poids_bgg","Poids BGG (1 à 5)"],["joueurs_min","Joueurs min."],
   ["joueurs_max","Joueurs max."],["effectif_reference","Meilleur effectif"],["duree_min","Durée min. (min)"],["duree_max","Durée max. (min)"],["contenu_parties","Parties pour tout exploiter"]];
-const CHAMPS = [...DONNEES.map(d => d[0]), "configuration", "contenu_unique"];   // (17/10/2026) script 27
-const cfgDe = f => String(f?.configuration ?? "").trim() || null;   // null : la boîte de base
-const titreFiche = f => nomJeu(f.jeu) + (cfgDe(f) ? " — " + cfgDe(f) : "");
+// (4.7) prisme_evaluations.configuration n'est plus ni lue ni écrite : base et all-in sont des sous-fiches (prisme_jeux)
+const CHAMPS = [...DONNEES.map(d => d[0]), "contenu_unique"];   // (17/10/2026) script 27
+const titreFiche = f => nomJeu(f.jeu);
 // (4.0) la sous-fiche (prisme_jeux.configuration), les familles et leurs pictogrammes (les mêmes que dans « Décrire le jeu », selecteurs.js)
 const CONFIGS = { base:"jeu de base", all_in:"jeu all-in" };
 const FAMILLES = { SYS:"Comment le jeu fonctionne", EXP:"Ce que le jeu fait vivre", EDI:"Ce que la boîte contient" };
@@ -424,8 +424,8 @@ function soeurDe(code){
   const j = MOD.jeux.find(x => x.code === code); if (!j?.fiche_globale || !(sousFiche(j) in COURT)) return null;
   return MOD.jeux.find(x => x.code !== code && x.fiche_globale === j.fiche_globale && sousFiche(x) in COURT && sousFiche(x) !== sousFiche(j)) || null;
 }
-// ma fiche sur la sœur de la fiche ouverte (même configuration évaluée : boîte seule, ou « toutes extensions »…)
-const maFicheSoeur = f => { const s = f && soeurDe(f.jeu); return s ? toutes.find(e => e.jeu === s.code && e.evaluateur === user.id && cfgDe(e) === cfgDe(f)) || null : null; };
+// ma fiche sur la sœur de la fiche ouverte
+const maFicheSoeur = f => { const s = f && soeurDe(f.jeu); return s ? toutes.find(e => e.jeu === s.code && e.evaluateur === user.id) || null : null; };
 // ce qu'affichent les repères : la fiche sœur, sa saisie, ses notes ; null s'il n'y en a pas
 let SOEUR = null, comparer = true, encartRefuse = new Set();
 try { comparer = localStorage.getItem("prisme_comparer_soeur") !== "non"; } catch (e){}
@@ -487,12 +487,12 @@ async function demarrer(){
   PUBLI_OK = toutes.length ? "publie" in toutes[0] : !(await sb.from("prisme_evaluations").select("publie").limit(1)).error;
   await completerInstantanes();
   afficherFiches();
-  const P = new URLSearchParams(location.search), q = P.get("jeu"), qc = (P.get("config") || "").trim() || null;
+  const P = new URLSearchParams(location.search), q = P.get("jeu");
   if (q && MOD.jeux.some(j => j.code === q)){
-    if (P.has("evaluer") && role !== "lecteur") ouvrirJeu(q, qc);   // « Évaluer » depuis la fiche du jeu : sa propre fiche, nouvelle au besoin
-    else { const C = toutes.filter(e => e.jeu === q && cfgDe(e) === qc);
+    if (P.has("evaluer") && role !== "lecteur") ouvrirJeu(q);   // « Évaluer » depuis la fiche du jeu : sa propre fiche, nouvelle au besoin
+    else { const C = toutes.filter(e => e.jeu === q);
       const f = C.find(e => e.evaluateur === user.id) || C.find(e => e.statut === "finale") || C[0];
-      f ? ouvrirFiche(f) : ouvrirJeu(q, qc); }
+      f ? ouvrirFiche(f) : ouvrirJeu(q); }
     if ($("#fiche").classList.contains("hidden")) $("#accueil").classList.remove("hidden");   // pas de fiche à ouvrir (lecteur) : la liste
   } else if (P.get("fiche") && toutes.some(e => e.id === P.get("fiche"))){   // retour sur une fiche (bouton Précédent, rechargement) : on la rouvre (3.31)
     ouvrirFiche(toutes.find(e => e.id === P.get("fiche")), false);
@@ -511,7 +511,7 @@ const saisieDe = id => { const s = {}; valeurs.filter(v => v.evaluation === id).
 document.querySelectorAll('input[name="qui"]').forEach(r => r.addEventListener("change", afficherFiches));
 const estClaude = e => /^\[Pré-remplie par Claude/.test(e.notes_article || "") || /pilote Claude|Claude/.test(e.version_appli || "");
 let tri = { cle:"modifie", sens:-1 };
-["f-texte","f-eval","f-etat","f-cfg","f-origine"].forEach(id => document.getElementById(id).addEventListener("input", afficherFiches));
+["f-texte","f-eval","f-etat","f-origine"].forEach(id => document.getElementById(id).addEventListener("input", afficherFiches));
 function afficherFiches(){
   const miennes = document.querySelector('input[name="qui"]:checked').value === "miennes";
   $("#filtre").classList.toggle("hidden", !toutes.length); $("#recherche").classList.toggle("hidden", !toutes.length);
@@ -519,21 +519,21 @@ function afficherFiches(){
   const ev = [...new Set(toutes.map(e => e.evaluateur))], selE = $("#f-eval"), choixE = selE.value;
   selE.innerHTML = `<option value="">Tous les évaluateurs</option>` + ev.map(id => `<option value="${esc(id)}">${esc(nomDe(id))}</option>`).join(""); selE.value = ev.includes(choixE) ? choixE : "";
   selE.disabled = miennes;
-  const q = norm($("#f-texte").value.trim()), fe = selE.value, st = $("#f-etat").value, fc = $("#f-cfg").value, fo = $("#f-origine").value;
+  const q = norm($("#f-texte").value.trim()), fe = selE.value, st = $("#f-etat").value, fo = $("#f-origine").value;
   let L = toutes.filter(e => (!miennes || e.evaluateur === user.id) && (miennes || !fe || e.evaluateur === fe)
-    && (!q || norm(nomJeu(e.jeu) + " " + (cfgDe(e) || "")).includes(q)) && (!st || (st === "article" ? aUnArticle(e) : e.statut === st))
-    && (!fc || (fc === "base" ? !cfgDe(e) : !!cfgDe(e))) && (!fo || (fo === "claude" ? estClaude(e) : !estClaude(e))));
+    && (!q || norm(nomJeu(e.jeu)).includes(q)) && (!st || (st === "article" ? aUnArticle(e) : e.statut === st))
+    && (!fo || (fo === "claude" ? estClaude(e) : !estClaude(e))));
   const total = toutes.filter(e => !miennes || e.evaluateur === user.id).length;
   $("#f-compte").textContent = L.length === total ? `${total} fiche${total > 1 ? "s" : ""}` : `${L.length} sur ${total}`;
   if (!total){ $("#fiches").innerHTML = `<p class="aide">${miennes ? "Tu n'as encore évalué aucun jeu." : "Aucune fiche pour l'instant."}</p>`; return; }
   if (!L.length){ $("#fiches").innerHTML = `<p class="aide">Aucune fiche ne correspond à ces critères.</p>`; return; }
   const R = L.map(e => ({ e, c: calculer(pourCalcul(e, saisieDe(e.id)).saisie) }));
-  const cles = { jeu: x => norm(nomJeu(x.e.jeu) + " " + (cfgDe(x.e) || "")), eval: x => norm(nomDe(x.e.evaluateur)), etat: x => x.e.statut,
+  const cles = { jeu: x => norm(nomJeu(x.e.jeu)), eval: x => norm(nomDe(x.e.evaluateur)), etat: x => x.e.statut,
     paires: x => x.c.faites, note: x => x.c.finale ?? -1, modifie: x => x.e.modifie_le };
   const k = cles[tri.cle]; R.sort((a, b) => { const u = k(a), v = k(b); return (u < v ? -1 : u > v ? 1 : 0) * tri.sens; });
   const th = (cle, t) => `<th data-tri="${cle}">${t}${tri.cle === cle ? `<span class="sens">${tri.sens > 0 ? "▲" : "▼"}</span>` : ""}</th>`;
   $("#fiches").innerHTML = `<table class="fiches"><thead><tr>${th("jeu","Jeu")}${th("eval","Évaluateur")}${th("etat","État")}${th("paires","Paires")}${th("note","Note finale")}${th("modifie","Modifiée")}</tr></thead><tbody>
-    ${R.map(({ e, c }) => `<tr class="f" data-id="${esc(e.id)}"><td><b>${esc(nomJeu(e.jeu))}</b>${cfgDe(e) ? ` <span class="cfg-nom">— ${esc(cfgDe(e))}</span>` : ""}${estClaude(e) ? ' <span class="badge" title="Pré-remplie par Claude, à revoir">Claude</span>' : ""}${aUnArticle(e) ? ' <span class="badge art" title="Un article est rédigé">article</span>' : ""}${e.publie ? ' <span class="badge pub" title="Publiée sur la vitrine go2games">vitrine</span>' : ""}</td><td>${esc(nomDe(e.evaluateur))}</td>
+    ${R.map(({ e, c }) => `<tr class="f" data-id="${esc(e.id)}"><td><b>${esc(nomJeu(e.jeu))}</b>${estClaude(e) ? ' <span class="badge" title="Pré-remplie par Claude, à revoir">Claude</span>' : ""}${aUnArticle(e) ? ' <span class="badge art" title="Un article est rédigé">article</span>' : ""}${e.publie ? ' <span class="badge pub" title="Publiée sur la vitrine go2games">vitrine</span>' : ""}</td><td>${esc(nomDe(e.evaluateur))}</td>
       <td><span class="badge ${esc(e.statut)}">${e.statut === "finale" ? "finale" : "brouillon"}</span></td><td style="white-space:nowrap">${c.faites} / ${MOD.paires.length}</td>
       <td>${c.finale == null ? "—" : fmt(c.finale, 2)}</td><td style="white-space:nowrap">${new Date(e.modifie_le).toLocaleString("fr-FR", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" })}</td></tr>`).join("")}</tbody></table>`;
   document.querySelectorAll("#fiches tr.f").forEach(tr => tr.addEventListener("click", () => ouvrirFiche(toutes.find(e => e.id === tr.dataset.id))));
@@ -573,27 +573,10 @@ $("#creer").addEventListener("click", async () => {
   ouvrirJeu(code);
 });
 $("#ouvrir").addEventListener("click", () => { const c = $("#sel-jeu").value; if (!c){ $("#msg-accueil").className = "msg err"; $("#msg-accueil").textContent = "Choisis un jeu, ou ajoute-le."; return; } ouvrirJeu(c); });
-function ouvrirJeu(code, config = null){
+function ouvrirJeu(code){
   $("#msg-accueil").textContent = "";
   if (role === "lecteur"){ $("#accueil > .aide").textContent = `« ${nomJeu(code)} » n'a pas encore de fiche d'évaluation. Les autres fiches sont dans la liste ci-dessous.`; return; }
-  ouvrirFiche(toutes.find(e => e.jeu === code && e.evaluateur === user.id && cfgDe(e) === config) || { id:null, jeu:code, statut:"brouillon", evaluateur:user.id, configuration:config });
-}
-// une configuration (extensions…) : une nouvelle fiche qui reprend tout de la fiche de base, puis on ne change que ce qui bouge (17/10/2026)
-async function nouvelleConfiguration(){
-  const nom = (prompt("Nom de la configuration (par exemple « toutes extensions », « base + Wessex ») :") || "").trim();
-  if (!nom) return;
-  const deja = toutes.find(e => e.jeu === fiche.jeu && e.evaluateur === user.id && cfgDe(e) === nom);
-  if (deja){ ouvrirFiche(deja); $("#etat").textContent = `Tu as déjà une fiche « ${nom} » : la voici.`; return; }
-  if (enCours()){ clearTimeout(minuteur); await enregistrer(); }
-  const base = fiche, copie = JSON.parse(JSON.stringify(saisie)), date = new Date().toLocaleDateString("fr-FR");
-  fiche = { ...Object.fromEntries(CHAMPS.map(k => [k, base[k] ?? null])), id:null, jeu:base.jeu, evaluateur:user.id, statut:"brouillon", configuration:nom,
-    notes_article: `[Configuration « ${nom} », reprise de la fiche de base le ${date}] Ne change que ce qui bouge avec cette configuration : matériel, volume de règles, variété, prix, parties pour tout exploiter…`
-      + (base.notes_article ? "\n\n" + base.notes_article : "") };
-  saisie = copie; enAttente = new Set(Object.keys(copie)); ficheModifiee = true; lectureSeule = false;
-  effAttente = new Set(Object.keys(effectifs).map(Number));   // (4.0) les notes par effectif sont reprises aussi
-  majBarreFiche(); construireGrille(); recalculer(); window.scrollTo(0, 0);
-  await enregistrer(); await chargerFiches();
-  $("#etat").textContent = `Configuration « ${nom} » créée à partir de ta fiche de base.`;
+  ouvrirFiche(toutes.find(e => e.jeu === code && e.evaluateur === user.id) || { id:null, jeu:code, statut:"brouillon", evaluateur:user.id });
 }
 
 /* ---------------- ouvrir une fiche ---------------- */
@@ -627,13 +610,12 @@ function ouvrirFiche(f, empiler = true){
   construireGrille(); recalculer(); window.scrollTo(0, 0);
   verifierDescription(); chargerEffectifs();
 }
-// (4.0) le jeu, sa sous-fiche (« jeu de base », « jeu all-in »), puis la configuration évaluée s'il y en a une
-const titreBarre = f => { const j = MOD.jeux.find(x => x.code === f.jeu) || {}; return [nomJeu(f.jeu), CONFIGS[j.configuration] || j.configuration || CONFIGS.base, cfgDe(f)].filter(Boolean).join(" · "); };
+// (4.0) le jeu, puis sa sous-fiche (« jeu de base », « jeu all-in »)
+const titreBarre = f => { const j = MOD.jeux.find(x => x.code === f.jeu) || {}; return [nomJeu(f.jeu), CONFIGS[j.configuration] || j.configuration || CONFIGS.base].filter(Boolean).join(" · "); };
 function majBarreFiche(){
   $("#titre-jeu").textContent = $("#titre-jeu").title = titreBarre(fiche);
-  $("#vers-jeu").href = "jeu.html?jeu=" + encodeURIComponent(fiche.jeu) + (cfgDe(fiche) ? "&config=" + encodeURIComponent(cfgDe(fiche)) : "");
+  $("#vers-jeu").href = "jeu.html?jeu=" + encodeURIComponent(fiche.jeu);
   $("#vers-decrire").href = "decrire.html?jeu=" + encodeURIComponent(fiche.jeu);
-  $("#btn-config").classList.toggle("hidden", lectureSeule || !!cfgDe(fiche) || !fiche.id);   // depuis sa fiche de base, enregistrée
   $("#btn-supprimer").classList.toggle("hidden", role !== "proprietaire" || !fiche.id);
   $("#btn-finale").classList.toggle("hidden", lectureSeule);
   $("#btn-finale").textContent = fiche.statut === "finale" ? "Repasser la fiche en brouillon" : "Rendre la fiche finale";
@@ -649,13 +631,13 @@ function majBarreFiche(){
    jamais d'écrasement : la fonction de la base crée une nouvelle fiche (brouillon) et renvoie son id */
 function majEncart(){
   const box = $("#encart-soeur"); if (!box) return;
-  const ok = fiche && !fiche.id && !lectureSeule && SOEUR && !encartRefuse.has(fiche.jeu + "|" + (cfgDe(fiche) || ""));
+  const ok = fiche && !fiche.id && !lectureSeule && SOEUR && !encartRefuse.has(fiche.jeu);
   box.innerHTML = ok ? `<div class="encart-soeur" role="region" aria-label="Partir de ma fiche du ${esc(SOEUR.long)}">
       <p><b>Tu as déjà évalué le ${esc(SOEUR.long)}.</b> Partir de cette fiche ? Tes avis, tes notes par effectif et ton carnet seront repris ; la nouvelle fiche sera un brouillon, à relire.</p>
       <p class="encart-boutons"><button type="button" class="btn plein" id="dup-partir">Partir de ma fiche</button><button type="button" class="btn ghost" id="dup-vide">Commencer vide</button><span class="msg" id="dup-msg" role="status"></span></p></div>` : "";
 }
 $("#encart-soeur").addEventListener("click", async e => {
-  if (e.target.closest("#dup-vide")){ encartRefuse.add(fiche.jeu + "|" + (cfgDe(fiche) || "")); majEncart(); return; }
+  if (e.target.closest("#dup-vide")){ encartRefuse.add(fiche.jeu); majEncart(); return; }
   const b = e.target.closest("#dup-partir"); if (!b || !SOEUR || fiche?.id) return;
   const msg = $("#dup-msg"), jeu = fiche.jeu;
   b.disabled = true; msg.className = "msg"; msg.textContent = "Création de la fiche…";
@@ -663,7 +645,7 @@ $("#encart-soeur").addEventListener("click", async e => {
   if (error){ b.disabled = false; msg.className = "msg err"; msg.textContent = "La fiche n'a pas pu être reprise : " + error.message; return; }
   const id = typeof data === "string" ? data : data?.id || data?.[0]?.id || null;
   await chargerFiches();
-  const neuve = (id && toutes.find(x => x.id === id)) || toutes.find(x => x.jeu === jeu && x.evaluateur === user.id && cfgDe(x) === cfgDe(fiche));
+  const neuve = (id && toutes.find(x => x.id === id)) || toutes.find(x => x.jeu === jeu && x.evaluateur === user.id);
   if (!neuve){ b.disabled = false; msg.className = "msg err"; msg.textContent = "La fiche semble créée, mais introuvable : recharge la page."; return; }
   ouvrirFiche(neuve);
   $("#etat").textContent = `Fiche reprise de ton ${SOEUR?.long || "autre sous-fiche"} : un brouillon, à relire.`;
@@ -673,7 +655,6 @@ $("#cmp-soeur").addEventListener("change", e => {
   comparer = e.target.checked; document.body.classList.toggle("avec-soeur", !!SOEUR && comparer);
   try { localStorage.setItem("prisme_comparer_soeur", comparer ? "oui" : "non"); } catch (x){}
 });
-$("#btn-config").addEventListener("click", () => { outils(false); nouvelleConfiguration(); });
 /* (4.5) reprendre ses avis de la fiche sœur dans la fiche ouverte : prisme_recopier_evaluation(source, cible, carnet) remplace les avis,
    les notes par effectif et les parties pour tout exploiter (le carnet seulement si la case est cochée) ; puis la page est rechargée */
 $("#btn-reprendre").addEventListener("click", () => {
@@ -731,7 +712,7 @@ $("#m-fiches").addEventListener("click", async () => {
   const ici = MOD.jeux.find(j => j.code === fiche.jeu), s = soeurDe(fiche.jeu);
   const groupes = [ici, s].filter(Boolean).sort((a, b) => (sousFiche(a) === "base" ? 0 : 1) - (sousFiche(b) === "base" ? 0 : 1));
   const ligne = e => { const c = calculer(pourCalcul(e, saisieDe(e.id)).saisie);
-    return `<tr class="f" data-id="${esc(e.id)}"${e.id === fiche.id ? ' style="font-weight:600"' : ""}><td>${esc(nomDe(e.evaluateur))}${cfgDe(e) ? ` <span class="cfg-nom">— ${esc(cfgDe(e))}</span>` : ""}${e.id === fiche.id ? " <small>(ouverte)</small>" : ""}</td>
+    return `<tr class="f" data-id="${esc(e.id)}"${e.id === fiche.id ? ' style="font-weight:600"' : ""}><td>${esc(nomDe(e.evaluateur))}${e.id === fiche.id ? " <small>(ouverte)</small>" : ""}</td>
       <td><span class="badge ${esc(e.statut)}">${e.statut === "finale" ? "finale" : "brouillon"}</span></td><td style="white-space:nowrap">${c.faites} / ${MOD.paires.length}</td><td>${c.finale == null ? "—" : fmt(c.finale, 2)}</td></tr>`; };
   $("#fiches-soeurs").innerHTML = `<h2 id="dlg-fiches-titre">Les fiches de ${esc(nomJeu(fiche.jeu))}</h2>` + groupes.map(j => { const L = toutes.filter(e => e.jeu === j.code);
     return `<h3 class="fiches-groupe">${esc(maj1(CONFIGS[sousFiche(j)] || sousFiche(j)))}</h3>${L.length ? `<table class="fiches fiches-groupe"><thead><tr><th>Évaluateur</th><th>État</th><th>Paires</th><th>Note finale</th></tr></thead><tbody>${L.map(ligne).join("")}</tbody></table>`
@@ -961,10 +942,10 @@ function construireGrille(){
   const d = fiche, jeu = MOD.jeux.find(j => j.code === d.jeu) || {}, ro = lectureSeule ? " disabled" : "";
   let ouvert = true; try { ouvert = localStorage.getItem("prisme_assistant") !== "ferme"; } catch (e){}
   $("#aller").innerHTML = '<option value="">…</option>';
-  // « Mon avis » : les trois familles, la première dépliée
+  // « Mon avis » : les trois familles, (4.7) toutes repliées à l'ouverture
   let h = `<section class="bloc ${notion("axes")}" id="mon-avis"><h2 class="n-titre">Mon avis</h2><p class="chapo">${MOD.paires.length} paires, en ${MOD.chapitres.length} familles. Pour chacune : ce que le jeu annonce (décrit), puis ce que tu en as vécu.</p>`;
-  MOD.chapitres.forEach((c, i) => {
-    h += `<details class="famille" id="fam-${esc(c.code)}" data-chap="${esc(c.code)}"${i === 0 ? " open" : ""}><summary><span class="pic">${pictoFam(c.code)}</span>
+  MOD.chapitres.forEach(c => {
+    h += `<details class="famille" id="fam-${esc(c.code)}" data-chap="${esc(c.code)}"><summary><span class="pic">${pictoFam(c.code)}</span>
       <span class="fam-t"><b>${esc(c.nom)}</b><i>${esc(FAMILLES[c.code] || "")}</i></span><span class="fam-note"><span id="moy-${esc(c.code)}"></span><span id="soeur-c-${esc(c.code)}"></span></span>${CHEVRON}</summary><div class="cartes">`;
     MOD.paires.filter(p => p.chapitre === c.code).forEach(p => { h += cartePaire(p); $("#aller").insertAdjacentHTML("beforeend", `<option value="p-${esc(p.code)}">${esc(c.nom)} — ${esc(p.nom)}</option>`); });
     h += `</div></details>`;
@@ -1293,7 +1274,7 @@ async function verifierDescription(){
     if (fiche?.jeu !== jeu) return;   // une autre fiche a été ouverte entre-temps
     const L = data.map(x => ({ niveau: DESC.niveaux[x.mecanisme], poids: x.poids })), a = n => L.some(x => x.niveau === n);
     DESC.manque = [!a("materiel") && "le matériel", !a("aspect") && "le mode de jeu", !a("fin_de_partie") && "la fin de partie",
-      !L.some(x => (x.niveau === "mecanisme" || x.niveau === "assemblage") && x.poids === 3) && "un mécanisme ou une combinaison majeur"].filter(Boolean);
+      !L.some(x => (x.niveau === "mecanisme" || x.niveau === "assemblage") && x.poids === 3) && "un mécanisme ou un grand système majeur"].filter(Boolean);
   } catch (e){ console.warn("PRISME : description du jeu illisible, la publication n'est pas bloquée", e.message); DESC.manque = []; }
   DESC.jeu = jeu; appliquerDescription();
 }
@@ -1333,7 +1314,7 @@ function planifier(code){
 }
 async function enregistrer(){
   if (lectureSeule) return;
-  const champs = Object.fromEntries(CHAMPS.map(k => [k, fiche[k] ?? null])); champs.contenu_unique = !!fiche.contenu_unique; champs.configuration = cfgDe(fiche);
+  const champs = Object.fromEntries(CHAMPS.map(k => [k, fiche[k] ?? null])); champs.contenu_unique = !!fiche.contenu_unique;
   if (ARTICLE_OK) champs.article = fiche.article ?? null;   // (3.32) script 40
   if (PUBLI_OK){ champs.publie = !!fiche.publie; champs.publie_le = fiche.publie_le ?? null;   // (3.33) script 41 : l'instantané suit chaque enregistrement
     if (fiche.publie) champs.publication = publicationDe(fiche, saisie); }
@@ -1544,7 +1525,7 @@ function sourceEncadre(){
   const complete = x => { const y = pourCalcul(x.f, x.s); return !entreesFiche(y.saisie, MOD.paires, MOD.axes, y.extra).manque.length && calculer(y.saisie).finale != null; };
   const propre = { f:fiche, s:saisie, autre:null };
   if (complete(propre)) return propre;
-  const C = toutes.filter(e => e.jeu === fiche.jeu && cfgDe(e) === cfgDe(fiche) && e.id !== fiche.id).map(e => ({ f:e, s:saisieDe(e.id), autre:e.evaluateur })).filter(complete);
+  const C = toutes.filter(e => e.jeu === fiche.jeu && e.id !== fiche.id).map(e => ({ f:e, s:saisieDe(e.id), autre:e.evaluateur })).filter(complete);
   return C.find(x => x.f.statut === "finale") || C[0] || propre;
 }
 function encadrePrisme(){
