@@ -1,5 +1,5 @@
 /* =====================================================================
-   Flamme Bleue — en-tête commun (1.6, 30/10/2026 13h52)
+   Flamme Bleue — en-tête commun (1.7, 10/11/2026 00h03)
    - la couronne de cinq flammes (logo 2026) devant le nom « Flamme Bleue », qui ramène à l'accueil ;
    - un lien « La Forge », avec sa petite enclume, en haut à droite, comme dans PRISME :
      il n'apparaît que si la personne a aussi accès à PRISME (la Forge a alors autre chose à proposer) ;
@@ -12,6 +12,8 @@
    - (1.5) la mention « © 2026 Pierre Pigeon, tous droits réservés » et un lien « conditions » vers la LICENSE du dépôt,
      sur sa propre ligne en bas du pied de page de chaque page (ou sous la ligne de version là où il n'y a pas de pied de page).
    - (1.6) le logo « flamme de gaz » en petit (piste B) : flammes bleu dense, cœur bleu clair, pied jaune ; idem pour l'icône d'onglet.
+   - (1.7) à l'impression, la mention de droits en fin de document (les pieds de page sont masqués à l'impression) ;
+     sur les fiches et portraits, elle rejoint la ligne de bas de feuille (« .pied ») pour ne pas ajouter de hauteur.
    À charger APRÈS le script de la page (il réutilise son client Supabase « sb »).
    ===================================================================== */
 (function () {
@@ -40,7 +42,10 @@
     @media (max-width:700px){ .fb-fige{padding-top:6px!important;padding-bottom:6px!important;row-gap:4px!important} .fb-fige .signature{display:none} }
     @media (prefers-color-scheme: dark){ .fb-forge img{background:#F6F5F1;border-radius:3px;padding:1px} }
     .fb-droits{display:block;flex-basis:100%;margin-top:2px;text-align:right}
-    .fb-droits a{color:inherit;text-decoration:underline}`;
+    .fb-droits a{color:inherit;text-decoration:underline}
+    .fb-droits-imp{display:none}
+    @media print{ .fb-droits{display:none!important} .fb-droits-imp{display:block!important;margin:10px 0 0;font-size:9pt;color:#5B6573;text-align:right;break-inside:avoid}
+                  .pied .fb-droits-imp{display:inline!important;margin:0;font-size:inherit;color:inherit} }`;
   document.head.appendChild(css);
 
   // icône d'onglet : la couronne seule
@@ -69,6 +74,16 @@
     }
     pied.appendChild(droits);
   }
+
+  // (1.7) à l'impression : la mention en fin de document, ou dans la ligne de bas de feuille des fiches et portraits
+  const droitsImp = document.createElement("span");
+  droitsImp.className = "fb-droits-imp";
+  const placerDroitsImp = () => {
+    const pied = document.querySelector(".feuille .pied > span");             // fiche, portrait : la première partie de la ligne de bas de feuille
+    if (pied){ droitsImp.textContent = " · © 2026 Pierre Pigeon, tous droits réservés"; pied.appendChild(droitsImp); }
+    else { droitsImp.textContent = "© 2026 Pierre Pigeon, tous droits réservés — conditions : github.com/pierrepigeon-ui/laFORGE (LICENSE)"; document.body.appendChild(droitsImp); }
+  };
+  placerDroitsImp(); window.addEventListener("beforeprint", placerDroitsImp);
 
   // la flamme devant le nom
   document.querySelectorAll(".wordmark a").forEach(a => { if (!a.querySelector(".fb-flamme")) a.insertAdjacentHTML("afterbegin", FLAMME); });

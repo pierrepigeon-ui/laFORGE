@@ -112,7 +112,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px} .field{display:block;margi
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 
 <script>
-const VERSION = { numero:"1.29", date:"2026-10-30 13:52" };
+const VERSION = { numero:"1.30", date:"2026-11-10 00:03" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -220,6 +220,6 @@ sb.auth.onAuthStateChange(async (_e, session) => {
   $("#tuiles").innerHTML = t;
 });
 </script>
-<script src="entete.js?v=1.6"></script>
+<script src="entete.js?v=1.7"></script>
 </body>
 </html>
