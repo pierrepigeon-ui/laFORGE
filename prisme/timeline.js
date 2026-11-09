@@ -1,7 +1,10 @@
 /* PRISME — timeline du jeu : jalons, durées, flow, α β γ ω, durée de vie.
    Module partagé par l'encyclopédie et l'outil d'évaluation. Méthode arrêtée le 08/10/2026 (jeu d'essai : Heat) ; modèle à 12 paires le 11/10/2026 ;
    formules refaites phase par phase le 12/10/2026 avec trois jeux de référence (Gloomhaven, Heat, Flip 7). L'unité est la session. */
-const TIMELINE_VERSION = { numero:"3.16", date:"2026-11-08 01:30" };   // à incrémenter à chaque livraison
+const TIMELINE_VERSION = { numero:"3.17", date:"2026-11-10 00:30" };   // à incrémenter à chaque livraison
+// (3.17, 10/11/2026) fin de l'ancienne configuration (prisme_evaluations.configuration, vide partout) : plus de configDe, de reference,
+// de configurations ni de fichesBase ; lireJeuxEvalues ne rend plus que « fiches » (une sous-fiche par jeu : l'all-in s'il a des fiches,
+// sinon la base) et « fichesSousFiches » (toutes) ; une fiche lit toujours la description de sa sous-fiche
 // (3.16, 08/11/2026) le prix en douze tranches : prixDeGamme lit A à L (L = prix_K_max × 1,5) ; la gamme des écarts d'extensions au format de selecteurs.js
 // (3.15, 08/11/2026) pour un profil, la meilleure version de chaque jeu (meilleureVersion) et sa mention « · all-in » dans le tableau « ses jeux »
 // (3.14, 07/11/2026) ce que changent les extensions : ecartsExtensions() compare la base et l'all-in d'un jeu ; lireEcartsExtensions() la nourrit
@@ -593,10 +596,9 @@ async function lireSourceCalcul(sb){
   (r.data || []).forEach(x => src.reglages[x.cle] = x.valeur);
   return src;
 }
-// raccourci pour une fiche f { jeu, configuration, contenu_parties, contenu_unique, prix } et sa saisie ; src : résultat de lireSourceCalcul (ou rien : la fiche)
-// une fiche d'une configuration (« toutes extensions »…) n'a pas de description propre : elle reste sur la fiche
+// raccourci pour une fiche f { jeu, contenu_parties, contenu_unique, prix } et sa saisie ; src : résultat de lireSourceCalcul (ou rien : la fiche)
 function entreesDeFiche(f, saisie, axes, src, reglages){
-  const desc = src && !configDe(f) ? src.descriptions[f.jeu] : null;
+  const desc = src ? src.descriptions[f.jeu] : null;
   return entreesPourCalcul(saisie, { contenu_parties:f.contenu_parties, contenu_unique:f.contenu_unique, prix:f.prix }, desc, desc ? src.axes[f.jeu] : null, reglages ?? src?.reglages, axes);
 }
 
@@ -643,15 +645,12 @@ function mentionVersion(x){
 /* ---------------- lecture des jeux évalués et tableau « ses jeux » (partagé : rosace, fiche du joueur) ---------------- */
 // les résultats publiés (fiches finales, sans justification) : les vues du script 25, lisibles par tout compte connecté (rôle joueur) ;
 // à défaut (script 25 pas encore passé), les tables, avec les droits d'avant
-// la configuration évaluée par une fiche (« toutes extensions »…) ; null : la boîte de base
-const configDe = f => String(f?.configuration ?? "").trim() || null;
 // (3.13) les sous-fiches d'un jeu : même fiche globale (prisme_jeux.fiche_globale ; sans elle, le jeu est seul) ; configuration « base » ou « all_in »
 const ficheGlobaleDe = j => j?.fiche_globale || j?.code;
 const sousFicheDe = j => j?.configuration || "base";
 const sousFichesDe = (code, jeux) => { const j = jeux.find(x => x.code === code); return j ? jeux.filter(x => ficheGlobaleDe(x) === ficheGlobaleDe(j)) : []; };
 // le nom du jeu : celui de sa sous-fiche de base (« Obsession », pas « Obsession (all-in) »)
 const nomJeuGlobal = (code, jeux) => { const S = sousFichesDe(code, jeux); return (S.find(x => sousFicheDe(x) === "base") || S.find(x => x.code === code))?.nom || code; };
-const estJeuComplet = nom => /toutes?\s+(les\s+)?extensions|jeu\s+complet/i.test(nom || "");
 async function lireJeuxEvalues(sb){
   // (18/10/2026) toutes les lectures partent en même temps ; une table de plus de 1000 lignes est lue par pages, elles aussi en parallèle
   const lire = async (t, o) => {
@@ -668,13 +667,8 @@ async function lireJeuxEvalues(sb){
     if (!paires.length) return { refus:true };
     const [evals, vals] = parVues || await Promise.all([lire("prisme_evaluations"), lire("prisme_evaluation_valeurs")]);
     const saisies = {}; vals.forEach(v => (saisies[v.evaluation] ??= {})[v.axe] = { valeur: v.valeur == null ? null : Number(v.valeur), sans_objet: v.sans_objet });
-    const tout = evals.map(e => ({ ...e, configuration: configDe(e), saisie: saisies[e.id] || {} }));
-    // fiches : la boîte de base (ce que lisent la liste des jeux, les profils, la rosace) ; configurations : les autres (17/10/2026)
-    const base = tout.filter(f => !f.configuration), configurations = tout.filter(f => f.configuration);
-    // (18/10/2026) le jeu complet est la référence : quand une configuration « toutes extensions » existe, c'est elle que lisent
-    // la liste des jeux, la note pour vous, les profils et la rosace ; sinon, la boîte de base
-    const reference = {}; configurations.forEach(f => { if (estJeuComplet(f.configuration)) reference[f.jeu] ??= f.configuration; });
-    const fichesSousFiches = [...base.filter(f => !reference[f.jeu]), ...configurations.filter(f => reference[f.jeu] && f.configuration === reference[f.jeu])];
+    // (3.17) toutes les fiches, de toutes les sous-fiches (base et all-in sont deux jeux de prisme_jeux, liés par fiche_globale)
+    const fichesSousFiches = evals.map(e => ({ ...e, saisie: saisies[e.id] || {} }));
     // (3.13) une seule sous-fiche par jeu, pour ne jamais proposer deux fois le même : l'all-in s'il a des fiches, sinon la base
     const avec = new Set(fichesSousFiches.map(f => f.jeu)), retenue = {};
     jeux.forEach(j => { const g = ficheGlobaleDe(j); if (g in retenue) return;
@@ -682,7 +676,7 @@ async function lireJeuxEvalues(sb){
       retenue[g] = (S.find(x => sousFicheDe(x) === "all_in") || S.find(x => sousFicheDe(x) === "base") || S[0])?.code ?? null; });
     const globale = Object.fromEntries(jeux.map(j => [j.code, ficheGlobaleDe(j)]));
     const fiches = fichesSousFiches.filter(f => retenue[globale[f.jeu] ?? f.jeu] === f.jeu || !(f.jeu in globale));
-    return { paires, axes, jeux, fiches, fichesSousFiches, fichesBase: base, configurations, reference, src, duree: performance.now() - t0 };
+    return { paires, axes, jeux, fiches, fichesSousFiches, src, duree: performance.now() - t0 };
   } catch (e){ return { refus:true }; }
 }
 // la moyenne de plusieurs fiches d'un même jeu : axe par axe (une valeur sans objet dans toutes les fiches reste sans objet) ; données du jeu moyennées
@@ -699,7 +693,7 @@ function ficheMoyenne(fiches){
 // le résumé d'un jeu (fiches finales moyennées) : notes, courbe, coûts ; code : le profil du joueur (A.b/e), facultatif ; src : la source des calculs
 function resumeJeu(fiches, paires, axes, code, src){
   if (!fiches.length) return null;
-  const m = ficheMoyenne(fiches), x = entreesDeFiche({ ...m, jeu:fiches[0].jeu, configuration:configDe(fiches[0]) }, m.saisie, axes, src);
+  const m = ficheMoyenne(fiches), x = entreesDeFiche({ ...m, jeu:fiches[0].jeu }, m.saisie, axes, src);
   const e = entreesFiche(x.saisie, paires, axes, x.extra);
   const parChap = {}; e.paires.forEach(p => { if (p.note != null) (parChap[p.chap] ??= []).push(p.note); });
   const chap = Object.fromEntries(Object.entries(parChap).map(([k, L]) => [k, L.reduce((t, x) => t + x, 0) / L.length]));
@@ -825,12 +819,12 @@ async function lireEcartsExtensions(sb, code, d, PL, vieDe){
   const paliers = {}; pal.forEach(x => (paliers[x.axe] ||= []).push({ valeur:Number(x.valeur), libelle:x.libelle })); Object.values(paliers).forEach(P => P.sort((a, b) => a.valeur - b.valeur));
   const ctx = { paires:d.paires, axes:d.axes, chapitres:ch, paliers, reglages:d.src?.reglages, meca:Object.fromEntries(nm.map(x => [x.code, x])), themes:Object.fromEntries(nt.map(x => [x.code, x.libelle])) };
   const sous = j => {
-    const cfg = d.reference?.[j.code] || null;   // comme la fiche du jeu : une ancienne configuration « toutes extensions » reste la référence
-    const F = cfg ? (d.configurations || []).filter(f => f.jeu === j.code && configDe(f) === cfg) : (d.fichesBase || d.fiches).filter(f => f.jeu === j.code);
-    const R = resumeJeu(F, d.paires, d.axes, null, d.src), desc = !cfg ? d.src?.descriptions?.[j.code] || null : null;
+    // comme la fiche du jeu : les fiches de la sous-fiche et sa description
+    const F = d.fichesSousFiches.filter(f => f.jeu === j.code);
+    const R = resumeJeu(F, d.paires, d.axes, null, d.src), desc = d.src?.descriptions?.[j.code] || null;
     const parCode = (T, k) => Object.fromEntries(T.filter(x => x.jeu === j.code).map(x => [x[k], { poids:x.poids }]));
     const T20 = R?.complet && PL?.temperaments?.length ? spectrometre(R.e.n, R.e.paires, PL).moteurs.flatMap(g => g.temperaments).map(x => ({ code:x.t.code, nom:x.t.nom, note:x.note })) : null;
-    return { jeu:j, R, desc, DA: !cfg ? d.src?.axes?.[j.code] || {} : {}, meca:parCode(jm, "mecanisme"), themes:parCode(jt, "theme"), T20, vie: R?.complet && vieDe ? vieDe(R, desc) : null };
+    return { jeu:j, R, desc, DA: d.src?.axes?.[j.code] || {}, meca:parCode(jm, "mecanisme"), themes:parCode(jt, "theme"), T20, vie: R?.complet && vieDe ? vieDe(R, desc) : null };
   };
   const b = sous(base), a = sous(allIn);
   return { base:b, allIn:a, ...ecartsExtensions(b, a, ctx) };

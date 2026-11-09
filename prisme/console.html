@@ -314,10 +314,14 @@ dialog h2{font:600 22px var(--serif);margin:0 0 16px}
   <footer><span class="version" data-version></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></footer>
 </section>
 
-<script src="timeline.js?v=3.16"></script>   <!-- (3.12) les calculs partagés, pour le contrôle de la bascule ; (3.14) le prix en douze tranches -->
+<script src="timeline.js?v=3.17"></script>
+<script src="selecteurs.js?v=1.9"></script>   <!-- (3.15) les libellés des niveaux de mécaniques et des facettes de thèmes, définis une seule fois -->   <!-- (3.12) les calculs partagés, pour le contrôle de la bascule ; (3.14) le prix en douze tranches -->
 <script>
 /* ================= configuration ================= */
-const VERSION = { numero:"3.14", date:"2026-11-08 01:30" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.15", date:"2026-11-10 00:30" };   // à incrémenter à chaque livraison
+// (3.15, 10/11/2026) les libellés des niveaux de mécaniques (NIVEAUX_MECA : « Hasard et information », « Grands systèmes »,
+// « Parole et communication », « Ordre du tour »…) et des facettes de thèmes (FACETTES) viennent de selecteurs.js, chargé comme sur les autres
+// pages ; norm() et bilingue() aussi ; timeline.js 3.17
 // (3.14, 08/11/2026) le prix en douze tranches : les onze montants des réglages restent dans l'ordre (chacun inférieur au suivant)
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
@@ -327,7 +331,7 @@ document.querySelectorAll("[data-version]").forEach(el =>
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const norm = s => String(s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+// (3.15) norm() vient de selecteurs.js
 
 /* vocabulaire de l'interface */
 const ROLES = { proprietaire:"propriétaire", editeur:"éditeur", evaluateur:"évaluateur", lecteur:"lecteur" };
@@ -338,8 +342,8 @@ const OPTIONS = {
   nature:   { descriptif:"descriptif", evaluatif:"évaluatif" },
   echelle:  { "0-5":"0 à 5", ecart:"écart −− à ++", crans5:"5 crans −− à ++", calcule:"calculée" },
   type:     { statut:"statut", solo:"volet solo", absorption:"absorption", consigne:"consigne de rédaction", historique:"historique", reserve:"en réserve", regle:"règle", note:"note" },
-  // les niveaux de PRISMEmechanics, dans l'ordre d'affichage (29/10/2026 : le niveau « paramètre » n'existe plus)
-  niveau:   { materiel:"Matériel", geste:"Gestes de base", mecanisme:"Mécanisme", assemblage:"Combinaison", aspect:"Mode de jeu", structure:"Déroulement", fin_de_partie:"Fin de partie", mise_en_place:"Mise en place", support:"Plateau et formes", parole:"Parole", hors_modele:"Hors modèle" },
+  // les niveaux de PRISMEmechanics, dans l'ordre d'affichage : (3.15) ceux de selecteurs.js, un seul endroit pour changer un mot
+  niveau:   NIVEAUX_MECA,
   statut_meca:{ garder:"garder", fusionner:"fusionner", scinder:"scinder", ecarter:"écarter", a_discuter:"à discuter" }
 };
 const CATEGORIES = { D:"déplacement", M:"modification", L:"lecture" };
@@ -364,7 +368,7 @@ const LIBELLES = { devise:"Devise", a_la_table:"À la table, il peut (un comport
   nom_en:"Nom anglais", famille_recolte:"Famille d'origine (récolte)", niveau:"Niveau", categorie:"Catégorie", lecture:"Lecture dans le modèle",
   parametres:"Paramètres", exemples:"Exemples", sources:"Sources", axe_prisme:"Axe PRISME", fusion_vers:"Fusionné vers", remarques:"Remarques", parent:"Valeur parente", libelle_en:"Libellé anglais" };
 // un nom et son anglais : « nom (name) », l'anglais en italique et en gris ; en texte simple pour les listes déroulantes
-const bilingue = (fr, en) => esc(fr) + (en ? ` <span class="en">(${esc(en)})</span>` : "");
+// (3.15) bilingue() vient de selecteurs.js
 const bilingueTexte = (fr, en) => fr + (en ? ` (${en})` : "");
 
 let state = { user:null, role:null, noms:{}, chapitres:[], paires:[], axes:[], paliers:[], notes:[], jeux:[], exemples:[], textes:[], mecanismes:[], requis:[], reglages:[], themes:[], current:null };
@@ -876,15 +880,15 @@ $("#m-editor-host").addEventListener("click", async e => {
 
 /* ================= PRISMEthemes (29/10/2026) ================= */
 // la nomenclature des thèmes, en facettes ; seules les facettes enrichissables reçoivent de nouvelles valeurs ; pas de suppression
-const FACETTES = { cadre:"Cadre", periode:"Période", realisme:"Réalisme", sujet:"Sujet", role:"Rôle", lieu:"Lieu", ton:"Ton", tag:"Tags du fantastique", reference:"Référence culturelle et géographique" };
+// (3.15) les facettes et leurs libellés : FACETTES de selecteurs.js
 const FACETTES_OUVERTES = { tag:"TAG-", reference:"REF-" };
 const codeTheme = (facette, libelle) => FACETTES_OUVERTES[facette] + norm(libelle).toUpperCase().replace(/[^A-Z0-9]+/g, "-").replace(/^-|-$/g, "");
 function afficherThemes(){
   afficherListeT();
   if (!state.currentT) accueilT();
 }
-// les valeurs d'une facette, chaque parent suivi de ses sous-items
-function themesRanges(facette){
+// les valeurs d'une facette, chaque parent suivi de ses sous-items ; (3.15) renommée : selecteurs.js a la sienne, qui lit TH.lignes
+function themesRangesConsole(facette){
   const L = state.themes.filter(x => x.facette === facette), codes = new Set(L.map(x => x.code));
   const racines = L.filter(x => !x.parent || !codes.has(x.parent));
   return racines.flatMap(x => [x, ...L.filter(y => y.parent === x.code)]);
@@ -894,7 +898,7 @@ function afficherListeT(){
   const voit = x => !q || norm([x.code, x.libelle, x.libelle_en, x.definition, x.remarques].join(" ")).includes(q);
   let html = "", n = 0;
   Object.entries(FACETTES).forEach(([f, nom]) => {
-    const tous = themesRanges(f), L = tous.filter(voit); if (!L.length) return; n += L.length;
+    const tous = themesRangesConsole(f), L = tous.filter(voit); if (!L.length) return; n += L.length;
     html += `<div class="chap-title" style="--chap:var(--muted)">${esc(nom)}<span class="compteur">${q ? `${L.length} sur ${tous.length}` : tous.length}</span></div>` + L.map(x =>
       `<div class="item theme${x.parent ? " sous-item" : ""}" role="option" tabindex="0" data-tcode="${esc(x.code)}" style="--chap:var(--muted)" aria-selected="${state.currentT === x.code}">
         <span><span class="nom">${bilingue(x.libelle, x.libelle_en)}</span><br><span class="sous">${esc(x.code)}</span></span></div>`).join("");

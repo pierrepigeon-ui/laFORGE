@@ -64,9 +64,10 @@ table.jeux tr[data-href]{cursor:pointer} table.jeux tr[data-href]:hover td{backg
   <p class="version"><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p>
 </main>
 
-<script src="timeline.js?v=3.14"></script>
+<script src="timeline.js?v=3.17"></script>
 <script>
-const VERSION = { numero:"1.13", date:"2026-11-07 19:10" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.14", date:"2026-11-10 00:30" };   // à incrémenter à chaque livraison
+// (1.14, 10/11/2026) fin de l'ancienne configuration (« jeu complet », « + n configurations ») : la ligne ne lit plus que les sous-fiches ; timeline.js 3.17
 // (1.13, 07/11/2026) sur la pastille « all-in », l'écart de note finale avec la base (à partir de 0,1)
 // (1.12, 06/11/2026) une ligne par jeu (fiche globale) : le nom de la base, les pastilles « base » / « all-in », les valeurs de la sous-fiche de référence
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
@@ -116,7 +117,7 @@ async function demarrer(user){
   etape("Calcul des courbes…"); await new Promise(ok => setTimeout(ok, 0));   // laisse le message s'afficher
   const t2 = performance.now();
   // (1.12) toutes les sous-fiches (base et all-in), puis une ligne par fiche globale
-  const parJeu = {}; (d.fichesSousFiches || d.fiches).forEach(f => (parJeu[f.jeu] ??= []).push(f));
+  const parJeu = {}; d.fichesSousFiches.forEach(f => (parJeu[f.jeu] ??= []).push(f));
   const resume = j => resumeJeu(parJeu[j.code] || [], d.paires, d.axes, profil, d.src);
   const groupes = {}; d.jeux.forEach(j => (groupes[ficheGlobaleDe(j)] ??= []).push(j));
   lignes = Object.values(groupes).map(S => {
@@ -125,11 +126,10 @@ async function demarrer(user){
     const ouvre = allin || base || S[0], j = (allin && parJeu[allin.code]?.length ? allin : null) || base || ouvre;
     const F = parJeu[j.code] || [], r2 = resume(j);
     const T = toutes.filter(f => S.some(x => x.code === f.jeu));
-    const cfg = new Set((d.configurations || []).filter(f => f.jeu === j.code).map(configDe)).size, refJ = d.reference?.[j.code];
     const sf = base && allin ? [[base, "base"], [allin, "all-in"]].map(([x, t]) => ({ x, t, r: x === j ? r2 : resume(x) })) : [];
     const nom = (base || j).nom, autres = S.map(x => x.nom).join(" ");   // la recherche lit aussi le nom de l'all-in
     return { j, nom, autres, ouvre, sf, image: (base || j).image_url || ouvre.image_url, n:F.length, r:r2, toutes:T.length,
-      mienne:T.find(f => f.jeu === j.code && f.evaluateur === user.id && configDe(f) === (refJ || null)) || T.find(f => f.evaluateur === user.id), cfg, refJ };
+      mienne:T.find(f => f.jeu === j.code && f.evaluateur === user.id) || T.find(f => f.evaluateur === user.id) };
   }).sort((a, b) => a.nom.localeCompare(b.nom, "fr", { sensitivity:"base" }));
   temps.calcul = performance.now() - t2;
   $("#liens").innerHTML = (NIVEAUX[role] >= NIVEAUX.evaluateur ? `<a class="btn" href="evaluation.html?ajout=1">Ajouter un jeu</a>` : "")
@@ -171,14 +171,14 @@ function afficher(){
       const nb = l.sf[0]?.r?.finale, na = l.sf[1]?.r?.finale, ecExt = nb != null && na != null && Math.abs(na - nb) >= .1 - 1e-9
         ? ` <span class="ec ${na > nb ? "plus" : "baisse"}">${na > nb ? "+" : "−"}${fmt(Math.abs(na - nb), 1)}</span>` : "";
       const sf = l.sf.length ? `<span class="sf">${l.sf.map(s => `<a href="jeu.html?jeu=${encodeURIComponent(s.x.code)}"${s.x === l.j ? ' class="ref"' : ""} title="${esc(s.t === "base" ? "Jeu de base" : "Jeu all-in")} : ${s.r?.finale != null ? "note " + fmt(s.r.finale) + " / 5" : "pas encore de fiche finale"}">${s.t}${s.t === "all-in" ? ecExt : ""}</a>`).join("")}</span>` : "";
-      const nom = `<div class="cellule"><a class="jeu" href="${lien}">${img}<span><b>${esc(l.nom)}</b><small>${l.n ? `${l.n} fiche${l.n > 1 ? "s" : ""} finale${l.n > 1 ? "s" : ""}` : "pas encore évalué"}${l.refJ ? " · jeu complet" : l.cfg ? ` · + ${l.cfg} configuration${l.cfg > 1 ? "s" : ""}` : ""}</small></span></a>${sf}</div>`;
+      const nom = `<div class="cellule"><a class="jeu" href="${lien}">${img}<span><b>${esc(l.nom)}</b><small>${l.n ? `${l.n} fiche${l.n > 1 ? "s" : ""} finale${l.n > 1 ? "s" : ""}` : "pas encore évalué"}</small></span></a>${sf}</div>`;
       const ev = !lecteur ? "" : `<td class="discret">${l.mienne ? `ma fiche (${l.mienne.statut === "finale" ? "finale" : "brouillon"})` : ""}${l.mienne && l.toutes > 1 ? " · " : ""}${!l.mienne || l.toutes > 1 ? (l.toutes ? `${l.toutes} fiche${l.toutes > 1 ? "s" : ""}` : "") : ""}</td>`;
       if (!l.r || !l.r.complet) return `<tr class="${l.n ? "" : "attente"}" data-href="${lien}"><td>${nom}</td><td class="n">${l.r?.finale != null ? fmt(l.r.finale) : "—"}</td>${profil ? '<td class="n">—</td>' : ""}<td class="n col-sec">—</td><td class="n col-sec">—</td><td class="n col-sec">—</td>${ev}</tr>`;
       return `<tr data-href="${lien}"><td>${nom}</td><td class="n"><b>${fmt(l.r.finale)}</b></td>${profil ? `<td class="n"><b>${fmt(l.r.notePour)}</b>${ecart(l.r.notePour, l.r.finale)}</td>` : ""}
         <td class="n col-sec">${fmt(l.r.c.y[l.r.c.alpha])}</td><td class="n col-sec">${vie(l.r.c)}</td><td class="n col-sec">${cout(l.r.cout)}</td>${ev}</tr>`;
     }).join("")}</tbody></table></div>
     <p class="discret" style="font-size:12px">Chargé en ${secondes(performance.now() - T0)} : connexion ${secondes(temps.connexion)}, base ${secondes(temps.base)}, calcul ${secondes(temps.calcul)}.</p>
-    <p class="discret">Un clic sur un en-tête trie la colonne. Notes sur 5, moyenne des fiches finales ; pour un jeu évalué avec toutes ses extensions, c'est le jeu complet qui compte. Apogée : le flow le plus haut de la timeline, sur 10 (le flow n'est pas une note : il mesure le plaisir net à un moment de la vie du jeu). Durée de vie : en sessions, jusqu'à l'abandon ou jusqu'au jeu rangé ; ∞ pour un classique.</p>`;
+    <p class="discret">Un clic sur un en-tête trie la colonne. Notes sur 5, moyenne des fiches finales ; pour un jeu qui a son all-in, c'est l'all-in qui compte dès qu'il a des fiches. Apogée : le flow le plus haut de la timeline, sur 10 (le flow n'est pas une note : il mesure le plaisir net à un moment de la vie du jeu). Durée de vie : en sessions, jusqu'à l'abandon ou jusqu'au jeu rangé ; ∞ pour un classique.</p>`;
   // (1.12) un clic sur la ligne ouvre la sous-fiche de référence (les liens de la ligne gardent leur propre cible)
   document.querySelectorAll("table.jeux tr[data-href]").forEach(tr => tr.addEventListener("click", e => { if (!e.target.closest("a")) location.href = tr.dataset.href; }));
   document.querySelectorAll("table.jeux th[data-tri]").forEach(h => h.addEventListener("click", () => {

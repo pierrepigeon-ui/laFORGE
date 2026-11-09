@@ -36,22 +36,18 @@ main{max-width:1180px;margin:0 auto;padding:8px 24px 48px;display:flex;flex-dire
 .btn.plein{background:var(--accent);border-color:var(--accent);color:var(--sur-accent)} .btn.plein:hover{background:var(--accent-fonce);border-color:var(--accent-fonce);color:var(--sur-accent)}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
-/* infobulle : au survol et au focus (clavier), pas seulement à la souris */
+/* infobulle : au survol, au focus (clavier) et au toucher ; (2.20) ouverte et fermée par selecteurs.js (classe bulle-ouverte), une seule à la fois */
 .info{position:relative;cursor:default}
 .info .bulle{display:none;position:absolute;left:0;top:calc(100% + 6px);z-index:20;background:var(--ink);color:var(--panel);font:400 12.5px/1.45 var(--sans);padding:7px 10px;border-radius:8px;width:max-content;max-width:min(340px,80vw);white-space:normal;text-align:left;box-shadow:0 4px 14px rgba(0,0,0,.15)}
-.info:hover .bulle,.info:focus .bulle,.info:focus-within .bulle{display:block}
+.info.bulle-ouverte .bulle{display:block}
 
 /* 1. carte d'identité */
 .identite{display:grid;grid-template-columns:200px minmax(0,1fr) auto;gap:28px;padding:28px}
 .visuel{width:200px;height:250px;border-radius:12px;background:var(--neutre);object-fit:cover;display:block}
 .id-corps{display:flex;flex-direction:column;gap:16px;min-width:0}
 .id-corps h1{font:600 clamp(28px,4.5vw,40px)/1.1 var(--serif);margin:2px 0 4px}
->>>>
-
 .technique{color:var(--muted)}
 .actions{display:flex;flex-direction:column;gap:8px;align-items:stretch}
->>>>
-
 .notation{display:flex;flex-wrap:wrap;gap:28px;align-items:center}
 .note-g{display:flex;align-items:baseline;gap:4px}
 .note-g b{font:600 64px/1 var(--serif);color:var(--accent);font-variant-numeric:tabular-nums}
@@ -151,7 +147,10 @@ ul.m-liste li{border-bottom:1px solid var(--line);padding:7px 0}
    2.19 (09/11/2026) : fin de l'ancienne configuration (prisme_evaluations.configuration : plus de pastilles « Boîte de base » /
    « toutes extensions ») ; base et all-in ne passent plus que par les onglets des sous-fiches ; carte Mécaniques sans sous-titre,
    l'ordre du tour à part en tête comme la fin de partie ; pastilles et légendes centrées sur leur ligne ; le sujet du thème plus visible ;
-   « Guerre (échelle …) » (selecteurs.js 1.9) */
+   « Guerre (échelle …) » (selecteurs.js 1.9)
+   2.20 (10/11/2026) : les info-bulles par le gestionnaire commun de selecteurs.js (classe bulle-ouverte) : elles se ferment ;
+   les fiches de la sous-fiche lues dans fichesSousFiches (timeline.js 3.17, sans l'ancienne configuration) ;
+   retrait de deux lignes parasites laissées dans la feuille de style en 2.19, qui annulaient les règles .technique et .notation */
 .puces{align-items:center}   /* (2.19) des pastilles de tailles différentes, centrées sur leur ligne */
 .ligne-tete{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px} .ligne-tete > .etiq{font-size:13px;font-weight:600}
 #carte-theme .titre-carte{font:700 24px/1.25 var(--serif);color:var(--n-titre)}   /* (2.19) le sujet, en titre de la carte */
@@ -183,10 +182,10 @@ details.pli.notion > summary strong{color:var(--n-titre)}
   <p class="version"><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p>
 </main>
 
-<script src="timeline.js?v=3.16"></script>
+<script src="timeline.js?v=3.17"></script>
 <script src="selecteurs.js?v=1.9"></script>
 <script>
-const VERSION = { numero:"2.19", date:"2026-11-09 23:45" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"2.20", date:"2026-11-10 00:30" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -289,7 +288,7 @@ async function afficher(user){
   // (2.19) les fiches de cette sous-fiche ; l'ancienne configuration (« toutes extensions ») n'existe plus : base et all-in sont deux sous-fiches
   // lecteurs et au-delà : toutes les fiches du jeu, brouillons compris
   const T0 = NIVEAUX[role] >= NIVEAUX.lecteur ? ((await sb.from("prisme_evaluations").select("*").eq("jeu", code)).data || []) : [];
-  const F = (d.fichesBase || d.fiches).filter(f => f.jeu === code), R = resumeJeu(F, d.paires, d.axes, profil, d.src);
+  const F = d.fichesSousFiches.filter(f => f.jeu === code), R = resumeJeu(F, d.paires, d.axes, profil, d.src);
   const titre = esc(jeu.nom);
 
   // les boutons d'action : l'évaluation (mêmes rôles qu'en 1.7), les informations du jeu (éditeur et propriétaire)

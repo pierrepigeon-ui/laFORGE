@@ -23,7 +23,9 @@
    (le prix en douze tranches dans les calculs)
    4.7 (09/11/2026) : fin de l'ancienne configuration (prisme_evaluations.configuration n'est plus lue ni écrite : plus de filtre
    « Boîte de base / Configurations », plus de « + Configuration ») ; base et all-in ne passent plus que par les sous-fiches ;
-   les trois familles repliées à l'ouverture ; selecteurs.js 1.9 */
+   les trois familles repliées à l'ouverture ; selecteurs.js 1.9
+   4.8 (10/11/2026) : « À combien ? » : effacer la dernière note d'effectif vide aussi le meilleur effectif (effectif_reference à null,
+   « non renseigné ») ; timeline.js 3.17 */
 :root{--ink:#15171C;--muted:#4B5160;--line:#E2E4E9;--trait:#C9CEDB;--paper:#F4F5F7;--panel:#FFFFFF;--neutre:#E8EAF0;--filet:#EEF0F4;
   --accent:#2346C8;--accent-fonce:#16308F;--sur-accent:#FFFFFF;--bleu-fond:#E6EBFB;--bleu-texte:#16308F;--orange-fond:#FBEDE4;--orange-texte:#8A3108;
   --vert-fond:#E7F4EC;--vert-texte:#14532D;--ok:#1E7A46;--warn:#9A5B00;--err:#B42318;--trapeze:#F0F2F6;--trapeze-demi:#E3E6EE;
@@ -367,10 +369,10 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
   <div class="boutons"><span class="msg" id="rep-msg" role="status"></span><button class="btn ghost" type="button" id="rep-annuler">Annuler</button><button class="btn plein" type="button" id="rep-ok">Reprendre</button></div></dialog>
 <div class="wrap"><p class="version"><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p></div>
 
-<script src="timeline.js?v=3.16"></script>
+<script src="timeline.js?v=3.17"></script>
 <script src="selecteurs.js?v=1.9"></script>
 <script>
-const VERSION = { numero:"4.7", date:"2026-11-09 23:45" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"4.8", date:"2026-11-10 00:30" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -1015,16 +1017,18 @@ function meilleurEffectif(){
   const N = Object.entries(effectifs).filter(([, v]) => v != null).map(([k, v]) => [Number(k), v]); if (!N.length) return null;
   const m = Math.max(...N.map(x => x[1])); return N.filter(x => x[1] === m).map(x => x[0]).sort((a, b) => a - b);
 }
+// appelée quand l'utilisateur pose ou efface une note ; (4.8) la dernière note effacée vide aussi le meilleur effectif
+// (une fiche qu'on ouvre sans y toucher garde sa valeur enregistrée)
 function majEffectifReference(){
-  const B = meilleurEffectif();   // sans aucune note : la valeur existante est gardée
-  if (B && fiche.effectif_reference !== B[0]){ fiche.effectif_reference = B[0]; ficheModifiee = true; }
+  const B = meilleurEffectif(), v = B ? B[0] : null;
+  if (fiche.effectif_reference !== v){ fiche.effectif_reference = v; ficheModifiee = true; }
 }
 function dessinerEffectifs(){
   const box = $("#eff-corps"); if (!box || !fiche) return;
   if (!EFF_LU){ box.innerHTML = `<p class="aide">Lecture des effectifs…</p>`; return; }
   const { L, min, max, source } = effectifsProposes(), B = meilleurEffectif();
   const lien = `<a href="decrire.html?jeu=${encodeURIComponent(fiche.jeu)}">Décrire le jeu</a>`;
-  const meilleur = B ? `<b>${esc(B.map(nomEffectif).join(" et "))}</b>` : fiche.effectif_reference != null ? `${esc(nomEffectif(fiche.effectif_reference))} <i>(la valeur déjà enregistrée dans la fiche)</i>` : `<i>calculé dès qu'un effectif est noté</i>`;
+  const meilleur = B ? `<b>${esc(B.map(nomEffectif).join(" et "))}</b>` : fiche.effectif_reference != null ? `${esc(nomEffectif(fiche.effectif_reference))} <i>(la valeur déjà enregistrée dans la fiche)</i>` : `non renseigné <i>(calculé dès qu'un effectif est noté)</i>`;
   box.innerHTML = (L.length ? `<p class="aide" style="font-style:italic;margin:0 0 4px">Ton avis sur chaque effectif que le jeu propose (de ${min} à ${max}, d'après ${source}). Laisse vide ce que tu n'as pas joué. Le meilleur effectif s'en déduit.</p>`
       + L.map(x => `<div class="effectif"><span>${esc(x.nom)}</span>${echelle(effectifs[x.n] ?? null, false, x.nom, `data-eff="${x.n}"`, !!EFF_ERR)}</div>`).join("")
     : `<p class="aide">Le nombre de joueurs n'est pas encore décrit : ${lien}.</p>`)
