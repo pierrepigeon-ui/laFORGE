@@ -150,7 +150,15 @@ ul.m-liste li{border-bottom:1px solid var(--line);padding:7px 0}
    « Guerre (échelle …) » (selecteurs.js 1.9)
    2.20 (10/11/2026) : les info-bulles par le gestionnaire commun de selecteurs.js (classe bulle-ouverte) : elles se ferment ;
    les fiches de la sous-fiche lues dans fichesSousFiches (timeline.js 3.17, sans l'ancienne configuration) ;
-   retrait de deux lignes parasites laissées dans la feuille de style en 2.19, qui annulaient les règles .technique et .notation */
+   retrait de deux lignes parasites laissées dans la feuille de style en 2.19, qui annulaient les règles .technique et .notation
+   2.21 (10/11/2026) : la ligne technique ne se coupe qu'entre deux éléments ; une icône devant les boutons d'action ; le petit graphique
+   de « Sa vie dans le temps » sur une échelle fixe de 0 à 10, avec les sessions sous chaque jalon et la phrase du flow ; les tableaux
+   « paire par paire » aux mêmes colonnes ; « Pour qui » : la grille des neuf libellés (textePourQui de timeline.js 3.18, réglage
+   seuil_satisfaction, 3 par défaut) ; les sessions en nombres entiers (timeline.js 3.18) */
+.technique .fait{white-space:nowrap}   /* (2.21) un élément de la ligne technique ne se coupe jamais */
+.btn svg.ico{width:16px;height:16px;flex:none;margin-right:7px}
+table.paires.fixe{table-layout:fixed;min-width:520px} table.paires.fixe td{overflow-wrap:anywhere}   /* (2.21) mêmes colonnes d'un chapitre à l'autre */
+.vie .legende-flow{margin:0;font-size:13px;color:var(--muted)}
 .puces{align-items:center}   /* (2.19) des pastilles de tailles différentes, centrées sur leur ligne */
 .ligne-tete{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px} .ligne-tete > .etiq{font-size:13px;font-weight:600}
 #carte-theme .titre-carte{font:700 24px/1.25 var(--serif);color:var(--n-titre)}   /* (2.19) le sujet, en titre de la carte */
@@ -182,10 +190,10 @@ details.pli.notion > summary strong{color:var(--n-titre)}
   <p class="version"><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p>
 </main>
 
-<script src="timeline.js?v=3.17"></script>
+<script src="timeline.js?v=3.18"></script>
 <script src="selecteurs.js?v=1.9"></script>
 <script>
-const VERSION = { numero:"2.20", date:"2026-11-10 00:30" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"2.21", date:"2026-11-10 18:13" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -211,11 +219,11 @@ const vide = html => $("#contenu").innerHTML = `<p class="vide">${html}</p>`;
 const NIVEAUX = { joueur:0, lecteur:1, evaluateur:2, editeur:3, proprietaire:4 };
 
 /* ---- réglages (console, onglet Réglages) : seuils de l'écart entre profils et de l'usure ---- */
-const REGLAGES_DEFAUT = { ecart_profils_net:.3, ecart_profils_fort:.8, usure_moderee:.3, usure_rapide:.8 };
+const REGLAGES_DEFAUT = { ecart_profils_net:.3, ecart_profils_fort:.8, usure_moderee:.3, usure_rapide:.8, seuil_satisfaction:3 };   // (2.21) seuil_satisfaction : 3 tant que la ligne manque
 async function lireReglages(){
   const { data, error } = await sb.from("prisme_reglages").select("cle,valeur");
   const R = { ...REGLAGES_DEFAUT };
-  if (error || !data?.length){ console.warn("PRISME : réglages illisibles ou vides, valeurs par défaut 0,3 / 0,8 / 0,3 / 0,8", error?.message || ""); return R; }
+  if (error || !data?.length){ console.warn("PRISME : réglages illisibles ou vides, valeurs par défaut 0,3 / 0,8 / 0,3 / 0,8 / 3", error?.message || ""); return R; }
   data.forEach(r => { if (r.cle in R && r.valeur != null) R[r.cle] = Number(r.valeur); });
   return R;
 }
@@ -226,8 +234,12 @@ function usureDe(c){
   return Math.max(0, (c.y[a] - c.y[fin]) / (c.x[fin] - c.x[a])) / 2;
 }
 const texteUsure = (u, S) => u < S.usure_moderee ? "S'use à peine" : u > S.usure_rapide ? "S'use vite" : "Usure modérée";
-const texteEcart = (e, S) => e < S.ecart_profils_net ? "Plaît largement : peu d'écart d'un profil à l'autre"
-  : e > S.ecart_profils_fort ? "Divise : fort écart entre profils" : "Plaît davantage à certains profils : écart net";
+// (2.21) « Pour qui » : textePourQui() et plagePourQui() de timeline.js 3.18 (la grille des neuf libellés), à la place de texteEcart
+// (2.21) les icônes des boutons d'action, devant le texte
+const ICONES = {
+  etoile:'<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3.2l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17.2l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg>',
+  loupe:'<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5l5 5"/></svg>',
+  page:'<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M6 2.8h8.5L19 7.3v13.9H6z"/><path d="M14.5 2.8v4.5H19M9 12h7M9 15.5h7M9 19h4"/></svg>' };
 // (2.18) la gamme de prix de la description : textePrix() de selecteurs.js, « G · jusqu'à 200 € · les grandes occasions »
 // le coût en court, pour la pastille : « 0,06 € la partie »
 function coutCourt(k){
@@ -252,15 +264,18 @@ function articlePropre(html){
   return doc.body.innerHTML;
 }
 // la courbe en petit : les huit jalons à intervalles réguliers, l'apogée marquée
+// (2.21) une échelle verticale fixe de 0 à 10, graduée, pour que les jeux se comparent ; sous chaque jalon, les sessions cumulées
 function courbePetite(c, nom){
-  const W = 560, H = 170, g = 24, dr = 24, haut = 18, bas = 40, fin = c.omega ?? 7;
-  const yMax = Math.max(5, Math.ceil(Math.max(...c.y)));
-  const X = j => g + j * (W - g - dr) / 7, Y = v => H - bas - v / yMax * (H - bas - haut);
-  let s = `<svg class="petite" viewBox="0 0 ${W} ${H}" role="img" aria-label="Courbe du flow de ${esc(nom)} au fil des jalons">`;
+  const W = 560, H = 200, g = 34, dr = 24, haut = 14, bas = 58, fin = c.omega ?? 7, yMax = 10;
+  const X = j => g + j * (W - g - dr) / 7, Y = v => H - bas - Math.max(0, Math.min(yMax, v)) / yMax * (H - bas - haut);
+  let s = `<svg class="petite" viewBox="0 0 ${W} ${H}" role="img" aria-label="Courbe du flow de ${esc(nom)} au fil des jalons, sur 10">`;
+  for (let v = 0; v <= yMax; v += 2) s += `<line x1="${g}" y1="${Y(v)}" x2="${W - dr}" y2="${Y(v)}" stroke="var(--line)" stroke-width="1"${v ? ' stroke-dasharray="2 4"' : ""}/><text x="${g - 8}" y="${Y(v) + 4}" font-size="11" text-anchor="end" fill="var(--muted)">${v}</text>`;
   s += `<line x1="${g}" y1="${H - bas}" x2="${W - dr}" y2="${H - bas}" stroke="var(--trait)" stroke-width="1"/>`;
   s += `<path d="${[...Array(fin + 1).keys()].map(j => `${j ? "L" : "M"}${X(j).toFixed(1)} ${Y(c.y[j]).toFixed(1)}`).join(" ")}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`;
   s += `<circle cx="${X(c.alpha)}" cy="${Y(c.y[c.alpha])}" r="5" fill="var(--accent)"><title>Apogée : ${fmt(c.y[c.alpha])}/10</title></circle>`;
-  JALONS.forEach((J, j) => s += `<text x="${X(j)}" y="${H - bas + 22}" font-size="11" text-anchor="middle" fill="${j === c.alpha ? "var(--ink)" : "var(--muted)"}"${j === c.alpha ? ' font-weight="600"' : ""}><title>${esc(J.quoi)}</title>${esc(J.nom)}</text>`);
+  JALONS.forEach((J, j) => s += `<text x="${X(j)}" y="${H - bas + 22}" font-size="11" text-anchor="middle" fill="${j === c.alpha ? "var(--ink)" : "var(--muted)"}"${j === c.alpha ? ' font-weight="600"' : ""}><title>${esc(J.quoi)}</title>${esc(J.nom)}</text>`
+    + `<text x="${X(j)}" y="${H - bas + 38}" font-size="10.5" text-anchor="middle" fill="var(--muted)"><title>Sessions cumulées pour atteindre ce jalon</title>${esc(courtSessions(c.N[j]))}</text>`);
+  s += `<text x="${W - dr}" y="${H - 4}" font-size="10.5" text-anchor="end" fill="var(--muted)">sessions cumulées</text>`;
   return s + `</svg>`;
 }
 const flecheSVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>`;
@@ -297,12 +312,12 @@ async function afficher(user){
     const T = T0;
     const mienne = T.find(f => f.evaluateur === user.id), url = "evaluation.html?jeu=" + encodeURIComponent(code);
     if (NIVEAUX[role] >= NIVEAUX.evaluateur){
-      boutons.push(mienne ? `<a class="btn plein" href="${url}">Mon évaluation</a>` : `<a class="btn plein" href="${url}&evaluer=1">Évaluer ce jeu</a>`);
+      boutons.push(mienne ? `<a class="btn plein" href="${url}">${ICONES.etoile}Mon évaluation</a>` : `<a class="btn plein" href="${url}&evaluer=1">${ICONES.etoile}Évaluer ce jeu</a>`);
       if (!mienne && T.length) boutons.push(`<a class="btn" href="${url}">Voir l'évaluation</a>`);
     } else if (T.length) boutons.push(`<a class="btn" href="${url}">Voir l'évaluation</a>`);
   }
   // (2.6) les faits, le prix, les mécanismes, les thèmes et les axes descriptifs se saisissent dans « Décrire le jeu »
-  if (NIVEAUX[role] >= NIVEAUX.evaluateur) boutons.push(`<a class="btn" href="decrire.html?jeu=${encodeURIComponent(code)}">Décrire le jeu</a>`);
+  if (NIVEAUX[role] >= NIVEAUX.evaluateur) boutons.push(`<a class="btn" href="decrire.html?jeu=${encodeURIComponent(code)}">${ICONES.loupe}Décrire le jeu</a>`);
   // (2.13) plus de bouton « Modifier les informations du jeu » : la console y pourvoit (bouton « Console » de l'en-tête)
   // (2.13) les sous-fiches : si l'all-in existe, deux onglets « Jeu de base » / « Jeu all-in » en haut de la fiche ; sinon, rien
   let sousFiches = "";
@@ -314,7 +329,7 @@ async function afficher(user){
     if (base && allin) sousFiches = `<nav class="sous-fiches" aria-label="Sous-fiches">${onglet(base, "Jeu de base")}${onglet(allin, "Jeu all-in")}</nav>`;
   }
   // (2.16) la fiche de rédaction de la sous-fiche affichée (recap.html), pour les lecteurs et au-delà
-  if (NIVEAUX[role] >= NIVEAUX.lecteur) boutons.push(`<a class="btn" href="recap.html?jeu=${encodeURIComponent(code)}&config=${ici?.configuration === "all_in" ? "all_in" : "base"}">Fiche de rédaction</a>`);
+  if (NIVEAUX[role] >= NIVEAUX.lecteur) boutons.push(`<a class="btn" href="recap.html?jeu=${encodeURIComponent(code)}&config=${ici?.configuration === "all_in" ? "all_in" : "base"}">${ICONES.page}Fiche de rédaction</a>`);
 
   // la fiche technique : (2.15) les faits viennent de la description de la sous-fiche affichée (« Décrire le jeu ») ;
   // la moyenne des fiches finales seulement si la description manque ;
@@ -353,7 +368,7 @@ async function afficher(user){
   const c = R?.complet ? R.c : null, pastilles = [];
   if (c){
     pastilles.push(c.vie == null ? `<span class="pastille forte">Un classique : un jeu qu'on garde</span>`
-      : `<span class="pastille forte info" tabindex="0">${esc(maj(c.classe))}<span class="bulle">Durée de vie ≈ ${esc(texteSessions(c.vie))}</span></span>`);
+      : `<span class="pastille forte info" tabindex="0">${esc(maj(c.classe))}<span class="bulle">Durée de vie ${esc(environSessions(c.vie))}</span></span>`);
     const cc = coutCourt(R.cout); if (cc) pastilles.push(`<span class="pastille info" tabindex="0">${esc(cc)}<span class="bulle">${esc(texteCout(R.cout))}</span></span>`);
     const u = usureDe(c);
     pastilles.push(`<span class="pastille info" tabindex="0">${texteUsure(u, S)}<span class="bulle">Baisse de ${fmt(u)} point de note par doublement du nombre de parties, après l'apogée (seuils : ${fmt(S.usure_moderee)} et ${fmt(S.usure_rapide)}).</span></span>`);
@@ -363,7 +378,7 @@ async function afficher(user){
   let h = sousFiches + `<div class="carte identite">
     ${jeu.image_url ? `<img class="visuel" src="${esc(jeu.image_url)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'), { className:'visuel' }))">` : `<span class="visuel" aria-hidden="true"></span>`}
     <div class="id-corps">
-      <div><div class="surtitre">Fiche du jeu</div><h1>${titre}</h1><div class="technique">${ch.join(" · ")}</div><div class="modes" id="id-modes"></div></div>
+      <div><div class="surtitre">Fiche du jeu</div><h1>${titre}</h1><div class="technique">${ch.map(x => `<span class="fait">${x}</span>`).join(" · ")}</div><div class="modes" id="id-modes"></div></div>
       ${notation}
       ${pastilles.length ? `<div class="pastilles">${pastilles.join("")}</div>` : ""}
       ${verdict ? `<p class="verdict">« ${esc(verdict)} »</p>` : ""}
@@ -376,11 +391,11 @@ async function afficher(user){
   if (c && PL.temperaments.length){
     const sp = spectrometre(R.e.n, R.e.paires, PL);
     T20 = sp.moteurs.flatMap(g => g.temperaments).sort((x, y) => y.note - x.note);
-    const ec = T20[0].note - T20.at(-1).note;
+    const nMax = T20[0].note, nMin = T20.at(-1).note;
     const puce = (x, cls) => `<span class="tp ${cls} info" tabindex="0">${esc(x.t.nom)}<span class="bulle">${esc(maj(x.t.nom))} : ${fmt(x.note)} / 5</span></span>`;
     const notees = R.e.paires.filter(p => p.note != null).sort((a, b) => b.note - a.note);
-    pourQui += `<p class="titre-carte">${texteEcart(ec, S)}</p>
-      <div class="discret">${fmt(ec, 1)} point d'écart entre le mieux et le moins servi</div>
+    pourQui += `<p class="titre-carte">${esc(textePourQui(nMax, nMin, S))}</p>
+      <div class="discret">${esc(plagePourQui(nMax, nMin))}</div>
       <div class="groupe"><span class="etiq">Les mieux servis</span><div class="puces">${T20.slice(0, 3).map(x => puce(x, "bleu")).join("")}</div></div>
       <div class="groupe"><span class="etiq">Moins servis</span><div class="puces">${T20.slice(-3).reverse().map(x => puce(x, "orange")).join("")}</div></div>
       ${notees.length >= 3 ? `<div class="groupe"><span class="etiq">Ses points forts</span><ul class="forts">${notees.slice(0, 2).map(p => `<li>${esc(nomPaire(p.code))} <span class="discret">${fmt(p.note)}</span></li>`).join("")}</ul></div>
@@ -398,7 +413,7 @@ async function afficher(user){
 
   // 3. sa vie dans le temps, en petit
   h += `<div class="carte vie" id="carte-vie"><div class="surtitre">Sa vie dans le temps</div>
-    ${c ? `<div class="defile">${courbePetite(c, jeu.nom)}</div><p class="discret" style="margin:0">${esc(syntheseTimeline(c))}</p>`
+    ${c ? `<div class="defile">${courbePetite(c, jeu.nom)}</div><p class="legende-flow">Le flow, c'est le plaisir de jeu, sur 10 : ce que le jeu stimule moins ce qu'il coûte. L'apogée est son moment le plus haut.</p><p class="discret" style="margin:0">${esc(syntheseTimeline(c))}</p>`
       : `<p class="discret" style="margin:0">${R ? "La timeline paraîtra quand toutes les paires utiles seront notées." : "La timeline paraîtra dès qu'une fiche sera déclarée finale."}</p>`}</div>`;
 
   // 4. le détail, dépliable
@@ -409,7 +424,7 @@ async function afficher(user){
     paires = `<p class="discret">Pour chaque paire, sa note et les axes qui la composent. Les écarts (+ / −) disent ce que le jeu réussit au-delà ou en deçà de ce qu'on attendait.</p>`;
     (chapitres || []).forEach(ch2 => {
       const Pa = R.e.paires.filter(p => p.chap === ch2.code); if (!Pa.length) return;
-      paires += `<h3 class="chap" style="--c:var(--${esc(ch2.code)})">${esc(ch2.nom)}</h3><div class="defile"><table class="paires"><thead><tr><th>Paire</th><th class="n">Note /5</th><th>Axes (sur 5 ; écarts de −2 à +2)</th></tr></thead><tbody>
+      paires += `<h3 class="chap" style="--c:var(--${esc(ch2.code)})">${esc(ch2.nom)}</h3><div class="defile"><table class="paires fixe"><colgroup><col style="width:30%"><col style="width:13%"><col style="width:57%"></colgroup><thead><tr><th>Paire</th><th class="n">Note /5</th><th>Axes (sur 5 ; écarts de −2 à +2)</th></tr></thead><tbody>
         ${Pa.map(p => { const A = d.axes.filter(a => a.paire === p.code && a.echelle !== "calcule");
           return `<tr><td>${esc(nomPaire(p.code))}</td><td class="n"><b>${p.note == null ? (R.e.absents.includes(p.code) ? "s. o." : "—") : fmt(p.note)}</b></td>
             <td class="axes">${A.map(a => { const v = val(a); return v == null ? "" : `<span>${esc(a.nom)} : <b>${esc(v)}</b></span>`; }).join(" ")}</td></tr>`; }).join("")}

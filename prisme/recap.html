@@ -15,7 +15,9 @@
    1.2 (08/11/2026) : le prix en douze tranches (selecteurs.js 1.8) ; le bandeau du jeu, collant en haut de l'écran, absent de l'impression
    1.3 (09/11/2026) : fin de l'ancienne configuration (prisme_evaluations.configuration) : les fiches de la sous-fiche, sa description ;
    l'ordre du tour à côté de la fin de partie ; « Guerre (échelle …) » (selecteurs.js 1.9)
-   1.4 (10/11/2026) : les fiches de la sous-fiche lues dans fichesSousFiches (timeline.js 3.17, sans l'ancienne configuration) */
+   1.4 (10/11/2026) : les fiches de la sous-fiche lues dans fichesSousFiches (timeline.js 3.17, sans l'ancienne configuration)
+   1.5 (10/11/2026) : « Pour qui » : la grille des neuf libellés, comme la fiche du jeu (textePourQui de timeline.js 3.18, réglage
+   seuil_satisfaction, 3 par défaut), avec la plage des notes ; les sessions en nombres entiers (timeline.js 3.18) */
 #sommaire{background:var(--neutre)}
 :root{--ink:#15171C;--muted:#4B5160;--line:#E2E4E9;--trait:#C9CEDB;--paper:#F4F5F7;--panel:#FFFFFF;--neutre:#E8EAF0;
   --accent:#2346C8;--accent-fonce:#16308F;--sur-accent:#FFFFFF;--bleu-fond:#E6EBFB;--bleu-texte:#16308F;
@@ -150,10 +152,10 @@ details.avec-ext > summary::-webkit-details-marker{display:none}
   <p class="version"><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p>
 </main>
 
-<script src="timeline.js?v=3.17"></script>
+<script src="timeline.js?v=3.18"></script>
 <script src="selecteurs.js?v=1.9"></script>
 <script>
-const VERSION = { numero:"1.4", date:"2026-11-10 00:30" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.5", date:"2026-11-10 18:13" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -180,15 +182,14 @@ const vide = html => $("#contenu").innerHTML = `<p class="vide">${html}</p>`;
 const NIVEAUX = { joueur:0, lecteur:1, evaluateur:2, editeur:3, proprietaire:4 };
 
 /* ---- comme dans la fiche du jeu (jeu.html 2.15) : réglages, usure, gamme de prix, coût, verdict ---- */
-const REGLAGES_DEFAUT = { ecart_profils_net:.3, ecart_profils_fort:.8, usure_moderee:.3, usure_rapide:.8 };
+const REGLAGES_DEFAUT = { ecart_profils_net:.3, ecart_profils_fort:.8, usure_moderee:.3, usure_rapide:.8, seuil_satisfaction:3 };   // (1.5) seuil_satisfaction : 3 tant que la ligne manque
 function usureDe(c){
   const fin = c.omega ?? 7, a = c.alpha;
   if (a >= fin || c.x[fin] <= c.x[a]) return 0;
   return Math.max(0, (c.y[a] - c.y[fin]) / (c.x[fin] - c.x[a])) / 2;
 }
 const texteUsure = (u, S) => u < S.usure_moderee ? "S'use à peine" : u > S.usure_rapide ? "S'use vite" : "Usure modérée";
-// la phrase de l'écart, en court : « Plaît largement », « Plaît davantage à certains profils », « Divise »
-const texteEcart = (e, S) => e < S.ecart_profils_net ? "Plaît largement" : e > S.ecart_profils_fort ? "Divise" : "Plaît davantage à certains profils";
+// (1.5) « Pour qui » : textePourQui() et plagePourQui() de timeline.js 3.18, la même grille que la fiche du jeu (à la place de texteEcart)
 function coutCourt(k){
   if (!k) return null;
   const e = v => v < 1 ? v.toFixed(2).replace(".", ",") : v < 10 ? v.toFixed(1).replace(".", ",") : String(Math.round(v));
@@ -323,7 +324,7 @@ async function afficher(user){
   if (R?.complet && PL.temperaments.length){
     const sp = spectrometre(R.e.n, R.e.paires, PL), T20 = sp.moteurs.flatMap(g => g.temperaments).sort((x, y) => y.note - x.note);
     const nomsT = L => esc(L.map(x => x.t.nom).join(", "));
-    pourQui = `${esc(texteEcart(T20[0].note - T20.at(-1).note, S))}. <b>Mieux servis</b> : ${nomsT(T20.slice(0, 3))}. <b>Moins</b> : ${nomsT(T20.slice(-3).reverse())}.`;
+    pourQui = `${esc(textePourQui(T20[0].note, T20.at(-1).note, S))} (${esc(plagePourQui(T20[0].note, T20.at(-1).note))}). <b>Mieux servis</b> : ${nomsT(T20.slice(0, 3))}. <b>Moins</b> : ${nomsT(T20.slice(-3).reverse())}.`;
   } else pourQui = `<span class="discret">${!R ? "Paraîtra dès qu'une fiche sera déclarée finale." : !R.complet ? "Paraîtra quand toutes les paires utiles seront notées." : "Le modèle PRISMEplayer n'a pas pu être lu."}</span>`;
   const pole = (n, titre, corps) => `<div class="pole ${n ? notion(n) : ""}"><div class="surtitre">${titre}</div><div>${corps}</div></div>`;
   const poles = `<div class="poles">${pole("theme", "Thème", theme)}${pole("meca", "Mécaniques majeures", meca)}${pole("bref", "Pour qui", pourQui)}</div>`;

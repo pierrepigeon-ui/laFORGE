@@ -21,7 +21,7 @@ a{color:inherit}
 
 main{max-width:860px;margin:0 auto;padding:10px 24px 40px}
 .entete{border-top:10px solid var(--arch);background:var(--panel);border-radius:12px;padding:22px 26px 20px;border-left:1px solid var(--line);border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
-.entete .surtitre{font-size:13px;color:var(--muted);margin:0}
+.entete .surtitre{font:500 22px/1.25 var(--sans);color:var(--ink);margin:0}   /* (3.18) nettement plus visible */
 .entete h1{font:600 clamp(36px,6vw,54px)/1.05 var(--serif);margin:4px 0 6px}
 .entete .filiation{font:italic 19px/1.4 var(--serif);color:var(--muted);margin:0}
 /* deux niveaux : le tempérament (1 joueur sur 20) puis le style (1 sur 60) ; le moteur dominant se lit dans l'histogramme */
@@ -32,16 +32,29 @@ main{max-width:860px;margin:0 auto;padding:10px 24px 40px}
 .niveaux .prof{font-size:clamp(38px,6.5vw,60px);line-height:1.05;color:var(--arch)}
 .niveaux .sous{font-size:.85em;color:color-mix(in srgb, var(--sous) 80%, var(--ink))}
 .niveaux .sep{color:var(--line);font-weight:400}
-/* bandeau : totem | tempérament et (style), alignés à droite et serrés | emblème */
-.entete .bandeau{display:flex;align-items:center;gap:24px;margin:14px 0 16px}
-.entete h1.titre-joueur{display:inline-flex;flex-direction:column;align-items:flex-end;gap:0;margin:0;font:600 clamp(34px,6vw,58px)/1 var(--serif);color:var(--arch)}
-.titre-joueur .qualif{font-style:italic;font-weight:400;font-size:.58em;line-height:1.05;margin-top:.12em;color:color-mix(in srgb, var(--sous) 75%, var(--ink));white-space:nowrap}
+/* (3.18) bandeau en symétrie : à gauche le totem puis le tempérament ; à droite le style puis son emblème, calés à droite.
+   Quand la place manque (téléphone), le style passe sous le tempérament, toujours calé à droite. */
+.entete .bandeau{display:flex;align-items:center;gap:22px;margin:14px 0 16px}
+.bandeau .noms{flex:1 1 auto;min-width:0;display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:2px 18px}
+.entete h1.titre-joueur{margin:0;font:600 clamp(34px,6vw,58px)/1 var(--serif);color:var(--arch);min-width:0}
+.bandeau .qualif{margin:0 0 0 auto;text-align:right;font:italic 400 clamp(22px,3.5vw,34px)/1.1 var(--serif);color:color-mix(in srgb, var(--sous) 75%, var(--ink))}
 .entete .totem{flex:none;width:118px;height:118px;display:block;background:color-mix(in srgb, var(--arch) 9%, var(--panel));border-radius:22px;padding:15px}
 .entete .totem.embleme{background:color-mix(in srgb, var(--paper) 70%, var(--panel))}
-@media (max-width:560px){ .entete .bandeau{gap:10px} .entete .totem{width:52px;height:52px;padding:7px;border-radius:12px} .entete h1.titre-joueur{font-size:7vw;min-width:0} }
+@media (max-width:560px){ .entete .bandeau{gap:10px} }
+@media (max-width:560px){ .entete .totem{width:52px;height:52px;padding:7px;border-radius:12px} .entete h1.titre-joueur{font-size:6.6vw} .bandeau .qualif{font-size:5.2vw} }
+/* (3.18) la barre fine qui garde le profil en vue quand le cadre principal sort de l'écran ; sous la barre collante d'entete.js (--ent-h) */
+.mini-profil{position:fixed;left:0;right:0;top:max(var(--ent-h, 0px), env(safe-area-inset-top, 0px));z-index:39;display:flex;align-items:center;gap:10px;
+  padding:5px max(16px, env(safe-area-inset-right, 0px)) 5px max(16px, env(safe-area-inset-left, 0px));background:var(--panel);border-bottom:1px solid var(--line);
+  border-top:3px solid var(--arch);box-shadow:0 2px 8px rgba(0,0,0,.08);font:600 16px/1.2 var(--serif);cursor:pointer;
+  transform:translateY(-110%);opacity:0;pointer-events:none;transition:transform .2s, opacity .2s}
+.mini-profil.visible{transform:none;opacity:1;pointer-events:auto}
+.mini-profil svg{width:28px;height:28px;flex:none}
+.mini-profil .m-tem{color:var(--arch);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.mini-profil .m-sty{font-style:italic;font-weight:400;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+@media (prefers-reduced-motion: reduce){ .mini-profil{transition:none} }
 .entete .sous-titre{font-size:12.5px;letter-spacing:.04em;color:var(--muted);margin:0}
 @media (max-width:520px){ .niveaux .sep{display:none} }
-.entete .date{font-size:13px;color:var(--muted);margin:10px 0 0}
+.entete .date{font-size:12px;color:var(--muted);margin:10px 0 0;text-align:right}   /* (3.18) plus petite, calée à droite */
 section{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px 26px;margin-top:16px}
 section h2{font:600 22px/1.25 var(--serif);margin:0 0 2px}
 section .question{font:italic 15px var(--serif);color:var(--muted);margin:0 0 12px}
@@ -49,13 +62,14 @@ section p{margin:0 0 10px;font:16.5px/1.65 var(--serif)}
 .devise{font-style:italic;color:var(--muted)}
 .libelle{font:600 13px var(--sans);color:var(--muted);display:block;margin-bottom:1px}
 /* les cinq moteurs, du plus fort au plus faible */
-.moteurs{display:grid;gap:8px}
-.moteur{display:grid;grid-template-columns:118px 1fr 58px;gap:12px;align-items:center}
+.moteurs{display:grid;grid-template-columns:118px minmax(90px,1fr) 58px fit-content(330px);gap:8px 12px;align-items:center}   /* (3.18) une seule grille : les barres gardent la même longueur */
+/* (3.18) la mention (dominant, second, fui) sur la même ligne que la barre, juste après le pourcentage ; elle passe à la ligne dans sa colonne si la place manque */
+.moteur{display:contents}
 .moteur .nom{font-weight:500}
 .moteur .piste{height:14px;border-radius:7px;background:var(--line);overflow:hidden}
 .moteur .plein{display:block;height:100%;border-radius:7px}
 .moteur .pct{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted);font-size:14px}
-.moteur .role{grid-column:2 / 4;font-size:12.5px;color:var(--muted);margin:-6px 0 2px}
+.moteur .role{font-size:12.5px;line-height:1.3;color:var(--muted)}
 section ul{margin:2px 0 12px;padding-left:20px;font:16px/1.55 var(--serif)}
 section h3{font:600 19px/1.3 var(--serif);margin:6px 0 6px} section h3 small.code,.rival small.code{font:13px var(--sans);color:var(--muted);font-weight:400}
 .facettes{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 14px}
@@ -67,7 +81,7 @@ section h3{font:600 19px/1.3 var(--serif);margin:6px 0 6px} section h3 small.cod
 .s-embleme{float:right;width:76px;height:76px;padding:10px;margin:0 0 8px 14px;border-radius:16px;background:var(--paper)}
 .rival .r-totem{width:84px;height:84px;padding:10px;border-radius:16px;background:var(--paper)}
 #rival table.pj-jeux{font-size:15px}
-.fb{font-size:14px;color:var(--muted)}
+.fb{font-size:14px;color:var(--muted);font-style:italic;text-align:right}   /* (3.18) seulement pour qui a accès à Flamme Bleue */
 /* timeline */
 .timeline svg{width:100%;height:auto;display:block}
 .timeline .note{font-size:13px;color:var(--muted);margin:8px 0 0}
@@ -83,7 +97,7 @@ details.repli > section{border:0;margin:0;padding-top:0}
 .version{font-size:12px;color:var(--muted);text-align:right;margin-top:24px}
 .vide{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:30px 26px;font:italic 18px/1.5 var(--serif);color:var(--muted)}
 .vide a{color:var(--ink)}
-@media (max-width:700px){ .trois{grid-template-columns:1fr} .moteur{grid-template-columns:96px 1fr 50px} main{padding:8px 14px 30px} section,.entete{padding:18px} }
+@media (max-width:700px){ .trois{grid-template-columns:1fr} .moteurs{grid-template-columns:auto minmax(40px,1fr) auto minmax(0,1.6fr);gap:8px} .moteur .nom{font-size:15px} .moteur .pct{font-size:13px} main{padding:8px 14px 30px} section,.entete{padding:18px} }
 </style>
 </head>
 <body>
@@ -91,10 +105,14 @@ details.repli > section{border:0;margin:0;padding-top:0}
 <main id="contenu"><p class="vide">Chargement…</p></main>
 <main><p class="version"><span id="credit"></span><br><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p></main>
 
-<script src="timeline.js?v=3.17"></script>
+<script src="timeline.js?v=3.18"></script>
 <script src="totems.js?v=4"></script>
 <script>
-const VERSION = { numero:"3.17", date:"2026-11-10 00:30" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.18", date:"2026-11-10 18:13" };   // à incrémenter à chaque livraison
+// (3.18, 10/11/2026) surtitre plus visible ; bandeau en symétrie (totem, tempérament | style, emblème) ; plus de ligne « Tempérament X/y, style X.y/z »
+// ni d'info-bulle du style ; dernière ligne du cadre plus petite, à droite ; mentions des moteurs sur la ligne de la barre ; plus aucun code « B/w »
+// à l'affichage ; « Vos jeux » avant « Votre rival » ; « Votre moment » masqué (frise en commentaire) ; barre fine du profil quand le cadre sort
+// de l'écran ; « Dans Flamme Bleue » seulement pour qui y a accès (flamme_mon_role) ; timeline.js 3.18 (sessions en nombres entiers)
 // (3.17, 10/11/2026) timeline.js 3.17 (sans l'ancienne configuration) ; rien d'autre ne change
 // (3.16, 08/11/2026) timeline.js 3.15 : dans « vos jeux » et « pour vous deux », la version (base ou all-in) la mieux notée pour ce profil
 // (3.15, 06/11/2026) timeline.js 3.13 : une seule sous-fiche par jeu dans « vos jeux » ; le nom du jeu sans « (all-in) »
@@ -137,12 +155,14 @@ async function afficher(user){
   if (!r) return vide(id ? "Ce résultat n'existe pas, ou vous n'avez pas le droit de le voir."
                          : 'Vous n\'avez pas encore de profil de joueur. <a href="questionnaire.html">Passer le questionnaire</a>.');
   const c = r.classement, code = r.style || (c ? c[0] + "." + c[1].toLowerCase() + "/" + c[4].toLowerCase() : null);
-  const [, { data: mot }, { data: tems }, { data: stys }] = await Promise.all([
+  const [, { data: mot }, { data: tems }, { data: stys }, fb] = await Promise.all([
     chargerTotems(),   // sans images, la fiche s'affiche quand même
     sb.from("prisme_player_moteurs").select("*").order("ordre"),
     sb.from("prisme_player_temperaments").select("*").order("ordre"),
-    sb.from("prisme_player_styles").select("*").order("ordre")
+    sb.from("prisme_player_styles").select("*").order("ordre"),
+    sb.rpc("flamme_mon_role").then(x => x, () => ({ data:null }))   // (3.18) accès à Flamme Bleue : les lignes « Dans Flamme Bleue » ne s'affichent que pour lui
   ]);
+  FB = fb?.data != null;
   TEMS = Object.fromEntries((tems || []).map(t => [t.code, t]));
   const STY = Object.fromEntries((stys || []).map(x => [x.code, x]));
   const tem = code && TEMS[temperamentDe(code)], sty = code && STY[styleDe(code)];
@@ -161,7 +181,7 @@ async function afficher(user){
     return `<div class="moteur"><span class="nom">${esc(m.nom)}</span>
       <span class="piste"><span class="plein" style="width:${Math.min(100, pct)}%;background:${m.couleur}"></span></span>
       <span class="pct">${pct.toFixed(1).replace(".", ",")} %</span>
-      ${role ? `<span class="role">${role}</span>` : ""}</div>`;
+      <span class="role">${role}</span></div>`;
   }).join("");
 
   $("#contenu").innerHTML = `
@@ -169,12 +189,12 @@ async function afficher(user){
       <p class="surtitre">${autre ? "Profil de joueur" : "Mon profil de joueur"}</p>
       <div class="bandeau">
         ${totemSVG(tem.code, dom.couleur, { cls:"totem", titre: tem.totem ? maj(tem.totem) : undefined })}
-        <h1 class="titre-joueur"><span class="t-tem">${esc(maj(tem.nom))}</span>
-          <span class="qualif" style="--sous:${esc(M[sty.second]?.couleur || "var(--ink)")}" title="Votre style : ${esc(sty.nom)} (${esc(sty.code)})">(${esc(sty.nom)})</span></h1>
+        <div class="noms"><h1 class="titre-joueur">${esc(maj(tem.nom))}</h1>
+        <p class="qualif" style="--sous:${esc(M[sty.second]?.couleur || "var(--ink)")}">(${esc(sty.nom)})</p></div>
         ${emblemeSVG(sty.code, M[sty.second]?.couleur || dom.couleur, { cls:"totem embleme", titre: sty.embleme ? maj(sty.embleme) : undefined })}
       </div>
       <div class="entete-texte">
-      <p class="sous-titre">Tempérament ${esc(tem.code)}, style ${esc(sty.code)}${complet ? "" : ` · profil provisoire : ${nbRep} réponse${nbRep > 1 ? "s" : ""} sur 25`}</p>
+      ${complet ? "" : `<p class="sous-titre">Profil provisoire : ${nbRep} réponse${nbRep > 1 ? "s" : ""} sur 25</p>`}
       <p class="date">Questionnaire du ${new Date(r.passe_le).toLocaleDateString("fr-FR")}.${autre ? "" : ' <a href="questionnaire.html">Le modifier ou le refaire</a>. <a href="rosace.html">Voir ma place sur la rosace</a>.'}</p>
       </div>
     </div>
@@ -184,14 +204,14 @@ async function afficher(user){
 
     <section id="temperaments"><h2>${autre ? "Ses" : "Vos"} tempéraments</h2><p class="question">Ce que je cherche, ce que je fuis. Le premier est ${autre ? "son" : "votre"} tempérament ; les suivants, des facettes presque aussi marquées.${complet ? "" : " Facettes provisoires : elles se précisent avec les 25 réponses."}</p>
       ${facs.length > 1 ? `<div class="facettes" role="tablist">${facs.map((f, i) => `<button type="button" role="tab" class="facette" data-tem="${esc(f.code)}" aria-selected="${i === 0}">
-        ${totemSVG(f.code, M[f.code[0]].couleur, { titre:"" })}<span><b>${esc(maj(TEMS[f.code]?.nom || f.code))}</b><small>${esc(f.code)} · ${Math.round(f.part * 100)} %</small></span></button>`).join("")}</div>` : ""}
+        ${totemSVG(f.code, M[f.code[0]].couleur, { titre:"" })}<span><b>${esc(maj(TEMS[f.code]?.nom || f.code))}</b><small>${Math.round(f.part * 100)} %</small></span></button>`).join("")}</div>` : ""}
       <div id="tem-corps">${blocTemperament(tem.code)}</div></section>
 
     <section>${emblemeSVG(sty.code, M[sty.second].couleur, { cls:"s-embleme", titre: sty.embleme ? maj(sty.embleme) : undefined })}<h2>${autre ? "Son" : "Votre"} style : ${esc(sty.nom)}</h2><p class="question">Avec quoi je le vis : ${esc(dom.nom)}, conduit par ${esc(M[sty.second].nom)}.</p>
       ${sty.devise ? `<p class="devise">${esc(maj(sty.devise))}${sty.titre ? ` · « ${esc(sty.titre)} »` : ""}</p>` : ""}
       ${sty.texte ? `<p>${esc(sty.texte)}</p>` : ""}
       ${sty.embleme ? `<p class="devise">Son emblème : ${esc(sty.embleme)}. ${esc(sty.embleme_raison || "")}</p>` : ""}
-      ${sty.fb_verbe ? `<p class="fb">Dans Flamme Bleue : ${esc(sty.fb_verbe)} (« ${esc(sty.fb_devise)} »).</p>` : ""}</section>
+      ${FB && sty.fb_verbe ? `<p class="fb">Dans Flamme Bleue : ${esc(sty.fb_verbe)} (« ${esc(sty.fb_devise)} »).</p>` : ""}</section>
 
     <details class="repli"><summary>${esc(dom.nom)} <small>votre moteur dominant, en entier</small></summary>
     <section><p class="question">Pourquoi je joue ? Votre tempérament en est une déclinaison.</p>
@@ -199,36 +219,53 @@ async function afficher(user){
       <p>${esc(dom.texte)}</p>
       ${dom.a_la_table ? `<span class="libelle">À la table, il peut</span>${puces(dom.a_la_table)}` : ""}</section></details>
 
-    <details class="repli"><summary>Votre moment <small>où culmine chacun de vos moteurs, au fil des parties</small></summary>
-    <section class="timeline">
-      ${frise(ordre.map(c => M[c]))}
-      <p class="note">Épaisseur et intensité suivent le poids de chaque moteur dans votre profil (3, 1,5, 0,5, 0,5). Le moteur que vous fuyez ne culmine pas : il gêne, à partir du jalon indiqué. Hypothèse de travail du modèle, pas encore validée sur des cas réels.</p></section></details>
+    <!-- (3.18, 10/11/2026) « Votre moment » masqué ; la frise reste en commentaire plus bas, pour plus tard -->
+
+    <section id="vos-jeux"><h2>${autre ? "Ses jeux" : "Vos jeux"}</h2><p class="question">Les jeux évalués dans PRISME, vus par ${autre ? "ce" : "votre"} style de joueur.</p>
+      <div id="vos-jeux-corps"><p class="pj-discret">Calcul en cours…</p></div></section>
 
     ${tr ? `<section id="rival"><h2>${autre ? "Son" : "Votre"} rival</h2><p class="question">Son tempérament est l'inverse du ${autre ? "sien" : "vôtre"} : ce qui ${autre ? "le" : "vous"} fait décrocher le nourrit, et inversement.</p>
       <div class="rival">${totemSVG(rival, M[tr.moteur].couleur, { cls:"r-totem", titre: tr.totem ? maj(tr.totem) : undefined })}
-        <div><p><b>${esc(maj(tr.nom))}</b> <small class="code">${esc(rival)} · ${esc(M[tr.moteur].nom)}, fuit ${esc(M[tr.fuit].nom.toLowerCase())}</small></p>
+        <div><p><b>${esc(maj(tr.nom))}</b> <small class="code">${esc(M[tr.moteur].nom)}, fuit ${esc(M[tr.fuit].nom.toLowerCase())}</small></p>
         <p>${esc(tr.qui_il_est)}</p></div></div>
       <h3>Quels jeux pour vous deux ?</h3>
-      <div id="rival-jeux"><p class="pj-discret">Calcul en cours…</p></div></section>` : ""}
-
-    <section id="vos-jeux"><h2>${autre ? "Ses jeux" : "Vos jeux"}</h2><p class="question">Les jeux évalués dans PRISME, vus par ${autre ? "ce" : "votre"} style de joueur.</p>
-      <div id="vos-jeux-corps"><p class="pj-discret">Calcul en cours…</p></div></section>`;
+      <div id="rival-jeux"><p class="pj-discret">Calcul en cours…</p></div></section>` : ""}`;
   afficherVosJeux(code, autre);
   document.querySelectorAll(".facette").forEach(b => b.addEventListener("click", () => {
     document.querySelectorAll(".facette").forEach(x => x.setAttribute("aria-selected", x === b));
     $("#tem-corps").innerHTML = blocTemperament(b.dataset.tem);
   }));
   if (TOTEMS.svg[tem.code]) $("#credit").innerHTML = TOTEMS_CREDIT;
+  barreProfil(tem, sty, dom.couleur);
 }
-let TEMS = {}, MOT = {};
+let TEMS = {}, MOT = {}, FB = false;
+// (3.18) quand le cadre principal sort de l'écran, une barre fine garde le profil en vue (petit totem, tempérament, style) ;
+// elle se place sous la barre collante d'entete.js (--ent-h, 0 sur téléphone) et respecte la zone sûre du haut
+function barreProfil(tem, sty, couleur){
+  const cadre = $(".entete"); if (!cadre || !window.IntersectionObserver) return;
+  const b = document.createElement("div");
+  b.className = "mini-profil"; b.setAttribute("aria-hidden", "true"); b.title = "Revenir en haut";
+  b.innerHTML = `${totemSVG(tem.code, couleur, { titre:"" })}<span class="m-tem">${esc(maj(tem.nom))}</span><span class="m-sty">(${esc(sty.nom)})</span>`;
+  b.addEventListener("click", () => scrollTo({ top:0, behavior:"smooth" }));
+  document.body.appendChild(b);
+  const entH = () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--ent-h")) || 0;
+  let obs, minuterie;
+  const observer = () => {
+    obs?.disconnect();
+    obs = new IntersectionObserver(([e]) => b.classList.toggle("visible", !e.isIntersecting && e.boundingClientRect.top < entH() + 1),
+      { rootMargin: `-${Math.round(entH())}px 0px 0px 0px` });
+    obs.observe(cadre);
+  };
+  observer(); addEventListener("resize", () => { clearTimeout(minuterie); minuterie = setTimeout(observer, 150); });
+}
 function blocTemperament(code){
   const t = TEMS[code]; if (!t) return "";
-  return `<h3>${esc(maj(t.nom))} <small class="code">${esc(t.code)} · ${esc(MOT[t.moteur].nom)}, fuit ${esc(MOT[t.fuit].nom.toLowerCase())}</small></h3>
+  return `<h3>${esc(maj(t.nom))} <small class="code">${esc(MOT[t.moteur].nom)}, fuit ${esc(MOT[t.fuit].nom.toLowerCase())}</small></h3>
       <p>${esc(t.qui_il_est)}</p>
       <span class="libelle">À la table, il peut</span>${puces(t.a_la_table)}
       <p><span class="libelle">Quand il décroche</span>${esc(t.quand_decroche)}</p>
       ${t.totem ? `<p><span class="libelle">Son totem</span>${esc(maj(t.totem))}. ${esc(t.totem_raison || "")}</p>` : ""}
-      ${t.fb_verbe ? `<p class="fb">Dans Flamme Bleue : ${esc(t.fb_verbe)} (« ${esc(t.fb_devise)} »).</p>` : ""}`;
+      ${FB && t.fb_verbe ? `<p class="fb">Dans Flamme Bleue : ${esc(t.fb_verbe)} (« ${esc(t.fb_devise)} »).</p>` : ""}`;
 }
 async function afficherVosJeux(code, autre){
   const box = $("#vos-jeux-corps"), d = await lireJeuxEvalues(sb), rj = $("#rival-jeux");
@@ -250,6 +287,7 @@ async function afficherVosJeux(code, autre){
     : `<p class="pj-discret">Aucun jeu n'a encore de fiche complète.</p>`;
 }
 
+/* (3.18, 10/11/2026) « Votre moment » est masqué : la frise reste ici, en commentaire, pour plus tard.
 // frise des jalons 0 à 7+ : une ligne par moteur, dans l'ordre du joueur ; apogée de chacun, gêne du moteur fui
 function frise(mots){
   const W = 760, x = j => 150 + j * 76, H0 = 18, pas = 34, POIDS = [1, .5, 1 / 6, 1 / 6];
@@ -284,6 +322,7 @@ function frise(mots){
     `<text x="${(x(a) + x(b)) / 2}" y="${yb + 38}" text-anchor="middle" font-size="12" fill="currentColor" opacity=".6">${n}</text>`).join("");
   return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Le moment de chacun de vos moteurs, de la découverte à la maturité">${grad}${g}${phases}</svg>`;
 }
+fin de la frise en commentaire */
 </script>
 <script src="entete.js?v=1.6"></script>
 </body>

@@ -25,7 +25,8 @@
    « Boîte de base / Configurations », plus de « + Configuration ») ; base et all-in ne passent plus que par les sous-fiches ;
    les trois familles repliées à l'ouverture ; selecteurs.js 1.9
    4.8 (10/11/2026) : « À combien ? » : effacer la dernière note d'effectif vide aussi le meilleur effectif (effectif_reference à null,
-   « non renseigné ») ; timeline.js 3.17 */
+   « non renseigné ») ; timeline.js 3.17
+   4.9 (10/11/2026) : les sessions en nombres entiers (timeline.js 3.18) ; la durée d'une sous-phase sous une session : « moins d'une session » */
 :root{--ink:#15171C;--muted:#4B5160;--line:#E2E4E9;--trait:#C9CEDB;--paper:#F4F5F7;--panel:#FFFFFF;--neutre:#E8EAF0;--filet:#EEF0F4;
   --accent:#2346C8;--accent-fonce:#16308F;--sur-accent:#FFFFFF;--bleu-fond:#E6EBFB;--bleu-texte:#16308F;--orange-fond:#FBEDE4;--orange-texte:#8A3108;
   --vert-fond:#E7F4EC;--vert-texte:#14532D;--ok:#1E7A46;--warn:#9A5B00;--err:#B42318;--trapeze:#F0F2F6;--trapeze-demi:#E3E6EE;
@@ -369,10 +370,10 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
   <div class="boutons"><span class="msg" id="rep-msg" role="status"></span><button class="btn ghost" type="button" id="rep-annuler">Annuler</button><button class="btn plein" type="button" id="rep-ok">Reprendre</button></div></dialog>
 <div class="wrap"><p class="version"><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p></div>
 
-<script src="timeline.js?v=3.17"></script>
+<script src="timeline.js?v=3.18"></script>
 <script src="selecteurs.js?v=1.9"></script>
 <script>
-const VERSION = { numero:"4.8", date:"2026-11-10 00:30" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"4.9", date:"2026-11-10 18:13" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -1135,7 +1136,7 @@ function majTimeline(){
       return `${prev ? `<tr class="tl-phase"><td colspan="9">Phase ${sp.phase} — ${esc(PHASES[sp.phase])}</td></tr>` : ""}
       <tr class="${j.n === c.alpha ? "alpha" : ""}${j.n === c.beta || j.n === c.sousPhaseGamma || j.n === c.omega ? " chute" : ""}${c.omega != null && j.n > c.omega ? " jamais" : ""}"><td><b>${j.n}</b> ${esc(j.nom)}${j.n === c.alpha ? " · α" : ""}${j.n === c.beta ? " · β" : ""}${j.n === c.sousPhaseGamma ? ` · γ <small>(${esc(texteSessions(c.gamma))})</small>` : ""}${j.n === c.omega ? " · ω" : ""}${c.omega != null && j.n > c.omega ? ' <small>jamais atteint</small>' : ""}</td>
         <td class="n">${fmt(c.N[j.n], 2)} s.</td><td class="n">${j.n ? fmt(c.det[j.n].s, 2) : "—"}</td><td class="n">${j.n ? fmt(c.det[j.n].f, 2) : "—"}</td><td class="n">${j.n ? fmt(c.det[j.n].el, 2) : "—"}</td><td class="n"${j.n && c.det[j.n].retenu ? ' title="Le flow ne remonte plus une fois le jeu maîtrisé : retenu à la valeur du jalon précédent"' : ""}><b>${fmt(c.y[j.n], 2)}</b>${j.n && c.det[j.n].retenu ? "*" : ""}</td>
-        <td>${esc(sp.nom)}</td><td class="n">${j.n < 7 ? texteSessions(c.d[j.n]) : "∞"}</td><td class="n">${j.n < 7 ? texteSessions(c.N[j.n + 1]) : "∞"}</td></tr>`; }).join("")}
+        <td>${esc(sp.nom)}</td><td class="n">${j.n < 7 ? dureeSessions(c.d[j.n]) : "∞"}</td><td class="n">${j.n < 7 ? texteSessions(c.N[j.n + 1]) : "∞"}</td></tr>`; }).join("")}
     </tbody></table></div>
     <p class="aide">Élan d'achat au départ ${fmt(c.E0, 2)} · au jalon 7, VAR garde ${fmt(100 * c.det[7].estompe, 0)} % de sa valeur et la charge (POID1, MAN1) pèse ${fmt(100 * c.det[7].g, 0)} % · marque laissée ${fmt(c.marque, 2)}${c.plancher != null ? ` · plancher de nostalgie ${fmt(c.plancher, 2)}` : ""}${c.det.some(t => t?.retenu) ? " · * flow retenu : il ne remonte plus une fois le jeu maîtrisé" : ""}.</p>`;
   return { c, sp: majSpectro(n) };

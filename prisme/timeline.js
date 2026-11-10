@@ -1,7 +1,12 @@
 /* PRISME — timeline du jeu : jalons, durées, flow, α β γ ω, durée de vie.
    Module partagé par l'encyclopédie et l'outil d'évaluation. Méthode arrêtée le 08/10/2026 (jeu d'essai : Heat) ; modèle à 12 paires le 11/10/2026 ;
    formules refaites phase par phase le 12/10/2026 avec trois jeux de référence (Gloomhaven, Heat, Flip 7). L'unité est la session. */
-const TIMELINE_VERSION = { numero:"3.17", date:"2026-11-10 00:30" };   // à incrémenter à chaque livraison
+const TIMELINE_VERSION = { numero:"3.18", date:"2026-11-10 18:13" };   // à incrémenter à chaque livraison
+// (3.18, 10/11/2026) les sessions en nombres entiers à l'affichage (texteSessions, courtSessions) : sous une session, « avant la première
+// session » (sur un axe : « 0 ») ; à partir d'une session, à l'unité ; au-delà de 100, à la dizaine. Les calculs gardent leurs fractions.
+// apresSessions(), environSessions() et dureeSessions() gardent les phrases correctes. « Pour qui » : textePourQui(), la grille des neuf libellés
+// (note du tempérament le mieux servi, du moins servi, seuil_satisfaction, ecart_profils_net et ecart_profils_fort), commune à la fiche du jeu
+// et à la fiche de rédaction
 // (3.17, 10/11/2026) fin de l'ancienne configuration (prisme_evaluations.configuration, vide partout) : plus de configDe, de reference,
 // de configurations ni de fichesBase ; lireJeuxEvalues ne rend plus que « fiches » (une sous-fiche par jeu : l'all-in s'il a des fiches,
 // sinon la base) et « fichesSousFiches » (toutes) ; une fiche lit toujours la description de sa sous-fiche
@@ -275,7 +280,7 @@ function courbeSVG(c, titre, ref){
   s += `<text x="4" y="${H - b + 30}" class="gy" style="text-anchor:start">sessions</text>`;
   if (c.plancher != null && c.plancher > 0) s += `<line x1="${X(c.x[7])}" x2="${W - dr}" y1="${Y(c.plancher)}" y2="${Y(c.plancher)}" class="demi"/><text x="${W - dr - 4}" y="${Y(c.plancher) - 5}" class="gl" style="text-anchor:end">plancher de nostalgie</text>`;
   if (c.xVie != null){ const xd = X(Math.min(c.xVie, xFin)), yv = c.purge ? 0 : c.plancher ?? 0;
-    s += `<line x1="${xd}" x2="${xd}" y1="${Y(yv)}" y2="${H - b}" class="demi"/><text x="${Math.min(Math.max(xd, g + 60), W - dr - 80)}" y="${H - b + 34}" class="gl">durée de vie ≈ ${texteSessions(c.vie)}</text>`; }
+    s += `<line x1="${xd}" x2="${xd}" y1="${Y(yv)}" y2="${H - b}" class="demi"/><text x="${Math.min(Math.max(xd, g + 60), W - dr - 80)}" y="${H - b + 34}" class="gl">durée de vie ${environSessions(c.vie)}</text>`; }
   if (ref) s += `<polyline class="ref" points="${ref.x.map((v, j) => `${X(v)},${Y(ref.y[j])}`).join(" ")}"><title>Flow pour tous</title></polyline><text x="${X(ref.x[7]) + 6}" y="${Y(ref.y[7]) + 4}" class="gl" style="text-anchor:start">pour tous</text>`;
   const fin = c.omega ?? 7, pts = j => `${X(c.x[j])},${Y(c.y[j])}`;   // trait plein sur tous les jalons calculés (jusqu'à l'abandon s'il y a purge)
   s += `<polyline class="trait" points="${[...Array(fin + 1).keys()].map(pts).join(" ")}"/>`;
@@ -286,7 +291,7 @@ function courbeSVG(c, titre, ref){
   } else s += `<text x="${X(c.x[c.omega]) + 10}" y="${Y(0) - 10}" class="gl fort" style="text-anchor:start">ω abandon</text>`;
   let dernierNum = 0, dernierS = -1;
   for (let j = 0; j <= 7; j++){
-    const info = `Jalon ${j} : ${JALONS[j].nom} — après ${texteSessions(c.N[j])}, flow ${f(c.y[j])}/10`;
+    const info = `Jalon ${j} : ${JALONS[j].nom} — ${apresSessions(c.N[j])}, flow ${f(c.y[j])}/10`;
     const point = c.omega != null && j > c.omega ? "" : `<circle cx="${X(c.x[j])}" cy="${Y(c.y[j])}" r="${j === c.alpha ? 6 : 4}" class="${j === c.alpha ? "pt alpha" : "pt"}"/>`;
     const lisible = j === 0 || X(c.x[j]) - X(c.x[dernierNum]) >= 14;   // numéros trop serrés (jalons très courts) : on saute
     if (lisible) dernierNum = j;
@@ -305,33 +310,38 @@ function courbeSVG(c, titre, ref){
   return s + `</svg>`;
 }
 
-// sessions cumulées, en court, pour l'axe : « ¼ », « 4¼ », « 30 »
+// (3.18) les sessions en nombres entiers, à l'affichage seulement : à l'unité, à la dizaine au-delà de 100 ; les calculs gardent leurs fractions
+const sessionsEntieres = v => v >= 100 ? Math.round(v / 10) * 10 : Math.round(v);
+// sessions cumulées, en court, pour l'axe : « 0 » avant la première session, puis « 1 », « 4 », « 30 », « 120 »
 function courtSessions(v){
-  if (v >= 20) return String(Math.round(v));
-  const qv = Math.round(v * 4) / 4, e = Math.floor(qv), fr = ["", "¼", "½", "¾"][Math.round((qv - e) * 4)];
-  return (e || !fr ? String(e) : "") + fr;
+  if (v == null || !Number.isFinite(v)) return "∞";
+  return v < 1 ? "0" : String(sessionsEntieres(v));
 }
-// sessions au quart près : « ¼ de session », « 2 sessions ¾ » ; au-delà de 20, à l'unité ; au-delà de 100, à la dizaine
+// sessions cumulées, en texte : « avant la première session », « 1 session », « 12 sessions », « 130 sessions »
 function texteSessions(v){
   if (v == null) return "∞";
-  if (v >= 100) return Math.round(v / 10) * 10 + " sessions";
-  if (v >= 20) return Math.round(v) + " sessions";
-  const qv = Math.round(v * 4) / 4, e = Math.floor(qv), fr = ["", "¼", "½", "¾"][Math.round((qv - e) * 4)];
-  if (!e) return fr ? fr + " de session" : "0 session";
-  return e + " session" + (e > 1 ? "s" : "") + (fr ? " " + fr : "");
+  if (v < 1) return "avant la première session";
+  const n = sessionsEntieres(v);
+  return n + " session" + (n > 1 ? "s" : "");
 }
+// « après 12 sessions », « après ≈ 12 sessions » (environ = true), ou « avant la première session »
+const apresSessions = (v, environ) => v != null && v < 1 ? "avant la première session" : `après ${environ ? "≈ " : ""}${texteSessions(v)}`;
+// une quantité de sessions (durée de vie, nombre de parties) : « ≈ 12 sessions », ou « moins d'une session »
+const environSessions = v => v != null && v < 1 ? "moins d'une session" : "≈ " + texteSessions(v);
+// une durée en sessions, sans « ≈ » : « 3 sessions », ou « moins d'une session »
+const dureeSessions = v => v != null && v < 1 ? "moins d'une session" : texteSessions(v);
 
 /* Phrase de synthèse, en texte simple (bandeau, récapitulatif, export). Unités (13/10/2026) : flow /10, note /5, temps en sessions, jalons en toutes lettres. */
 const phaseDuJalon = j => j <= 0 ? "I" : SOUSPHASES[j - 1].phase;   // la phase que le jalon vient de conclure
 function syntheseTimeline(c){
   const f = (v, k = 2) => Number(v).toFixed(k).replace(".", ",").replace("-", "−");
   const purge = c.omega != null, ph = phaseDuJalon(c.alpha);
-  const apogee = `Apogée ${f(c.y[c.alpha])}/10 au jalon ${c.alpha} (${JALONS[c.alpha].nom}), après ${texteSessions(c.N[c.alpha])}, phase ${ph} (${PHASES[ph]})`;
-  const declin = c.beta == null ? "pas de déclin" : `déclin dès le jalon ${c.beta}, après ${texteSessions(c.N[c.beta])}`;
-  const fin = purge ? `abandon au jalon ${c.omega}, après ≈ ${texteSessions(c.vie)} (${c.classe})`
+  const apogee = `Apogée ${f(c.y[c.alpha])}/10 au jalon ${c.alpha} (${JALONS[c.alpha].nom}), ${apresSessions(c.N[c.alpha])}, phase ${ph} (${PHASES[ph]})`;
+  const declin = c.beta == null ? "pas de déclin" : `déclin dès le jalon ${c.beta}, ${apresSessions(c.N[c.beta])}`;
+  const fin = purge ? `abandon au jalon ${c.omega}, ${apresSessions(c.vie, true)} (${c.classe})`
     : c.vie == null ? `jamais rangé : ne descend pas jusqu'à son plancher de nostalgie (${f(c.marque)}/10), un classique`
-    : c.epuise ? `rangé après ≈ ${texteSessions(c.vie)}, une fois tout le contenu joué (usage unique), puis ressorti par nostalgie (${f(c.plancher)}/10)`
-    : `rangé après ≈ ${texteSessions(c.vie)}, au plancher de nostalgie (${f(c.plancher)}/10), puis ressorti par nostalgie (${c.classe})`;
+    : c.epuise ? `rangé ${apresSessions(c.vie, true)}, une fois tout le contenu joué (usage unique), puis ressorti par nostalgie (${f(c.plancher)}/10)`
+    : `rangé ${apresSessions(c.vie, true)}, au plancher de nostalgie (${f(c.plancher)}/10), puis ressorti par nostalgie (${c.classe})`;
   return `${apogee} · ${declin} · ${fin}`;
 }
 
@@ -512,6 +522,23 @@ function palierPrix(prix){
   if (prix == null || prix === "" || Number.isNaN(Number(prix))) return null;
   const x = Number(prix), seuils = [19.99, 40, 70, 120, 200]; let i = 0; while (i < seuils.length && x > seuils[i]) i++; return i;
 }
+/* (3.18, 10/11/2026) « Pour qui » : la grille des neuf libellés. max : la note (sur 5) du tempérament le mieux servi ; min : celle du moins servi ;
+   reglages : seuil_satisfaction (3 par défaut), ecart_profils_net (0,3) et ecart_profils_fort (0,8) ; l'écart = max − min.
+   Les lignes : tous au-dessus du seuil / le seuil entre les deux / tous en dessous ; les colonnes : écart sous net / entre net et fort / au-delà de fort. */
+const POUR_QUI_DEFAUT = { seuil_satisfaction:3, ecart_profils_net:.3, ecart_profils_fort:.8 };
+const POUR_QUI = [
+  ["Plaît largement", "Plaît à tous, davantage à certains", "Plaît à tous, enthousiasme certains"],
+  ["Avis mitigé pour tous", "Plaît à certains profils, pas aux autres", "Divise : adoré par certains, rejeté par d'autres"],
+  ["Déçoit largement", "Déçoit, un peu moins certains profils", "Déçoit, sauf quelques profils plus indulgents"]];
+function textePourQui(max, min, reglages){
+  const lu = k => { const v = reglages?.[k]; return v == null || v === "" || Number.isNaN(Number(v)) ? POUR_QUI_DEFAUT[k] : Number(v); };
+  const seuil = lu("seuil_satisfaction"), net = lu("ecart_profils_net"), fort = lu("ecart_profils_fort"), e = max - min;
+  const ligne = min >= seuil ? 0 : max >= seuil ? 1 : 2, col = e < net ? 0 : e > fort ? 2 : 1;
+  return POUR_QUI[ligne][col];
+}
+// la petite ligne sous le libellé : « de 2,1 à 2,5 sur 5 selon les profils »
+const plagePourQui = (max, min) => { const f = v => Number(v).toFixed(1).replace(".", ","); return `de ${f(min)} à ${f(max)} sur 5 selon les profils`; };
+
 /* Coût par session : prix ÷ durée de vie calculée (18/10/2026 : le plafond de 50 sessions est levé, la durée de vie suit maintenant
    le contenu et la profondeur). Un classique (jamais rangé) est compté sur un horizon de 1000 sessions. Rien sans prix, ni si le jeu
    est abandonné avant sa première session (ω au jalon 1, 2 ou 3). Par heure : avec la durée moyenne de la fiche. */
@@ -525,7 +552,7 @@ function coutParPartie(prix, c, dureeMin, dureeMax){
 function texteCout(k){
   if (!k) return "—";
   const e = v => v < 1 ? v.toFixed(2).replace(".", ",") : v < 10 ? v.toFixed(1).replace(".", ",") : String(Math.round(v));
-  return `${k.classique ? "moins de " : ""}${e(k.parPartie)} € par session${k.parHeure != null ? ` (${e(k.parHeure)} € de l'heure)` : ""} sur ${k.classique ? HORIZON_CLASSIQUE + " sessions et plus (un classique)" : texteSessions(k.parties)}`;
+  return `${k.classique ? "moins de " : ""}${e(k.parPartie)} € par session${k.parHeure != null ? ` (${e(k.parHeure)} € de l'heure)` : ""} sur ${k.classique ? HORIZON_CLASSIQUE + " sessions et plus (un classique)" : dureeSessions(k.parties)}`;
 }
 // toutes les entrées d'une fiche : n (pour la courbe), paires (pour les notes), manque (paires à remplir), absents (sans objet)
 // extra : { contenu_parties, contenu_unique, prix } (ou, comme avant, le seul nombre de parties pour tout exploiter)
