@@ -11,7 +11,7 @@
 <script src="flamme_moteur.js?v=1.3"></script>
 <script src="flamme_dispositifs.js?v=1.1"></script>
 <script src="flamme_glyphes.js?v=2.4"></script>
-<script src="flamme_experimental.js?v=1.2"></script>
+<script src="flamme_personnages.js?v=1.0"></script>
 <style>
 :root{--ink:#1B2430;--muted:#5B6573;--line:#DDE1E7;--paper:#F4F6F8;--panel:#FFFFFF;--hover:#EEF1F5;--ok:#1E7A46;--warn:#9A5B00;--err:#B42318;
   --serif:"Source Serif 4",Georgia,"Times New Roman",serif;--sans:"IBM Plex Sans","Segoe UI",Arial,sans-serif}
@@ -124,7 +124,7 @@ dialog h2{border:0} .field{display:block;margin-bottom:12px} .field span{display
    choisis et ordonnés selon les scores de la personne. Les mêmes scores donnent toujours le même portrait.
    Sources : ?resultat=ID, ?catalogue=ID, ?type=CODE ou ?W=..&U=..&B=..&R=..&G=.. (en %).
    ===================================================================== */
-const VERSION = { numero:"1.9", date:"2026-11-10 00:03" };
+const VERSION = { numero:"1.10", date:"2026-11-10 09:44" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const M = window.FLAMME_MOTEUR;
@@ -276,7 +276,7 @@ function rendre(src){
     <div class="etiq">Les plus éloignés de vous</div>
     <div class="court">${temps.slice(-2).reverse().map(x => `<div class="n">${pips(x.code)} ${esc(E[x.code]?.nom || x.code)}</div><div class="d">${esc(E[x.code]?.devise || "")}</div>`).join("")}</div>`;
 
-  /* 5 bis. au travail et personnages (contenus expérimentaux, flamme_experimental.js) */
+  /* 5 bis. au travail et personnages (contenus expérimentaux, tables flamme_personnages et flamme_travail) */
   const X = window.FLAMME_EXPERIMENTAL;
   if (X){
     const TV = X.travail, tp = TV.profils[code];
@@ -339,6 +339,7 @@ sb.auth.onAuthStateChange(async (_e, session) => {
     E = Object.fromEntries(els.map(e => [e.code, e])); C = Object.fromEntries((cols || []).map(c => [c.code, c]));
     const src = await lireScores();
     await window.FLAMME_DISPOSITIFS.charger(sb, E, src.dispositif || new URLSearchParams(location.search).get("dispositif"));   // textes de l'organisation, s'il y a lieu
+    await window.FLAMME_PERSONNAGES.charger(sb);                     // personnages et Profil au travail, lus en base
     rendre(src);
     $("#bloque").classList.add("hidden"); ["#feuille", "#outils"].forEach(s => $(s).classList.remove("hidden"));
   } catch (err){ $("#bloque").textContent = err.message; }

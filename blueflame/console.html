@@ -272,7 +272,7 @@ table.j td{border-bottom:1px solid var(--line);padding:8px 10px;vertical-align:t
 
 <script>
 /* ================= configuration ================= */
-const VERSION = { numero:"1.37", date:"2026-11-10 00:03" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.38", date:"2026-11-10 09:44" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 
@@ -723,7 +723,7 @@ async function afficherJournal(){
 
 
 /* ================= sauvegarde ================= */
-const TABLES_SAUVEGARDE = ["flamme_couleurs","flamme_vocabulaire","flamme_elements","flamme_elements_traductions","flamme_resultats","forge_utilisateurs","forge_journal","forge_messages","forge_parametres","flamme_catalogue","flamme_dispositifs","flamme_dispositif_textes"];   // Flamme Bleue et parties communes ; PRISME a sa propre sauvegarde
+const TABLES_SAUVEGARDE = ["flamme_couleurs","flamme_vocabulaire","flamme_elements","flamme_elements_traductions","flamme_resultats","forge_utilisateurs","forge_journal","forge_messages","forge_parametres","flamme_catalogue","flamme_dispositifs","flamme_dispositif_textes","flamme_personnages","flamme_travail"];   // Flamme Bleue et parties communes ; PRISME a sa propre sauvegarde
 async function lireTout(table){
   const tout = [], pas = 1000;
   for (let debut = 0; ; debut += pas){

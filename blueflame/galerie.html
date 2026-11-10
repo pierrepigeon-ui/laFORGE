@@ -10,7 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <script src="flamme_moteur.js?v=1.3"></script>
 <script src="flamme_glyphes.js?v=2.4"></script>
-<script src="flamme_experimental.js?v=1.2"></script>
+<script src="flamme_personnages.js?v=1.0"></script>
 
 <style>
 :root{--ink:#1B2430;--muted:#5B6573;--line:#DDE1E7;--paper:#F4F6F8;--panel:#FFFFFF;--hover:#EEF1F5;--ok:#1E7A46;--warn:#9A5B00;--err:#B42318;
@@ -106,10 +106,10 @@ dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);c
 <script>
 /* =====================================================================
    Flamme Bleue — galerie des personnages (contenus expérimentaux)
-   Parcourt flamme_experimental.js dans l'autre sens : par personnage, par univers, par profil.
+   Parcourt les personnages (table flamme_personnages) dans l'autre sens : par personnage, par univers, par profil.
    Onglet « Au travail » : le rôle et les métiers des 90 profils.
    ===================================================================== */
-const VERSION = { numero:"1.3", date:"2026-11-10 00:03" };
+const VERSION = { numero:"1.4", date:"2026-11-10 09:44" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const M = window.FLAMME_MOTEUR;
@@ -145,8 +145,8 @@ function surligne(t, q){
   return i < 0 ? esc(t) : esc(t.slice(0, i)) + "<mark>" + esc(t.slice(i, i + q.length)) + "</mark>" + esc(t.slice(i + q.length));
 }
 async function demarrer(){
-  const X = window.FLAMME_EXPERIMENTAL;
-  if (!X){ throw new Error("Le fichier des contenus expérimentaux (flamme_experimental.js) n'a pas pu être chargé."); }
+  const X = await window.FLAMME_PERSONNAGES.charger(sb);
+  if (!X){ throw new Error("Les personnages n'ont pas pu être lus dans la base."); }
   PROFILS = Object.values(E).filter(e => e.couche === "profil").sort((a, b) => (a.ordre ?? 0) - (b.ordre ?? 0));
   TOUS = PROFILS.flatMap(p => (X.personnalites[p.code] || []).map(x => ({ ...x, code: p.code })));
   const univers = [...new Set(TOUS.map(x => x.univers))];
