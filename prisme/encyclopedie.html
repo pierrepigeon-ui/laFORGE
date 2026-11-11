@@ -134,10 +134,10 @@ mark{background:#FFE58A;color:#1B2430;border-radius:2px}
 </div>
 <div style="max-width:1240px;margin:0 auto;padding:0 20px 30px"><p class="version"><span id="credit"></span><br><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p></div>
 
-<script src="timeline.js?v=3.24"></script>
+<script src="timeline.js?v=3.25"></script>
 <script src="totems.js?v=4"></script>
 <script>
-const VERSION = { numero:"3.26", date:"2026-11-11 23:30" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.27", date:"2026-11-11 21:55" };   // à incrémenter à chaque livraison
 // (3.20, 10/11/2026) timeline.js 3.18 (sessions en nombres entiers) ; rien d'autre ne change
 // (3.19, 10/11/2026) timeline.js appelé à sa version courante, 3.17 ; rien d'autre ne change
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
@@ -381,9 +381,9 @@ function sectionCroisement(toc){
       <li><b>Sa phase clé</b> : le moment de la timeline où il culmine.</li>
       <li><b>Un profil</b> (A.b/e) : le dominant compte entièrement, le second à moitié ; le moteur fui gêne. Les deux autres ne jouent pas.</li>
       <li><b>Sa note</b> (11/11/2026) : elle ne dépend plus de sa courbe. La note pour tous, rapprochée de la réussite de ce que ses moteurs aiment (dominant, second à moitié), corrigée par la nature du jeu et par la gêne ou le soulagement du moteur qu'il fuit : note = base + ${String(REGLAGES_NOTE.note_profil_alpha).replace(".", ",")} × (réussite − base) + ${String(REGLAGES_NOTE.note_profil_delta).replace(".", ",")} × nature + rejet, entre 0 et 5. La note d'un tempérament est la moyenne de ses trois styles.</li>
-      <li><b>Sa courbe</b> (séance du 13/10/2026) : la courbe noire, plus les goûts du dominant (entiers) et du second (à moitié) — ce qu'ils aiment entre dans la stimulation, ce qui les gêne dans la friction —, plus le rejet du moteur fui. Les moteurs 3 et 4 n'y jouent pas.</li>
-      <li><b>Le rejet</b> : la gêne vaut (trait − 2) / 3 × 5. Elle bloque l'envie avant de jouer (entière aux jalons 1 et 2), se tolère à la première session (moitié), puis la résistance monte de 10 % par session, jusqu'à une fois et demie.</li>
-      <li><b>Le temps</b> : le Décrypteur apprend 1,5 fois plus vite, et qui le fuit 1,5 fois plus lentement ; seul ce moteur déplace les jalons. Les autres changent l'usure de VAR.</li>
+      <li><b>Sa courbe</b> (11/11/2026) : la courbe noire, plus la réussite et la nature que le dominant (entier) et le second (à moitié) aiment, chacune à partir de son jalon — la même définition des moteurs que pour la note ; ce qu'ils aiment entre dans la stimulation, ce qui les gêne dans la friction —, plus le rejet du moteur fui. Les moteurs 3 et 4 n'y jouent pas.</li>
+      <li><b>Le rejet</b> : la gêne vaut haut(trait) × 5, haut(trait) = (trait − 2,5) / 2,5 au-dessus de 2,5. Elle bloque l'envie avant de jouer (entière aux jalons 1 et 2), se tolère à la première session (moitié), puis la résistance monte de 10 % par session, jusqu'à une fois et demie. Un moteur fui peu présent (trait sous 2,5) soulage, dès la première partie.</li>
+      <li><b>Le temps</b> : le Décrypteur apprend 1,5 fois plus vite, et qui le fuit 1,5 fois plus lentement ; seul ce moteur déplace les jalons. Rassembler se lasse moins vite, S'enflammer plus vite (la demi-vie de la lassitude) ; Rayonner use VAR moins vite ; le Décrypteur s'ennuie une fois le jeu compris s'il manque de profondeur ; le Triomphant culmine avec l'enjeu.</li>
       <li><b>Le centrage</b> : les profils altèrent la courbe noire sans la déplacer. À chaque jalon, on retire aux 60 profils leur écart moyen : la moyenne de leurs courbes est la courbe noire.</li>
       <li><b>Le garde-fou</b> : d'un jalon à l'autre, la courbe d'un profil s'écarte d'au plus 0,5 de la variation de la courbe noire. Les écarts s'installent progressivement ; une longue dérive peut aller jusqu'à l'abandon.</li></ul>
       <p>La note dit combien le jeu plaît à ce joueur ; la courbe dit quand, et combien de temps.</p></div>

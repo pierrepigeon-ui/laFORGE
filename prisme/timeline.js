@@ -1,7 +1,10 @@
 /* PRISME — timeline du jeu : jalons, durées, flow, α β γ ω, durée de vie.
    Module partagé par l'encyclopédie et l'outil d'évaluation. Méthode arrêtée le 08/10/2026 (jeu d'essai : Heat) ; modèle à 12 paires le 11/10/2026 ;
    formules refaites phase par phase le 12/10/2026 avec trois jeux de référence (Gloomhaven, Heat, Flip 7). L'unité est la session. */
-const TIMELINE_VERSION = { numero:"3.24", date:"2026-11-11 23:30" };   // à incrémenter à chaque livraison
+const TIMELINE_VERSION = { numero:"3.25", date:"2026-11-11 21:55" };   // à incrémenter à chaque livraison
+// (3.25, 11/11/2026) lot D2, la timeline par profil adopte MOTEURS_DEF : réussite et nature de chaque moteur, chacune à partir de son jalon ;
+// moteur fui = haut(T) × 5 (geneRejet retiré), soulagement si T < 2,5 ; W se lasse moins vite, R plus vite ; U s'ennuie sans profondeur
+// une fois le jeu compris ; B culmine à l'Aguerrissement (l'enjeu), sans coût d'effort. Ni la courbe noire, ni la note par profil, ni la rosace ne changent.
 // (3.24, 11/11/2026) lot D1, la note par profil découplée de la courbe (Claude Doc « PRISME — Les moteurs et la note par profil ») :
 // MOTEURS_DEF, la définition unique des cinq moteurs (réussite R, nature N, trait T) ; noteProfil = base + α × (réussite − base) + δ × nature
 // + rejet du moteur fui, bornée de 0 à 5 ; elle ne lit plus ni la courbe de profil ni le centrage. Réglages note_profil_alpha, _beta, _gamma, _delta.
@@ -118,29 +121,29 @@ const MOTEURS_JEU = {
       trait:n => moyT(n.VAR1, n.PROF1), traitTxt:"moy(VAR1, PROF1) : de la matière pour s'exprimer" }
 };
 // ce que chaque moteur change dans la timeline (séance du 13/10/2026) — pour l'encyclopédie
-const MOTEURS_TIMELINE = {
-  W:{ aime:"THEM, MAT, ART2a dès la boîte ; la communauté (la durée de vie du jeu, sur la courbe noire) dès la première session", gene:"RYT2 ou LIEN raté (sous 3)", temps:"aucune durée ne change" },
-  U:{ aime:"le système entier dès la lecture des règles (PROF, MECA, EXIG comptés double) ; LIEN2a ; DOC2 quand elle est bonne", gene:"ART2b raté ; LIEN2b raté là où la parole a sa place ; DOC2 ratée (comptée trois fois)", temps:"apprend 1,5 fois plus vite (Accès, Premiers pas, Expérimentations) ; qui le fuit, 1,5 fois plus lentement" },
-  B:{ aime:"LIEN1, la compétition ; LIEN2b, la politique, là où la parole a sa place", gene:"le coût d'effort : règles, manuels, logistique, hasard (toléré), renouvellement, attente", temps:"ne se lasse pas de gagner : VAR ne compte plus dans sa stimulation à partir du jalon 5" },
-  R:{ aime:"la promesse jusqu'au jalon 3 ; ART ; des règles courtes et bien écrites ; PROF ; VAR (double) ; des trucs cools à manipuler (MAN2, MAT) ; l'immersion (THEM2b)", gene:"une promesse de volume décevante (POID2) ; de l'exigence sans gratification (EXIG2) ; attendre (RYT1) ; un thème plaqué", temps:"VAR compte double : il sent davantage l'usure" },
-  G:{ aime:"PROF, VAR, EXIG, RYT, THEM, dès la première session", gene:"MAN2 ou LIEN raté (sous 3)", temps:"VAR s'use moins vite pour lui (3 % par session au lieu de 5 %)" }
+const MOTEURS_TIMELINE = {   // (3.25) lot D2 : d'après MOTEURS_DEF
+  W:{ aime:"ART2a et MAT dès la boîte ; LIEN2a, MECA, THEM, DOC et la communauté (la durée de vie du jeu, sur la courbe noire) dès la première partie", gene:"un jeu de confrontation (LIEN1), le hasard qui écrase (MECA1c, MECA1b)", temps:"se lasse moins vite : demi-vie de la lassitude × 2 (× 1,5 en second)" },
+  U:{ aime:"PROF, MECA, EXIG, POID, DOC et ART2b dès la lecture des règles ; un jeu profond, exigeant, lourd (PROF1, EXIG1, POID1) dès la première partie", gene:"le hasard qui écrase (MECA1c) ; une fois le jeu compris (jalon 5), le manque de profondeur et d'exigence", temps:"apprend 1,5 fois plus vite (Accès, Premiers pas, Expérimentations) ; qui le fuit, 1,5 fois plus lentement ; apogée vers la maîtrise" },
+  B:{ aime:"LIEN2a, PROF, ART2b ; l'enjeu (la confrontation, ou à défaut l'exigence) et PROF1 dès la première partie ; l'enjeu compte double à partir du jalon 5", gene:"le hasard qui écrase (MECA1c)", temps:"culmine à l'Aguerrissement ; ne se lasse pas de la variabilité : VAR pèse moins dans sa stimulation à partir du jalon 5" },
+  R:{ aime:"MAT, ART2a, THEM et un thème, un matériel marquants (THEM1, MAT1) dès la boîte ; RYT, LIEN2b (là où la parole a sa place), MECA, le rythme, le hasard, l'interaction (RYT1, MECA1a, LIEN1b) et la variété (VAR) dès la première partie", gene:"rien de plus que le moteur fui", temps:"s'use plus vite : demi-vie de la lassitude × 0,5 (× 0,75 en second) ; la variété la freine" },
+  G:{ aime:"VAR, PROF, THEM, RYT, LIEN2a ; un jeu variable et profond (VAR1, PROF1), dès la première partie", gene:"rien de plus que le moteur fui", temps:"VAR s'use moins vite pour lui (3 % par session au lieu de 5 %)" }
 };
 function moyT(...a){ a = a.filter(v => v != null && !Number.isNaN(v)); return a.length ? a.reduce((s, v) => s + v, 0) / a.length : null; }
-// un profil : le dominant (×1) et le second (×½) jouent sur la courbe, le moteur fui gêne (geneRejet) ; les deux autres ne jouent plus (13/10/2026)
+// un profil : le dominant (×1) et le second (×½) jouent sur la courbe, le moteur fui gêne (geneFui, 3.25) ; les deux autres ne jouent plus (13/10/2026)
 // d'un code de style à sa lecture : "W.b/u" → { dom:"W", second:"B", autres:["R","G"], rejet:"U" }
 function prDeStyle(code){
   const dom = code[0], second = code[2].toUpperCase(), rejet = code[4].toUpperCase();
   return { dom, second, rejet, autres: [..."WUBRG"].filter(c => c !== dom && c !== second && c !== rejet) };
 }
-const geneRejet = (n, pr) => { if (!pr) return 0; const t = MOTEURS_JEU[pr.rejet].trait(n); return t == null ? 0 : Math.max(0, t - 2) / 3; };   // 0 à 1
 
 /* n : { code: valeur } ; une valeur absente (paire sans objet) est retirée des moyennes. pr : profil (facultatif) → courbe vue par ce joueur.
    Formules de la séance du 12/10/2026 (journal « timeline_seance_12-10 ») :
    flow = élan + 2 × r × (S − F) ; élan d'achat = E₀ / (1 + n), E₀ = 0,5 + 0,25 × palier de prix, n = sessions jouées depuis le jalon 2 ;
    r = coefficient de projection (0,6 au jalon 1, 0,8 au jalon 2, 1 ensuite) ; S = moyenne (pondérée) ; F = √(somme des carrés / 3).
    À partir du jalon 4, le flow ne remonte plus. Après le jalon 7, la courbe descend jusqu'au plancher de nostalgie.
-   Courbes de profil (séance du 13/10/2026, journal « moteurs_seance_13-10 ») : goûts du dominant (×1) et du second (×½), rejet du moteur fui,
-   vitesse d'apprentissage (Décrypter), usure de VAR (Rayonner, Triompher) ; puis centrage (la moyenne des 60 profils est la courbe noire)
+   Courbes de profil (séance du 13/10/2026 ; lot D2 du 11/11/2026, MOTEURS_DEF) : réussite et nature du dominant (×1) et du second (×½), chaque terme
+   à partir de son jalon, gêne du moteur fui ; vitesse d'apprentissage (Décrypter), usure de VAR (Rayonner, Triompher), demi-vie de la lassitude
+   (Rassembler, S'enflammer), ennui sans profondeur (Décrypter), enjeu (Triompher) ; puis centrage (la moyenne des 60 profils est la courbe noire)
    et garde-fou (d'un jalon à l'autre, au plus 0,5 d'écart à la variation de la courbe noire). */
 const ok_ = v => v != null && !Number.isNaN(v);
 const moy_ = (...a) => { a = a.filter(ok_); return a.length ? a.reduce((s, v) => s + v, 0) / a.length : null; };
@@ -148,7 +151,7 @@ const inv_ = v => ok_(v) ? 5 - v : null;
 const sous3_ = x => ok_(x) ? Math.max(0, 3 - x) * 5 / 3 : null;      // « raté » : ce qui tombe sous 3 gêne, ce qui est attendu ne coûte rien
 const au2_ = x => ok_(x) ? Math.max(0, x - 2) * 5 / 3 : null;        // « beaucoup » (axe 1) : au-delà de 2
 // le coût d'effort (prototype) : ce qu'il faut investir pour jouer — règles, manuels, logistique, hasard toléré, renouvellement, attente ;
-// moyenne quadratique, sur 5. C'est la gêne du Triomphant ; affiché aussi dans l'en-tête de la fiche.
+// moyenne quadratique, sur 5. Affiché dans la fiche du jeu et l'outil d'évaluation ; (3.25) ce n'est plus la gêne du Triomphant.
 function coutEffort(n, jusqua = 7){
   const L = [au2_(n.POID1), au2_(n.DOC1)].concat(jusqua >= 2 ? [au2_(n.MAN1)] : [])
     .concat(jusqua >= 3 ? [ok_(n.MECA1a) ? n.MECA1a / 2 : null, au2_(n.VAR1), sous3_(n.RYT1)] : []).filter(ok_);
@@ -178,9 +181,11 @@ function courbeBrute(n, pr, ctx = {}){
   const depuis = (Nj, j0) => Math.max(0, Nj - N[j0]);
   // la promesse de la boîte : le meilleur de ce qu'elle annonce (thème, rythme, manipulation)
   const prom = Math.max(...[n.THEM1, n.RYT1, n.MAN2].filter(ok));
-  const parole = (n.LIEN1c ?? 0) >= 2;                                   // la parole ne compte que si le jeu lui laisse de la place
   const vieN = ctx.vieNoire == null ? 50 : Math.min(ctx.vieNoire, 50), communaute = 5 * Math.log2(1 + vieN) / Math.log2(51);
-  const gene = pr ? geneRejet(n, pr) * 5 : 0;
+  // (3.25) lot D2 : les goûts des moteurs viennent de MOTEURS_DEF (P : les notes de paires, MECA compris ; A : les axes, ici n)
+  const PA = { ...n, MECA }, tFui = pr ? MOTEURS_DEF[pr.rejet].T(PA, n) : null;
+  const gene = ok(tFui) ? haut_(tFui) * 5 : 0;                          // le moteur fui : haut(T) × 5
+  const enjeu = enjeu_(n), n3 = N[3] - N[2];
   const termes = (j, Nj) => {
     const nS = depuis(Nj, 2), m = depuis(Nj, 4), c = (1 - tauxVAR) ** m, g = 1 - (1 - (1 - ESTOMPE) * usure) ** m;
     const app = ok(n.POID1) ? n.POID1 * (1 - (n.DOC2 ?? 0) / 4) / (1 + nS * vit) : null;   // ce qui reste à apprendre ; s'éteint de lui-même
@@ -199,21 +204,22 @@ function courbeBrute(n, pr, ctx = {}){
     // les goûts des moteurs : un terme de plus dans S (pondéré par le moteur), une gêne de plus dans F (× √poids)
     const aime = (km, v, w = 1) => { if (km && ok(v)) S.push([v, km * w]); };
     const gene_ = (km, v, fois = 1) => { if (km && ok(v) && v > 0) for (let i = 0; i < fois; i++) F.push(v * Math.sqrt(km)); };
-    if (k.W){ aime(k.W, n.THEM); aime(k.W, n.MAT); aime(k.W, n.ART2a);                       // Rassembler : rassemblé par le thème, les sens, la durée
-      if (j >= 3){ aime(k.W, communaute); gene_(k.W, sous3_(n.RYT2)); gene_(k.W, sous3_(n.LIEN)); } }
-    if (k.U){ if (j >= 2){ aime(k.U, n.POID); aime(k.U, n.PROF, 2); aime(k.U, MECA, 2); aime(k.U, VARj); aime(k.U, n.EXIG, 2);   // Décrypter : le système
-        if ((n.DOC2 ?? 0) > 0) aime(k.U, 2.5 + 1.25 * n.DOC2); gene_(k.U, sous3_(n.ART2b)); if ((n.DOC2 ?? 0) < 0) gene_(k.U, -n.DOC2 / 2 * 5, 3); }
-      if (j >= 3){ aime(k.U, n.LIEN2a); if (parole) gene_(k.U, sous3_(n.LIEN2b)); } }
-    if (k.B){ aime(k.B, n.LIEN1); if (j >= 3 && parole) aime(k.B, n.LIEN2b);                  // Triompher : gagner, à bon compte
-      gene_(k.B, coutEffort(n, j)); }
-    if (k.R){ if (j <= 3) aime(k.R, prom); aime(k.R, n.ART);                                    // S'enflammer : la promesse, l'intensité
-      if (j >= 2){ aime(k.R, moy(inv(n.DOC1), 2.5 + 1.25 * (n.DOC2 ?? 0))); if ((n.POID2 ?? 0) < 0) gene_(k.R, -n.POID2 / 2 * 5); }
-      if (j >= 3){ aime(k.R, n.PROF); aime(k.R, VARj, 2); aime(k.R, moy(n.MAN2, n.MAT)); if ((n.THEM1 ?? 0) >= 2) aime(k.R, n.THEM2b);
-        if ((n.EXIG2 ?? 0) < 0) gene_(k.R, (n.EXIG1 ?? 0) * -n.EXIG2 / 2); gene_(k.R, sous3_(n.RYT1)); if ((n.THEM1 ?? 0) >= 2) gene_(k.R, sous3_(n.THEM2b)); } }
-    if (k.G && j >= 3){ aime(k.G, n.PROF); aime(k.G, VARj); aime(k.G, n.EXIG); aime(k.G, n.RYT); aime(k.G, n.THEM);   // Rayonner : s'exprimer
-      gene_(k.G, sous3_(n.MAN2)); gene_(k.G, sous3_(n.LIEN)); }
-    // le rejet : bloqué avant de jouer (1), toléré à la première session (½), puis de plus en plus résistant (+10 % par session, au plus 1,5)
-    if (gene > 0){ const n3 = N[3] - N[2], kr = j <= 2 ? 1 : j === 3 ? .5 : Math.min(1.5, .5 + .1 * (nS - n3)); F.push(gene * kr); }
+    // (3.25) la croissance d'une gêne : bloquante avant de jouer (1), tolérée à la première session (½), puis de plus en plus résistante
+    // (+10 % par session, au plus 1,5) ; elle sert au moteur fui et aux axes « gênants » de la nature
+    const kr = j <= 2 ? 1 : j === 3 ? .5 : Math.min(1.5, .5 + .1 * (nS - n3));
+    // (3.25) lot D2 : réussite (R) et nature (N) du dominant (× 1) et du second (× ½), chaque terme à partir de son jalon (MOTEURS_DEF) ;
+    // un axe aimé entre dans S, un axe gênant dans F (haut(axe) × 5, avec la croissance kr)
+    for (const m of "WUBRG"){ const km = k[m]; if (!km) continue;
+      MOTEURS_DEF[m].R(PA, n).forEach(([v, w, j0]) => { if (j >= j0) aime(km, v, w); });
+      MOTEURS_DEF[m].Nat(PA, n).forEach(([v, s, j0]) => { if (j < j0 || !ok(v)) return; if (s > 0) aime(km, v); else gene_(km, haut_(v) * 5 * kr); }); }
+    // (3.25) les effets propres à chaque moteur dans le temps (les demi-vies de W et R sont plus bas, dans demiVie)
+    if (j >= 3) aime(k.W, communaute);                                   // Rassembler : le traditionnel, la communauté du jeu
+    if (j >= 5) gene_(k.U, ok(moy(n.EXIG1, n.PROF1)) ? Math.max(0, 3 - moy(n.EXIG1, n.PROF1)) * 5 / 3 : null);   // Décrypter : compris, il s'ennuie sans profondeur ni exigence
+    if (j >= 5) aime(k.B, enjeu, 2);                                     // Triompher : il culmine à l'Aguerrissement
+    if (j >= 3) aime(k.R, VARj);                                         // S'enflammer : la variété freine sa lassitude
+    // le moteur fui : haut(T) × 5, avec la croissance kr ; s'il est peu présent (T < 2,5), un soulagement dès la première partie
+    if (gene > 0) F.push(gene * kr);
+    if (j >= 3 && ok(tFui) && tFui < 2.5) aime(.5, 5 - tFui);
     let sw = 0, sv = 0; S.forEach(([v, w]) => { const ww = w ?? 1; if (ok(v) && ww > 0){ sw += ww; sv += ww * v; } });
     const s = sw ? sv / sw : 0, f = Math.sqrt(F.filter(ok).reduce((t, v) => t + v * v, 0) / K_FRICTION);
     const r = R_REGIME[Math.min(j, 7)], el = E0 / (1 + nS);
@@ -225,7 +231,8 @@ function courbeBrute(n, pr, ctx = {}){
   // VAR1 sans objet : 0 ; contenu absent : 15
   const seuilRangement = reglageCourbe(n, "seuil_rangement"), rFond = (moy(MECA, n.PROF, n.LIEN) ?? 0) / 5;
   const demiVie = reglageCourbe(n, "demi_vie_base") * (1 + (ok(n.VAR1) ? n.VAR1 : 0)) * facteurProfondeur(n.PROF1 ?? 0)
-    * Math.sqrt(Math.max(1, (n.contenu_parties > 0 ? n.contenu_parties : CONTENU_REF) / CONTENU_REF)) * rFond ** EXPOSANT_MINCEUR;
+    * Math.sqrt(Math.max(1, (n.contenu_parties > 0 ? n.contenu_parties : CONTENU_REF) / CONTENU_REF)) * rFond ** EXPOSANT_MINCEUR
+    * (1 + k.W) * (1 - .5 * k.R);                                        // (3.25) Rassembler se lasse moins vite, S'enflammer plus vite
   let fond = null;
   // (3.21, décision de Pierre du 11/11/2026) le fond est aussi un plancher : à partir du jalon 4, le flow ne descend plus sous le fond ;
   // seul un flow négatif à un jalon (l'abandon, ω) passe outre, l'abandon gardant sa règle
@@ -521,24 +528,31 @@ svg.courbe .pt{fill:var(--panel);stroke:var(--ink);stroke-width:2} svg.courbe .p
 const pos_ = v => ok_(v) ? (v - 2.5) / 2.5 : null;
 const haut_ = v => ok_(v) ? Math.max(0, (v - 2.5) / 2.5) : null;
 const neg_ = v => ok_(v) ? -v : null;
+// l'enjeu : la confrontation directe, ou à défaut l'exigence (un jeu solitaire exigeant reste un défi), de 0 à 5
+const enjeu_ = A => ok_(A.LIEN1) && ok_(A.EXIG1) ? (A.LIEN1 ** 2 + A.EXIG1 * (5 - A.LIEN1)) / 5 : null;
+/* (3.25, 11/11/2026) lot D2 : chaque terme porte aussi le jalon où il entre dans la timeline par profil (courbeBrute) :
+   R → [valeur, poids, jalon] ; Nat, la nature avant transformation → [valeur de l'axe, sens, jalon] (sens +1 : aimé, pos(v) ;
+   sens −1 : gênant, −haut(v)) ; N s'en déduit, à l'identique de la 3.24 : la note par profil ne change pas. */
 const MOTEURS_DEF = {
-  W:{ R:(P, A) => [[A.ART2a, 1], [P.MAT, 1], [A.LIEN2a, 1], [P.MECA, 1], [P.THEM, 1], [P.DOC, 1]],
-      N:(P, A) => [neg_(haut_(A.LIEN1)), neg_(haut_(A.MECA1c)), neg_(haut_(A.MECA1b))],
+  W:{ R:(P, A) => [[A.ART2a, 1, 1], [P.MAT, 1, 1], [A.LIEN2a, 1, 3], [P.MECA, 1, 3], [P.THEM, 1, 3], [P.DOC, 1, 3]],
+      Nat:(P, A) => [[A.LIEN1, -1, 3], [A.MECA1c, -1, 3], [A.MECA1b, -1, 3]],
       T:(P, A) => moy_(A.LIEN1b, A.LIEN1c, inv_(A.LIEN1)) },
-  U:{ R:(P, A) => [[P.PROF, 1], [P.MECA, 1], [P.EXIG, 1], [P.POID, 1], [P.DOC, 1], [A.ART2b, .5]],
-      N:(P, A) => [pos_(A.PROF1), pos_(A.EXIG1), pos_(A.POID1), neg_(haut_(A.MECA1c))],
+  U:{ R:(P, A) => [[P.PROF, 1, 2], [P.MECA, 1, 2], [P.EXIG, 1, 2], [P.POID, 1, 2], [P.DOC, 1, 2], [A.ART2b, .5, 2]],
+      Nat:(P, A) => [[A.PROF1, 1, 3], [A.EXIG1, 1, 3], [A.POID1, 1, 3], [A.MECA1c, -1, 3]],
       T:(P, A) => moy_(A.EXIG1, A.PROF1, A.POID1) },
-  B:{ R:(P, A) => [[A.LIEN2a, 1], [P.PROF, 1], [A.ART2b, 1]],
-      // l'enjeu : la confrontation directe, ou à défaut l'exigence (un jeu solitaire exigeant reste un défi)
-      N:(P, A) => [pos_(ok_(A.LIEN1) && ok_(A.EXIG1) ? (A.LIEN1 ** 2 + A.EXIG1 * (5 - A.LIEN1)) / 5 : null), pos_(A.PROF1), neg_(haut_(A.MECA1c))],
+  B:{ R:(P, A) => [[A.LIEN2a, 1, 3], [P.PROF, 1, 3], [A.ART2b, 1, 3]],
+      Nat:(P, A) => [[enjeu_(A), 1, 3], [A.PROF1, 1, 3], [A.MECA1c, -1, 3]],
       T:(P, A) => ok_(A.LIEN1) ? A.LIEN1 : null },
-  R:{ R:(P, A) => [[P.RYT, 1], [(A.LIEN1c ?? 0) >= 2 ? A.LIEN2b : null, 1], [P.MECA, 1], [P.THEM, 1], [P.MAT, 1], [A.ART2a, 1]],
-      N:(P, A) => [pos_(A.RYT1), pos_(A.MECA1a), pos_(A.LIEN1b), pos_(A.THEM1), pos_(A.MAT1)],
+  R:{ R:(P, A) => [[P.RYT, 1, 3], [(A.LIEN1c ?? 0) >= 2 ? A.LIEN2b : null, 1, 3], [P.MECA, 1, 3], [P.THEM, 1, 1], [P.MAT, 1, 1], [A.ART2a, 1, 1]],
+      Nat:(P, A) => [[A.RYT1, 1, 3], [A.MECA1a, 1, 3], [A.LIEN1b, 1, 3], [A.THEM1, 1, 1], [A.MAT1, 1, 1]],
       T:(P, A) => { const L = [A.RYT1, A.MECA1c, ok_(A.LIEN1b) && ok_(A.LIEN1) ? A.LIEN1b * A.LIEN1 / 5 : null].filter(ok_); return L.length ? Math.max(...L) : null; } },
-  G:{ R:(P, A) => [[P.VAR, 1], [P.PROF, 1], [P.THEM, 1], [P.RYT, 1], [A.LIEN2a, 1]],
-      N:(P, A) => [pos_(A.VAR1), pos_(A.PROF1)],
+  G:{ R:(P, A) => [[P.VAR, 1, 3], [P.PROF, 1, 3], [P.THEM, 1, 3], [P.RYT, 1, 3], [A.LIEN2a, 1, 3]],
+      Nat:(P, A) => [[A.VAR1, 1, 3], [A.PROF1, 1, 3]],
       T:(P, A) => ok_(A.LIEN1c) && ok_(A.VAR1) ? (2 * A.LIEN1c + A.VAR1) / 3 : null }
 };
+Object.values(MOTEURS_DEF).forEach(d => { d.N = (P, A) => d.Nat(P, A).map(([v, s]) => s > 0 ? pos_(v) : neg_(haut_(v))); });
+// (3.25) la gêne du moteur fui, de 0 à 1 : haut(T du moteur fui) ; remplace geneRejet
+const geneFui = (n, pr) => { if (!pr) return 0; const t = MOTEURS_DEF[pr.rejet].T(n, n); return ok_(t) ? haut_(t) : 0; };
 // la note pour tous : la moyenne des chapitres, chacun la moyenne de ses paires notées
 function noteBaseJeu(paires){
   const parChap = {};
@@ -598,7 +612,7 @@ function spectrometre(n, paires, pl){
   const base = flowJeu(n), noteBase = noteProfil(paires, n, null);
   const T = Object.fromEntries(pl.temperaments.map(t => [t.code, t])), S = Object.fromEntries(pl.styles.map(x => [x.code, x])), M = Object.fromEntries(pl.moteurs.map(m => [m.code, m]));
   const lignes = PROFILS.map(code => {
-    const pr = prDeStyle(code), t = T[temperamentDe(code)], sty = S[styleDe(code)], c = flowJeu(n, pr), note = noteProfil(paires, n, pr), gene = geneRejet(n, pr);
+    const pr = prDeStyle(code), t = T[temperamentDe(code)], sty = S[styleDe(code)], c = flowJeu(n, pr), note = noteProfil(paires, n, pr), gene = geneFui(n, pr);
     const st = { code, second: pr.second, nom: `${t?.nom || temperamentDe(code)} (${sty?.nom || styleDe(code)})`, style: sty };
     return { st, temperament:t, moteur:M[pr.dom], pr, c, note, gene,
       decroche: c.omega ?? c.beta };
