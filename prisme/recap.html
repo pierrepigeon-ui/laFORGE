@@ -152,10 +152,10 @@ details.avec-ext > summary::-webkit-details-marker{display:none}
   <p class="version"><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p>
 </main>
 
-<script src="timeline.js?v=3.19"></script>
+<script src="timeline.js?v=3.20"></script>
 <script src="selecteurs.js?v=1.9"></script>
 <script>
-const VERSION = { numero:"1.6", date:"2026-11-11 13:05" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.7", date:"2026-11-11 15:10" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -343,7 +343,8 @@ async function afficher(user){
     return `<div class="famille"><h2><span>${esc(ch.nom)}</span><span>${R?.chap[ch.code] != null ? fmt(R.chap[ch.code]) : ""}</span></h2>${Pa.map(p => {
       const A1 = d.axes.filter(a => a.paire === p.code && /^1/.test(a.rang || "")), A2 = d.axes.filter(a => a.paire === p.code && /^2/.test(a.rang || "") && a.echelle !== "calcule");
       const annonceDe = a => DA[a.code] || (m?.saisie[a.code] ? { valeur: m.saisie[a.code].valeur, sans_objet: m.saisie[a.code].sans_objet } : null);
-      const so = (A1.length && A1.every(a => annonceDe(a)?.sans_objet)) || !!R?.e.absents.includes(p.code);
+      const A1so = A1.filter(a => !AXES_PROFILS.includes(a.code));   // (1.7) les axes des profils ne rendent pas la paire sans objet
+      const so = (A1so.length && A1so.every(a => annonceDe(a)?.sans_objet)) || !!R?.e.absents.includes(p.code);
       const note = notePaire(p.code), noteTxt = note != null ? fmt(note) : so ? "s. o." : "—";
       let annonce = "", vecu = "", detail = "";
       if (so) annonce = "sans objet pour ce jeu";

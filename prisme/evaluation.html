@@ -370,10 +370,10 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
   <div class="boutons"><span class="msg" id="rep-msg" role="status"></span><button class="btn ghost" type="button" id="rep-annuler">Annuler</button><button class="btn plein" type="button" id="rep-ok">Reprendre</button></div></dialog>
 <div class="wrap"><p class="version"><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p></div>
 
-<script src="timeline.js?v=3.19"></script>
+<script src="timeline.js?v=3.20"></script>
 <script src="selecteurs.js?v=1.9"></script>
 <script>
-const VERSION = { numero:"4.10", date:"2026-11-11 13:05" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"4.11", date:"2026-11-11 15:10" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -870,7 +870,8 @@ const nonDecrit = d => !d || (d.valeur == null && !d.sans_objet);
 const palierMap = code => Object.fromEntries(paliersDe(code).map(x => [Number(x.valeur), x.libelle]));
 const libellePalier = (code, v) => libelleDePalier(palierMap(code), v);
 // (4.2) sans objet pour ce jeu : tous les axes de rang « 1… » de la paire le sont dans la description
-const paireSansObjet = p => { const L = colGauche(p.code); return L.length > 0 && L.every(a => !!decritDe(a.code)?.sans_objet); };
+const paireSansObjet = p => { const L = colGauche(p.code).filter(a => !AXES_PROFILS.includes(a.code));   // (4.11) hors axes des profils
+  return L.length > 0 && L.every(a => !!decritDe(a.code)?.sans_objet); };
 // (4.2) la plage réelle de joueurs de la description : « de 1 à 6 joueurs », « 2 joueurs »
 function plageJoueurs(){
   const d = MOD.src?.descriptions?.[fiche.jeu], a = d?.joueurs_min, b = d?.joueurs_max;
@@ -886,6 +887,8 @@ function blocDecrit(p){
     if (a.code === LIEN_ETENDUE){ const pl = plageJoueurs();
       return pl ? `<div class="decrit" title="${esc(a.code)}"><span class="mot">Décrit</span><span class="nom">${esc(a.nom)} : <b>${esc(pl)}</b></span></div>`
         : `<div class="decrit manque"><span class="mot">Décrit</span><span class="nom">${esc(a.nom)} : nombre de joueurs non décrit</span>${lien}</div>`; }
+    // (4.11) un axe des profils non décrit : sans alerte ni lien
+    if (nonDecrit(d) && AXES_PROFILS.includes(a.code)) return `<div class="decrit"><span class="mot">Décrit</span><span class="nom">${esc(a.nom)} : non décrit</span></div>`;
     if (nonDecrit(d)) return `<div class="decrit manque"><span class="mot">Décrit</span><span class="nom">${esc(a.nom)} : non décrit</span>${lien}</div>`;
     const pal = d.sans_objet ? "" : libellePalier(a.code, v);
     return `<div class="decrit" title="${esc((a.question ? a.question + " · " : "") + a.code)}"><span class="mot">Décrit</span><span class="nom">${esc(a.nom)} : <b>${d.sans_objet ? "sans objet" : virgule(v)}</b></span>${pal ? `<span class="pal">${esc(pal)}</span>` : ""}</div>`; }).join("")}</div>`;
@@ -1291,7 +1294,8 @@ function appliquerDescription(){
   const box = $("#bandeau-desc"); if (!fiche || !box) return;
   const bloque = descriptionBloque(), msg = bloque ? messageDescription() : "";
   const desc = MOD.src?.descriptions?.[fiche.jeu];
-  const manquent = MOD.axes.filter(a => /^1/.test(a.rang || "") && MOD.paires.some(p => p.code === a.paire) && nonDecrit(decritDe(a.code)));
+  // (4.11) les axes des profils (AXES_PROFILS, timeline.js) ne manquent jamais
+  const manquent = MOD.axes.filter(a => /^1/.test(a.rang || "") && !AXES_PROFILS.includes(a.code) && MOD.paires.some(p => p.code === a.paire) && nonDecrit(decritDe(a.code)));
   const quoi = [...(DESC.jeu === fiche.jeu ? DESC.manque : []),
     ...(!desc ? [] : manquent.length ? [`${manquent.length === 1 ? "une note décrite" : manquent.length + " notes décrites"} (${manquent.map(a => a.nom).join(", ")})`] : [])];
   const et = L => L.join(", ").replace(/, ([^,]*)$/, " et $1");

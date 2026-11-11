@@ -1,7 +1,9 @@
 /* PRISME — timeline du jeu : jalons, durées, flow, α β γ ω, durée de vie.
    Module partagé par l'encyclopédie et l'outil d'évaluation. Méthode arrêtée le 08/10/2026 (jeu d'essai : Heat) ; modèle à 12 paires le 11/10/2026 ;
    formules refaites phase par phase le 12/10/2026 avec trois jeux de référence (Gloomhaven, Heat, Flip 7). L'unité est la session. */
-const TIMELINE_VERSION = { numero:"3.19", date:"2026-11-11 13:05" };   // à incrémenter à chaque livraison
+const TIMELINE_VERSION = { numero:"3.20", date:"2026-11-11 15:10" };   // à incrémenter à chaque livraison
+// (3.20, 11/11/2026) AXES_PROFILS : des axes décrits qui ne servent qu'aux profils (MECA1c, « Brutalité du hasard ») ; ils ne bloquent
+// aucun calcul : noteDePaire les ignore pour la complétude et le « sans objet », entreesPourCalcul pour la règle de la paire sans objet
 // (3.19, 11/11/2026) libellés de la ligne du bas adoucis, « Déçoit » jugé trop raide pour des notes autour de 2/5.
 // (3.18, 10/11/2026) les sessions en nombres entiers à l'affichage (texteSessions, courtSessions) : sous une session, « avant la première
 // session » (sur un axe : « 0 ») ; à partir d'une session, à l'unité ; au-delà de 100, à la dizaine. Les calculs gardent leurs fractions.
@@ -64,6 +66,8 @@ const TERMES = {
 // notes utilisées : axes (avec chiffre) et notes retenues de paires (sans chiffre)
 // LIEN (sans chiffre) est la note de la paire ; VAL1 (palier de prix) vient du prix de la fiche, pas d'un axe
 const TIMELINE_AXES = ["POID1","POID2","PROF1","VAR1","MECA1a","MECA2","EXIG1","EXIG2","RYT1","RYT2","MAN1","MAN2","THEM1","THEM2b","LIEN1","LIEN1b","LIEN1c","LIEN2a","LIEN2b","MAT1","ART1","ART2a","ART2b","DOC1","DOC2"];
+// (3.20, 11/11/2026) axes décrits qui ne servent qu'aux profils : jamais obligatoires, jamais « sans objet » pour la paire
+const AXES_PROFILS = ["MECA1c"];
 const TIMELINE_PAIRES = ["POID","PROF","VAR","EXIG","RYT","MAN","THEM","LIEN","MAT","ART","DOC"];   // MECA : sa note est MECA2
 const PLANCHER_SEUIL = 3;     // marque = max(0, max(THEM, MECA) − 3) : seul un thème ou des mécaniques qui ont vraiment marqué laissent une nostalgie
 const CLASSES_VIE = [[10, "éphémère"], [Infinity, "durable"]];   // une durée de vie infinie (le plancher n'est jamais atteint) : un classique
@@ -495,8 +499,9 @@ svg.rosace .mot{font-size:15px;font-weight:600} svg.rosace .val{font-size:13px;f
 
 /* ---------------- d'une fiche d'évaluation aux entrées du calcul (partagé : outil, rosace) ---------------- */
 // note d'une paire à partir de la saisie { axe: { valeur, sans_objet } } ; ax : les axes de la paire
-// complète quand tous ses axes saisis (non calculés) ont une valeur
+// complète quand tous ses axes saisis (non calculés, hors AXES_PROFILS) ont une valeur
 function noteDePaire(p, s, ax){
+  ax = ax.filter(a => !AXES_PROFILS.includes(a.code));   // (3.20) les axes des profils n'entrent ni dans la complétude ni dans le « sans objet »
   const val = r => s[ax.find(a => a.rang === r)?.code]?.valeur;
   const enS = x0 => { const t = (x0 + 2) / 9; return t <= .5 ? 10 * t * t : 5 * (1 - 2 * (1 - t) * (1 - t)); };
   if (ax.some(a => s[a.code]?.sans_objet)) return { complete:true, so:true, note:null };
@@ -599,7 +604,7 @@ function entreesPourCalcul(saisieFiche, extraFiche, description, axesDescription
   // (3.12) le « sans objet » se décide dans la description : si tous les axes de rang « 1… » d'une paire le sont,
   // ses axes de rang « 2… » le sont aussi, quoi qu'en dise la fiche
   const parPaire = {}; axes.forEach(a => (parPaire[a.paire] ||= []).push(a));
-  Object.values(parPaire).forEach(L => { const un = L.filter(a => /^1/.test(a.rang || "")); if (!un.length || !un.every(a => !!D[a.code]?.sans_objet)) return;
+  Object.values(parPaire).forEach(L => { const un = L.filter(a => /^1/.test(a.rang || "") && !AXES_PROFILS.includes(a.code)); if (!un.length || !un.every(a => !!D[a.code]?.sans_objet)) return;
     L.filter(a => /^2/.test(a.rang || "")).forEach(a => saisie[a.code] = { ...saisie[a.code], valeur: saisie[a.code]?.valeur ?? null, sans_objet:true }); });
   const prix = prixDeGamme(description.prix_gamme, reglages);
   return { saisie, source:"description",
