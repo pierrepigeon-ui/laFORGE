@@ -134,10 +134,10 @@ mark{background:#FFE58A;color:#1B2430;border-radius:2px}
 </div>
 <div style="max-width:1240px;margin:0 auto;padding:0 20px 30px"><p class="version"><span id="credit"></span><br><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p></div>
 
-<script src="timeline.js?v=3.26"></script>
+<script src="timeline.js?v=3.27"></script>
 <script src="totems.js?v=4"></script>
 <script>
-const VERSION = { numero:"3.28", date:"2026-11-11 22:30" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.29", date:"2026-11-11 23:10" };   // à incrémenter à chaque livraison
 // (3.20, 10/11/2026) timeline.js 3.18 (sessions en nombres entiers) ; rien d'autre ne change
 // (3.19, 10/11/2026) timeline.js appelé à sa version courante, 3.17 ; rien d'autre ne change
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
@@ -384,8 +384,9 @@ function sectionCroisement(toc){
       <li><b>Sa courbe</b> (11/11/2026) : la courbe noire, plus le rejet du moteur fui, plus un bonus à chaque jalon : le score du dominant (entier) et du second (à moitié) — ce que le jeu réussit pour eux et ce qu'il est, avec la même définition des moteurs que pour la note —, pondéré par le calendrier du moteur (S'enflammer tôt, Décrypter à la maîtrise, Triompher à l'Aguerrissement, Rassembler de plus en plus tard, Rayonner étale). Les moteurs 3 et 4 n'y jouent pas.</li>
       <li><b>Le rejet</b> : la gêne vaut haut(trait) × 5, haut(trait) = (trait − 2,5) / 2,5 au-dessus de 2,5. Elle bloque l'envie avant de jouer (entière aux jalons 1 et 2), se tolère à la première session (moitié), puis la résistance monte de 10 % par session, jusqu'à une fois et demie. Un moteur fui peu présent (trait sous 2,5) soulage, dès la première partie.</li>
       <li><b>Le temps</b> : le Décrypteur apprend 1,5 fois plus vite, et qui le fuit 1,5 fois plus lentement ; seul ce moteur déplace les jalons. Rassembler se lasse moins vite, S'enflammer plus vite (la demi-vie de la lassitude) ; Rayonner use VAR moins vite ; le calendrier place le moment où chaque moteur pèse le plus.</li>
-      <li><b>Le centrage</b> : les profils altèrent la courbe noire sans la déplacer. À chaque jalon, on retire aux 60 profils leur écart moyen : la moyenne de leurs courbes est la courbe noire.</li>
+      <li><b>La courbe noire, le joueur neutre</b> (11/11/2026) : elle décrit un joueur sans moteur, et non plus la moyenne des profils. Le centrage ne porte que sur la courbe de base des profils (à chaque jalon, on leur retire leur écart moyen) ; le calendrier des moteurs et la lassitude épargnée s'ajoutent ensuite. La moyenne des 60 profils peut donc s'écarter de la noire : au-dessus, le jeu a un public qui s'y installe ; en dessous, il plaît moins à chacun qu'à un joueur neutre.</li>
       <li><b>Le garde-fou</b> : d'un jalon à l'autre, la courbe d'un profil s'écarte d'au plus ${String(REGLAGES_COURBE.garde_fou_profil).replace(".", ",")} de la variation de la courbe noire (réglage garde_fou_profil). Les écarts s'installent progressivement ; une longue dérive peut aller jusqu'à l'abandon.</li>
+      <li><b>La lassitude épargnée</b> (11/11/2026) : à partir du jalon 4, un profil que le jeu sert sur la durée (Triompher de l'Aguerrissement à l'archivage, Rassembler à partir de la révélation) récupère une part de la chute de la courbe noire depuis la première partie : son score × ${String(REGLAGES_COURBE.attenuation_moteurs).replace(".", ",")} (réglage attenuation_moteurs), au plus toute la chute.</li>
       <li><b>Après l'archivage</b> : un profil au-dessus de la courbe noire la rejoint peu à peu (l'enthousiasme s'use, à la vitesse de sa lassitude) ; un profil en dessous y reste (l'agacement ne passe pas). Son rangement et son Souvenir suivent cette queue.</li></ul>
       <p>La note dit combien le jeu plaît à ce joueur ; la courbe dit quand, et combien de temps.</p></div>
     <h3 class="section" id="x-moteurs">Les moteurs vus par le jeu</h3>

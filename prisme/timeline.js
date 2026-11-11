@@ -1,7 +1,13 @@
 /* PRISME — timeline du jeu : jalons, durées, flow, α β γ ω, durée de vie.
    Module partagé par l'encyclopédie et l'outil d'évaluation. Méthode arrêtée le 08/10/2026 (jeu d'essai : Heat) ; modèle à 12 paires le 11/10/2026 ;
    formules refaites phase par phase le 12/10/2026 avec trois jeux de référence (Gloomhaven, Heat, Flip 7). L'unité est la session. */
-const TIMELINE_VERSION = { numero:"3.26", date:"2026-11-11 22:30" };   // à incrémenter à chaque livraison
+const TIMELINE_VERSION = { numero:"3.27", date:"2026-11-11 23:40" };   // à incrémenter à chaque livraison
+// (3.27, décision PRISME du 11/11/2026) changement de principe : la courbe noire est le joueur neutre, et non plus la moyenne des 60 profils.
+// La note par profil étant découplée (D1), le centrage n'a plus à absorber les goûts des moteurs : il ne porte que sur la courbe de base des profils ;
+// le bonus du calendrier et l'atténuation s'ajoutent après lui, avant le garde-fou. La moyenne des profils peut donc s'écarter de la noire.
+// (3.27, 11/11/2026) correction 2 du lot D2 : la lassitude frappe moins ceux que le jeu sert sur la durée. Pour un profil, à chaque jalon j ≥ 4,
+// + part épargnée × chute_j, chute_j = max(0, noire(3) − noire(j)), part = min(1, Σ k_m × max(0, score_m) × attenuation_moteurs × ACTIF[m][j]) ;
+// avant le centrage et le garde-fou ; la queue après le jalon 7 en hérite (écart7). Réglage attenuation_moteurs (1,5). Noire et note inchangées.
 // (3.26, 11/11/2026) correction du lot D2 : les goûts sculptent la forme. Réussite et nature sortent de la moyenne S/F ; un bonus séparé s'ajoute
 // au brut de chaque jalon : amplitude_moteurs × Σ k_m × POIDS_JALON[m][j] × score_m (score_m = pos(réussite) + ½ nature, borné à ±1).
 // L'ennui de U et l'enjeu de B du D2 sont retirés (le calendrier les remplace). Garde-fou : réglage garde_fou_profil (1). Après le jalon 7,
@@ -82,7 +88,7 @@ const contenuEffectif = n => n.contenu_parties > 0 ? n.contenu_parties * facteur
 // (3.21) B1 : la plus courte durée d'une sous-phase, en sessions (une durée nulle faisait un segment vertical)
 const DUREE_MIN = .1;
 // (3.21) B3, B4 : les réglages de la courbe, et leurs valeurs par défaut quand prisme_reglages ne les a pas
-const REGLAGES_COURBE = { seuil_rangement:.3, demi_vie_base:3, garde_fou_profil:1, amplitude_moteurs:2 };   // (3.26) garde_fou_profil, amplitude_moteurs
+const REGLAGES_COURBE = { seuil_rangement:.3, demi_vie_base:3, garde_fou_profil:1, amplitude_moteurs:1.5, attenuation_moteurs:1.5 };   // (3.26) garde_fou_profil, amplitude_moteurs ; (3.27) attenuation_moteurs
 // (3.26) le calendrier des moteurs : le poids du goût de chaque moteur aux jalons 1 à 7 (le bonus des courbes de profil)
 const POIDS_JALON = {
   R:[1, 1, .8, .5, .3, .2, .1],     // tôt, puis s'estompe
@@ -90,6 +96,11 @@ const POIDS_JALON = {
   B:[0, 0, .3, .6, 1, 1, .8],       // à l'Aguerrissement
   W:[.2, .2, .4, .6, .8, 1, 1],     // de plus en plus tard
   G:[0, 0, .7, .7, .8, .8, .8]      // étale à partir du jalon 3
+};
+// (3.27) les moteurs que le jeu sert sur la durée, aux jalons 1 à 7 : la lassitude commune les frappe moins (1 = actif)
+const ACTIF = {
+  B:[0, 0, 0, 0, 1, 1, 1],          // Triompher, de l'Aguerrissement à l'archivage
+  W:[0, 0, 0, 0, 0, 1, 1]           // Rassembler, à partir de la révélation
 };
 // (3.22) la demi-vie × r^k, r = moyenne de MECA, PROF, LIEN / 5 : un jeu mince s'use vite ; un grand jeu, r proche de 1, presque pas
 const EXPOSANT_MINCEUR = 3;
@@ -170,7 +181,7 @@ function coutEffort(n, jusqua = 7){
   return L.length ? Math.sqrt(L.reduce((t, v) => t + v * v, 0) / L.length) : null;
 }
 
-// la courbe brute (avant centrage et garde-fou) ; ctx : { vieNoire } pour les profils
+// la courbe brute (avant centrage et garde-fou) ; ctx : { vieNoire, noire } pour les profils (noire : le brut de la courbe noire, 3.27)
 function courbeBrute(n, pr, ctx = {}){
   const ok = ok_, moy = moy_, inv = inv_, q = v => Math.round(v * 4) / 4;
   const k = { W:0, U:0, B:0, R:0, G:0 }; if (pr){ k[pr.dom] = 1; k[pr.second] = .5; }
@@ -249,6 +260,12 @@ function courbeBrute(n, pr, ctx = {}){
     const LN = MOTEURS_DEF[m].N(PA, n).filter(ok), nat = LN.length ? LN.reduce((a, b) => a + b, 0) / LN.length : 0;
     score[m] = Math.max(-1, Math.min(1, (sw ? pos_(sv / sw) : 0) + .5 * nat)); }
   const bonus = j => pr ? ampl * Object.entries(score).reduce((s, [m, sc]) => s + k[m] * POIDS_JALON[m][j - 1] * sc, 0) : 0;
+  // (3.27) l'atténuation : à partir du jalon 4, la part épargnée de la chute de la courbe noire depuis le jalon 3 ; un score négatif n'atténue rien
+  const att = reglageCourbe(n, "attenuation_moteurs");
+  const attenue = j => { if (!pr || !ctx.noire || j < 4) return 0;
+    const chute = Math.max(0, ctx.noire[3] - ctx.noire[j]);
+    const part = Math.min(1, Object.entries(score).reduce((s, [m, sc]) => s + k[m] * Math.max(0, sc) * att * (ACTIF[m]?.[j - 1] ?? 0), 0));
+    return part * chute; };
   // (3.21, décision de Pierre du 11/11/2026) le fond est aussi un plancher : à partir du jalon 4, le flow ne descend plus sous le fond ;
   // seul un flow négatif à un jalon (l'abandon, ω) passe outre, l'abandon gardant sa règle
   const lasse = (b, Nk) => fond == null || (b < 0 && Nk <= N[7]) ? b : Math.max(fond, b <= fond ? b : fond + (b - fond) / (1 + Math.max(0, Nk - N[4]) / demiVie));
@@ -260,11 +277,11 @@ function courbeBrute(n, pr, ctx = {}){
     if (j >= 5 && t.brut > garde[j - 1]){ t.retenu = true; t.brut = garde[j - 1]; }      // à partir du jalon 4, le flow ne remonte plus
     garde.push(t.brut);
     if (j >= 5){ t.avantLassitude = t.brut; t.brut = lasse(t.brut, N[j]); }              // (3.21) B3 ; l'usure de VAR (dans termes) s'y ajoute
-    det.push(t); base.push(t.brut); t.bonus = bonus(j); t.brut += t.bonus; brut.push(t.brut);   // (3.26) le fond se lit sur la base, sans bonus
+    det.push(t); base.push(t.brut); t.bonus = bonus(j); t.attenue = attenue(j); t.brut += t.bonus + t.attenue; brut.push(t.brut);   // (3.26) le fond se lit sur la base, sans bonus ; (3.27) ni atténuation
   }
   const marque = Math.max(0, Math.max(n.THEM ?? 0, MECA ?? 0) - PLANCHER_SEUIL);
   const epuise = n.contenu_unique && n.contenu_parties > 0 ? n.contenu_parties : null;   // campagne : le contenu s'épuise
-  return { d, N, x, brut, det, marque, brutLoinBrut: Nk => lasse(Math.min(termes(7, Nk).brut, garde[7]), Nk), SYS, EXP, EDI, E0, T, vit, usure, epuise,
+  return { d, N, x, brut, base, det, marque, brutLoinBrut: Nk => lasse(Math.min(termes(7, Nk).brut, garde[7]), Nk), SYS, EXP, EDI, E0, T, vit, usure, epuise,
     fond, demiVie, score, seuilRangement, contenu: n.contenu_parties > 0 ? n.contenu_parties : null };
 }
 
@@ -333,24 +350,25 @@ function analyseCourbe(cb){
     perte, vie, xVie, classe, plancher, yLoin: yLoinF, xLoin, epuise };
 }
 
-// le centrage d'un jeu : l'écart moyen des 60 profils à la courbe noire, jalon par jalon (mis en cache)
+// le centrage d'un jeu : l'écart moyen des 60 profils à la courbe noire, jalon par jalon (mis en cache) ;
+// (3.27) sur la seule courbe de base des profils, sans le bonus du calendrier ni l'atténuation
 const CENTRAGES = new Map();
 function centrageJeu(n, noire){
   const cle = JSON.stringify(n); if (CENTRAGES.has(cle)) return CENTRAGES.get(cle);
   const md = [0, 0, 0, 0, 0, 0, 0, 0];
-  PROFILS.forEach(code => { const b = courbeBrute(n, prDeStyle(code), { vieNoire: noire.vie }).brut; for (let j = 1; j <= 7; j++) md[j] += (b[j] - noire.brut[j]) / PROFILS.length; });
+  PROFILS.forEach(code => { const b = courbeBrute(n, prDeStyle(code), { vieNoire: noire.vie, noire: noire.brut }).base; for (let j = 1; j <= 7; j++) md[j] += (b[j] - noire.brut[j]) / PROFILS.length; });
   CENTRAGES.set(cle, md); return md;
 }
 
 function flowJeu(n, pr){
   const noire = analyseCourbe(courbeBrute(n));
   if (!pr) return noire;
-  const cb = courbeBrute(n, pr, { vieNoire: noire.vie }), md = centrageJeu(n, noire);
-  // centrage, puis garde-fou : d'un jalon à l'autre, l'écart à la variation de la courbe noire est d'au plus 0,5 ; un flow négatif est un abandon
+  const cb = courbeBrute(n, pr, { vieNoire: noire.vie, noire: noire.brut }), md = centrageJeu(n, noire);
+  // centrage (de la base seule, 3.27), puis bonus et atténuation, puis garde-fou : d'un jalon à l'autre, l'écart à la variation de la courbe noire est d'au plus garde_fou_profil ; un flow négatif est un abandon
   const brut = [0], gf = reglageCourbe(n, "garde_fou_profil"); let fini = null;   // (3.26) le garde-fou est un réglage (1 par défaut, 0,5 avant)
   for (let j = 1; j <= 7; j++){
     if (fini != null){ brut.push(fini); continue; }
-    const dN = noire.brut[j] - noire.brut[j - 1], v = Math.min(brut[j - 1] + dN + gf, Math.max(brut[j - 1] + dN - gf, cb.brut[j] - md[j]));
+    const dN = noire.brut[j] - noire.brut[j - 1], v = Math.min(brut[j - 1] + dN + gf, Math.max(brut[j - 1] + dN - gf, cb.base[j] - md[j] + cb.det[j].bonus + cb.det[j].attenue));   // (3.27) base centrée, puis bonus et atténuation
     brut.push(v); if (v < 0) fini = v;
   }
   // (3.26) la queue après le jalon 7 : au-dessus de la noire, l'enthousiasme s'use et la rejoint (demi-vie du profil) ; en dessous, l'agacement reste
