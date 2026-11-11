@@ -71,6 +71,9 @@ main{display:grid;grid-template-columns:minmax(0,3.6fr) minmax(280px,1.2fr);gap:
 .bulle{position:absolute;z-index:20;left:0;top:calc(100% + 6px);width:min(300px,80vw);padding:10px 12px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.18);font:13.5px/1.45 var(--serif);display:none;cursor:auto}
 .bulle b{display:block;font-style:italic;font-weight:600;margin-bottom:4px}
 .liste .carte:hover .bulle,.liste .carte.choisie .bulle{display:block}
+.bac .carte:hover .bulle,.pile .carte:hover .bulle{display:block}
+.bac .carte:active .bulle,.pile .carte:active .bulle{display:none}
+.pile:nth-child(n+4) .bulle{left:auto;right:0}
 /* proximité de la carte, en % (100 = la plus proche de soi), et sa variation au dernier changement */
 .prox{flex:none;background:#FFFFFF;color:#1B2430;border-radius:999px;padding:0 6px;font:500 11.5px/1.5 var(--sans);font-variant-numeric:tabular-nums;box-shadow:0 0 0 1px rgba(27,36,48,.25)}
 .prox .delta{font-weight:600;margin-left:3px}
@@ -267,7 +270,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px}
 </dialog>
 
 <script>
-const VERSION = { numero:"2.10", date:"2026-11-10 00:03" };
+const VERSION = { numero:"2.11", date:"2026-11-11 21:12" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const M = window.FLAMME_MOTEUR;
@@ -469,9 +472,9 @@ function vuePiles(){
   if (!bac.length && piles.every(p => !p.length)) bac = liste.slice();
   $("#vue").innerHTML = `
     <p class="aide">${esc(LIB.aidePiles)}</p>
-    <div class="bac" data-pile="bac" aria-label="Cartes à ranger">${bac.length ? bac.map(c => carte(c, { attrs: 'draggable="true"' })).join("") : '<span class="vide">Toutes les cartes sont rangées.</span>'}</div>
+    <div class="bac" data-pile="bac" aria-label="Cartes à ranger">${bac.length ? bac.map(c => carte(c, { attrs: 'draggable="true"', bulle: true })).join("") : '<span class="vide">Toutes les cartes sont rangées.</span>'}</div>
     <div class="piles">${piles.map((p, k) => `<div class="pile" data-pile="${k}" role="group" aria-label="${PILES[k]}">
-      <h3>${PILES[k]} <span>${p.length}</span></h3>${p.map(c => carte(c, { attrs: 'draggable="true"' })).join("") || '<span class="vide">Vide</span>'}</div>`).join("")}</div>
+      <h3>${PILES[k]} <span>${p.length}</span></h3>${p.map(c => carte(c, { attrs: 'draggable="true"', bulle: true })).join("") || '<span class="vide">Vide</span>'}</div>`).join("")}</div>
     <div class="barre-actions">
       <button class="btn" id="b-suite" type="button">${doitReconstruire() ? (bac.length ? "Classer directement, sans finir les piles" : "Passer au classement") : "Revenir au classement"}</button>
       ${bac.length ? `<span class="aide" style="margin:0">Encore ${bac.length} carte${bac.length > 1 ? "s" : ""} à ranger.</span>` : ""}
