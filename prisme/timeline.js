@@ -1,7 +1,11 @@
 /* PRISME — timeline du jeu : jalons, durées, flow, α β γ ω, durée de vie.
    Module partagé par l'encyclopédie et l'outil d'évaluation. Méthode arrêtée le 08/10/2026 (jeu d'essai : Heat) ; modèle à 12 paires le 11/10/2026 ;
    formules refaites phase par phase le 12/10/2026 avec trois jeux de référence (Gloomhaven, Heat, Flip 7). L'unité est la session. */
-const TIMELINE_VERSION = { numero:"3.23", date:"2026-11-11 22:00" };   // à incrémenter à chaque livraison
+const TIMELINE_VERSION = { numero:"3.24", date:"2026-11-11 23:30" };   // à incrémenter à chaque livraison
+// (3.24, 11/11/2026) lot D1, la note par profil découplée de la courbe (Claude Doc « PRISME — Les moteurs et la note par profil ») :
+// MOTEURS_DEF, la définition unique des cinq moteurs (réussite R, nature N, trait T) ; noteProfil = base + α × (réussite − base) + δ × nature
+// + rejet du moteur fui, bornée de 0 à 5 ; elle ne lit plus ni la courbe de profil ni le centrage. Réglages note_profil_alpha, _beta, _gamma, _delta.
+// La note pour tous ne change pas ; les courbes de profil (lot D2) et la rosace non plus.
 // (3.23, 11/11/2026) lot C, l'affichage de la timeline (aucun calcul ne change) : courbeSVG nomme les étapes en haut (inclinées, jamais superposées),
 // écrit les repères en entier (« α apogée », « β début du déclin », « γ rangé », « ω abandon ») en les décalant s'ils se touchent, l'axe du bas
 // compte les « parties jouées » ; LEGENDE_COURBE, la légende pour un joueur ; syntheseTimeline(c, nom) en phrases claires, syntheseTechnique(c) pour le détail
@@ -75,6 +79,10 @@ const REGLAGES_COURBE = { seuil_rangement:.3, demi_vie_base:3 };
 // (3.22) la demi-vie × r^k, r = moyenne de MECA, PROF, LIEN / 5 : un jeu mince s'use vite ; un grand jeu, r proche de 1, presque pas
 const EXPOSANT_MINCEUR = 3;
 const reglageCourbe = (n, k) => { const v = n?.[k]; return v == null || v === "" || Number.isNaN(Number(v)) ? REGLAGES_COURBE[k] : Number(v); };
+// (3.24) les réglages de la note par profil (prisme_reglages), et leurs valeurs par défaut ; ils suivent le même chemin (extra → n)
+const REGLAGES_NOTE = { note_profil_alpha:.6, note_profil_beta:1.2, note_profil_gamma:.5, note_profil_delta:.5 };
+const REGLAGES_TRANSMIS = [...Object.keys(REGLAGES_COURBE), ...Object.keys(REGLAGES_NOTE)];
+const reglageNote = (n, k) => { const v = n?.[k]; return v == null || v === "" || Number.isNaN(Number(v)) ? REGLAGES_NOTE[k] : Number(v); };
 const K_FRICTION = 3;         // F = √(somme des carrés / 3) : chaque gêne ajoutée fait monter F
 const TERMES = {
   1:{ s:"MAT, ART2a, promesse = max(THEM1, RYT1, MAN2)", f:"POID1, 5 − ART2b" },
@@ -505,17 +513,58 @@ svg.courbe .pt{fill:var(--panel);stroke:var(--ink);stroke-width:2} svg.courbe .p
 })();
 
 /* ---------------- le spectromètre : le jeu vu par chacun des 60 styles ---------------- */
-// note finale vue par un profil (séance du 13/10/2026) : tirée de sa courbe — la note pour tous, plus la moitié de l'écart moyen de sa courbe
-// à la courbe noire sur les jalons 1 à 7 (le flow est sur 10, la note sur 5). Centrée par construction : la note et la courbe racontent la même histoire.
-function noteProfil(paires, n, pr){
+/* (3.24, 11/11/2026) MOTEURS_DEF : la définition unique des cinq moteurs, pour la note par profil.
+   R, la réussite : ce que le moteur aime voir réussi, [valeur, poids] (notes de paires P.X ou axes de rang 2, de 0 à 5) ;
+   N, la nature : ce que le jeu est, de −1 à +1 (axes de rang 1) ; T, le trait qui gêne celui qui fuit ce moteur, de 0 à 5.
+   pos(v) = (v − 2,5) / 2,5 ; haut(v) = max(0, (v − 2,5) / 2,5) ; une valeur absente ou sans objet est ignorée.
+   P : { paire: note } ; A : { axe: valeur } (description pour les rangs 1, évaluation pour les rangs 2). */
+const pos_ = v => ok_(v) ? (v - 2.5) / 2.5 : null;
+const haut_ = v => ok_(v) ? Math.max(0, (v - 2.5) / 2.5) : null;
+const neg_ = v => ok_(v) ? -v : null;
+const MOTEURS_DEF = {
+  W:{ R:(P, A) => [[A.ART2a, 1], [P.MAT, 1], [A.LIEN2a, 1], [P.MECA, 1], [P.THEM, 1], [P.DOC, 1]],
+      N:(P, A) => [neg_(haut_(A.LIEN1)), neg_(haut_(A.MECA1c)), neg_(haut_(A.MECA1b))],
+      T:(P, A) => moy_(A.LIEN1b, A.LIEN1c, inv_(A.LIEN1)) },
+  U:{ R:(P, A) => [[P.PROF, 1], [P.MECA, 1], [P.EXIG, 1], [P.POID, 1], [P.DOC, 1], [A.ART2b, .5]],
+      N:(P, A) => [pos_(A.PROF1), pos_(A.EXIG1), pos_(A.POID1), neg_(haut_(A.MECA1c))],
+      T:(P, A) => moy_(A.EXIG1, A.PROF1, A.POID1) },
+  B:{ R:(P, A) => [[A.LIEN2a, 1], [P.PROF, 1], [A.ART2b, 1]],
+      // l'enjeu : la confrontation directe, ou à défaut l'exigence (un jeu solitaire exigeant reste un défi)
+      N:(P, A) => [pos_(ok_(A.LIEN1) && ok_(A.EXIG1) ? (A.LIEN1 ** 2 + A.EXIG1 * (5 - A.LIEN1)) / 5 : null), pos_(A.PROF1), neg_(haut_(A.MECA1c))],
+      T:(P, A) => ok_(A.LIEN1) ? A.LIEN1 : null },
+  R:{ R:(P, A) => [[P.RYT, 1], [(A.LIEN1c ?? 0) >= 2 ? A.LIEN2b : null, 1], [P.MECA, 1], [P.THEM, 1], [P.MAT, 1], [A.ART2a, 1]],
+      N:(P, A) => [pos_(A.RYT1), pos_(A.MECA1a), pos_(A.LIEN1b), pos_(A.THEM1), pos_(A.MAT1)],
+      T:(P, A) => { const L = [A.RYT1, A.MECA1c, ok_(A.LIEN1b) && ok_(A.LIEN1) ? A.LIEN1b * A.LIEN1 / 5 : null].filter(ok_); return L.length ? Math.max(...L) : null; } },
+  G:{ R:(P, A) => [[P.VAR, 1], [P.PROF, 1], [P.THEM, 1], [P.RYT, 1], [A.LIEN2a, 1]],
+      N:(P, A) => [pos_(A.VAR1), pos_(A.PROF1)],
+      T:(P, A) => ok_(A.LIEN1c) && ok_(A.VAR1) ? (2 * A.LIEN1c + A.VAR1) / 3 : null }
+};
+// la note pour tous : la moyenne des chapitres, chacun la moyenne de ses paires notées
+function noteBaseJeu(paires){
   const parChap = {};
   paires.forEach(p => { if (p.note == null) return; (parChap[p.chap] ??= []).push(p.note); });
   const ch = Object.values(parChap).map(L => L.reduce((a, b) => a + b, 0) / L.length); if (!ch.length) return null;
-  const base = ch.reduce((a, b) => a + b, 0) / ch.length;
-  if (!pr) return base;
-  const noire = flowJeu(n), c = flowJeu(n, pr); let ec = 0;
-  for (let j = 1; j <= 7; j++) ec += (c.y[j] - noire.y[j]) / 7;
-  return Number.isFinite(ec) ? Math.min(5, Math.max(0, base + ec / 2)) : base;
+  return ch.reduce((a, b) => a + b, 0) / ch.length;
+}
+// (3.24) la note d'un style (dominant D, second S, fui F) : base + α × (Rr − base) + δ × Nn + rejet, bornée de 0 à 5 ;
+// Rr = moyenne pondérée des réussites de D (× 1) et de S (× ½), la base à défaut ; Nn = (moy. N de D + ½ × moy. N de S) / 1,5 ;
+// rejet = −β × haut(T de F) + γ × max(0, (2,5 − T de F) / 2,5). Ni la courbe de profil ni le centrage n'y entrent plus.
+function noteStyle(P, A, pr, base, reg){
+  let sw = 0, sv = 0;
+  [[pr.dom, 1], [pr.second, .5]].forEach(([m, k]) => MOTEURS_DEF[m].R(P, A).forEach(([v, w]) => { if (ok_(v)){ sw += w * k; sv += w * k * v; } }));
+  const Rr = sw ? sv / sw : base;
+  const moyN = m => { const L = MOTEURS_DEF[m].N(P, A).filter(ok_); return L.length ? L.reduce((a, b) => a + b, 0) / L.length : 0; };
+  const Nn = (moyN(pr.dom) + .5 * moyN(pr.second)) / 1.5;
+  const t = MOTEURS_DEF[pr.rejet].T(P, A), rejet = ok_(t) ? -reg.beta * Math.max(0, (t - 2.5) / 2.5) + reg.gamma * Math.max(0, (2.5 - t) / 2.5) : 0;
+  return Math.min(5, Math.max(0, base + reg.alpha * (Rr - base) + reg.delta * Nn + rejet));
+}
+// la note vue par un profil (pr : prDeStyle) ; sans profil, la note pour tous. paires : [{ chap, code, note }] ; n : les entrées (axes et réglages)
+function noteProfil(paires, n, pr){
+  const base = noteBaseJeu(paires);
+  if (!pr || base == null) return base;
+  const P = Object.fromEntries(paires.filter(p => p.note != null).map(p => [p.code, p.note]));
+  const reg = { alpha: reglageNote(n, "note_profil_alpha"), beta: reglageNote(n, "note_profil_beta"), gamma: reglageNote(n, "note_profil_gamma"), delta: reglageNote(n, "note_profil_delta") };
+  return noteStyle(P, n, pr, base, reg);
 }
 // ce que le jeu offre à chaque moteur (trait) et ce qu'il réussit pour lui (moyenne des paires qu'il aime, pondérée)
 function spectreMoteurs(paires, n){
@@ -713,7 +762,7 @@ function entreesFiche(s, paires, axes, extra){
   const etats = Object.fromEntries(paires.map(p => [p.code, noteDePaire(p, s, axesDeP(p.code))]));
   const n = { contenu_parties: Number(x.contenu_parties) || null, contenu_unique: !!x.contenu_unique, VAL1: palierPrix(x.prix) }, manque = new Set(), absents = new Set();
   // (3.21) les réglages de la courbe (seuil_rangement, demi_vie_base), venus de prisme_reglages par entreesPourCalcul
-  Object.keys(REGLAGES_COURBE).forEach(k => { if (x[k] != null && x[k] !== "" && !Number.isNaN(Number(x[k]))) n[k] = Number(x[k]); });
+  REGLAGES_TRANSMIS.forEach(k => { if (x[k] != null && x[k] !== "" && !Number.isNaN(Number(x[k]))) n[k] = Number(x[k]); });
   TIMELINE_PAIRES.forEach(code => { const r = etats[code]; if (!r) return;
     if (!r.complete) manque.add(code); else if (r.note == null) absents.add(code); else n[code] = r.note; });
   TIMELINE_AXES.forEach(code => {
@@ -723,6 +772,8 @@ function entreesFiche(s, paires, axes, extra){
     if (r?.so || (r?.na1 && a.rang !== "1")){ absents.add(a.paire); return; }
     if (v == null) manque.add(a.paire); else n[code] = v;
   });
+  // (3.24) les autres axes saisis (MECA1b, MECA1c…), pour la note par profil : ni absents, ni sans objet, ni d'une paire sans objet ; rien n'est écrasé
+  axes.forEach(a => { const v = s[a.code]; if (a.code in n || !v || v.sans_objet || v.valeur == null || etats[a.paire]?.so) return; n[a.code] = Number(v.valeur); });
   return { n, manque:[...manque], absents:[...absents], etats,
     paires: paires.map(p => ({ chap:p.chapitre, code:p.code, note:etats[p.code].note })) };
 }
@@ -744,7 +795,7 @@ function prixDeGamme(g, reglages){
 // renvoie { saisie, extra, source } : saisie et extra se passent tels quels à entreesFiche ; source : "fiche" ou "description"
 function entreesPourCalcul(saisieFiche, extraFiche, description, axesDescription, reglages, axes){
   // (3.21) les réglages de la courbe suivent l'extra, quelle que soit la source
-  const regC = Object.fromEntries(Object.keys(REGLAGES_COURBE).filter(k => reglages?.[k] != null).map(k => [k, reglages[k]]));
+  const regC = Object.fromEntries(REGLAGES_TRANSMIS.filter(k => reglages?.[k] != null).map(k => [k, reglages[k]]));
   if (Number(reglages?.bascule_description) !== 1 || !description) return { saisie:saisieFiche, extra: { ...extraFiche, ...regC }, source:"fiche" };
   const D = Array.isArray(axesDescription) ? Object.fromEntries(axesDescription.map(x => [x.axe, x])) : axesDescription || {};
   const saisie = { ...saisieFiche };
