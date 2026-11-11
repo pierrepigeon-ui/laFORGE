@@ -134,10 +134,10 @@ mark{background:#FFE58A;color:#1B2430;border-radius:2px}
 </div>
 <div style="max-width:1240px;margin:0 auto;padding:0 20px 30px"><p class="version"><span id="credit"></span><br><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p></div>
 
-<script src="timeline.js?v=3.21"></script>
+<script src="timeline.js?v=3.22"></script>
 <script src="totems.js?v=4"></script>
 <script>
-const VERSION = { numero:"3.23", date:"2026-11-11 19:00" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.24", date:"2026-11-11 20:30" };   // à incrémenter à chaque livraison
 // (3.20, 10/11/2026) timeline.js 3.18 (sessions en nombres entiers) ; rien d'autre ne change
 // (3.19, 10/11/2026) timeline.js appelé à sa version courante, 3.17 ; rien d'autre ne change
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
@@ -473,7 +473,7 @@ function sectionTemps(toc){
     <div class="formule">marque = max(0, max(THEM, MECA) − ${PLANCHER_SEUIL}) ; plancher = min(marque, flow au jalon 7)</div>
     <div class="texte"><p>Le seuil de ${PLANCHER_SEUIL} trie les vraies marques : un thème moyen ne laisse aucune nostalgie. Le plancher arrête la chute, il ne relève jamais la courbe.</p>
     <p><b>La lassitude</b> (11/11/2026), pour tout jeu, à partir du jalon 4 : le flow tend vers un <b>fond</b>, d'autant plus vite que sa demi-vie est courte ; l'usure de VAR s'y ajoute.</p></div>
-    <div class="formule">fond = flow au jalon 4 × r², r = moy(MECA, PROF, LIEN) / 5 ; demi-vie = ${String(REGLAGES_COURBE.demi_vie_base).replace(".", ",")} × (1 + VAR1) × facteur de profondeur × √(max(1, contenu / 15)) ; flow' = fond + (flow − fond) / (1 + m / demi-vie), m = sessions depuis le jalon 4</div>
+    <div class="formule">fond = flow au jalon 4 × r², r = moy(MECA, PROF, LIEN) / 5 ; demi-vie = ${String(REGLAGES_COURBE.demi_vie_base).replace(".", ",")} × (1 + VAR1) × facteur de profondeur × √(max(1, contenu / 15)) × r<sup>${EXPOSANT_MINCEUR}</sup> (un jeu mince s'use vite) ; flow' = fond + (flow − fond) / (1 + m / demi-vie), m = sessions depuis le jalon 4</div>
     <div class="texte"><p>La <b>durée de vie</b> est le nombre de sessions jusqu'à ce que le jeu sorte de la vie active du joueur : par <b>abandon</b> (le flow passe sous 0) ou par <b>rangement</b> (le flow passe sous ${String(REGLAGES_COURBE.seuil_rangement).replace(".", ",")}/10). Le plancher de nostalgie ne décide plus de la durée de vie : il dessine le Souvenir, après le rangement. Un jeu qui n'est jamais rangé est un <b>classique</b>. Moins de 10 sessions : un jeu éphémère ; au-delà, durable.</p>
     <p><b>Contenu à usage unique</b> (campagne, scénarios qu'on ne rejoue pas) : une fois tout joué, le jeu est rangé ; la durée de vie ne dépasse pas les parties pour tout exploiter. <b>Configurations</b> : une fiche peut évaluer le jeu avec ses extensions ; elle a sa propre courbe, à côté de celle de la boîte de base. Quand une configuration « toutes extensions » existe, <b>le jeu complet devient la référence</b> : c'est lui que lisent la liste des jeux, la note pour vous, les profils et la rosace ; la boîte de base reste consultable.</p>
     <p><b>Coût par partie</b> (indicatif, 11/11/2026), en deux chiffres : jusqu'au rangement (prix ÷ durée de vie ; aucun pour un classique) et pour tout exploiter (prix ÷ parties pour tout exploiter). Pas de coût pour un jeu abandonné avant sa première session. Avec la durée de la fiche, on en tire un coût de l'heure.${(() => { const k = coutParPartie(55, c); return k ? ` Heat, à 55 € : ${esc(texteCout(k))}.` : ""; })()}</p></div>

@@ -1,7 +1,9 @@
 /* PRISME — timeline du jeu : jalons, durées, flow, α β γ ω, durée de vie.
    Module partagé par l'encyclopédie et l'outil d'évaluation. Méthode arrêtée le 08/10/2026 (jeu d'essai : Heat) ; modèle à 12 paires le 11/10/2026 ;
    formules refaites phase par phase le 12/10/2026 avec trois jeux de référence (Gloomhaven, Heat, Flip 7). L'unité est la session. */
-const TIMELINE_VERSION = { numero:"3.21", date:"2026-11-11 19:00" };   // à incrémenter à chaque livraison
+const TIMELINE_VERSION = { numero:"3.22", date:"2026-11-11 20:30" };   // à incrémenter à chaque livraison
+// (3.22, 11/11/2026) correction du lot B : la demi-vie de la lassitude est multipliée par r^EXPOSANT_MINCEUR (r = la part qui fixe le fond) :
+// un jeu mince s'use vite (k = 3 : Flip 7 rangé vers 7 parties au lieu de 33 ; k = 2 : vers 9), un grand jeu presque pas
 // (3.21, 11/11/2026) la courbe noire, lot B (Claude Doc « PRISME — Les moteurs et la note par profil », « La timeline du jeu ») :
 // B1 chaque durée de sous-phase vaut au moins DUREE_MIN (0,1 session) et la première partie finit au plus tôt à la session 1 : plus de segment vertical ;
 // B2 au jalon 4, PROF et EXIG pèsent 1 + k.U (le double poids était un goût de Décrypter imposé à tous) ;
@@ -67,6 +69,8 @@ const contenuEffectif = n => n.contenu_parties > 0 ? n.contenu_parties * facteur
 const DUREE_MIN = .1;
 // (3.21) B3, B4 : les réglages de la courbe, et leurs valeurs par défaut quand prisme_reglages ne les a pas
 const REGLAGES_COURBE = { seuil_rangement:.3, demi_vie_base:3 };
+// (3.22) la demi-vie × r^k, r = moyenne de MECA, PROF, LIEN / 5 : un jeu mince s'use vite ; un grand jeu, r proche de 1, presque pas
+const EXPOSANT_MINCEUR = 3;
 const reglageCourbe = (n, k) => { const v = n?.[k]; return v == null || v === "" || Number.isNaN(Number(v)) ? REGLAGES_COURBE[k] : Number(v); };
 const K_FRICTION = 3;         // F = √(somme des carrés / 3) : chaque gêne ajoutée fait monter F
 const TERMES = {
@@ -206,10 +210,11 @@ function courbeBrute(n, pr, ctx = {}){
   };
   // (3.21) B3 : la lassitude, pour tout jeu, à partir du jalon 4 : le flow tend vers un fond, d'autant plus vite que la demi-vie est courte
   // fond = flow du jalon 4 × r², r = moyenne des notes de MECA, PROF et LIEN / 5 (au carré : exigeant envers les jeux minces) ;
-  // demi-vie (en sessions) = demi_vie_base × (1 + VAR1) × facteurProfondeur(PROF1) × √(max(1, contenu / 15)) ; VAR1 sans objet : 0 ; contenu absent : 15
+  // demi-vie (en sessions) = demi_vie_base × (1 + VAR1) × facteurProfondeur(PROF1) × √(max(1, contenu / 15)) × r^EXPOSANT_MINCEUR (3.22) ;
+  // VAR1 sans objet : 0 ; contenu absent : 15
   const seuilRangement = reglageCourbe(n, "seuil_rangement"), rFond = (moy(MECA, n.PROF, n.LIEN) ?? 0) / 5;
   const demiVie = reglageCourbe(n, "demi_vie_base") * (1 + (ok(n.VAR1) ? n.VAR1 : 0)) * facteurProfondeur(n.PROF1 ?? 0)
-    * Math.sqrt(Math.max(1, (n.contenu_parties > 0 ? n.contenu_parties : CONTENU_REF) / CONTENU_REF));
+    * Math.sqrt(Math.max(1, (n.contenu_parties > 0 ? n.contenu_parties : CONTENU_REF) / CONTENU_REF)) * rFond ** EXPOSANT_MINCEUR;
   let fond = null;
   // (3.21, décision de Pierre du 11/11/2026) le fond est aussi un plancher : à partir du jalon 4, le flow ne descend plus sous le fond ;
   // seul un flow négatif à un jalon (l'abandon, ω) passe outre, l'abandon gardant sa règle
