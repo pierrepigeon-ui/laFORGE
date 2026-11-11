@@ -156,7 +156,7 @@ mark{background:#FFE58A;color:#1B2430;border-radius:2px}
 <div style="max-width:1240px;margin:0 auto;padding:0 20px 30px"><p class="version"><span id="credit"></span><br><span id="version"></span></p></div>
 
 <script>
-const VERSION = { numero:"1.18", date:"2026-11-10 09:44" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.19", date:"2026-11-11 22:31" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -206,7 +206,7 @@ async function charger(){
     if (error || !data){ $("#contenu").innerHTML = `<p class="vide">L'encyclopédie n'est pas disponible pour l'instant${error ? " (" + esc(error.message) + ")" : ""}.</p>`; return; }
     els = data.elements || []; cols = data.couleurs || []; vocab = data.vocabulaire || [];
   }
-  E = Object.fromEntries(els.filter(e => !COMPLET || e.statut === "valide" || role === "proprietaire").map(e => [e.code, e]));
+  E = Object.fromEntries(els.filter(e => !COMPLET || e.statut === "valide" || ["proprietaire", "administrateur"].includes(role)).map(e => [e.code, e]));
   C = Object.fromEntries(cols.map(c => [c.code, c]));
   V = {}; vocab.forEach(v => ((V[v.domaine] ??= {})[v.cle] = v));
   if (user){

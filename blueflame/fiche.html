@@ -102,7 +102,7 @@ dialog h2{border:0} .field{display:block;margin-bottom:12px} .field span{display
   <div style="display:flex;gap:10px"><button class="btn" type="submit">Se connecter</button><button class="btn ghost" type="button" id="login-fermer">Fermer</button></div>
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 <script>
-const VERSION = { numero:"1.22", date:"2026-11-10 00:03" };
+const VERSION = { numero:"1.23", date:"2026-11-11 22:31" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const M = window.FLAMME_MOTEUR;
@@ -147,7 +147,7 @@ async function lireScores(){
     const { data, error } = await sb.from("flamme_resultats").select("*").eq("id", q.get("resultat")).maybeSingle();
     if (error || !data) throw new Error("Ce résultat est introuvable, ou tu n'as pas le droit de le consulter.");
     let qui = "";
-    if (role === "proprietaire" && data.user_id !== user.id){
+    if (["proprietaire", "administrateur"].includes(role) && data.user_id !== user.id){
       const { data: pers } = await sb.rpc("flamme_personnes"); const p = (pers || []).find(x => x.user_id === data.user_id);
       qui = p ? (p.nom || p.email) : "";
     }
@@ -199,7 +199,7 @@ function rendre(src){
   document.title = `Flamme Bleue — fiche ${codes.join(" / ")}`;
   $("#lien-ecusson").href = "ecusson.html" + location.search;
   $("#lien-portrait").href = "portrait.html" + location.search;
-  if (role === "proprietaire"){ const l = $("#lien-detail"); l.href = "detail.html" + location.search; l.classList.remove("hidden"); }
+  if (["proprietaire", "administrateur"].includes(role)){ const l = $("#lien-detail"); l.href = "detail.html" + location.search; l.classList.remove("hidden"); }
 }
 
 /* ---------- accès ---------- */

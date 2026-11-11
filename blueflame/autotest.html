@@ -270,7 +270,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px}
 </dialog>
 
 <script>
-const VERSION = { numero:"2.11", date:"2026-11-11 21:12" };
+const VERSION = { numero:"2.12", date:"2026-11-11 22:31" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const M = window.FLAMME_MOTEUR;
@@ -373,7 +373,7 @@ function majSession(){
   $("#btn-fiche").disabled = !role;
   $("#btn-fiche").title = role ? "" : LIB.titreFicheOff;
   $("#btn-save").title = role ? "" : LIB.titreSaveOff;
-  $("#btn-catalogue").classList.toggle("hidden", role !== "proprietaire" && role !== "editeur");
+  $("#btn-catalogue").classList.toggle("hidden", !["proprietaire", "administrateur", "editeur"].includes(role));
 }
 $("#btn-login").addEventListener("click", () => { location.href = "../?retour=" + encodeURIComponent(location.href); });   // connexion centralisée sur la Forge
 $("#login-fermer").addEventListener("click", () => $("#dlg-login").close());
@@ -647,7 +647,7 @@ function afficherResultats(){
 /* ---------- cohérence du test ----------
    Visible pour les éditeurs et le propriétaire (affichée par défaut, avec une bascule pour la masquer) ;
    invisible, bascule comprise, pour les invités et les visiteurs non connectés. */
-const voitCoherence = () => role === "proprietaire" || role === "editeur";
+const voitCoherence = () => ["proprietaire", "administrateur", "editeur"].includes(role);
 let cohAffichee = true, triCoh = "rang", cohTout = false;
 try { cohAffichee = localStorage.getItem("fb-coherence") !== "masquee"; } catch {}
 const CLASSE_BANDE = { "très cohérent": "coh-tres", "cohérent": "coh-coherent", "fragile": "coh-fragile", "proche du hasard": "coh-hasard" };
@@ -741,7 +741,7 @@ $("#btn-save").addEventListener("click", async () => {
 });
 /* catalogue de profils (éditeur, propriétaire) : le test passé pour quelqu'un d'autre, rangé à part */
 $("#btn-catalogue").addEventListener("click", async () => {
-  if (role !== "proprietaire" && role !== "editeur") return;
+  if (!["proprietaire", "administrateur", "editeur"].includes(role)) return;
   if (!dernier){ msg("Rangez d'abord les 20 cartes dans les piles, ou passez au classement.", "warn"); return; }
   const nom = prompt("Nom de la fiche dans le catalogue (privée, à vous seul ; partageable ensuite dans la console) :", ORGA ? dernierSujet : "");
   if (!nom || !nom.trim()) return;

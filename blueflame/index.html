@@ -112,7 +112,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px} .field{display:block;margi
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 
 <script>
-const VERSION = { numero:"1.30", date:"2026-11-10 00:03" };
+const VERSION = { numero:"1.31", date:"2026-11-11 22:31" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -216,7 +216,7 @@ sb.auth.onAuthStateChange(async (_e, session) => {
   t += tuile("autotest.html?dispositif=organisation", "Autotest organisation", "Le profil d'une entreprise, d'une équipe, d'une association", "organisation");
   t += tuile("comparaison.html", "Comparer", "Deux profils ou une équipe : accords, discordes, profil moyen", "comparer");
   t += tuile("galerie.html", "Personnages", "Qui partage quel profil ? Des centaines de personnages, par univers (expérimental)", "personnages");
-  if (role === "proprietaire") t += tuile("rosace.html", "Rosace", "La carte complète du modèle", "rosace");
+  if (["proprietaire", "administrateur"].includes(role)) t += tuile("rosace.html", "Rosace", "La carte complète du modèle", "rosace");
   $("#tuiles").innerHTML = t;
 });
 </script>

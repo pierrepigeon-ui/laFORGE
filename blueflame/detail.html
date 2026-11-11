@@ -153,10 +153,10 @@ dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);c
   <div style="display:flex;gap:10px"><button class="btn" type="submit">Se connecter</button><button class="btn ghost" type="button" id="login-fermer">Fermer</button></div>
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 <script>
-const VERSION = { numero:"1.27", date:"2026-11-10 00:03" };
+const VERSION = { numero:"1.28", date:"2026-11-11 22:31" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
-const ACCES = ["proprietaire"];
+const ACCES = ["proprietaire", "administrateur"];
 const M = window.FLAMME_MOTEUR;
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = s => document.querySelector(s);
@@ -414,7 +414,7 @@ sb.auth.onAuthStateChange(async (_e, session) => {
   ["#page", "#outils"].forEach(s => $(s).classList.add("hidden")); $("#bloque").classList.remove("hidden");
   if (!user){ $("#bloque").textContent = "Les statistiques sont réservées. Connecte-toi pour les afficher."; return; }
   const { data: r } = await sb.rpc("flamme_mon_role"); role = r || "";
-  if (!ACCES.includes(role)){ $("#bloque").textContent = "Les statistiques sont réservées au propriétaire."; return; }
+  if (!ACCES.includes(role)){ $("#bloque").textContent = "Les statistiques sont réservées au propriétaire et aux administrateurs."; return; }
   try {
     const [{ data: els, error }, { data: cols }, { data: voc }] = await Promise.all([sb.from("flamme_elements").select("*"), sb.from("flamme_couleurs").select("*"), sb.from("flamme_vocabulaire").select("*").eq("langue", "fr")]);
     if (error) throw new Error(error.message);

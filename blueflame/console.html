@@ -272,7 +272,7 @@ table.j td{border-bottom:1px solid var(--line);padding:8px 10px;vertical-align:t
 
 <script>
 /* ================= configuration ================= */
-const VERSION = { numero:"1.38", date:"2026-11-10 09:44" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.39", date:"2026-11-11 22:31" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 
@@ -373,13 +373,13 @@ async function demarrer(){
   state.elements = els || [];
   await chargerDispositifs();
   const nom = state.noms[state.user.id] || state.user.email;
-  $("#who").textContent = `${nom} — ${{proprietaire:"propriétaire",editeur:"éditeur",invite:"invité"}[role] || "aucun rôle"}`;
+  $("#who").textContent = `${nom} — ${{proprietaire:"propriétaire",administrateur:"administrateur",editeur:"éditeur",invite:"invité"}[role] || "aucun rôle"}`;
   $("#tab-journal").classList.toggle("hidden", role !== "proprietaire");
   $("#backup").classList.toggle("hidden", role !== "proprietaire");
   $("#tab-personnes").classList.toggle("hidden", role !== "proprietaire");
-  $("#tab-resultats").classList.toggle("hidden", role !== "proprietaire");
-  $("#tab-saisie").classList.toggle("hidden", role !== "proprietaire");
-  $("#tab-catalogue").classList.toggle("hidden", role !== "proprietaire" && role !== "editeur");
+  $("#tab-resultats").classList.toggle("hidden", !["proprietaire", "administrateur"].includes(role));
+  $("#tab-saisie").classList.toggle("hidden", !["proprietaire", "administrateur"].includes(role));
+  $("#tab-catalogue").classList.toggle("hidden", !["proprietaire", "administrateur", "editeur"].includes(role));
   if (role === "proprietaire") infoSauvegarde();
   if (!role){
     $("#editor-host").innerHTML = `<p class="empty">Ton compte est bien connecté, mais aucun rôle ne lui est attribué dans Flamme Bleue. Le propriétaire doit te déclarer dans la table des rôles.</p>`;
@@ -455,7 +455,7 @@ $("#list").addEventListener("keydown", e => { if (e.key === "Enter"){ const li =
 $("#back").addEventListener("click", () => $("#edit-pane").classList.add("closed"));
 
 /* ================= fiche ================= */
-const peutEcrire = () => state.role === "proprietaire" || state.role === "editeur";
+const peutEcrire = () => ["proprietaire", "administrateur", "editeur"].includes(state.role);
 
 async function ouvrir(code){
   if (state.current && estModifie() && !confirm("Des modifications n'ont pas été enregistrées. Les abandonner ?")) return;
@@ -800,7 +800,7 @@ $("#form-mdp").addEventListener("submit", async e => {
 });
 
 /* ================= personnes (propriétaire) ================= */
-const ROLES = { proprietaire:"propriétaire", editeur:"éditeur", invite:"invité" };
+const ROLES = { proprietaire:"propriétaire", administrateur:"administrateur", editeur:"éditeur", invite:"invité" };
 const selRole = (v, attrs = "") => `<select ${attrs}>${Object.entries(ROLES).map(([k,l]) => `<option value="${k}"${k === v ? " selected" : ""}>${l}</option>`).join("")}</select>`;
 async function afficherPersonnes(msg){
   const host = $("#personnes-pane");
@@ -1062,7 +1062,7 @@ async function afficherCatalogue(msg){
     return;
   }
   CAT.cache = data || [];
-  const moi = state.user.id, proprio = state.role === "proprietaire";
+  const moi = state.user.id, proprio = ["proprietaire", "administrateur"].includes(state.role);
   const filtres = { "": "Toutes les fiches", miennes: "Mes fiches", partagees: "Les fiches partagées" };
   const lignes = CAT.cache.filter(f => !CAT.filtre || (CAT.filtre === "miennes" ? f.auteur === moi : f.partage));
   host.innerHTML = `
@@ -1133,7 +1133,7 @@ function detailCatalogue(tr){
   const suivant = tr.nextElementSibling;
   if (suivant?.classList.contains("ligne-detail")){ suivant.remove(); return; }
   const f = CAT.cache.find(x => String(x.id) === tr.dataset.id);
-  const modifiable = state.role === "proprietaire" || f.auteur === state.user.id;
+  const modifiable = ["proprietaire", "administrateur"].includes(state.role) || f.auteur === state.user.id;
   const d = document.createElement("tr"); d.className = "ligne-detail";
   d.innerHTML = `<td colspan="5"><div class="detail-res">
     <b>Scores</b> : ${M_ORDRE.map(c => `${c} ${fmt1(f.scores[c])} %`).join(", ")}
@@ -1146,7 +1146,7 @@ function detailCatalogue(tr){
     <div class="row-btn" style="margin-top:8px"><a class="btn ghost" href="fiche.html?catalogue=${f.id}" target="_blank">Fiche</a>
       <a class="btn ghost" href="portrait.html?catalogue=${f.id}" target="_blank">Portrait</a>
       <a class="btn ghost" href="ecusson.html?catalogue=${f.id}" target="_blank">Écusson</a>
-      ${state.role === "proprietaire" ? `<a class="btn ghost" href="detail.html?catalogue=${f.id}" target="_blank">Statistiques</a>` : ""}
+      ${["proprietaire", "administrateur"].includes(state.role) ? `<a class="btn ghost" href="detail.html?catalogue=${f.id}" target="_blank">Statistiques</a>` : ""}
       ${modifiable ? `<button class="btn" type="button" data-act="enregistrer">Enregistrer les changements</button>
       <button class="btn ghost" type="button" data-act="effacer">Effacer cette fiche</button>` : ""}</div>
     <p class="msg" data-msg role="status"></p></div></td>`;
