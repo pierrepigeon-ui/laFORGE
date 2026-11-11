@@ -373,7 +373,7 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
 <script src="timeline.js?v=3.24"></script>
 <script src="selecteurs.js?v=1.10"></script>
 <script>
-const VERSION = { numero:"4.16", date:"2026-11-11 23:30" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"4.17", date:"2026-11-11 23:45" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -722,7 +722,7 @@ $("#m-fiches").addEventListener("click", async () => {
       : `<p class="aide">Aucune fiche pour l'instant.</p>`}`; }).join("");
   $("#dlg-fiches").showModal();
 });
-const maj1 = t => t.charAt(0).toUpperCase() + t.slice(1);   // « jeu de base » → « Jeu de base »
+// (4.17) maj1 (« jeu de base » → « Jeu de base ») vient de timeline.js depuis sa 3.24 : la redéclarer ici bloquait toute la page
 $("#fiches-soeurs").addEventListener("click", e => {
   const tr = e.target.closest("tr.f"); if (!tr) return;
   $("#dlg-fiches").close(); const f = toutes.find(x => x.id === tr.dataset.id); if (f && f.id !== fiche?.id) ouvrirFiche(f);
