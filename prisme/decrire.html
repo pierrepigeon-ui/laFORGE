@@ -212,9 +212,9 @@ details.com textarea{display:block;width:100%;margin-top:6px;padding:7px 10px;bo
 
 <dialog class="fenetre" id="dlg-recopier" aria-labelledby="dlg-recopier-titre"></dialog>
 
-<script src="selecteurs.js?v=1.9"></script>
+<script src="selecteurs.js?v=1.10"></script>
 <script>
-const VERSION = { numero:"1.12", date:"2026-11-11 16:20" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.13", date:"2026-11-11 17:30" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -254,8 +254,9 @@ const AIDES = {
   MECA1c: () => { const de = C => minus(M.lignes.filter(l => C.includes(l.code) && M.affectes[l.code]));
     return [["peut le rendre brutal", de(BRUTALISENT)], ["permet de l'atténuer", de(ATTENUENT)]].filter(([, t]) => t)
       .map(([q, t]) => `${q} : ${t}`).join(" ; ") || "aucun mécanisme décrit qui l'accentue ou l'atténue"; },
-  THEM1: () => TH.affectes[ABSTRAIT] ? "abstrait" : [["sujet", affectesDe("sujet")], [FACETTES.role.toLowerCase(), affectesDe("role")]]
-    .filter(([, L]) => L.length).map(([t, L]) => `${t} : ${minus(L)}`).join(" ; ") || "aucun thème décrit",
+  // (1.13, 11/11/2026) un jeu abstrait peut avoir un sujet et un rôle : « abstrait ; sujet : art »
+  THEM1: () => [...(TH.affectes[ABSTRAIT] ? ["abstrait"] : []), ...[["sujet", affectesDe("sujet")], [FACETTES.role.toLowerCase(), affectesDe("role")]]
+    .filter(([, L]) => L.length).map(([t, L]) => `${t} : ${minus(L)}`)].join(" ; ") || "aucun thème décrit",
   LIEN1: () => minus(affectesNiveau("aspect").filter(l => l.sous_groupe === "contre_qui")) || "aucun mode de jeu décrit",
   LIEN1c: () => minus(affectesNiveau("parole")) || "aucun" };
 const texteAide = c => `Pour t'aider : ${D.errMeca || D.errThemes ? "la description n'a pas pu être lue" : AIDES[c]()}.`;
@@ -537,8 +538,9 @@ function resumeThemes(){
   const puce = l => { const p = TH.affectes[l.code].poids;
     return `<span class="puce ${PUCE_POIDS[p]} info" tabindex="0">${esc(l.libelle)}${remVisible(TH.affectes[l.code].remarque)}<span class="bulle">${l.libelle_en ? `<i>${esc(l.libelle_en)}</i><br>` : ""}${esc(l.definition || "Pas encore de définition.")}</span></span>`; };
   // (1.1) le sujet en premier, puis le cadre (Abstrait, ou la période et le réalisme), puis les autres facettes ; (1.11) les tags juste après le cadre
-  const cadre = TH.affectes[ABSTRAIT] ? affectesDe("cadre") : [...affectesDe("cadre"), ...affectesDe("periode"), ...affectesDe("realisme")];
-  const rangs = [[FACETTES.sujet, affectesDe("sujet")], [FACETTES.cadre, cadre], ...["tag", "role", "lieu", "ton", "reference"].map(f => [FACETTES[f], affectesDe(f)])]
+  // (1.13, 11/11/2026) plus de facette « Cadre » : la ligne garde ce nom et réunit la période et le réalisme ; Abstrait y vient comme un niveau de réalisme, sans période
+  const cadre = TH.affectes[ABSTRAIT] ? affectesDe("realisme") : [...affectesDe("periode"), ...affectesDe("realisme")];
+  const rangs = [[FACETTES.sujet, affectesDe("sujet")], ["Cadre", cadre], ...["tag", "role", "lieu", "ton", "reference"].map(f => [FACETTES[f], affectesDe(f)])]
     .filter(([, L]) => L.length).map(([t, L]) => rang(t, L.map(puce).join("")));
   el.innerHTML = rangs.join("") || `<p class="discret" style="margin:0">Aucun thème n'est encore affecté à ce jeu.</p>`;
 }

@@ -24,8 +24,10 @@
    (1.9, 09/11/2026) les libellés des catégories de mécaniques, définis ici seulement : « Hasard et information », « Parole et communication »,
    « Grands systèmes », et le nouveau niveau « Ordre du tour » (simple coche, à part sur la fiche comme la fin de partie) ; l'ordre des catégories
    dans le sélecteur ; les tags juste après le niveau de réalisme, actifs seulement en alternatif ou fantastique ; « Guerre » et ses échelles
-   (precisionsSujet() : « Guerre (échelles opérationnelle et tactique) »), avec son aide dans le sélecteur. */
-const SELECTEURS_VERSION = "1.9";
+   (precisionsSujet() : « Guerre (échelles opérationnelle et tactique) »), avec son aide dans le sélecteur.
+   (1.10, 11/11/2026) « Abstrait » devient un niveau de réalisme (CAD-ABSTRAIT, facette realisme en base, en tête) : plus de case « Jeu abstrait »
+   ni de facette « Cadre » ; Abstrait exclut les autres niveaux de réalisme ; il rend la période sans objet et les tags inactifs. */
+const SELECTEURS_VERSION = "1.10";
 (function(){
   const st = document.createElement("style");
   st.textContent = `
@@ -116,8 +118,6 @@ details.sel-carte .m-ligne.affecte{background:var(--n-fond)}
 details.sel-carte h4.m-sg{margin:12px 14px 2px}
 .m-ligne .m-nom{cursor:default}
 .m-choix{border-top:0}
-.sel-abstrait{display:flex;align-items:center;gap:10px;margin:0 0 10px;padding:10px 14px;border:1px solid var(--n-bord);border-radius:12px;background:var(--n-fond);font-weight:600;color:var(--n-titre);cursor:pointer}
-.sel-abstrait input{width:18px;height:18px;margin:0;cursor:pointer}
 .t-famille{border-bottom:1px solid var(--filet, var(--line))} .t-famille:last-child{border-bottom:0}
 .t-famille > .m-ligne{border-bottom:0!important}
 .t-sous-cases{display:flex;flex-wrap:wrap;gap:4px 18px;padding:0 14px 12px 36px}
@@ -516,16 +516,18 @@ async function enregistrerMecanismes(){
 // facettes, dans l'ordre d'affichage ; la carte montre le cadre en tête, puis les facettes descriptives
 // (1.1) le sujet avant le cadre ; « Le joueur incarne » (facette role) et « Atmosphère » (facette ton), codes en base inchangés
 // (1.5) la facette realisme s'intitule « Niveau de réalisme » ; (1.9) les tags la suivent immédiatement
-const FACETTES = { sujet:"Sujet", cadre:"Cadre", periode:"Période", realisme:"Niveau de réalisme", tag:"Tags du fantastique", role:"Le joueur incarne", lieu:"Lieu", ton:"Atmosphère", reference:"Référence culturelle et géographique" };
+// (1.10, 11/11/2026) plus de facette « Cadre » (vide en base) : Abstrait est le premier niveau de réalisme
+const FACETTES = { sujet:"Sujet", periode:"Période", realisme:"Niveau de réalisme", tag:"Tags du fantastique", role:"Le joueur incarne", lieu:"Lieu", ton:"Atmosphère", reference:"Référence culturelle et géographique" };
 // (1.5) la phrase d'aide de chaque facette, sous son titre dans le sélecteur
-const AIDES_FACETTES = { sujet:"De quoi parle le jeu : une famille porte le poids, ses sous-sujets la précisent.", cadre:"Le monde dans lequel le jeu se déroule.",
-  periode:"L'époque évoquée.", realisme:"À quel point ce monde ressemble au nôtre.", role:"Qui ou quoi le joueur incarne.", lieu:"Où se passe le jeu.",
+const AIDES_FACETTES = { sujet:"De quoi parle le jeu : une famille porte le poids, ses sous-sujets la précisent.",
+  periode:"L'époque évoquée.", realisme:"À quel point ce monde ressemble au nôtre ; abstrait : aucun monde évoqué.", role:"Qui ou quoi le joueur incarne.", lieu:"Où se passe le jeu.",
   ton:"L'atmosphère de la partie.", tag:"Les motifs du fantastique présents dans le jeu.", reference:"La culture ou la région dont le jeu s'inspire." };
 // (1.5) le sujet en familles : la famille (sans parent) porte le poids ; un sous-sujet est une simple coche, enregistrée en poids 2
 const estSousSujet = l => l?.facette === "sujet" && !!l.parent;
 const sousSujetsDe = c => TH.lignes.filter(l => l.parent === c);
 const FACETTES_CARTE = ["sujet", "role", "ton", "lieu", "tag", "reference"];   // (2.5) sous le titre ; le sujet n'y garde que ses valeurs non majeures
-const ABSTRAIT = "CAD-ABSTRAIT", FACETTES_TEMPS = ["periode", "realisme"];   // un jeu abstrait n'a ni période ni réalisme
+// (1.10, 11/11/2026) Abstrait (code inchangé) est un niveau de réalisme : un jeu abstrait n'a pas de période ; son réalisme porte Abstrait
+const ABSTRAIT = "CAD-ABSTRAIT", FACETTES_TEMPS = ["periode"];
 // (1.9) les tags ne valent que pour un monde alternatif ou fantastique : grisés sinon, et leurs choix retirés à l'enregistrement
 const REALISMES_TAGS = ["REA-ALTERE", "REA-FANTASTIQUE"];
 const tagsActifs = choisis => !choisis[ABSTRAIT] && REALISMES_TAGS.some(c => choisis[c]);
@@ -573,7 +575,6 @@ function ouvrirSelecteurThemes(){
   $("#t-dialogue-corps").innerHTML = `<h2 id="t-dialogue-titre">Thèmes</h2>
     <p class="question">Décrire de quoi parle le jeu, pas le juger : la qualité du thème se note dans l'évaluation (axe THÈME).</p>
     <p class="m-compteur" id="t-compteur"></p>
-    <label class="sel-abstrait"><input type="checkbox" id="t-abstrait"${TH.brouillon[ABSTRAIT] ? " checked" : ""}> Jeu abstrait (aucun thème)</label>
     <div class="m-filtres"><input type="search" id="t-q" placeholder="Chercher un thème" aria-label="Chercher un thème">
       <label><input type="checkbox" id="t-seuls"> n'afficher que les thèmes affectés</label></div>
     <div class="m-choix" id="t-choix"></div>
@@ -583,8 +584,8 @@ function ouvrirSelecteurThemes(){
     const q = norm($("#t-q").value.trim()), seuls = $("#t-seuls").checked;
     const trouve = l => !q || norm(l.code + " " + l.libelle + " " + (l.libelle_en || "")).includes(q);
     $("#t-choix").innerHTML = Object.entries(FACETTES).map(([f, nom]) => {
-      // « Abstrait » est la case du haut, plus une ligne du cadre
-      const tous = themesRanges(f).filter(l => l.code !== ABSTRAIT);
+      // (1.10) « Abstrait » est une ligne du niveau de réalisme, en tête (ordre 10)
+      const tous = themesRanges(f);
       let corps = "";
       if (f === "sujet"){
         // (1.5) une petite carte par famille : ses boutons de poids, puis ses sous-sujets en cases, visibles quand la famille a un poids
@@ -608,13 +609,13 @@ function ouvrirSelecteurThemes(){
   const relister = selecteur => { const boite = $("#t-choix"), haut = boite.scrollTop; lister(); compterThemes(); boite.scrollTop = haut; if (selecteur) boite.querySelector(selecteur)?.focus(); };
   $("#t-choix").addEventListener("toggle", e => { if (e.target.matches?.("details")) e.target.open ? ouverts.add(e.target.dataset.facette) : ouverts.delete(e.target.dataset.facette); }, true);
   ["#t-q", "#t-seuls"].forEach(s => $(s).addEventListener("input", lister));
-  // (1.5) « Jeu abstrait » : grise la période et le niveau de réalisme (leurs choix sont retirés à l'enregistrement)
-  $("#t-abstrait").addEventListener("change", e => { if (e.target.checked) TH.brouillon[ABSTRAIT] = { poids: TH.brouillon[ABSTRAIT]?.poids || 3, remarque:"" }; else delete TH.brouillon[ABSTRAIT]; relister(); });
   $("#t-choix").addEventListener("click", e => {
     const b = e.target.closest("[data-p]"); if (!b) return;
     const c = b.closest(".m-ligne").dataset.code, p = +b.dataset.p;
     if (p) TH.brouillon[c] = { poids:p, remarque: TH.brouillon[c]?.remarque || "" };
     else { delete TH.brouillon[c]; sousSujetsDe(c).forEach(s => delete TH.brouillon[s.code]); }   // une famille retirée emporte ses sous-sujets
+    // (1.10) Abstrait exclut les autres niveaux de réalisme, et inversement (la période grisée, les tags inactifs : griser())
+    if (p && ligneTheme(c)?.facette === "realisme") TH.lignes.filter(l => l.facette === "realisme" && l.code !== c && (c === ABSTRAIT || l.code === ABSTRAIT)).forEach(l => delete TH.brouillon[l.code]);
     relister(`.m-ligne[data-code="${CSS.escape(c)}"] [data-p="${p}"]`);
   });
   $("#t-choix").addEventListener("change", e => {
@@ -639,14 +640,14 @@ function ligneChoixTheme(l){
       `<button type="button" data-p="${n}" aria-pressed="${p === n}"${n ? "" : ' title="absent"'}>${esc(t)}</button>`).join("")}</div>
     ${p ? `<input class="m-rem" type="text" placeholder="Remarque (facultative)" aria-label="Remarque, visible sur la fiche entre parenthèses" value="${esc(v.remarque)}"><span class="m-aide">Visible sur la fiche, entre parenthèses</span>` : ""}</div>`;
 }
-// Abstrait coché (poids quelconque) : Période et Réalisme grisées, leurs choix ignorés à l'enregistrement ;
+// Abstrait choisi (poids quelconque) : la période grisée, ses choix ignorés à l'enregistrement ; (1.10) le réalisme reste actif (il porte Abstrait) ;
 // (1.9) les tags grisés tant que ni « Alternatif » ni « Fantastique » n'est choisi
 function griser(){
   document.querySelectorAll("#t-choix details.t-facette").forEach(d => {
     const off = facetteIgnoree(d.dataset.facette, TH.brouillon);
     d.classList.toggle("grise", off); d.querySelectorAll("button, input").forEach(x => x.disabled = off);
-    // (1.5) le sujet compte ses familles ; Abstrait n'est plus compté dans le cadre (c'est la case du haut)
-    const n = themesRanges(d.dataset.facette).filter(l => TH.brouillon[l.code] && l.code !== ABSTRAIT && !estSousSujet(l)).length;
+    // (1.5) le sujet compte ses familles ; (1.10) Abstrait compte dans le niveau de réalisme
+    const n = themesRanges(d.dataset.facette).filter(l => TH.brouillon[l.code] && !estSousSujet(l)).length;
     d.querySelector("[data-nb]").textContent = n ? ` · ${n} choisi${n > 1 ? "s" : ""}` : "";
   });
 }
@@ -660,7 +661,7 @@ function compterThemes(){
 }
 async function enregistrerThemes(){
   const avant = TH.affectes, apres = { ...TH.brouillon }, etat = $("#t-etat");
-  // un jeu abstrait : les périodes et le réalisme sont retirés (supprimés en base s'il y en avait) ;
+  // un jeu abstrait : les périodes sont retirées (supprimées en base s'il y en avait) ; (1.10) le réalisme ne garde qu'Abstrait (exclusif) ;
   // (1.9) sans « Alternatif » ni « Fantastique », les tags aussi
   Object.keys(apres).forEach(c => { if (facetteIgnoree(ligneTheme(c)?.facette, TH.brouillon)) delete apres[c]; });
   // (1.5) un sous-sujet ne fait que préciser : poids 2 (une remarque déjà saisie est gardée) ; sa famille est toujours enregistrée avec lui

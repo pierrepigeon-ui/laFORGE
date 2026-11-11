@@ -191,9 +191,9 @@ details.pli.notion > summary strong{color:var(--n-titre)}
 </main>
 
 <script src="timeline.js?v=3.20"></script>
-<script src="selecteurs.js?v=1.9"></script>
+<script src="selecteurs.js?v=1.10"></script>
 <script>
-const VERSION = { numero:"2.23", date:"2026-11-11 15:10" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"2.24", date:"2026-11-11 17:30" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -541,6 +541,7 @@ function afficherThemes(){
   if (rien) h += `<p class="discret" style="margin:0">Aucun thème n'est encore affecté à ce jeu.</p>`;
   else {
     // (2.5) en titre, le ou les sujets majeurs ; dessous, en petit, « Abstrait », ou la ou les périodes et le réalisme
+    // (2.24, 11/11/2026) Abstrait est un niveau de réalisme (selecteurs.js 1.10) : un jeu abstrait garde son sujet en titre, « Abstrait » dessous
     // (2.14) seulement les familles de sujet : les sous-sujets les précisent entre parenthèses
     const familles = affectesDe("sujet").filter(l => !estSousSujet(l));
     const sujets = familles.filter(l => TH.affectes[l.code].poids === 3);
