@@ -214,7 +214,7 @@ details.com textarea{display:block;width:100%;margin-top:6px;padding:7px 10px;bo
 
 <script src="selecteurs.js?v=1.9"></script>
 <script>
-const VERSION = { numero:"1.11", date:"2026-11-09 23:45" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.12", date:"2026-11-11 16:20" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -241,12 +241,19 @@ const NIVEAUX = { joueur:0, lecteur:1, evaluateur:2, editeur:3, proprietaire:4 }
 /* ---- le modèle de la page : un seul endroit pour changer un mot ---- */
 // (1.10) les douze gammes de prix, en quatre groupes de trois : GROUPES_PRIX et montantPrix() dans selecteurs.js ; montants dans prisme_reglages
 // (1.4) « Pour t'aider » : ce que la description dit déjà, lu en direct, sous cinq axes
+// (1.12) et sous MECA1c : six axes
 const DECLENCHES = ["ECO-06", "ECO-12", "ECO-14", "INC-09", "INC-12", "STR-28", "TOUR-05", "TOUR-09"];   // les mécanismes que le jeu déclenche lui-même (MECA1b)
+// (1.12, 11/11/2026) MECA1c, « Brutalité du hasard » : ce qui peut rendre le hasard brutal, ce qui permet de l'atténuer
+const BRUTALISENT = ["INC-11", "HAS-SORTIE", "HAS-ENTREE", "STR-21", "STR-25", "FIN-05"];   // ce qui peut rendre le hasard brutal (MECA1c)
+const ATTENUENT   = ["RES-08", "OUV-04", "OUV-01"];                                          // ce qui permet de l'atténuer (MECA1c)
 const minus = L => L.map(l => (l.nom || l.libelle).toLowerCase()).join(", ");
 const affectesNiveau = n => M.lignes.filter(l => l.niveau === n && M.affectes[l.code]);
 const AIDES = {
   MECA1a: () => affectesNiveau("hasard").map(l => `${l.nom.toLowerCase()} (${POIDS[M.affectes[l.code].poids]})`).join(", ") || "aucun hasard décrit",
   MECA1b: () => minus(M.lignes.filter(l => DECLENCHES.includes(l.code) && M.affectes[l.code])) || "aucun",
+  MECA1c: () => { const de = C => minus(M.lignes.filter(l => C.includes(l.code) && M.affectes[l.code]));
+    return [["peut le rendre brutal", de(BRUTALISENT)], ["permet de l'atténuer", de(ATTENUENT)]].filter(([, t]) => t)
+      .map(([q, t]) => `${q} : ${t}`).join(" ; ") || "aucun mécanisme décrit qui l'accentue ou l'atténue"; },
   THEM1: () => TH.affectes[ABSTRAIT] ? "abstrait" : [["sujet", affectesDe("sujet")], [FACETTES.role.toLowerCase(), affectesDe("role")]]
     .filter(([, L]) => L.length).map(([t, L]) => `${t} : ${minus(L)}`).join(" ; ") || "aucun thème décrit",
   LIEN1: () => minus(affectesNiveau("aspect").filter(l => l.sous_groupe === "contre_qui")) || "aucun mode de jeu décrit",
