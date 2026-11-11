@@ -1,7 +1,17 @@
 /* PRISME — timeline du jeu : jalons, durées, flow, α β γ ω, durée de vie.
    Module partagé par l'encyclopédie et l'outil d'évaluation. Méthode arrêtée le 08/10/2026 (jeu d'essai : Heat) ; modèle à 12 paires le 11/10/2026 ;
    formules refaites phase par phase le 12/10/2026 avec trois jeux de référence (Gloomhaven, Heat, Flip 7). L'unité est la session. */
-const TIMELINE_VERSION = { numero:"3.20", date:"2026-11-11 15:10" };   // à incrémenter à chaque livraison
+const TIMELINE_VERSION = { numero:"3.21", date:"2026-11-11 19:00" };   // à incrémenter à chaque livraison
+// (3.21, 11/11/2026) la courbe noire, lot B (Claude Doc « PRISME — Les moteurs et la note par profil », « La timeline du jeu ») :
+// B1 chaque durée de sous-phase vaut au moins DUREE_MIN (0,1 session) et la première partie finit au plus tôt à la session 1 : plus de segment vertical ;
+// B2 au jalon 4, PROF et EXIG pèsent 1 + k.U (le double poids était un goût de Décrypter imposé à tous) ;
+// B3 la lassitude, pour tout jeu, à partir du jalon 4 : le flow tend vers un fond = flow du jalon 4 × r² (r = moyenne de MECA, PROF, LIEN / 5), qui est aussi un plancher,
+//    avec une demi-vie = demi_vie_base × (1 + VAR1) × facteurProfondeur(PROF1) × √(max(1, contenu / 15)) ; l'usure de VAR s'y ajoute ;
+// B4 le rangement (γ, la durée de vie) : le premier moment où le flow passe sous seuil_rangement ; jamais : un classique ; le plancher de nostalgie
+//    ne décide plus de la vie, il reste pour le Souvenir ; l'abandon et l'épuisement du contenu gardent leurs règles ;
+// B5 l'espacement : β au moins une session après α, γ au moins une session après β ; quand β tombe sur α, la courbe tient l'apogée une session ;
+// B6 le coût par partie en deux chiffres : jusqu'au rangement (prix ÷ vie) et pour tout exploiter (prix ÷ parties pour tout exploiter) ; plus d'horizon de 1000 sessions.
+// Réglages (prisme_reglages) : seuil_rangement (0,3, flow sur 10) et demi_vie_base (3 parties), passés par entreesPourCalcul → extra → n.
 // (3.20, 11/11/2026) AXES_PROFILS : des axes décrits qui ne servent qu'aux profils (MECA1c, « Brutalité du hasard ») ; ils ne bloquent
 // aucun calcul : noteDePaire les ignore pour la complétude et le « sans objet », entreesPourCalcul pour la règle de la paire sans objet
 // (3.19, 11/11/2026) libellés de la ligne du bas adoucis, « Déçoit » jugé trop raide pour des notes autour de 2/5.
@@ -53,13 +63,18 @@ const usureContenu = c => c > CONTENU_REF ? CONTENU_REF / c : 1;
 // contenu effectif = contenu × (1 + (PROF1 − 2,5) / 2,5) au-delà de 2,5 (× 1,6 à PROF1 = 4, × 2 à 5). Le plafond d'une campagne garde le contenu brut.
 const facteurProfondeur = prof1 => prof1 > 2.5 ? 1 + (prof1 - 2.5) / 2.5 : 1;
 const contenuEffectif = n => n.contenu_parties > 0 ? n.contenu_parties * facteurProfondeur(n.PROF1 ?? 0) : null;
+// (3.21) B1 : la plus courte durée d'une sous-phase, en sessions (une durée nulle faisait un segment vertical)
+const DUREE_MIN = .1;
+// (3.21) B3, B4 : les réglages de la courbe, et leurs valeurs par défaut quand prisme_reglages ne les a pas
+const REGLAGES_COURBE = { seuil_rangement:.3, demi_vie_base:3 };
+const reglageCourbe = (n, k) => { const v = n?.[k]; return v == null || v === "" || Number.isNaN(Number(v)) ? REGLAGES_COURBE[k] : Number(v); };
 const K_FRICTION = 3;         // F = √(somme des carrés / 3) : chaque gêne ajoutée fait monter F
 const TERMES = {
   1:{ s:"MAT, ART2a, promesse = max(THEM1, RYT1, MAN2)", f:"POID1, 5 − ART2b" },
   2:{ s:"MAT, ART2a, promesse, SYS", f:"0,75 × POID1, 0,75 × (5 − ART2b), M / 2 (M = MAN1 × L)" },
   3:{ s:"SYS, PROF, MECA2, VAR × 2, EXP sans parole, EDI sans documentation", f:"apprentissage, 5 − ART2b, manipulation au-delà de l'attendu" },
-  4:{ s:"SYS, PROF × 2, MECA2, VAR × 2, EXIG × 2, EXP, EDI", f:"apprentissage, 5 − ART2b, 5 − MAN2" },
-  5:{ s:"MECA, EXIG, THEM, LIEN, MAT, VAR estompé (selon le contenu)", f:"POID1 × g, MAN1 × g, 5 − VAR, (5 − ART2b) / 2" },
+  4:{ s:"SYS, PROF, MECA2, VAR × 2, EXIG, EXP, EDI (PROF et EXIG × 2 pour Décrypter)", f:"apprentissage, 5 − ART2b, 5 − MAN2" },
+  5:{ s:"MECA, EXIG, THEM, LIEN, MAT, VAR estompé (selon le contenu) ; puis la lassitude vers le fond", f:"POID1 × g, MAN1 × g, 5 − VAR, (5 − ART2b) / 2" },
   6:{ s:"les termes du jalon 5 (l'horloge avance)", f:"les termes du jalon 5" },
   7:{ s:"les termes du jalon 5 (l'horloge avance)", f:"les termes du jalon 5" }
 };
@@ -69,8 +84,8 @@ const TIMELINE_AXES = ["POID1","POID2","PROF1","VAR1","MECA1a","MECA2","EXIG1","
 // (3.20, 11/11/2026) axes décrits qui ne servent qu'aux profils : jamais obligatoires, jamais « sans objet » pour la paire
 const AXES_PROFILS = ["MECA1c"];
 const TIMELINE_PAIRES = ["POID","PROF","VAR","EXIG","RYT","MAN","THEM","LIEN","MAT","ART","DOC"];   // MECA : sa note est MECA2
-const PLANCHER_SEUIL = 3;     // marque = max(0, max(THEM, MECA) − 3) : seul un thème ou des mécaniques qui ont vraiment marqué laissent une nostalgie
-const CLASSES_VIE = [[10, "éphémère"], [Infinity, "durable"]];   // une durée de vie infinie (le plancher n'est jamais atteint) : un classique
+const PLANCHER_SEUIL = 3;     // marque = max(0, max(THEM, MECA) − 3) : seul un thème ou des mécaniques qui ont vraiment marqué laissent une nostalgie (le Souvenir)
+const CLASSES_VIE = [[10, "éphémère"], [Infinity, "durable"]];   // (3.21) une durée de vie infinie (le flow ne passe jamais sous seuil_rangement) : un classique
 
 /* ---- les moteurs de PRISMEplayer vus par le jeu (revue du 08/10/2026, v2 du 10/10/2026) ----
    nourrit : paires dont la réussite compte pour ce moteur dans la rosace (surface « réussite » ; 2 = ++, 1 = +) ; trait : à quel point le jeu est tourné vers ce moteur (axes 1, 0 à 5) ;
@@ -138,7 +153,9 @@ function courbeBrute(n, pr, ctx = {}){
   const T = ok(n.POID1) ? .6 * n.POID1 * (1 - (n.DOC2 ?? 0) / 4) : 0;
   const d = [ (n.VAL1 ?? 0) / 4, q(((n.POID1 ?? 0) + (n.MAN1 ?? 0)) / 5 / vit), q((1 + T / 10) / vit),
     q(2 ** ((moy(n.POID1, n.EXIG1, n.VAR1, T, inv(n.ART2b)) ?? 0) - 1) / vit), q(2 ** ((moy(n.PROF, n.EXIG1, n.POID1) ?? 0) - 1)),
-    q(2 ** ((moy(n.PROF, n.EXIG, n.VAR1) ?? 0) + .1 - 1)), q(2 ** ((moy(n.VAR, n.MAN2) ?? 0) - 1)) ];
+    q(2 ** ((moy(n.PROF, n.EXIG, n.VAR1) ?? 0) + .1 - 1)), q(2 ** ((moy(n.VAR, n.MAN2) ?? 0) - 1)) ].map(v => Math.max(DUREE_MIN, v));   // (3.21) B1
+  // (3.21) B1 : la première partie se termine au plus tôt à la session 1 (les Premiers pas s'allongent d'autant)
+  const avant3 = d[0] + d[1] + d[2]; if (avant3 < 1) d[2] += 1 - avant3;
   const N = [0]; d.forEach((v, i) => N.push(N[i] + v));
   const x = [0]; d.forEach((v, i) => x.push(x[i] + Math.log2(1 + v)));
   const E0 = .5 + .25 * (n.VAL1 ?? 0);
@@ -159,7 +176,8 @@ function courbeBrute(n, pr, ctx = {}){
       F = [ok(n.POID1) ? .75 * n.POID1 : null, ok(n.ART2b) ? .75 * (5 - n.ART2b) : null, ok(n.MAN1) ? n.MAN1 * lassitude(Nj) / 2 : null]; }
     else if (j === 3){ S = [[SYS], [n.PROF], [n.MECA2], [n.VAR, 2], [moy(n.RYT2, n.MAN2, n.THEM, n.LIEN2a)], [moy(n.MAT, n.ART)]];
       F = [app, inv(n.ART2b), ok(n.MAN2) ? Math.max(0, 3 - n.MAN2) * 5 / 3 : null]; }          // une charge attendue ne coûte rien
-    else if (j === 4){ S = [[SYS], [n.PROF, 2], [n.MECA2], [n.VAR, 2], [n.EXIG, 2], [EXP], [EDI]];
+    // (3.21) B2 : PROF et EXIG pèsent 1 + k.U (le double poids était un goût de Décrypter imposé à tous)
+    else if (j === 4){ S = [[SYS], [n.PROF, 1 + k.U], [n.MECA2], [n.VAR, 2], [n.EXIG, 1 + k.U], [EXP], [EDI]];
       F = [app, inv(n.ART2b), inv(n.MAN2)]; }
     else { S = [[MECA], [n.EXIG], [n.THEM], [n.LIEN], [n.MAT], [VARj, 1 - k.B]];             // le Triomphant ne se lasse pas : VAR hors de S
       F = [ok(n.POID1) ? n.POID1 * g : null, ok(n.MAN1) ? n.MAN1 * g : null, inv(n.VAR), ok(n.ART2b) ? (5 - n.ART2b) / 2 : null]; }
@@ -186,60 +204,95 @@ function courbeBrute(n, pr, ctx = {}){
     const r = R_REGIME[Math.min(j, 7)], el = E0 / (1 + nS);
     return { s, f, el, r, brut: el + 2 * r * (s - f), L: lassitude(Nj), m, g, estompe: c };
   };
-  const det = [null], brut = [0];
+  // (3.21) B3 : la lassitude, pour tout jeu, à partir du jalon 4 : le flow tend vers un fond, d'autant plus vite que la demi-vie est courte
+  // fond = flow du jalon 4 × r², r = moyenne des notes de MECA, PROF et LIEN / 5 (au carré : exigeant envers les jeux minces) ;
+  // demi-vie (en sessions) = demi_vie_base × (1 + VAR1) × facteurProfondeur(PROF1) × √(max(1, contenu / 15)) ; VAR1 sans objet : 0 ; contenu absent : 15
+  const seuilRangement = reglageCourbe(n, "seuil_rangement"), rFond = (moy(MECA, n.PROF, n.LIEN) ?? 0) / 5;
+  const demiVie = reglageCourbe(n, "demi_vie_base") * (1 + (ok(n.VAR1) ? n.VAR1 : 0)) * facteurProfondeur(n.PROF1 ?? 0)
+    * Math.sqrt(Math.max(1, (n.contenu_parties > 0 ? n.contenu_parties : CONTENU_REF) / CONTENU_REF));
+  let fond = null;
+  // (3.21, décision de Pierre du 11/11/2026) le fond est aussi un plancher : à partir du jalon 4, le flow ne descend plus sous le fond ;
+  // seul un flow négatif à un jalon (l'abandon, ω) passe outre, l'abandon gardant sa règle
+  const lasse = (b, Nk) => fond == null || (b < 0 && Nk <= N[7]) ? b : Math.max(fond, b <= fond ? b : fond + (b - fond) / (1 + Math.max(0, Nk - N[4]) / demiVie));
+  // (3.21) la lassitude s'applique à la courbe retenue (« le flow ne remonte plus » d'abord, sur les valeurs sans lassitude : garde)
+  const det = [null], brut = [0], garde = [0];
   for (let j = 1; j <= 7; j++){
+    if (j === 5) fond = brut[4] * rFond * rFond;
     const t = termes(j, N[j]);
-    if (j >= 5 && t.brut > brut[j - 1]){ t.retenu = true; t.brut = brut[j - 1]; }       // à partir du jalon 4, le flow ne remonte plus
+    if (j >= 5 && t.brut > garde[j - 1]){ t.retenu = true; t.brut = garde[j - 1]; }      // à partir du jalon 4, le flow ne remonte plus
+    garde.push(t.brut);
+    if (j >= 5){ t.avantLassitude = t.brut; t.brut = lasse(t.brut, N[j]); }              // (3.21) B3 ; l'usure de VAR (dans termes) s'y ajoute
     det.push(t); brut.push(t.brut);
   }
   const marque = Math.max(0, Math.max(n.THEM ?? 0, MECA ?? 0) - PLANCHER_SEUIL);
   const epuise = n.contenu_unique && n.contenu_parties > 0 ? n.contenu_parties : null;   // campagne : le contenu s'épuise
-  return { d, N, x, brut, det, marque, brutLoinBrut: Nk => termes(7, Nk).brut, SYS, EXP, EDI, E0, T, vit, usure, epuise };
+  return { d, N, x, brut, det, marque, brutLoinBrut: Nk => lasse(Math.min(termes(7, Nk).brut, garde[7]), Nk), SYS, EXP, EDI, E0, T, vit, usure, epuise,
+    fond, demiVie, seuilRangement, contenu: n.contenu_parties > 0 ? n.contenu_parties : null };
 }
 
 // α, β, γ, ω, plancher, durée de vie… d'une courbe brute (noire ou de profil)
 function analyseCourbe(cb){
-  const { N, x, brut, marque } = cb;
+  const { brut, marque } = cb;
   const purge = brut.findIndex((v, j) => j >= 1 && v < 0);
   const y = brut.map((v, j) => purge > 0 && j >= purge ? 0 : Math.min(10, Math.max(0, v)));
   let alpha = 1; for (let j = 2; j <= 7; j++) if (y[j] > y[alpha]) alpha = j;
   // β : début du déclin final, le jalon d'où le flow ne fait plus que baisser (une variation de moins de 0,05 est un plateau) ;
-  // γ : l'arrivée au plancher de nostalgie, en sessions (null : jamais, un classique) ; ω : abandon (purge), à la place de γ
+  // γ : le rangement, en sessions (null : jamais, un classique) ; ω : abandon (purge), à la place de γ
   const fin = purge > 0 ? purge : 7, PLATEAU = .05;
   let beta = null; const omega = purge > 0 ? purge : null;
   const baisse = j => y[j] < y[j - 1] - PLATEAU;
   let jb = fin; while (jb >= 1 && !baisse(jb)) jb--;                    // un plateau final ne compte pas
   for (; jb >= 1 && baisse(jb); jb--) beta = jb - 1;
   if (beta === 0) beta = null;
-  // Souvenir : la marque laissée (thème ou mécaniques) ; le plancher de nostalgie arrête la chute sans jamais relever la courbe
+  // (3.21) B5 : quand le déclin part de l'apogée (β = α), la courbe tient l'apogée une session (le point « tenue ») avant de décliner ;
+  // le déclin qui suit dure au moins min(durée de la sous-phase, 1 session) : les jalons suivants sont décalés d'autant s'il le faut
+  const { d } = cb; let N = cb.N, x = cb.x, decale = 0, tenue = null;
+  if (purge <= 0 && beta != null && beta === alpha && alpha < 7){
+    const Nt = cb.N[alpha] + 1;
+    decale = Math.max(0, Nt + Math.min(d[alpha], 1) - cb.N[alpha + 1]);
+    N = cb.N.map((v, j) => j > alpha ? v + decale : v);
+    const dx = cb.x[alpha] + 1 + Math.log2(1 + N[alpha + 1] - Nt) - cb.x[alpha + 1];
+    x = cb.x.map((v, j) => j > alpha ? v + dx : v);
+    tenue = { N: Nt, x: cb.x[alpha] + 1, y: y[alpha] };
+  }
+  // Souvenir : la marque laissée (thème ou mécaniques) ; le plancher de nostalgie arrête la chute sans jamais relever la courbe (après γ)
   const plancher = purge > 0 ? null : Math.min(marque, brut[7]);
-  const brutLoin = Nk => Math.min(cb.brutLoinBrut(Nk), brut[7]);
+  const brutLoin = Nk => Math.min(cb.brutLoinBrut(Nk - decale), brut[7]);
   const yLoin = Nk => purge > 0 ? 0 : Math.min(10, Math.max(0, Math.max(brutLoin(Nk), plancher)));
   const xLoin = Nk => x[7] + Math.log2((1 + Nk) / (1 + N[7]));
+  // les sessions d'un point de l'axe (pour placer une date entre deux jalons, ou dans le Souvenir)
+  const xDeN = v => { const k = N.findIndex((w, i) => i >= 1 && w >= v - 1e-9); if (k < 1) return xLoin(v);
+    if (tenue && k === alpha + 1 && v >= tenue.N) return tenue.x + Math.log2(1 + v - tenue.N);
+    if (tenue && k === alpha + 1) return x[alpha] + Math.log2(1 + v - N[alpha]);
+    return x[k - 1] + (v - N[k - 1]) / (N[k] - N[k - 1]) * (x[k] - x[k - 1]); };
   const perte = (yLoin(N[7] * 4 + 3) - yLoin(N[7])) / (xLoin(N[7] * 4 + 3) - x[7]);
-  // durée de vie : sessions jusqu'à l'abandon (le flow passe sous 0) ou jusqu'à l'arrivée au plancher de nostalgie ; null = jamais (un classique)
-  let vie = null, xVie = null;
-  const coupe = (j, seuil) => { const t = (brut[j - 1] - seuil) / (brut[j - 1] - brut[j]); vie = N[j - 1] + t * (N[j] - N[j - 1]); xVie = x[j - 1] + t * (x[j] - x[j - 1]); };
+  // (3.21) B4 : la durée de vie : jusqu'à l'abandon (le flow passe sous 0) ou jusqu'au rangement, le premier moment où le flow passe sous
+  // seuil_rangement (jalons, puis le Souvenir) ; null = jamais (un classique). Le plancher de nostalgie ne décide plus de la vie.
+  const seuil = cb.seuilRangement ?? REGLAGES_COURBE.seuil_rangement;
+  let vie = null;
+  // (3.21) après la tenue de l'apogée, le déclin part de la tenue, pas du jalon α
+  const coupe = (j, s) => { const t = (brut[j - 1] - s) / (brut[j - 1] - brut[j]), N0 = tenue && j === alpha + 1 ? tenue.N : N[j - 1]; vie = N0 + t * (N[j] - N0); };
   if (purge > 0) coupe(purge, 0);
-  else if (brut[4] <= marque){ vie = N[4]; xVie = x[4]; }
+  else if (Math.max(...brut.slice(1)) < seuil) vie = N[3];              // un jeu qui n'atteint jamais le seuil : rangé après la première partie
   else {
-    for (let j = 5; j <= 7 && vie == null; j++) if (brut[j] <= marque) coupe(j, marque);
-    if (vie == null && brutLoin(1e7) <= marque){
-      let a = N[7], b = 1e7; for (let i = 0; i < 80; i++){ const mid = Math.sqrt((1 + a) * (1 + b)) - 1; brutLoin(mid) > marque ? a = mid : b = mid; }
-      vie = b; xVie = xLoin(b);
+    for (let j = 1; j <= 7 && vie == null; j++) if (brut[j - 1] >= seuil && brut[j] < seuil) coupe(j, seuil);
+    if (vie == null && brutLoin(1e7) < seuil){
+      let a = N[7], b = 1e7; for (let i = 0; i < 80; i++){ const mid = Math.sqrt((1 + a) * (1 + b)) - 1; brutLoin(mid) >= seuil ? a = mid : b = mid; }
+      vie = b;
     }
   }
   // contenu à usage unique : une fois tout joué, le jeu est rangé (17/10/2026)
   let epuise = false;
-  if (purge <= 0 && cb.epuise != null && (vie == null || vie > cb.epuise)){
-    epuise = true; vie = cb.epuise;
-    const j = N.findIndex((v, i) => i >= 1 && v >= vie);
-    xVie = j > 0 ? x[j - 1] + (vie - N[j - 1]) / (N[j] - N[j - 1]) * (x[j] - x[j - 1]) : xLoin(vie);
-  }
-  const gamma = purge > 0 ? null : vie, sousPhaseGamma = gamma == null ? null : gamma > N[7] ? 7 : Math.max(0, N.findIndex(v => v >= gamma - 1e-9) - 1);
+  if (purge <= 0 && cb.epuise != null && (vie == null || vie > cb.epuise)){ epuise = true; vie = cb.epuise; }
+  // (3.21) B5 : les dates en sessions ; β au moins une session après α, γ au moins une session après β
+  const alphaN = N[alpha], betaN = beta == null ? null : tenue ? tenue.N : Math.max(N[beta], alphaN + 1);
+  if (purge <= 0 && vie != null && betaN != null) vie = Math.max(vie, betaN + 1);
+  const xVie = vie == null ? null : xDeN(vie);
+  const gamma = purge > 0 ? null : vie, gammaN = gamma, sousPhaseGamma = gamma == null ? null : gamma > N[7] ? 7 : Math.max(0, N.findIndex(v => v >= gamma - 1e-9) - 1);
   const classe = vie == null ? "classique" : CLASSES_VIE.find(([s]) => vie < s)[1];
   const yLoinF = epuise ? Nk => Nk >= vie ? Math.min(10, Math.max(0, plancher)) : yLoin(Nk) : yLoin;
-  return { ...cb, y, alpha, beta, gamma, sousPhaseGamma, omega, purge: purge > 0 ? purge : null, perte, vie, xVie, classe, plancher, yLoin: yLoinF, xLoin, epuise };
+  return { ...cb, N, x, Nbrut: cb.N, decale, tenue, y, alpha, beta, gamma, alphaN, betaN, gammaN, sousPhaseGamma, omega, purge: purge > 0 ? purge : null,
+    perte, vie, xVie, classe, plancher, yLoin: yLoinF, xLoin, epuise };
 }
 
 // le centrage d'un jeu : l'écart moyen des 60 profils à la courbe noire, jalon par jalon (mis en cache)
@@ -288,7 +341,9 @@ function courbeSVG(c, titre, ref){
     s += `<line x1="${xd}" x2="${xd}" y1="${Y(yv)}" y2="${H - b}" class="demi"/><text x="${Math.min(Math.max(xd, g + 60), W - dr - 80)}" y="${H - b + 34}" class="gl">durée de vie ${environSessions(c.vie)}</text>`; }
   if (ref) s += `<polyline class="ref" points="${ref.x.map((v, j) => `${X(v)},${Y(ref.y[j])}`).join(" ")}"><title>Flow pour tous</title></polyline><text x="${X(ref.x[7]) + 6}" y="${Y(ref.y[7]) + 4}" class="gl" style="text-anchor:start">pour tous</text>`;
   const fin = c.omega ?? 7, pts = j => `${X(c.x[j])},${Y(c.y[j])}`;   // trait plein sur tous les jalons calculés (jusqu'à l'abandon s'il y a purge)
-  s += `<polyline class="trait" points="${[...Array(fin + 1).keys()].map(pts).join(" ")}"/>`;
+  // (3.21) B5 : le point où l'apogée est tenue une session, entre α et le jalon suivant
+  const tenuePt = c.tenue ? `${X(c.tenue.x)},${Y(c.tenue.y)}` : null;
+  s += `<polyline class="trait" points="${[...Array(fin + 1).keys()].flatMap(j => tenuePt && j === c.alpha + 1 ? [tenuePt, pts(j)] : [pts(j)]).join(" ")}"/>`;
   if (!c.purge){
     const loin = [...Array(8 - fin).keys()].map(k => pts(fin + k));
     for (let xv = c.x[7] + .05; xv <= xFin + 1e-9; xv += .05){ const Nk = (1 + c.N[7]) * 2 ** (xv - c.x[7]) - 1; loin.push(`${X(xv)},${Y(c.yLoin(Nk))}`); }
@@ -342,11 +397,14 @@ function syntheseTimeline(c){
   const f = (v, k = 2) => Number(v).toFixed(k).replace(".", ",").replace("-", "−");
   const purge = c.omega != null, ph = phaseDuJalon(c.alpha);
   const apogee = `Apogée ${f(c.y[c.alpha])}/10 au jalon ${c.alpha} (${JALONS[c.alpha].nom}), ${apresSessions(c.N[c.alpha])}, phase ${ph} (${PHASES[ph]})`;
-  const declin = c.beta == null ? "pas de déclin" : `déclin dès le jalon ${c.beta}, ${apresSessions(c.N[c.beta])}`;
+  // (3.21) B4, B5 : le déclin à sa date (au moins une session après l'apogée) ; le rangement quand le flow passe sous seuil_rangement
+  const declin = c.beta == null ? "pas de déclin" : `déclin dès le jalon ${c.beta}, ${apresSessions(c.betaN ?? c.N[c.beta])}`;
+  const seuil = f(c.seuilRangement ?? REGLAGES_COURBE.seuil_rangement, 1), fond = c.fond != null ? ` (la lassitude le mène vers ${f(c.fond)}/10)` : "";
+  const nostalgie = c.plancher > 0 ? `, puis ressorti par nostalgie (${f(c.plancher)}/10)` : "";
   const fin = purge ? `abandon au jalon ${c.omega}, ${apresSessions(c.vie, true)} (${c.classe})`
-    : c.vie == null ? `jamais rangé : ne descend pas jusqu'à son plancher de nostalgie (${f(c.marque)}/10), un classique`
-    : c.epuise ? `rangé ${apresSessions(c.vie, true)}, une fois tout le contenu joué (usage unique), puis ressorti par nostalgie (${f(c.plancher)}/10)`
-    : `rangé ${apresSessions(c.vie, true)}, au plancher de nostalgie (${f(c.plancher)}/10), puis ressorti par nostalgie (${c.classe})`;
+    : c.vie == null ? `jamais rangé : son flow ne passe jamais sous ${seuil}/10${fond}, un classique`
+    : c.epuise ? `rangé ${apresSessions(c.vie, true)}, une fois tout le contenu joué (usage unique)${nostalgie}`
+    : `rangé ${apresSessions(c.vie, true)}, quand son flow passe sous ${seuil}/10${nostalgie} (${c.classe})`;
   return `${apogee} · ${declin} · ${fin}`;
 }
 
@@ -545,21 +603,31 @@ function textePourQui(max, min, reglages){
 // la petite ligne sous le libellé : « de 2,1 à 2,5 sur 5 selon les profils »
 const plagePourQui = (max, min) => { const f = v => Number(v).toFixed(1).replace(".", ","); return `de ${f(min)} à ${f(max)} sur 5 selon les profils`; };
 
-/* Coût par session : prix ÷ durée de vie calculée (18/10/2026 : le plafond de 50 sessions est levé, la durée de vie suit maintenant
-   le contenu et la profondeur). Un classique (jamais rangé) est compté sur un horizon de 1000 sessions. Rien sans prix, ni si le jeu
-   est abandonné avant sa première session (ω au jalon 1, 2 ou 3). Par heure : avec la durée moyenne de la fiche. */
-const HORIZON_CLASSIQUE = 1000;
+/* (3.21) B6 : le coût par partie, en deux chiffres (plus d'horizon de 1000 sessions pour un classique) :
+   jusqu'au rangement = prix ÷ durée de vie (null pour un classique) ; pour tout exploiter = prix ÷ parties pour tout exploiter (null sans contenu) ;
+   chacun avec son coût de l'heure si la durée est connue. Rien sans prix, ni si le jeu est abandonné avant sa première session (ω au jalon 1, 2 ou 3).
+   parPartie, parHeure et classique restent pour la vitrine go2games et les tris : le coût jusqu'au rangement, sinon celui pour tout exploiter. */
 function coutParPartie(prix, c, dureeMin, dureeMax){
   if (prix == null || prix === "" || !c || (c.omega != null && c.omega <= 3)) return null;
-  const classique = c.vie == null, parties = Math.max(1, classique ? HORIZON_CLASSIQUE : c.vie);
   const duree = [dureeMin, dureeMax].map(Number).filter(v => v > 0), h = duree.length ? duree.reduce((a, b) => a + b, 0) / duree.length / 60 : null;
-  return { parties, classique, parPartie: Number(prix) / parties, parHeure: h ? Number(prix) / (parties * h) : null };
+  const part = parties => parties > 0 ? { parties, parPartie: Number(prix) / parties, parHeure: h ? Number(prix) / (parties * h) : null } : null;
+  const classique = c.vie == null, rangement = classique ? null : part(Math.max(1, c.vie)), exploiter = part(c.contenu);
+  if (!rangement && !exploiter) return null;
+  const k = rangement || exploiter;
+  return { rangement, exploiter, classique, parties: k.parties, parPartie: k.parPartie, parHeure: k.parHeure };
 }
+const euros = v => v < 1 ? v.toFixed(2).replace(".", ",") : v < 10 ? v.toFixed(1).replace(".", ",") : String(Math.round(v));
+// « 2,40 € par partie jusqu'à ce qu'il soit rangé (après 3 parties) ; 0,80 € par partie pour tout exploiter »
 function texteCout(k){
   if (!k) return "—";
-  const e = v => v < 1 ? v.toFixed(2).replace(".", ",") : v < 10 ? v.toFixed(1).replace(".", ",") : String(Math.round(v));
-  return `${k.classique ? "moins de " : ""}${e(k.parPartie)} € par session${k.parHeure != null ? ` (${e(k.parHeure)} € de l'heure)` : ""} sur ${k.classique ? HORIZON_CLASSIQUE + " sessions et plus (un classique)" : dureeSessions(k.parties)}`;
+  const heure = x => x.parHeure != null ? ` (${euros(x.parHeure)} € de l'heure)` : "";
+  const L = [k.rangement ? `${euros(k.rangement.parPartie)} € par partie jusqu'à ce qu'il soit rangé (après ${texteSessions(k.rangement.parties).replace("session", "partie")})${heure(k.rangement)}`
+      : k.classique ? "jamais rangé (un classique)" : null,
+    k.exploiter ? `${euros(k.exploiter.parPartie)} € par partie pour tout exploiter${heure(k.exploiter)}` : null].filter(Boolean);
+  return L.join(" ; ");
 }
+// en court, pour une pastille ou une colonne : « 2,40 € », ou « 0,80 € pour tout exploiter » pour un classique
+const texteCoutCourt = k => !k ? "—" : k.rangement ? `${euros(k.rangement.parPartie)} €` : `${euros(k.exploiter.parPartie)} € pour tout exploiter`;
 // toutes les entrées d'une fiche : n (pour la courbe), paires (pour les notes), manque (paires à remplir), absents (sans objet)
 // extra : { contenu_parties, contenu_unique, prix } (ou, comme avant, le seul nombre de parties pour tout exploiter)
 function entreesFiche(s, paires, axes, extra){
@@ -567,6 +635,8 @@ function entreesFiche(s, paires, axes, extra){
   const axesDeP = code => axes.filter(a => a.paire === code);
   const etats = Object.fromEntries(paires.map(p => [p.code, noteDePaire(p, s, axesDeP(p.code))]));
   const n = { contenu_parties: Number(x.contenu_parties) || null, contenu_unique: !!x.contenu_unique, VAL1: palierPrix(x.prix) }, manque = new Set(), absents = new Set();
+  // (3.21) les réglages de la courbe (seuil_rangement, demi_vie_base), venus de prisme_reglages par entreesPourCalcul
+  Object.keys(REGLAGES_COURBE).forEach(k => { if (x[k] != null && x[k] !== "" && !Number.isNaN(Number(x[k]))) n[k] = Number(x[k]); });
   TIMELINE_PAIRES.forEach(code => { const r = etats[code]; if (!r) return;
     if (!r.complete) manque.add(code); else if (r.note == null) absents.add(code); else n[code] = r.note; });
   TIMELINE_AXES.forEach(code => {
@@ -596,7 +666,9 @@ function prixDeGamme(g, reglages){
 // de la sous-fiche (ou null) ; axesDescription : ses lignes de prisme_descriptions_axes ({ axe: ligne } ou liste) ; reglages : { cle: valeur }
 // renvoie { saisie, extra, source } : saisie et extra se passent tels quels à entreesFiche ; source : "fiche" ou "description"
 function entreesPourCalcul(saisieFiche, extraFiche, description, axesDescription, reglages, axes){
-  if (Number(reglages?.bascule_description) !== 1 || !description) return { saisie:saisieFiche, extra:extraFiche, source:"fiche" };
+  // (3.21) les réglages de la courbe suivent l'extra, quelle que soit la source
+  const regC = Object.fromEntries(Object.keys(REGLAGES_COURBE).filter(k => reglages?.[k] != null).map(k => [k, reglages[k]]));
+  if (Number(reglages?.bascule_description) !== 1 || !description) return { saisie:saisieFiche, extra: { ...extraFiche, ...regC }, source:"fiche" };
   const D = Array.isArray(axesDescription) ? Object.fromEntries(axesDescription.map(x => [x.axe, x])) : axesDescription || {};
   const saisie = { ...saisieFiche };
   axes.filter(a => /^1/.test(a.rang || "")).forEach(a => { const d = D[a.code]; if (!d) return;
@@ -608,7 +680,7 @@ function entreesPourCalcul(saisieFiche, extraFiche, description, axesDescription
     L.filter(a => /^2/.test(a.rang || "")).forEach(a => saisie[a.code] = { ...saisie[a.code], valeur: saisie[a.code]?.valeur ?? null, sans_objet:true }); });
   const prix = prixDeGamme(description.prix_gamme, reglages);
   return { saisie, source:"description",
-    extra: { ...extraFiche, prix: prix ?? extraFiche?.prix, contenu_unique: !!description.usage_unique, contenu_parties: extraFiche?.contenu_parties } };
+    extra: { ...extraFiche, ...regC, prix: prix ?? extraFiche?.prix, contenu_unique: !!description.usage_unique, contenu_parties: extraFiche?.contenu_parties } };
 }
 // les trois tables de la bascule, une requête par table : { descriptions: { jeu: ligne }, axes: { jeu: { axe: ligne } }, reglages: { cle: valeur } }
 // une table illisible (droits, script pas passé) : vide, et les calculs restent sur la fiche

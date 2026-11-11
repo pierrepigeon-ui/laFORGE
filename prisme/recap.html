@@ -152,10 +152,10 @@ details.avec-ext > summary::-webkit-details-marker{display:none}
   <p class="version"><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p>
 </main>
 
-<script src="timeline.js?v=3.20"></script>
+<script src="timeline.js?v=3.21"></script>
 <script src="selecteurs.js?v=1.10"></script>
 <script>
-const VERSION = { numero:"1.8", date:"2026-11-11 17:30" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.9", date:"2026-11-11 19:00" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -190,10 +190,10 @@ function usureDe(c){
 }
 const texteUsure = (u, S) => u < S.usure_moderee ? "S'use à peine" : u > S.usure_rapide ? "S'use vite" : "Usure modérée";
 // (1.5) « Pour qui » : textePourQui() et plagePourQui() de timeline.js 3.18, la même grille que la fiche du jeu (à la place de texteEcart)
+// (1.9, 11/11/2026) le coût jusqu'au rangement (timeline.js 3.21) ; un classique : le coût pour tout exploiter
 function coutCourt(k){
   if (!k) return null;
-  const e = v => v < 1 ? v.toFixed(2).replace(".", ",") : v < 10 ? v.toFixed(1).replace(".", ",") : String(Math.round(v));
-  return `${k.classique ? "moins de " : ""}${e(k.parPartie)} € la partie`;
+  return k.rangement ? `${euros(k.rangement.parPartie)} € la partie` : `${euros(k.exploiter.parPartie)} € la partie pour tout exploiter`;
 }
 function verdictDe(html){
   if (!html) return null;

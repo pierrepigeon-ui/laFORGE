@@ -370,10 +370,10 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
   <div class="boutons"><span class="msg" id="rep-msg" role="status"></span><button class="btn ghost" type="button" id="rep-annuler">Annuler</button><button class="btn plein" type="button" id="rep-ok">Reprendre</button></div></dialog>
 <div class="wrap"><p class="version"><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p></div>
 
-<script src="timeline.js?v=3.20"></script>
+<script src="timeline.js?v=3.21"></script>
 <script src="selecteurs.js?v=1.10"></script>
 <script>
-const VERSION = { numero:"4.12", date:"2026-11-11 17:30" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"4.13", date:"2026-11-11 19:00" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -1100,12 +1100,12 @@ function recalculer(){
   $("#prog").style.width = (c.faites / MOD.paires.length * 100) + "%";
   $("#sous-titre").textContent = `${lectureSeule ? "Fiche de " + nomDe(fiche.evaluateur) : "Ma fiche"} · ${fiche.statut === "finale" ? "finale" : "brouillon"} · ${c.faites} paire${c.faites > 1 ? "s" : ""} sur ${MOD.paires.length}`;
   $("#pied-finale").textContent = c.finale == null ? "—" : fmt(c.finale, 2);
-  // « Détails » : les notes de chapitres, la timeline résumée, le coût par session et le coût d'effort (prototype, 13/10/2026)
+  // « Détails » : les notes de chapitres, la timeline résumée, le coût par partie (4.13 : jusqu'au rangement et pour tout exploiter) et le coût d'effort (prototype, 13/10/2026)
   const tl = majTimeline(), k = tl.c ? coutFiche(tl.c) : null, ce = coutEffort(entreesTimeline().n);
   $("#pied-details").innerHTML = (SOEUR ? `<div class="soeur"><small>Ma fiche du ${esc(SOEUR.long)}</small><b>${SOEUR.c.finale == null ? "—" : fmt(SOEUR.c.finale, 2) + "<small>/5</small>"}${ecartSoeur(c.finale, SOEUR.c.finale, 2)}</b></div>` : "")
     + MOD.chapitres.map(ch => `<div><small>${esc(ch.nom)}</small><b>${c.chap[ch.code] == null ? "—" : fmt(c.chap[ch.code], 2) + "<small>/5</small>"}</b></div>`).join("")
     + `<div title="${tl.c ? esc(syntheseTimeline(tl.c)) : "Timeline incomplète"}"><small>Timeline</small><b>${tl.c ? piedTimeline(tl.c) : "—"}</b></div>`
-    + `<div title="${esc(k ? texteCout(k) + " (prix ÷ durée de vie calculée ; un classique est compté sur " + HORIZON_CLASSIQUE + " sessions)" : "Coût par session : il faut le prix et une timeline complète")}"><small>Coût par session</small><b>${k ? texteCout(k).replace(/ par session.*/, "").replace("moins de ", "< ") : "—"}</b></div>`
+    + `<div title="${esc(k ? texteCout(k) : "Coût par partie : il faut le prix et une timeline complète")}"><small>Coût par partie</small><b>${k ? texteCoutCourt(k) : "—"}</b></div>`
     + `<div title="Coût d'effort (prototype) : ce qu'il faut investir pour jouer — règles (POID1), manuels (DOC1), logistique (MAN1), hasard (MECA1a, à moitié), renouvellement (VAR1), attente (RYT1). Sur 5 ; c'est la gêne du Triomphant."><small>Coût d'effort <span class="proto">proto</span></small><b>${ce == null ? "—" : fmt(ce, 2) + "<small>/5</small>"}</b></div>`;
   return c;
 }
@@ -1113,7 +1113,7 @@ function recalculer(){
 /* ---------------- timeline ---------------- */
 // rassemble les notes utiles à la timeline (calcul partagé : timeline.js)
 function entreesTimeline(){ const x = pourCalcul(fiche, saisie), e = entreesFiche(x.saisie, MOD.paires, MOD.axes, x.extra); return { n:e.n, manque:e.manque, absents:e.absents }; }
-// coût par session : prix ÷ durée de vie d'après la timeline (plafonnée à 50 sessions)
+// coût par partie : jusqu'au rangement (prix ÷ durée de vie) et pour tout exploiter (timeline.js 3.21)
 const coutFiche = c => coutParPartie(pourCalcul(fiche, saisie).extra.prix, c, fiche.duree_min, fiche.duree_max);
 // pied de page : α, puis β et γ s'il y a une chute (sinon « pas de chute »), puis la durée de vie
 function piedTimeline(c){
@@ -1386,7 +1386,7 @@ function contexteJeu(){
   let t = `## Le jeu\n${jeu.nom || d.jeu}${jeu.bgg_id ? ` (BoardGameGeek n° ${jeu.bgg_id})` : ""}${chiffres ? "\n" + chiffres : ""}\n`;
   t += `Note finale PRISME : ${c.finale == null ? "incomplète" : fmt(c.finale, 2) + " / 5"} (${MOD.chapitres.map(ch => `${ch.nom} ${c.chap[ch.code] == null ? "—" : fmt(c.chap[ch.code], 2)}`).join(", ")}).\n`;
   if (tl.c) t += `Timeline (la vie du jeu, partie après partie) : ${syntheseTimeline(tl.c)}.\n`;
-  if (tl.c && coutFiche(tl.c)) t += `Coût par session (prix ÷ durée de vie, indicatif) : ${texteCout(coutFiche(tl.c))}.\n`;
+  if (tl.c && coutFiche(tl.c)) t += `Coût par partie (indicatif) : ${texteCout(coutFiche(tl.c))}.\n`;
   if (tl.sp){ const T = tl.sp.moteurs.flatMap(g => g.temperaments).sort((x, y) => y.note - x.note);
     t += `Spectromètre (la note vue par chaque type de joueur) : ${tl.sp.moteurs.map(g => `${g.m.nom} ${fmt(g.note, 2)}`).join(", ")}. Les mieux servis : ${T.slice(0, 3).map(x => `${x.t.nom} (${fmt(x.note, 2)})`).join(", ")} ; les moins bien servis : ${T.slice(-3).reverse().map(x => `${x.t.nom} (${fmt(x.note, 2)})`).join(", ")}.\n`; }
   return t;
@@ -1553,7 +1553,7 @@ function encadrePrisme(){
       : `environ ${Math.round(tl.c.vie)} parties${hm ? `, soit ${Math.round(tl.c.vie * hm / 5) * 5} heures de jeu` : ""}${tl.c.epuise ? " (tout le contenu joué)" : ""}`;
     L.push(`Durée de vie : ${vie}`);
   }
-  if (k) L.push(`Coût : ${k.classique ? "moins de " : ""}${fmt(k.parPartie, k.parPartie < 10 ? 1 : 0)} € par partie${k.parHeure != null ? `, ${fmt(k.parHeure, k.parHeure < 10 ? 2 : 0)} € de l'heure` : ""}`);
+  if (k) L.push(`Coût : ${texteCout(k)}`);   // (4.13) jusqu'au rangement et pour tout exploiter
   if (!L.length) L.push("Remplis le jeu en chiffres et les notes de la fiche : l'encadré se complétera (clique à nouveau sur « Préparer l'article »).");
   return `<div class="encadre"><p><b>${esc(titreFiche(fiche))}</b> — l'avis PRISME${src.autre ? (src.autre === user.id ? ", d'après ta fiche" : `, d'après la fiche de ${esc(nomDe(src.autre))}`) : ""}</p>${L.map(x => `<p>${x}</p>`).join("")}</div>`;
 }
@@ -1704,7 +1704,7 @@ $("#btn-recap").addEventListener("click", () => {
   $("#recap").innerHTML = `<h2>${esc(nomJeu(fiche.jeu))} : récapitulatif</h2>
     <p class="aide">${manque.length ? `Il manque ${manque.length} paire${manque.length > 1 ? "s" : ""} : ${manque.map(l => esc(l.p.nom)).join(", ")}.` : `Les ${MOD.paires.length} paires sont remplies.`}
       Note finale : <b>${c.finale == null ? "—" : fmt(c.finale, 2)}</b> (${MOD.chapitres.map(ch => `${esc(ch.nom)} ${c.chap[ch.code] == null ? "—" : fmt(c.chap[ch.code], 2)}`).join(", ")}).</p>
-    ${(() => { const t = majTimeline(), k = t.c && coutFiche(t.c); return `<p class="aide">Timeline : ${t.c ? esc(syntheseTimeline(t.c)) : "incomplète"}.${k ? ` Coût par session : ${esc(texteCout(k))}.` : ""}</p>` +
+    ${(() => { const t = majTimeline(), k = t.c && coutFiche(t.c); return `<p class="aide">Timeline : ${t.c ? esc(syntheseTimeline(t.c)) : "incomplète"}.${k ? ` Coût par partie : ${esc(texteCout(k))}.` : ""}</p>` +
       (t.sp ? `<p class="aide">Spectromètre (note vue par chaque moteur dominant) : ${t.sp.moteurs.map(g => `${esc(g.m.nom)} ${fmt(g.note, 2)}`).join(" · ")}.</p>` : ""); })()}
     <table class="recap"><thead><tr><th>Paire</th><th>Saisie</th><th>Note</th><th>Justification</th></tr></thead><tbody>
     ${L.map(l => `<tr class="${l.n.complete ? "" : "manque"}"><td><span class="aller" data-aller="${esc(l.p.code)}">${esc(l.p.nom)}</span></td><td>${esc(l.notes)}</td>
@@ -1724,7 +1724,7 @@ $("#btn-export").addEventListener("click", () => {
   md += `**Note finale : ${c.finale == null ? "—" : fmt(c.finale, 2)}** (${MOD.chapitres.map(ch => `${ch.nom} ${c.chap[ch.code] == null ? "—" : fmt(c.chap[ch.code], 2)}`).join(", ")})\n`;
   const tl = majTimeline();
   if (tl.c) md += `\n**Timeline** : ${syntheseTimeline(tl.c)}.\n\nFlow par jalon : ${tl.c.y.map((v, j) => `${j} ${fmt(v, 2)}`).join(" · ")}\n`;
-  if (tl.c && coutFiche(tl.c)) md += `\n**Coût par session** (indicatif) : ${texteCout(coutFiche(tl.c))}.\n`;
+  if (tl.c && coutFiche(tl.c)) md += `\n**Coût par partie** (indicatif) : ${texteCout(coutFiche(tl.c))}.\n`;
   if (tl.sp) md += `\n**Spectromètre** (note vue par chaque moteur dominant) : ${tl.sp.moteurs.map(g => `${g.m.nom} ${fmt(g.note, 2)}`).join(" · ")}. Le profil le mieux servi : ${tl.sp.lignes[0].st.nom} (${fmt(tl.sp.lignes[0].note, 2)}) ; le moins bien : ${tl.sp.lignes.at(-1).st.nom} (${fmt(tl.sp.lignes.at(-1).note, 2)}).\n`;
   MOD.chapitres.forEach(ch => {
     md += `\n## ${ch.nom}\n`;

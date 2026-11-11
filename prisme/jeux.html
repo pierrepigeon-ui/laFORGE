@@ -64,9 +64,9 @@ table.jeux tr[data-href]{cursor:pointer} table.jeux tr[data-href]:hover td{backg
   <p class="version"><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p>
 </main>
 
-<script src="timeline.js?v=3.20"></script>
+<script src="timeline.js?v=3.21"></script>
 <script>
-const VERSION = { numero:"1.17", date:"2026-11-11 15:10" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.18", date:"2026-11-11 19:00" };   // à incrémenter à chaque livraison
 // (1.15, 10/11/2026) timeline.js 3.18 (sessions en nombres entiers) ; rien d'autre ne change
 // (1.14, 10/11/2026) fin de l'ancienne configuration (« jeu complet », « + n configurations ») : la ligne ne lit plus que les sous-fiches ; timeline.js 3.17
 // (1.13, 07/11/2026) sur la pastille « all-in », l'écart de note finale avec la base (à partir de 0,1)
@@ -161,9 +161,9 @@ function afficher(){
   const ecart = (a, b) => { if (a == null || b == null) return ""; const v = a - b;
     return `<span class="ecart ${v >= .005 ? "plus" : v <= -.005 ? "moins" : ""}">${Math.abs(v) < .005 ? "±" : v > 0 ? "+" : "−"}${fmt(Math.abs(v))}</span>`; };
   const vie = c => !c ? "—" : c.vie == null ? "∞" : Math.round(c.vie);
-  const cout = k => !k ? "—" : texteCout(k).replace(/ par session.*/, "").replace("moins de ", "< ");
+  const cout = k => texteCoutCourt(k);   // (1.18, 11/11/2026) jusqu'au rangement ; un classique : pour tout exploiter (timeline.js 3.21)
   $("#contenu").innerHTML = `<div class="cadre"><table class="jeux"><thead><tr>${th("nom","Jeu")}${th("note","Note PRISME /5","n")}${profil ? th("pour","Pour vous /5","n") : ""}
-    ${th("apogee","Apogée /10","n col-sec","Le flow le plus haut de la timeline")}${th("vie","Durée de vie (sessions)","n col-sec","∞ : un classique")}${th("cout","Coût (€/session)","n col-sec")}${lecteur ? "<th>Évaluation</th>" : ""}</tr></thead><tbody>
+    ${th("apogee","Apogée /10","n col-sec","Le flow le plus haut de la timeline")}${th("vie","Durée de vie (sessions)","n col-sec","∞ : un classique")}${th("cout","Coût (€/partie)","n col-sec","Jusqu'au rangement ; pour un classique, pour tout exploiter")}${lecteur ? "<th>Évaluation</th>" : ""}</tr></thead><tbody>
     ${L.map(l => {
       const img = l.image ? `<img src="${esc(l.image)}" alt="" loading="lazy">` : `<span class="sans-image"></span>`;
       const lien = "jeu.html?jeu=" + encodeURIComponent(l.ouvre.code);

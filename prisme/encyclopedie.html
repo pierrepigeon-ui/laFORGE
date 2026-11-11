@@ -134,10 +134,10 @@ mark{background:#FFE58A;color:#1B2430;border-radius:2px}
 </div>
 <div style="max-width:1240px;margin:0 auto;padding:0 20px 30px"><p class="version"><span id="credit"></span><br><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p></div>
 
-<script src="timeline.js?v=3.20"></script>
+<script src="timeline.js?v=3.21"></script>
 <script src="totems.js?v=4"></script>
 <script>
-const VERSION = { numero:"3.22", date:"2026-11-11 15:10" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.23", date:"2026-11-11 19:00" };   // à incrémenter à chaque livraison
 // (3.20, 10/11/2026) timeline.js 3.18 (sessions en nombres entiers) ; rien d'autre ne change
 // (3.19, 10/11/2026) timeline.js appelé à sa version courante, 3.17 ; rien d'autre ne change
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
@@ -465,16 +465,18 @@ function sectionTemps(toc){
     <div class="texte"><ul>
       <li><b>α, l'apogée</b> : le premier jalon où le flow atteint son maximum.</li>
       <li><b>β, le début du déclin</b> : le jalon d'où le flow ne fait plus que baisser jusqu'au bout (une variation de moins de 0,05 compte comme un plateau). Un jeu peut creuser puis rebondir pendant l'apprentissage : β marque la dernière descente.</li>
-      <li><b>γ, le rangement</b> : l'arrivée au plancher de nostalgie, en sessions ; c'est la fin de la durée de vie. Un classique n'a pas de γ : il n'atteint jamais son plancher.</li>
+      <li><b>γ, le rangement</b> : le premier moment où le flow passe sous ${String(REGLAGES_COURBE.seuil_rangement).replace(".", ",")}/10 (réglage seuil_rangement), en sessions ; c'est la fin de la durée de vie. Un classique n'a pas de γ : son flow ne passe jamais sous ce seuil. β vient au moins une session après α, γ au moins une session après β ; quand le déclin part de l'apogée, la courbe la tient une session.</li>
       <li><b>ω, l'abandon</b> : un flow négatif signale une purge, le jeu est lâché sur-le-champ. La courbe s'arrête à 0 : les sous-phases suivantes ne sont jamais vécues.</li></ul></div>
 
     <h3 class="section" id="t-vie">Le Souvenir et la durée de vie</h3>
     <div class="texte"><p>Après le jalon 7, la courbe se poursuit <b>en pointillés</b> avec la formule de la phase III (sauf abandon ω : elle s'arrête). Elle descend jusqu'au <b>plancher de nostalgie</b> : un très bon jeu qu'on a fini, on le ressort une fois par an, parce qu'il a marqué par son thème ou ses mécaniques.</p></div>
     <div class="formule">marque = max(0, max(THEM, MECA) − ${PLANCHER_SEUIL}) ; plancher = min(marque, flow au jalon 7)</div>
     <div class="texte"><p>Le seuil de ${PLANCHER_SEUIL} trie les vraies marques : un thème moyen ne laisse aucune nostalgie. Le plancher arrête la chute, il ne relève jamais la courbe.</p>
-    <p>La <b>durée de vie</b> est le nombre de sessions jusqu'à ce que le jeu sorte de la vie active du joueur : par <b>abandon</b> (le flow passe sous 0) ou par <b>arrivée au plancher</b> (fini, rangé, ressorti par nostalgie). Un jeu qui n'atteint jamais son plancher est un <b>classique</b>. Moins de 10 sessions : un jeu éphémère ; au-delà, durable.</p>
+    <p><b>La lassitude</b> (11/11/2026), pour tout jeu, à partir du jalon 4 : le flow tend vers un <b>fond</b>, d'autant plus vite que sa demi-vie est courte ; l'usure de VAR s'y ajoute.</p></div>
+    <div class="formule">fond = flow au jalon 4 × r², r = moy(MECA, PROF, LIEN) / 5 ; demi-vie = ${String(REGLAGES_COURBE.demi_vie_base).replace(".", ",")} × (1 + VAR1) × facteur de profondeur × √(max(1, contenu / 15)) ; flow' = fond + (flow − fond) / (1 + m / demi-vie), m = sessions depuis le jalon 4</div>
+    <div class="texte"><p>La <b>durée de vie</b> est le nombre de sessions jusqu'à ce que le jeu sorte de la vie active du joueur : par <b>abandon</b> (le flow passe sous 0) ou par <b>rangement</b> (le flow passe sous ${String(REGLAGES_COURBE.seuil_rangement).replace(".", ",")}/10). Le plancher de nostalgie ne décide plus de la durée de vie : il dessine le Souvenir, après le rangement. Un jeu qui n'est jamais rangé est un <b>classique</b>. Moins de 10 sessions : un jeu éphémère ; au-delà, durable.</p>
     <p><b>Contenu à usage unique</b> (campagne, scénarios qu'on ne rejoue pas) : une fois tout joué, le jeu est rangé ; la durée de vie ne dépasse pas les parties pour tout exploiter. <b>Configurations</b> : une fiche peut évaluer le jeu avec ses extensions ; elle a sa propre courbe, à côté de celle de la boîte de base. Quand une configuration « toutes extensions » existe, <b>le jeu complet devient la référence</b> : c'est lui que lisent la liste des jeux, la note pour vous, les profils et la rosace ; la boîte de base reste consultable.</p>
-    <p><b>Coût par session</b> (indicatif) : prix ÷ durée de vie calculée (le plafond de 50 sessions est levé depuis le 18/10/2026 : la durée de vie suit le contenu et la profondeur) ; un classique, jamais rangé, est compté sur ${HORIZON_CLASSIQUE} sessions. Pas de coût pour un jeu abandonné avant sa première session. Avec la durée de la fiche, on en tire un coût de l'heure.${(() => { const k = coutParPartie(55, c); return k ? ` Heat, à 55 € : ${esc(texteCout(k))}.` : ""; })()}</p></div>
+    <p><b>Coût par partie</b> (indicatif, 11/11/2026), en deux chiffres : jusqu'au rangement (prix ÷ durée de vie ; aucun pour un classique) et pour tout exploiter (prix ÷ parties pour tout exploiter). Pas de coût pour un jeu abandonné avant sa première session. Avec la durée de la fiche, on en tire un coût de l'heure.${(() => { const k = coutParPartie(55, c); return k ? ` Heat, à 55 € : ${esc(texteCout(k))}.` : ""; })()}</p></div>
     <div class="defile"><table class="ref"><tr><th>Jeu de référence</th><th>Gloomhaven</th><th>Heat</th><th>Flip 7</th></tr>
       <tr><th>Durée de vie</th><td>≈ 95 sessions : la campagne finie, rangé</td><td>jamais : un classique</td><td>≈ 2 sessions, abandon</td></tr></table></div>
 
@@ -509,8 +511,8 @@ const GLOSSAIRE = [
   ["Flow", "Le plaisir net à un jalon : stimulation moins friction, sur 10."],
   ["Élan d'achat", "Ce que le prix payé pousse encore à jouer ; il s'éteint à mesure des sessions."],
   ["Estompement", "À partir du jalon 4, VAR perd 5 % par session (moins, s'il y a plus de 15 parties à exploiter), et la charge (POID1, MAN1) monte d'autant."],
-  ["α, β, γ, ω", "L'apogée de la courbe, le début de sa chute, le palier où elle se stabilise, l'abandon (flow négatif)."],
-  ["Durée de vie", "Le nombre de sessions jusqu'à l'abandon ou jusqu'au plancher de nostalgie ; infinie pour un classique."],
+  ["α, β, γ, ω", "L'apogée de la courbe, le début de sa chute, le rangement, l'abandon (flow négatif)."],
+  ["Durée de vie", "Le nombre de sessions jusqu'à l'abandon ou jusqu'au rangement (le flow passe sous le seuil de rangement) ; infinie pour un classique."],
   ["Plancher de nostalgie", "Le flow sous lequel un jeu fini ne descend plus : on le ressort une fois par an, s'il a marqué par son thème ou ses mécaniques."],
   ["Trait d'un moteur", "À quel point le jeu est tourné vers ce moteur, lu dans les axes 1 ; il devient une gêne pour qui rejette ce moteur."],
   ["Spectromètre", "Le jeu recalculé pour chacun des 60 profils : une note et une courbe par joueur type."],

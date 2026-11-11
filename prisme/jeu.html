@@ -190,10 +190,10 @@ details.pli.notion > summary strong{color:var(--n-titre)}
   <p class="version"><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p>
 </main>
 
-<script src="timeline.js?v=3.20"></script>
+<script src="timeline.js?v=3.21"></script>
 <script src="selecteurs.js?v=1.10"></script>
 <script>
-const VERSION = { numero:"2.24", date:"2026-11-11 17:30" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"2.25", date:"2026-11-11 19:00" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -242,10 +242,10 @@ const ICONES = {
   page:'<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M6 2.8h8.5L19 7.3v13.9H6z"/><path d="M14.5 2.8v4.5H19M9 12h7M9 15.5h7M9 19h4"/></svg>' };
 // (2.18) la gamme de prix de la description : textePrix() de selecteurs.js, « G · jusqu'à 200 € · les grandes occasions »
 // le coût en court, pour la pastille : « 0,06 € la partie »
+// (2.25, 11/11/2026) le coût jusqu'au rangement (timeline.js 3.21) ; un classique : le coût pour tout exploiter
 function coutCourt(k){
   if (!k) return null;
-  const e = v => v < 1 ? v.toFixed(2).replace(".", ",") : v < 10 ? v.toFixed(1).replace(".", ",") : String(Math.round(v));
-  return `${k.classique ? "moins de " : ""}${e(k.parPartie)} € la partie`;
+  return k.rangement ? `${euros(k.rangement.parPartie)} € la partie` : `${euros(k.exploiter.parPartie)} € la partie pour tout exploiter`;
 }
 // le verdict : la première phrase du paragraphe qui suit le titre « Verdict » de l'article publié
 function verdictDe(html){
@@ -439,7 +439,7 @@ async function afficher(user){
       <figure class="courbe-box" style="margin:10px 0">${courbeSVG(c, jeu.nom)}<figcaption>En haut, les jalons ; en bas, les sessions cumulées. Pointillés : le Souvenir, qui descend jusqu'au plancher de nostalgie.</figcaption></figure>
       ${R.cPour ? `<h3 style="font:600 18px var(--serif);margin:16px 0 4px">Pour vous</h3><div class="bandeau">${esc(syntheseTimeline(R.cPour))}</div>
         <figure class="courbe-box" style="margin:10px 0">${courbeSVG(R.cPour, jeu.nom, c)}<figcaption>Votre courbe, d'après votre profil de joueur ; en pointillé gris, la courbe pour tous.</figcaption></figure>` : ""}
-      <p class="discret">Coût par session : <b>${esc(texteCout(R.cout))}</b> · Coût d'effort <span class="proto">proto</span> : <b>${fmt(R.effort)}/5</b> (règles, manuels, logistique, hasard, renouvellement, attente).</p>`
+      <p class="discret">Coût par partie : <b>${esc(texteCout(R.cout))}</b> · Coût d'effort <span class="proto">proto</span> : <b>${fmt(R.effort)}/5</b> (règles, manuels, logistique, hasard, renouvellement, attente).</p>`
     : `<p class="discret">La timeline paraîtra quand toutes les paires utiles seront notées.</p>`;
   const nbPaires = R ? R.e.paires.length : 0;
   h += `<div class="detail" id="le-detail"><div class="surtitre">Le détail</div>
