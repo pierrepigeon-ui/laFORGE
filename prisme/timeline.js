@@ -1,7 +1,8 @@
 /* PRISME — timeline du jeu : jalons, durées, flow, α β γ ω, durée de vie.
    Module partagé par l'encyclopédie et l'outil d'évaluation. Méthode arrêtée le 08/10/2026 (jeu d'essai : Heat) ; modèle à 12 paires le 11/10/2026 ;
    formules refaites phase par phase le 12/10/2026 avec trois jeux de référence (Gloomhaven, Heat, Flip 7). L'unité est la session. */
-const TIMELINE_VERSION = { numero:"3.18", date:"2026-11-10 18:13" };   // à incrémenter à chaque livraison
+const TIMELINE_VERSION = { numero:"3.19", date:"2026-11-11 13:05" };   // à incrémenter à chaque livraison
+// (3.19, 11/11/2026) libellés de la ligne du bas adoucis, « Déçoit » jugé trop raide pour des notes autour de 2/5.
 // (3.18, 10/11/2026) les sessions en nombres entiers à l'affichage (texteSessions, courtSessions) : sous une session, « avant la première
 // session » (sur un axe : « 0 ») ; à partir d'une session, à l'unité ; au-delà de 100, à la dizaine. Les calculs gardent leurs fractions.
 // apresSessions(), environSessions() et dureeSessions() gardent les phrases correctes. « Pour qui » : textePourQui(), la grille des neuf libellés
@@ -529,7 +530,7 @@ const POUR_QUI_DEFAUT = { seuil_satisfaction:3, ecart_profils_net:.3, ecart_prof
 const POUR_QUI = [
   ["Plaît largement", "Plaît à tous, davantage à certains", "Plaît à tous, enthousiasme certains"],
   ["Avis mitigé pour tous", "Plaît à certains profils, pas aux autres", "Divise : adoré par certains, rejeté par d'autres"],
-  ["Déçoit largement", "Déçoit, un peu moins certains profils", "Déçoit, sauf quelques profils plus indulgents"]];
+  ["Ne comble aucun profil", "Ne comble aucun profil, certains s'en accommodent mieux", "Ne comble aucun profil, quelques-uns s'y retrouvent"]];
 function textePourQui(max, min, reglages){
   const lu = k => { const v = reglages?.[k]; return v == null || v === "" || Number.isNaN(Number(v)) ? POUR_QUI_DEFAUT[k] : Number(v); };
   const seuil = lu("seuil_satisfaction"), net = lu("ecart_profils_net"), fort = lu("ecart_profils_fort"), e = max - min;
