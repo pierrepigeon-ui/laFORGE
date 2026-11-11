@@ -86,7 +86,7 @@ ul.forts{margin:0;padding-left:18px;font-size:14px;display:flex;flex-direction:c
 .vie{display:flex;flex-direction:column;gap:12px}
 .vie .entete-vie{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px}
 .defile{overflow-x:auto}
-svg.petite{display:block;width:100%;max-width:760px;min-width:480px}
+.vie-infos{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}   /* (2.27) la carte en texte, sans petit graphique */
 
 /* 4. le détail */
 .detail{display:flex;flex-direction:column;gap:8px}
@@ -158,7 +158,6 @@ ul.m-liste li{border-bottom:1px solid var(--line);padding:7px 0}
 .technique .fait{white-space:nowrap}   /* (2.21) un élément de la ligne technique ne se coupe jamais */
 .btn svg.ico{width:16px;height:16px;flex:none;margin-right:7px}
 table.paires.fixe{table-layout:fixed;min-width:520px} table.paires.fixe td{overflow-wrap:anywhere}   /* (2.21) mêmes colonnes d'un chapitre à l'autre */
-.vie .legende-flow{margin:0;font-size:13px;color:var(--muted)}
 .puces{align-items:center}   /* (2.19) des pastilles de tailles différentes, centrées sur leur ligne */
 .ligne-tete{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px} .ligne-tete > .etiq{font-size:13px;font-weight:600}
 #carte-theme .titre-carte{font:700 24px/1.25 var(--serif);color:var(--n-titre)}   /* (2.19) le sujet, en titre de la carte */
@@ -190,10 +189,10 @@ details.pli.notion > summary strong{color:var(--n-titre)}
   <p class="version"><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p>
 </main>
 
-<script src="timeline.js?v=3.22"></script>
+<script src="timeline.js?v=3.23"></script>
 <script src="selecteurs.js?v=1.10"></script>
 <script>
-const VERSION = { numero:"2.26", date:"2026-11-11 20:30" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"2.27", date:"2026-11-11 22:00" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -265,19 +264,6 @@ function articlePropre(html){
 }
 // la courbe en petit : les huit jalons à intervalles réguliers, l'apogée marquée
 // (2.21) une échelle verticale fixe de 0 à 10, graduée, pour que les jeux se comparent ; sous chaque jalon, les sessions cumulées
-function courbePetite(c, nom){
-  const W = 560, H = 200, g = 34, dr = 24, haut = 14, bas = 58, fin = c.omega ?? 7, yMax = 10;
-  const X = j => g + j * (W - g - dr) / 7, Y = v => H - bas - Math.max(0, Math.min(yMax, v)) / yMax * (H - bas - haut);
-  let s = `<svg class="petite" viewBox="0 0 ${W} ${H}" role="img" aria-label="Courbe du flow de ${esc(nom)} au fil des jalons, sur 10">`;
-  for (let v = 0; v <= yMax; v += 2) s += `<line x1="${g}" y1="${Y(v)}" x2="${W - dr}" y2="${Y(v)}" stroke="var(--line)" stroke-width="1"${v ? ' stroke-dasharray="2 4"' : ""}/><text x="${g - 8}" y="${Y(v) + 4}" font-size="11" text-anchor="end" fill="var(--muted)">${v}</text>`;
-  s += `<line x1="${g}" y1="${H - bas}" x2="${W - dr}" y2="${H - bas}" stroke="var(--trait)" stroke-width="1"/>`;
-  s += `<path d="${[...Array(fin + 1).keys()].map(j => `${j ? "L" : "M"}${X(j).toFixed(1)} ${Y(c.y[j]).toFixed(1)}`).join(" ")}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`;
-  s += `<circle cx="${X(c.alpha)}" cy="${Y(c.y[c.alpha])}" r="5" fill="var(--accent)"><title>Apogée : ${fmt(c.y[c.alpha])}/10</title></circle>`;
-  JALONS.forEach((J, j) => s += `<text x="${X(j)}" y="${H - bas + 22}" font-size="11" text-anchor="middle" fill="${j === c.alpha ? "var(--ink)" : "var(--muted)"}"${j === c.alpha ? ' font-weight="600"' : ""}><title>${esc(J.quoi)}</title>${esc(J.nom)}</text>`
-    + `<text x="${X(j)}" y="${H - bas + 38}" font-size="10.5" text-anchor="middle" fill="var(--muted)"><title>Sessions cumulées pour atteindre ce jalon</title>${esc(courtSessions(c.N[j]))}</text>`);
-  s += `<text x="${W - dr}" y="${H - 4}" font-size="10.5" text-anchor="end" fill="var(--muted)">sessions cumulées</text>`;
-  return s + `</svg>`;
-}
 const flecheSVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>`;
 const pli = (titre, sous, corps, id, n) => `<details class="pli${n ? " " + notion(n) : ""}"${id ? ` id="${id}"` : ""}><summary><span><strong>${esc(titre)}</strong> <span class="discret">· ${esc(sous)}</span></span>${flecheSVG}</summary><div class="contenu">${corps}</div></details>`;
 
@@ -305,6 +291,7 @@ async function afficher(user){
   const T0 = NIVEAUX[role] >= NIVEAUX.lecteur ? ((await sb.from("prisme_evaluations").select("*").eq("jeu", code)).data || []) : [];
   const F = d.fichesSousFiches.filter(f => f.jeu === code), R = resumeJeu(F, d.paires, d.axes, profil, d.src);
   const titre = esc(jeu.nom);
+  const nomPhrase = nomJeuGlobal(code, d.jeux) || jeu.nom;   // (2.27) le nom du jeu dans les phrases, sans « (all-in) »
 
   // les boutons d'action : l'évaluation (mêmes rôles qu'en 1.7), les informations du jeu (éditeur et propriétaire)
   const boutons = [];
@@ -411,9 +398,14 @@ async function afficher(user){
   const deux = !!sousFiches;
   if (deux) h += `<div class="carte ecarts" id="carte-ecarts"><div class="surtitre">Ce que changent les extensions</div><p class="discret" style="margin:0">Chargement…</p></div>`;
 
-  // 3. sa vie dans le temps, en petit
+  // 3. sa vie dans le temps, en texte (2.27, 11/11/2026 : plus de petit graphique ; la courbe est dans « La timeline complète »)
+  const dureeVie = c => c.omega != null ? `abandonné ${c.vie < 1 ? "avant la première partie" : `au bout de ${partiesTexte(c.vie)}`}`
+    : c.vie == null ? "un classique, jamais rangé" : c.epuise ? `rangé quand tout son contenu est joué, après ${partiesTexte(c.vie)} (un jeu ${c.classe})`
+    : `rangé au bout d'environ ${partiesTexte(c.vie)} (un jeu ${c.classe})`;
   h += `<div class="carte vie" id="carte-vie"><div class="surtitre">Sa vie dans le temps</div>
-    ${c ? `<div class="defile">${courbePetite(c, jeu.nom)}</div><p class="legende-flow">Le flow, c'est le plaisir de jeu, sur 10 : ce que le jeu stimule moins ce qu'il coûte. L'apogée est son moment le plus haut.</p><p class="discret" style="margin:0">${esc(syntheseTimeline(c))}</p>`
+    ${c ? `<p style="margin:0" title="${esc(syntheseTechnique(c))}">${esc(syntheseTimeline(c, nomPhrase))}</p>
+      <ul class="vie-infos"><li><b>Durée de vie</b> : ${esc(dureeVie(c))}</li><li><b>Coût par partie</b> : ${R.cout ? esc(texteCout(R.cout)) : "il faut connaître le prix"}</li></ul>
+      <p class="discret" style="margin:0">La courbe est dans « La timeline complète », plus bas.</p>`
       : `<p class="discret" style="margin:0">${R ? "La timeline paraîtra quand toutes les paires utiles seront notées." : "La timeline paraîtra dès qu'une fiche sera déclarée finale."}</p>`}</div>`;
 
   // 4. le détail, dépliable
@@ -435,9 +427,10 @@ async function afficher(user){
       `<tr><td class="n discret">${i + 1}</td><td>${esc(maj(x.t.nom))} <span class="m-code">${esc(x.t.code)}</span></td><td class="n"><b>${fmt(x.note)}</b></td></tr>`).join("")}</tbody></table>
       <p class="discret">Chaque note est la moyenne des trois profils du tempérament.</p>`
     : `<p class="discret">Les notes par profil paraîtront quand toutes les paires utiles seront notées.</p>`;
-  const timeline = c ? `<div class="bandeau">${esc(syntheseTimeline(c))}</div>
-      <figure class="courbe-box" style="margin:10px 0">${courbeSVG(c, jeu.nom)}<figcaption>En haut, les jalons ; en bas, les sessions cumulées. Pointillés : le Souvenir, qui descend jusqu'au plancher de nostalgie.</figcaption></figure>
-      ${R.cPour ? `<h3 style="font:600 18px var(--serif);margin:16px 0 4px">Pour vous</h3><div class="bandeau">${esc(syntheseTimeline(R.cPour))}</div>
+  // (2.27) la synthèse en clair, le détail du calcul au survol ; la légende pour un joueur (LEGENDE_COURBE, timeline.js 3.23)
+  const timeline = c ? `<div class="bandeau" title="${esc(syntheseTechnique(c))}">${esc(syntheseTimeline(c, nomPhrase))}</div>
+      <figure class="courbe-box" style="margin:10px 0">${courbeSVG(c, jeu.nom)}<figcaption>${esc(LEGENDE_COURBE)}</figcaption></figure>
+      ${R.cPour ? `<h3 style="font:600 18px var(--serif);margin:16px 0 4px">Pour vous</h3><div class="bandeau" title="${esc(syntheseTechnique(R.cPour))}">${esc(syntheseTimeline(R.cPour, nomPhrase))}</div>
         <figure class="courbe-box" style="margin:10px 0">${courbeSVG(R.cPour, jeu.nom, c)}<figcaption>Votre courbe, d'après votre profil de joueur ; en pointillé gris, la courbe pour tous.</figcaption></figure>` : ""}
       <p class="discret">Coût par partie : <b>${esc(texteCout(R.cout))}</b> · Coût d'effort <span class="proto">proto</span> : <b>${fmt(R.effort)}/5</b> (règles, manuels, logistique, hasard, renouvellement, attente).</p>`
     : `<p class="discret">La timeline paraîtra quand toutes les paires utiles seront notées.</p>`;
@@ -447,7 +440,7 @@ async function afficher(user){
     ${pli("Pour chaque profil", "les 20 tempéraments, du mieux au moins servi", profils)}
     ${pli("Tous les mécanismes", "avec leur définition", `<div id="detail-meca"><p class="discret">Chargement…</p></div>`, null, "meca")}
     ${pli("Tous les thèmes", "par facette, avec leur définition", `<div id="detail-themes"><p class="discret">Chargement…</p></div>`, null, "theme")}
-    ${pli("La timeline complète", "sessions, usure, coût par partie", timeline)}
+    ${pli("La timeline complète", "parties jouées, usure, coût par partie", timeline)}
     ${article ? pli("L'article", "la critique complète", `<div class="article">${articlePropre(article)}</div>`) : ""}
   </div>`;
   $("#contenu").innerHTML = h;

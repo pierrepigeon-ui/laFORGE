@@ -134,10 +134,10 @@ mark{background:#FFE58A;color:#1B2430;border-radius:2px}
 </div>
 <div style="max-width:1240px;margin:0 auto;padding:0 20px 30px"><p class="version"><span id="credit"></span><br><span id="version"></span><br><span class="droits">© 2026 Pierre Pigeon, tous droits réservés · <a href="https://github.com/pierrepigeon-ui/laFORGE/blob/main/LICENSE" target="_blank" rel="noopener" style="color:inherit">conditions</a></span></p></div>
 
-<script src="timeline.js?v=3.22"></script>
+<script src="timeline.js?v=3.23"></script>
 <script src="totems.js?v=4"></script>
 <script>
-const VERSION = { numero:"3.24", date:"2026-11-11 20:30" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.25", date:"2026-11-11 22:00" };   // à incrémenter à chaque livraison
 // (3.20, 10/11/2026) timeline.js 3.18 (sessions en nombres entiers) ; rien d'autre ne change
 // (3.19, 10/11/2026) timeline.js appelé à sa version courante, 3.17 ; rien d'autre ne change
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
@@ -491,7 +491,7 @@ function sectionTemps(toc){
       <tr><th>Élan</th><td>—</td>${c.det.slice(1).map(t => `<td>${fmt(t.el, 2)}</td>`).join("")}</tr>
       <tr><th>Flow</th>${c.y.map((v, j) => `<td class="${j === c.alpha ? "eq" : ""}"><b>${fmt(v, 2)}</b>${j && c.det[j].retenu ? "*" : ""}</td>`).join("")}</tr></table></div>
     ${c.det.some(t => t?.retenu) ? `<p class="vide">* Flow retenu : il ne remonte plus une fois le jeu maîtrisé.</p>` : ""}
-    <div class="encadre"><b>${esc(syntheseTimeline(c))}</b></div>`;
+    <div class="encadre"><b>${esc(syntheseTimeline(c, HEAT.nom))}</b><br><small>${esc(syntheseTechnique(c))}</small></div>`;
   return h;
 }
 
