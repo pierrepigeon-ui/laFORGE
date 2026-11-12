@@ -272,7 +272,7 @@ table.j td{border-bottom:1px solid var(--line);padding:8px 10px;vertical-align:t
 
 <script>
 /* ================= configuration ================= */
-const VERSION = { numero:"1.40", date:"2026-11-12 18:46" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.41", date:"2026-11-12 21:10" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 
@@ -379,7 +379,7 @@ async function demarrer(){
   $("#tab-personnes").classList.toggle("hidden", !["proprietaire", "administrateur"].includes(role));
   $("#tab-resultats").classList.toggle("hidden", !["proprietaire", "administrateur"].includes(role));
   $("#tab-saisie").classList.toggle("hidden", !["proprietaire", "administrateur"].includes(role));
-  $("#tab-catalogue").classList.toggle("hidden", !["proprietaire", "administrateur", "editeur"].includes(role));
+  $("#tab-catalogue").classList.toggle("hidden", !["proprietaire", "administrateur", "editeur", "evaluateur"].includes(role));
   if (role === "proprietaire") infoSauvegarde();
   if (!role){
     $("#editor-host").innerHTML = `<p class="empty">Ton compte est bien connecté, mais aucun rôle ne lui est attribué dans Flamme Bleue. Le propriétaire doit te déclarer dans la table des rôles.</p>`;
@@ -802,10 +802,10 @@ $("#form-mdp").addEventListener("submit", async e => {
 /* ================= personnes (propriétaire et administrateurs) =================
    Accès communs de la Forge (12/11/2026) : les rôles viennent de forge_roles ; « invité » devient « lecteur » ;
    un compte sans rôle Flamme Bleue est un « membre ». Seul le propriétaire nomme ou modifie un administrateur. */
-const ROLES = { proprietaire:"propriétaire", administrateur:"administrateur", editeur:"éditeur", lecteur:"lecteur" };
+const ROLES = { proprietaire:"propriétaire", administrateur:"administrateur", editeur:"éditeur", evaluateur:"évaluateur", lecteur:"lecteur" };
 const normRole = r => r === "invite" ? "lecteur" : r;                    // transition : flamme_personnes() renvoie encore « invite »
 const estProprio = () => state.role === "proprietaire";
-const rolesAttribuables = () => estProprio() ? ["administrateur", "editeur", "lecteur"] : ["editeur", "lecteur"];
+const rolesAttribuables = () => estProprio() ? ["administrateur", "editeur", "evaluateur", "lecteur"] : ["editeur", "evaluateur", "lecteur"];
 const selRole = (v, attrs = "", options = rolesAttribuables()) => {
   const liste = options.includes(v) || !v ? options : [v, ...options];   // le rôle actuel reste affiché, même s'il n'est pas attribuable
   return `<select ${attrs}>${liste.map(k => `<option value="${k}"${k === v ? " selected" : ""}>${ROLES[k]}</option>`).join("")}</select>`;

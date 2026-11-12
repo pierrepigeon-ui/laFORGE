@@ -115,7 +115,7 @@ dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);c
    - profil d'autorité : chacun et la moyenne lui sont comparés de la même façon.
    Sources : ses résultats, profils types, scores saisis ; le catalogue pour éditeurs et propriétaire ; tous les résultats pour le propriétaire.
    ===================================================================== */
-const VERSION = { numero:"1.4", date:"2026-11-11 22:31" };
+const VERSION = { numero:"1.5", date:"2026-11-12 21:10" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const M = window.FLAMME_MOTEUR;
@@ -160,7 +160,7 @@ async function demarrer(){
   const mesOrgas = res.filter(r => r.user_id === user.id && orga(r));
   if (mesOrgas.length) SOURCES.orgas = { lib: "Mes profils d'organisation", items: mesOrgas.map(r => item(r, r.sujet || "Organisation")) };
   if (["proprietaire", "administrateur"].includes(role)) SOURCES.tous = { lib: "Tous les résultats", items: res.filter(r => r.user_id !== user.id).map(r => item(r, orga(r) ? `${r.sujet || "Organisation"} (selon ${noms[r.user_id] || "?"})` : noms[r.user_id] || "Résultat")) };
-  if (["proprietaire", "administrateur", "editeur"].includes(role)){
+  if (["proprietaire", "administrateur", "editeur", "evaluateur"].includes(role)){
     try { const { data } = await sb.from("flamme_catalogue").select("id,nom,scores,codes").order("nom");
       if (data) SOURCES.cat = { lib: "Catalogue", items: data.map(f => ({ id: "c" + f.id, lib: `${f.nom} — ${E[f.codes?.[0]]?.nom || ""}`, nom: f.nom, scores: f.scores })) }; } catch {}
   }
