@@ -61,6 +61,11 @@ h2{font:600 22px var(--serif);margin:34px 0 4px;padding-bottom:4px;border-bottom
 .voisin{border:1px solid #DDE1E7;border-radius:8px;padding:10px 12px;break-inside:avoid}
 .voisin b{font:600 16px var(--serif);display:block;margin-top:4px} .voisin i{font:italic 14px var(--serif);color:#5B6573;display:block}
 .voisin .pts{font:500 12.5px var(--sans);color:#5B6573;margin-top:6px}
+a.voisin{display:block;color:inherit;text-decoration:none;transition:border-color .15s,box-shadow .15s}
+a.voisin:hover,a.voisin:focus-visible{border-color:#2F6BFF;box-shadow:0 0 0 1px #2F6BFF}
+.voisin .voir{font:500 12px var(--sans);color:#2F6BFF;margin-top:4px;display:block}
+a.lien-profil{color:inherit;text-decoration:underline;text-decoration-color:#2F6BFF}
+@media print{ .voisin .voir{display:none} }
 .histo{display:flex;gap:8px;align-items:flex-end;height:64px;margin:14px 0 4px;max-width:420px}
 .histo div{flex:1;text-align:center;font-size:11.5px}
 .histo span{display:block;border:1px solid #9AA4B2;border-radius:3px 3px 0 0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -124,7 +129,7 @@ dialog h2{border:0} .field{display:block;margin-bottom:12px} .field span{display
    choisis et ordonnés selon les scores de la personne. Les mêmes scores donnent toujours le même portrait.
    Sources : ?resultat=ID, ?catalogue=ID, ?type=CODE ou ?W=..&U=..&B=..&R=..&G=.. (en %).
    ===================================================================== */
-const VERSION = { numero:"1.11", date:"2026-11-11 22:31" };
+const VERSION = { numero:"1.12", date:"2026-11-12 11:08" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const M = window.FLAMME_MOTEUR;
@@ -301,13 +306,14 @@ function rendre(src){
     }
   }
 
-  /* 6. les profils voisins */
+  /* 6. les profils voisins (cliquables : fiche dans l'encyclopédie) */
+  const ficheEncyclo = code => encodeURIComponent("e-" + code.replace(/\//g, "_").replace(/\./g, "-"));
   const voisins = autres.slice(0, 3), loin = st.sections.profils[st.sections.profils.length - 1];
   h += `<h2>Vos profils voisins</h2>
     <p class="chapeau">Selon les situations, votre énergie peut aussi prendre d'autres formes. Voici les profils qui vous sont les plus accessibles après le vôtre.</p>
-    <div class="voisins">${voisins.map(p => `<div class="voisin">${pips(p.code)}<b>${esc(E[p.code]?.nom || p.code)}</b><i>${esc(E[p.code]?.devise || "")}</i>
-      <div class="pts">${FAMILLES[p.famille]} · ${pts(p.score * 100)} · ${BANDES[p.bande]}</div></div>`).join("")}</div>
-    <p class="chapeau" style="margin-top:14px">Le profil le plus éloigné du vôtre : <b>${esc(E[loin.code]?.nom || loin.code)}</b> (${esc(E[loin.code]?.devise || "")}, ${pts(loin.score * 100)}). C'est le plus coûteux à endosser pour vous.</p>
+    <div class="voisins">${voisins.map(p => `<a class="voisin" href="encyclopedie.html#${ficheEncyclo(p.code)}" target="_blank" rel="noopener" title="Lire ce profil dans l'encyclopédie">${pips(p.code)}<b>${esc(E[p.code]?.nom || p.code)}</b><i>${esc(E[p.code]?.devise || "")}</i>
+      <div class="pts">${FAMILLES[p.famille]} · ${pts(p.score * 100)} · ${BANDES[p.bande]}</div><span class="voir">Lire ce profil ↗</span></a>`).join("")}</div>
+    <p class="chapeau" style="margin-top:14px">Le profil le plus éloigné du vôtre : <b><a class="lien-profil" href="encyclopedie.html#${ficheEncyclo(loin.code)}" target="_blank" rel="noopener">${esc(E[loin.code]?.nom || loin.code)}</a></b> (${esc(E[loin.code]?.devise || "")}, ${pts(loin.score * 100)}). C'est le plus coûteux à endosser pour vous.</p>
     <div class="pied"><span>Flamme Bleue — portrait ${VERSION.numero}, moteur ${M.VERSION.numero}</span><span>Portrait assemblé à partir des textes du modèle, selon vos scores</span></div>`;
 
   $("#feuille").innerHTML = h;
