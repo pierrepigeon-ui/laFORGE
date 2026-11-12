@@ -1,0 +1,64 @@
+/* =====================================================================
+   La Forge de l'Arpenteur — bandeau commun (1.0, 13/11/2026)
+   Tenu par la conversation « Supervision ». Chargé par l'accueil et par chaque sous-site.
+   Structure attendue (voir la charte, CLAUDE.md du dépôt, « Bandeau commun ») :
+     <header class="fg-bandeau">
+       [<a class="fg-haut" href="…" title="Remonter d'un niveau">…</a>]
+       <a class="fg-marque" href="…"><logo class="fg-logo"> <span class="fg-nom">Nom</span></a>
+       [<nav class="fg-nav"><a href="…" aria-current="page">…</a>…</nav>]
+       <div class="fg-droite">[a.fg-forge] [button.fg-pastille] [a.fg-btn console] <span class="fg-qui"> <button class="fg-btn"></div>
+     </header>
+     [div.fg-sous : créé par forge_bandeau.js quand la page vient d'une liste]
+   Les couleurs viennent des variables de la page (--ink, --muted, --line, --paper, --panel, --serif, --sans).
+   ===================================================================== */
+.fg-bandeau{--fg-survol:color-mix(in srgb, var(--ink, #1B2430) 7%, transparent);
+  position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:16px;min-height:56px;padding:6px 20px;
+  background:var(--panel, #FFFFFF);border-bottom:1px solid var(--line, #DDE1E7);color:var(--ink, #1B2430);
+  font:13px/1.3 var(--sans, "IBM Plex Sans", "Segoe UI", Arial, sans-serif);box-sizing:border-box}
+.fg-bandeau *{box-sizing:border-box}
+.fg-haut{display:inline-flex;align-items:center;justify-content:center;flex:none;width:28px;height:28px;margin-right:-8px;
+  border-radius:7px;color:var(--muted, #5B6573);text-decoration:none}
+.fg-haut:hover{background:var(--fg-survol);color:var(--ink, #1B2430)}
+.fg-haut svg{width:16px;height:16px}
+.fg-marque{display:inline-flex;align-items:center;gap:9px;flex:none;color:inherit;text-decoration:none}
+.fg-marque .fg-logo{display:block;flex:none;width:24px;height:24px}
+.fg-nom{font:600 19px/1 var(--serif, "Source Serif 4", Georgia, serif);letter-spacing:.01em;white-space:nowrap}
+.fg-nav{display:flex;gap:2px;min-width:0;overflow-x:auto;scrollbar-width:none}
+.fg-nav::-webkit-scrollbar{display:none}
+.fg-nav a{padding:5px 10px;border-radius:6px;color:var(--muted, #5B6573);text-decoration:none;white-space:nowrap}
+.fg-nav a:hover{background:var(--fg-survol);color:var(--ink, #1B2430)}
+.fg-nav a[aria-current="page"], .fg-nav a.actif{background:var(--fg-survol);color:var(--ink, #1B2430)}
+.fg-droite{display:flex;align-items:center;gap:10px;flex:none;margin-left:auto}
+.fg-forge{display:inline-flex;align-items:center;gap:6px;color:var(--muted, #5B6573);text-decoration:none;white-space:nowrap}
+.fg-forge:hover{color:var(--ink, #1B2430);text-decoration:underline}
+.fg-qui{color:var(--muted, #5B6573);white-space:nowrap;max-width:22ch;overflow:hidden;text-overflow:ellipsis}
+.fg-btn{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border:1px solid var(--line, #DDE1E7);border-radius:7px;
+  background:transparent;color:var(--ink, #1B2430);font:inherit;font-weight:500;text-decoration:none;white-space:nowrap;cursor:pointer}
+.fg-btn:hover{background:var(--fg-survol)}
+.fg-btn svg{width:14px;height:14px;flex:none}
+.fg-pastille{padding:4px 11px;border:1px solid var(--braise, #C2541B);border-radius:999px;background:transparent;
+  color:var(--braise, #C2541B);font:inherit;font-weight:500;white-space:nowrap;cursor:pointer}
+.fg-pastille:hover{background:var(--braise, #C2541B);color:var(--panel, #FFFFFF)}
+
+/* sous-bandeau : retour à la liste d'appel, précédent / suivant */
+.fg-sous{--fg-survol:color-mix(in srgb, var(--ink, #1B2430) 7%, transparent);
+  position:sticky;z-index:49;display:flex;align-items:center;gap:14px;min-height:40px;padding:4px 20px;
+  background:var(--paper, #F4F3EF);border-bottom:1px solid var(--line, #DDE1E7);color:var(--ink, #1B2430);
+  font:13px/1.3 var(--sans, "IBM Plex Sans", "Segoe UI", Arial, sans-serif);box-sizing:border-box}
+.fg-sous .fg-titre{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:600 15px/1.2 var(--serif, Georgia, serif)}
+.fg-sous .fg-pos{margin-left:auto;color:var(--muted, #5B6573);white-space:nowrap}
+.fg-sous .fg-pas{padding:4px 8px;border-radius:6px;color:var(--ink, #1B2430);text-decoration:none;white-space:nowrap}
+.fg-sous .fg-pas:hover{background:var(--fg-survol)}
+.fg-sous .fg-pas[aria-disabled="true"]{opacity:.35;pointer-events:none}
+.fg-sous .fg-court{display:none}
+
+@media (max-width:700px){
+  .fg-bandeau{gap:10px;min-height:50px;padding:4px 12px;flex-wrap:wrap}
+  .fg-nom{font-size:17px}
+  .fg-qui{display:none}
+  .fg-nav{order:5;flex-basis:100%}
+  .fg-forge span, .fg-btn .fg-long{display:none}
+  .fg-sous{gap:8px;padding:4px 12px}
+  .fg-sous .fg-long{display:none} .fg-sous .fg-court{display:inline}
+}
+@media print{ .fg-bandeau{position:static} .fg-sous, .fg-haut, .fg-droite{display:none} }

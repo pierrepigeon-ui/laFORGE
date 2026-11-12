@@ -1,6 +1,6 @@
 # CLAUDE.md — Charte du site de la Forge de l'Arpenteur
 
-**Version 0.6 — 28/10/2026 à 23h18**
+**Version 0.7 — 13/11/2026 à 00h36**
 Ce fichier est lu automatiquement par Claude Code au début de chaque séance. Il sert aussi de charte commune aux conversations du projet claude.ai « La Forge de l'Arpenteur ».
 **Le dépôt est public** (GitHub Pages) : rien de personnel ni de secret dans ce fichier.
 Dépôt de référence : GitHub `pierrepigeon-ui/laFORGE`, branche `main` (Forge 1.11 du 26/10/2026).
@@ -94,6 +94,7 @@ Règles :
 - **Sécurité (RLS) toujours active** : sans règle, une table est lisible et modifiable par n'importe qui. Les droits s'appuient sur la fonction de rôle du chantier (`flamme_mon_role()`, `prisme_mon_role()`).
 - **Sauvegarde** : la sauvegarde complète de la base prend toute nouvelle table d'office. Si la console du sous-site a sa propre sauvegarde, y ajouter la table.
 - **Données personnelles** : jamais dans une table lisible sans compte.
+- **Avant de supprimer une fonction**, vérifier qu'aucun déclencheur ni aucune règle ne l'utilise encore : la suppression les emporte en silence.
 
 ```sql
 -- <chantier> — création de <prefixe>_<nom>, <date>, conversation « <nom> »
@@ -132,31 +133,38 @@ select
     where i.indrelid = 'public.<prefixe>_<nom>'::regclass and i.indisprimary) as cle_primaire;
 ```
 
-### Accès : schéma cible (validé le 25/10/2026)
+### Accès (en place depuis le 12/11/2026)
 
-- **`forge_comptes`** : une ligne par personne (compte de connexion, nom, date de création, statut dans la Forge : propriétaire ou membre). Le propriétaire de la Forge l'est partout.
-- **`forge_acces`** : une ligne par personne et par sous-site (compte, sous-site, rôle). Remplace `forge_utilisateurs` et `prisme_roles`, qui deviennent des vues de compatibilité.
-- **`forge_roles`** : référentiel des rôles permis par sous-site, avec libellé et ordre d'affichage.
-  - Flamme Bleue : éditeur, invité
-  - PRISME : éditeur, évaluateur, lecteur ; « joueur » = tout compte arrivant dans PRISME sans rôle attribué
+- **Un seul propriétaire** pour toute la Forge (`forge_comptes.proprietaire`). Il a tous les droits, y compris sur les tables et fonctions `forge_`.
+- **Un rôle par personne et par sous-site** dans `forge_acces`, choisi dans le référentiel `forge_roles`. Échelle commune : `administrateur` (tout le sous-site, droits d'accès compris, sauf la Forge) > `editeur` (contenu en lecture et écriture, sans les paramètres) > `evaluateur` (ses propres évaluations ; coachs pour Flamme Bleue) > `lecteur` (lit tout le contenu). **Membre** = compte sans ligne d'accès (son propre profil). Sans compte : certains outils seulement.
+- Seul le propriétaire nomme ou modifie un administrateur ; un administrateur gère les autres rôles de son sous-site.
+- Fonctions : `forge_role(sous_site)`, `forge_est_proprietaire()`, `forge_est_administrateur(sous_site)`, `forge_attribuer_role(email, sous_site, role, nom)`, `forge_retirer_role(user, sous_site)`. Les fonctions des sous-sites (`flamme_mon_role()`, `prisme_mon_role()`, `*_attribuer_role`, `*_retirer_role`, `*_personnes`) gardent leur nom et s'appuient sur elles ; elles sont tenues par Supervision.
+- `forge_utilisateurs` et `prisme_roles` sont devenues des **vues en lecture seule** (compatibilité des pages). Aucun sous-site ne crée de table de rôles propre : un nouveau rôle s'ajoute dans `forge_roles`, par Supervision.
 
-### Constats (structure complète du 21/10)
+## 4 bis. Bandeau commun (version 1.0 — 13/11/2026)
 
-- Les droits de la Forge (journal, messages, réglages, réinitialisation des mots de passe) reposent aujourd'hui sur « être propriétaire dans Flamme Bleue ».
-- Une cinquantaine de règles de sécurité des tables `flamme_` et `prisme_` passent par `flamme_mon_role()` et `prisme_mon_role()`.
-- Le code des sous-sites lit aussi directement `forge_utilisateurs` (console et en-tête de Flamme Bleue, en-tête de PRISME) et `prisme_roles` (console et en-tête de PRISME).
-- Les fonctions sans préfixe (`attribuer_role`, `mon_role`, `personnes`, `retirer_role`, `reinitialiser_mdp`, `autotest_contenu`) ne font que renvoyer vers les versions préfixées ; aucun code ne les appelle.
+Toutes les pages de la Forge et des sous-sites ont le même bandeau supérieur, toujours visible. Il est défini par deux fichiers communs à la racine, tenus par Supervision : `forge_bandeau.css` et `forge_bandeau.js`. Un sous-site les charge depuis son en-tête (`../forge_bandeau.css?v=1.0`, `../forge_bandeau.js?v=1.0`) et ne redéfinit pas leurs styles.
 
-### Migration, par étapes (sans toucher aux sous-sites)
-
-1. Créer `forge_comptes`, `forge_acces` et `forge_roles`, avec sécurité et journal, et y recopier les comptes et rôles existants.
-2. Ajouter `forge_est_proprietaire()` et `forge_mes_acces()` ; les règles des tables `forge_*` passent sur `forge_est_proprietaire()`.
-3. Réécrire `flamme_mon_role()` et `prisme_mon_role()` : le propriétaire de la Forge reçoit « proprietaire », les autres leur rôle dans `forge_acces`. Même nom, même réponse.
-4. Réécrire les fonctions d'attribution, de retrait et de liste des personnes des deux sous-sites pour qu'elles écrivent dans `forge_acces` : les consoles actuelles continuent de marcher.
-5. Remplacer les tables `forge_utilisateurs` et `prisme_roles` par des vues de même nom et mêmes colonnes, en lecture seule, pour le code qui les lit.
-6. Plus tard, quand la console de la Forge existe : retirer les fonctions sans préfixe, puis les vues de compatibilité.
-
-Le tout s'exécute en une seule transaction, avec un script de retour arrière et des requêtes de contrôle, après une sauvegarde complète.
+Structure, de gauche à droite :
+```html
+<header class="fg-bandeau">
+  <a class="fg-haut" href="…" title="Remonter d'un niveau">…flèche…</a>   <!-- absente sur l'accueil de la Forge -->
+  <a class="fg-marque" href="…accueil du site…"><svg class="fg-logo">…</svg><span class="fg-nom">Nom du site</span></a>
+  <nav class="fg-nav"><a href="…" aria-current="page">Page</a>…</nav>       <!-- menu des pages du site -->
+  <div class="fg-droite">
+    <a class="fg-forge" href="../">…<span>La Forge</span></a>             <!-- sous-sites seulement -->
+    <button class="fg-pastille">2 messages non lus</button>                <!-- propriétaire seulement -->
+    <a class="fg-btn" href="console.html">…<span class="fg-long">Console</span></a>   <!-- si la personne y a droit -->
+    <span class="fg-qui">Nom de la personne</span>
+    <button class="fg-btn">Se déconnecter</button>                          <!-- « Se connecter » pour un visiteur -->
+  </div>
+</header>
+```
+- **Flèche de remontée** : une page intérieure → l'accueil du sous-site ; l'accueil d'un sous-site → la Forge.
+- **Sous-bandeau** « retour à la liste » : quand une fiche est ouverte depuis une liste. La liste appelle `ForgeBandeau.memoriserListe(cle, { ids, libelle, modele })` avant d'ouvrir une fiche et `ForgeBandeau.restaurerListe(cle)` une fois affichée ; la fiche appelle `ForgeBandeau.sousBandeau(cle, { id, titre })`. Le sous-bandeau offre le retour (filtres, tri et position conservés : les filtres doivent figurer dans l'adresse de la liste), le rang (« 12 / 240 ») et Précédent / Suivant.
+- La hauteur totale des bandeaux est publiée dans `--fg-h` (ancres, panneaux collants).
+- Sur téléphone, le menu passe sur une seconde ligne défilante et le sous-bandeau se réduit à « ‹ Liste », « ‹ », « › ».
+- Toute évolution du bandeau se demande à Supervision.
 
 ## 5. Fonctions transverses : état et cible
 
@@ -198,3 +206,4 @@ Le tout s'exécute en une seule transaction, avec un script de retour arrière e
 
 - **25/10/2026 — Flamme Bleue et PRISME** : les comptes, rôles, journal, sauvegarde et mot de passe passent progressivement à la Forge. Ne plus faire évoluer ces fonctions dans vos consoles ; les signaler à la conversation Supervision. Vos fonctions `*_mon_role()` restent disponibles et inchangées pour vous.
 - **28/10/2026 — tous les chantiers** : toute nouvelle table suit le modèle commun du § 4. Une console de sous-site garde à jour la sauvegarde de ses propres tables (c'est de l'entretien), sans y ajouter de fonction commune à la Forge.
+- **13/11/2026 — tous les chantiers** : bandeau commun, voir § 4 bis ; chaque sous-site l’adopte à sa prochaine livraison d’en-tête.

@@ -12,6 +12,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
+<link rel="stylesheet" href="forge_bandeau.css?v=1.0">
 <style>
 :root{--ink:#1B2430;--muted:#5B6573;--line:#DDE1E7;--paper:#F4F3EF;--panel:#FFFFFF;--braise:#C2541B;--err:#B42318;--ok:#1E7A46;
   --serif:"Source Serif 4",Georgia,"Times New Roman",serif;--sans:"IBM Plex Sans","Segoe UI",Arial,sans-serif}
@@ -19,13 +20,8 @@
 *{box-sizing:border-box} html,body{margin:0} body{background:var(--paper);color:var(--ink);font:16px/1.6 var(--sans)}
 button,input,textarea{font:inherit;color:inherit} :focus-visible{outline:2px solid #3B6FE0;outline-offset:2px} .hidden{display:none!important}
 a{color:inherit}
-.barre{display:flex;justify-content:flex-end;gap:10px;align-items:center;padding:12px 20px;font-size:13px;color:var(--muted)}
 .btn{display:inline-block;border:1px solid var(--ink);background:var(--ink);color:var(--panel);padding:11px 20px;border-radius:7px;cursor:pointer;font-weight:500;text-decoration:none}
 .btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)} .btn.petit{padding:6px 12px;font-size:13px}
-/* pastille « messages non lus » (propriétaire) */
-.pastille{border:1px solid var(--braise);background:transparent;color:var(--braise);border-radius:999px;padding:5px 12px;font-size:13px;font-weight:500;cursor:pointer}
-.pastille:hover{background:var(--braise);color:var(--panel)}
-.pastille,.barre .btn{white-space:nowrap} .barre{flex-wrap:wrap}
 #attente{position:fixed;inset:0;display:grid;place-items:center;background:var(--paper);color:var(--muted);font:italic 17px var(--serif);z-index:5}
 .hero{max-width:860px;margin:10px auto 0;padding:24px 24px 6px;text-align:center}
 .enclume{width:84px;height:84px;display:block;margin:0 auto 10px;color:var(--ink)}
@@ -72,9 +68,12 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px}
 <body>
 <div id="attente">La Forge s'allume…</div>
 
-<div class="barre"><button class="pastille hidden" id="pastille-messages" type="button"></button><span id="who"></span>
-  <button class="btn ghost petit hidden" id="btn-login" type="button">Se connecter</button>
-  <button class="btn ghost petit hidden" id="btn-logout" type="button">Se déconnecter</button></div>
+<header class="fg-bandeau">
+  <a class="fg-marque" href="./" title="Accueil de la Forge"><svg class="fg-logo" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="braiseB" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#C2541B"/><stop offset="1" stop-color="#FFC069"/></linearGradient></defs><rect width="100" height="100" rx="22" fill="#1B2430"/><path fill="url(#braiseB)" d="M50 6c3 9 12 13 12 25 0 7-4 12-9 14 2-5 1-10-3-13 1 6-3 9-5 10-1-6-6-7-6-13-4 5-5 11-2 17-6-3-8-9-7-15 2-9 10-12 12-20 2 4 2 9 1 12 4-3 7-10 7-17z"/><path fill="#F4F6F8" d="M14 52h62c0 6 4 10 12 11v5H64c-3 0-5 2-5 5v5l9 5v6H32v-6l9-5v-5c0-3-2-5-5-5H22c-5 0-8-4-8-9z"/></svg><span class="fg-nom">La Forge de l'Arpenteur</span></a>
+  <div class="fg-droite"><button class="fg-pastille hidden" id="pastille-messages" type="button"></button><span class="fg-qui" id="who"></span>
+    <button class="fg-btn hidden" id="btn-login" type="button">Se connecter</button>
+    <button class="fg-btn hidden" id="btn-logout" type="button">Se déconnecter</button></div>
+</header>
 
 <section class="hero">
   <svg class="enclume" viewBox="0 0 100 100" aria-hidden="true">
@@ -157,7 +156,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 14px}
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 
 <script>
-const VERSION = { numero:"1.12", date:"2026-10-30 14:00" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.13", date:"2026-11-13 10:00" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 
@@ -210,14 +209,24 @@ async function aiguiller(session, viaConnexion){
     if (sites.length === 1 && !resteIci){ location.replace(SITES[sites[0]]); return; }
   }
   afficher(sites);
+  chargerNom();
 }
 
+let nomAffiche = "";
+async function chargerNom(){            // le nom de la personne, s'il est connu dans forge_comptes
+  nomAffiche = "";
+  if (!user) return;
+  const { data } = await sb.from("forge_comptes").select("nom").eq("user_id", user.id).maybeSingle();
+  nomAffiche = (data && data.nom) ? data.nom.trim() : "";
+  $("#who").textContent = nomAffiche || user.email;
+  $("#who").title = user.email;
+}
 function afficher(sites){
   $("#porte-flamme").classList.toggle("hidden", !sites.includes("flamme"));
   $("#porte-prisme").classList.toggle("hidden", !sites.includes("prisme"));
   $("#texte-flamme").textContent = user ? "Cinq valeurs, quatre-vingt-dix profils : ce qui vous met en mouvement, avec sa devise et ses armoiries."
                                         : "Passez l'autotest : en vingt tempéraments, votre profil parmi quatre-vingt-dix, avec sa devise et ses armoiries.";
-  $("#who").textContent = user ? user.email : "";
+  $("#who").textContent = user ? (nomAffiche || user.email) : "";
   $("#btn-login").classList.toggle("hidden", !!user);
   $("#btn-logout").classList.toggle("hidden", !user);
   $("#actions-anonyme").classList.toggle("hidden", !!user);
