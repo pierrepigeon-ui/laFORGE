@@ -43,6 +43,7 @@ h1.nom{font:600 38px/1.1 var(--serif);margin:6px 0 4px}
 .citation p{margin:0 0 6px}
 .lecture{font:16.5px/1.65 var(--serif);margin:12px 0}
 .lecture p{margin:0 0 10px}
+.type-note{font-size:14px;color:#1B2430;background:#EEF3FF;border-left:3px solid #2F6BFF;padding:6px 10px;margin:0 0 16px;border-radius:0 6px 6px 0}
 .frontiere{font-size:14px;color:var(--warn);border-left:3px solid var(--warn);padding:4px 10px;margin:0 0 16px}
 h2{font:600 22px var(--serif);margin:34px 0 4px;padding-bottom:4px;border-bottom:1px solid #DDE1E7;break-after:avoid}
 .chapeau{font:15px/1.55 var(--sans);color:#5B6573;margin:6px 0 12px}
@@ -129,7 +130,7 @@ dialog h2{border:0} .field{display:block;margin-bottom:12px} .field span{display
    choisis et ordonnés selon les scores de la personne. Les mêmes scores donnent toujours le même portrait.
    Sources : ?resultat=ID, ?catalogue=ID, ?type=CODE ou ?W=..&U=..&B=..&R=..&G=.. (en %).
    ===================================================================== */
-const VERSION = { numero:"1.12", date:"2026-11-12 11:08" };
+const VERSION = { numero:"1.13", date:"2026-11-12 11:21" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const M = window.FLAMME_MOTEUR;
@@ -224,6 +225,7 @@ function rendre(src){
   let h = `
     <div class="entete"><div class="marque"><svg class="marque-logo" viewBox="2 24 96 74" aria-hidden="true"><defs><clipPath id="fbBp"><rect x="0" y="78" width="100" height="8"/></clipPath></defs><rect x="6" y="86" width="88" height="8" rx="4" fill="#0B2E8A"/><path d="M13 84c-7-7-5-18 9-34-1 14 6 26-1 34zM30 84c-7-9-4-24 13-46-2 18 6 34-1 46zM47 84c-8-10-5-30 15-56-3 22 7 42-1 56zM64 84c-7-9-4-26 13-44-2 18 6 32-1 44zM81 84c-7-7-5-20 10-36-1 14 6 28-1 36z" fill="#1B3FC9"/><path d="M13 84c-7-7-5-18 9-34-1 14 6 26-1 34z" fill="#79C4FF" transform="translate(17 84) scale(0.58) translate(-17 -84)"/><path d="M30 84c-7-9-4-24 13-46-2 18 6 34-1 46z" fill="#79C4FF" transform="translate(36 84) scale(0.58) translate(-36 -84)"/><path d="M47 84c-8-10-5-30 15-56-3 22 7 42-1 56z" fill="#79C4FF" transform="translate(54 84) scale(0.58) translate(-54 -84)"/><path d="M64 84c-7-9-4-26 13-44-2 18 6 32-1 44z" fill="#79C4FF" transform="translate(71 84) scale(0.58) translate(-71 -84)"/><path d="M81 84c-7-7-5-20 10-36-1 14 6 28-1 36z" fill="#79C4FF" transform="translate(87 84) scale(0.58) translate(-87 -84)"/><g clip-path="url(#fbBp)"><path d="M13 84c-7-7-5-18 9-34-1 14 6 26-1 34z" fill="#FFD23F" transform="translate(17 84) scale(0.58) translate(-17 -84)"/><path d="M30 84c-7-9-4-24 13-46-2 18 6 34-1 46z" fill="#FFD23F" transform="translate(36 84) scale(0.58) translate(-36 -84)"/><path d="M47 84c-8-10-5-30 15-56-3 22 7 42-1 56z" fill="#FFD23F" transform="translate(54 84) scale(0.58) translate(-54 -84)"/><path d="M64 84c-7-9-4-26 13-44-2 18 6 32-1 44z" fill="#FFD23F" transform="translate(71 84) scale(0.58) translate(-71 -84)"/><path d="M81 84c-7-7-5-20 10-36-1 14 6 28-1 36z" fill="#FFD23F" transform="translate(87 84) scale(0.58) translate(-87 -84)"/></g></svg>Flamme Bleue<i>Cartographiez votre énergie</i></div>
       <div class="qui">${src.type ? "Portrait du profil type<br>scores types de la famille" : `Portrait détaillé${src.qui ? " — " + esc(src.qui) : ""}<br>${dateFr(src.date)}`}</div></div>
+    ${src.type ? `<p class="type-note">Vous lisez le portrait type de <b>${esc(P.nom || code)}</b>, calculé sur les scores types de sa famille. Il se raconte à la deuxième personne : ce « vous » est celui du profil, pas le vôtre.</p>` : ""}
     ${f.profil.frontiere ? `<p class="frontiere">Profil frontière : vos scores vous placent à égalité entre ${listeEt(codes.map(c => guil(E[c]?.nom || c)))}. Le portrait suit le premier ; les autres sont présentés plus bas, parmi vos profils voisins.</p>` : ""}
     <div class="surtitre">${pips(code)} Profil ${FAMILLES[a.famille] || ""}</div>
     <h1 class="nom">${esc(P.nom || code)}</h1>
