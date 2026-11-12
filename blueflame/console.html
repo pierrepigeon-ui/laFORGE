@@ -272,7 +272,7 @@ table.j td{border-bottom:1px solid var(--line);padding:8px 10px;vertical-align:t
 
 <script>
 /* ================= configuration ================= */
-const VERSION = { numero:"1.39", date:"2026-11-11 22:31" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.40", date:"2026-11-12 18:46" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 
@@ -373,10 +373,10 @@ async function demarrer(){
   state.elements = els || [];
   await chargerDispositifs();
   const nom = state.noms[state.user.id] || state.user.email;
-  $("#who").textContent = `${nom} — ${{proprietaire:"propriétaire",administrateur:"administrateur",editeur:"éditeur",invite:"invité"}[role] || "aucun rôle"}`;
+  $("#who").textContent = `${nom} — ${ROLES[normRole(role)] || "membre"}`;
   $("#tab-journal").classList.toggle("hidden", role !== "proprietaire");
   $("#backup").classList.toggle("hidden", role !== "proprietaire");
-  $("#tab-personnes").classList.toggle("hidden", role !== "proprietaire");
+  $("#tab-personnes").classList.toggle("hidden", !["proprietaire", "administrateur"].includes(role));
   $("#tab-resultats").classList.toggle("hidden", !["proprietaire", "administrateur"].includes(role));
   $("#tab-saisie").classList.toggle("hidden", !["proprietaire", "administrateur"].includes(role));
   $("#tab-catalogue").classList.toggle("hidden", !["proprietaire", "administrateur", "editeur"].includes(role));
@@ -799,9 +799,17 @@ $("#form-mdp").addEventListener("submit", async e => {
   $("#form-mdp").reset();
 });
 
-/* ================= personnes (propriétaire) ================= */
-const ROLES = { proprietaire:"propriétaire", administrateur:"administrateur", editeur:"éditeur", invite:"invité" };
-const selRole = (v, attrs = "") => `<select ${attrs}>${Object.entries(ROLES).map(([k,l]) => `<option value="${k}"${k === v ? " selected" : ""}>${l}</option>`).join("")}</select>`;
+/* ================= personnes (propriétaire et administrateurs) =================
+   Accès communs de la Forge (12/11/2026) : les rôles viennent de forge_roles ; « invité » devient « lecteur » ;
+   un compte sans rôle Flamme Bleue est un « membre ». Seul le propriétaire nomme ou modifie un administrateur. */
+const ROLES = { proprietaire:"propriétaire", administrateur:"administrateur", editeur:"éditeur", lecteur:"lecteur" };
+const normRole = r => r === "invite" ? "lecteur" : r;                    // transition : flamme_personnes() renvoie encore « invite »
+const estProprio = () => state.role === "proprietaire";
+const rolesAttribuables = () => estProprio() ? ["administrateur", "editeur", "lecteur"] : ["editeur", "lecteur"];
+const selRole = (v, attrs = "", options = rolesAttribuables()) => {
+  const liste = options.includes(v) || !v ? options : [v, ...options];   // le rôle actuel reste affiché, même s'il n'est pas attribuable
+  return `<select ${attrs}>${liste.map(k => `<option value="${k}"${k === v ? " selected" : ""}>${ROLES[k]}</option>`).join("")}</select>`;
+};
 async function afficherPersonnes(msg){
   const host = $("#personnes-pane");
   const { data, error } = await sb.rpc("flamme_personnes");
@@ -809,7 +817,7 @@ async function afficherPersonnes(msg){
     host.innerHTML = `<p class="msg err">Liste des comptes impossible à lire : ${esc(error.message)}. As-tu exécuté la migration 04 ?</p>`;
     return;
   }
-  (data || []).forEach(p => { if (p.role) state.noms[p.user_id] = p.nom || p.role; });
+  (data || []).forEach(p => { p.role = normRole(p.role); if (p.role) state.noms[p.user_id] = p.nom || p.role; });
   const date = d => d ? new Date(d).toLocaleString("fr-FR") : "jamais";
   const { data: tousRes } = await sb.from("flamme_resultats").select("user_id");
   const nbRes = {}; (tousRes || []).forEach(r => nbRes[r.user_id] = (nbRes[r.user_id] || 0) + 1);
@@ -820,26 +828,28 @@ async function afficherPersonnes(msg){
     <div class="ajout">
       <label class="field"><span>E-mail du compte</span><input id="aj-email" type="email"></label>
       <label class="field"><span>Nom affiché</span><input id="aj-nom" type="text"></label>
-      <label class="field"><span>Rôle</span>${selRole("invite", 'id="aj-role"')}</label>
+      <label class="field"><span>Rôle</span>${selRole("lecteur", 'id="aj-role"')}</label>
       <button class="btn" id="aj-ok" type="button">Donner l'accès</button>
     </div>
     <p class="msg ${msg?.cls || ""}" id="pers-msg" role="status">${esc(msg?.txt || "")}</p>
     <table class="j"><thead><tr><th>Nom</th><th>E-mail</th><th>Rôle</th><th>Dernière connexion</th><th></th></tr></thead>
     <tbody>${(data || []).map(p => {
       const moi = p.user_id === state.user.id;
+      // modifiable : pas le propriétaire (unique) ; un administrateur ne touche ni aux administrateurs ni à lui-même
+      const fige = p.role === "proprietaire" || (!estProprio() && (p.role === "administrateur" || moi));
       return `<tr data-id="${esc(p.user_id)}" data-email="${esc(p.email)}">
-        <td><input class="p-nom" value="${esc(p.nom)}" placeholder="${p.role ? "" : "sans accès"}"></td>
-        <td>${esc(p.email)}${p.role ? "" : ' <span class="sans-role">(aucun accès)</span>'}</td>
-        <td>${selRole(p.role || "invite", `class="p-role"${moi ? " disabled" : ""}`)}</td>
+        <td><input class="p-nom" value="${esc(p.nom)}" placeholder="${p.role ? "" : "membre"}"${fige && !(moi && estProprio()) ? " disabled" : ""}></td>
+        <td>${esc(p.email)}${p.role ? "" : ' <span class="sans-role">(membre, sans rôle Flamme Bleue)</span>'}</td>
+        <td>${fige ? esc(ROLES[p.role] || p.role) : selRole(p.role || "lecteur", 'class="p-role"')}</td>
         <td>${date(p.derniere_connexion)}</td>
         <td class="row-btn"><button class="btn ghost p-prod" type="button">Production (${nbRes[p.user_id] || 0})</button>
-          <button class="btn ghost p-ok" type="button">${p.role ? "Enregistrer" : "Donner l'accès"}</button>
-          ${p.role && !moi ? '<button class="btn ghost p-retirer" type="button">Retirer l\'accès</button>' : ""}
-          ${!moi ? '<button class="btn ghost p-mdp" type="button">Réinitialiser le mot de passe</button>' : ""}</td></tr>`;}).join("")}</tbody></table>`;
+          ${!fige || (moi && estProprio()) ? `<button class="btn ghost p-ok" type="button">${p.role ? "Enregistrer" : "Donner l'accès"}</button>` : ""}
+          ${p.role && !fige && !moi ? '<button class="btn ghost p-retirer" type="button">Retirer l\'accès</button>' : ""}
+          ${!moi && estProprio() ? '<button class="btn ghost p-mdp" type="button">Réinitialiser le mot de passe</button>' : ""}</td></tr>`;}).join("")}</tbody></table>`;
   $("#aj-ok").addEventListener("click", () => attribuer($("#aj-email").value, $("#aj-role").value, $("#aj-nom").value));
   host.querySelectorAll("tbody tr").forEach(tr => {
-    tr.querySelector(".p-ok").addEventListener("click", () =>
-      attribuer(tr.dataset.email, tr.querySelector(".p-role").value, tr.querySelector(".p-nom").value));
+    tr.querySelector(".p-ok")?.addEventListener("click", () =>
+      attribuer(tr.dataset.email, tr.querySelector(".p-role")?.value || "proprietaire", tr.querySelector(".p-nom").value));
     tr.querySelector(".p-prod").addEventListener("click", () => afficherProduction(tr.dataset.id));
     tr.querySelector(".p-mdp")?.addEventListener("click", async () => {
       const propose = motDePasseProvisoire();
@@ -866,7 +876,8 @@ async function afficherProduction(userId, msg){
   host.innerHTML = '<p class="count">Chargement…</p>';
   const [{ data: res, error: e1 }, { data: jr, error: e2 }] = await Promise.all([
     sb.from("flamme_resultats").select("*").eq("user_id", userId).order("passe_le", { ascending:false }),
-    sb.from("forge_journal").select("*").eq("par", userId).not("table_nom", "like", "prisme_%").order("id", { ascending:false }).limit(200)
+    estProprio() ? sb.from("forge_journal").select("*").eq("par", userId).not("table_nom", "like", "prisme_%").order("id", { ascending:false }).limit(200)
+                 : Promise.resolve({ data: null, error: null })                  // journal de la Forge : propriétaire seulement
   ]);
   if (e1 || e2){ host.innerHTML = `<p class="msg err">Lecture impossible : ${esc((e1 || e2).message)}</p>`; return; }
   const date = d => d ? new Date(d).toLocaleString("fr-FR") : "jamais";
@@ -874,7 +885,7 @@ async function afficherProduction(userId, msg){
   host.innerHTML = `
     <p><button class="btn ghost" id="prod-retour" type="button">Retour aux personnes</button></p>
     <h2>Production de ${esc(nom)}</h2>
-    <p class="aide">${esc(p.email)} — ${esc(ROLES[p.role] || "aucun accès")} — dernière connexion : ${date(p.derniere_connexion)}</p>
+    <p class="aide">${esc(p.email)} — ${esc(ROLES[p.role] || "membre")} — dernière connexion : ${date(p.derniere_connexion)}</p>
     <p class="msg ${msg?.cls || ""}" id="prod-msg" role="status">${esc(msg?.txt || "")}</p>
     <h3 class="sous-titre">Autotests enregistrés (${res.length})</h3>
     ${res.length ? `<table class="j"><thead><tr><th>Date</th><th>Profil</th><th>Scores W U B R G</th><th></th></tr></thead><tbody>
@@ -886,9 +897,9 @@ async function afficherProduction(userId, msg){
           <a class="btn ghost" href="detail.html?resultat=${r.id}" target="_blank">Statistiques</a>
           <button class="btn ghost prod-suppr" type="button" data-id="${r.id}">Effacer</button></td></tr>`).join("")}
       </tbody></table>` : '<p class="empty">Aucun autotest enregistré.</p>'}
-    <h3 class="sous-titre">Modifications dans la base (${jr.length}${jr.length === 200 ? " dernières" : ""})</h3>
+    ${jr === null ? "" : `<h3 class="sous-titre">Modifications dans la base (${jr.length}${jr.length === 200 ? " dernières" : ""})</h3>
     ${jr.length ? `<table class="j"><thead><tr><th>Date</th><th>Par</th><th>Élément</th><th>Changements</th></tr></thead>
-      <tbody>${jr.map(j => ligneJournal(j, true)).join("")}</tbody></table>` : '<p class="empty">Aucune modification du contenu.</p>'}`;
+      <tbody>${jr.map(j => ligneJournal(j, true)).join("")}</tbody></table>` : '<p class="empty">Aucune modification du contenu.</p>'}`}`;
   $("#prod-retour").addEventListener("click", () => afficherPersonnes());
   host.querySelectorAll(".prod-suppr").forEach(b => b.addEventListener("click", async () => {
     const r = res.find(x => String(x.id) === b.dataset.id);

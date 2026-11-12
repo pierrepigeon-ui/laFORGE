@@ -1,5 +1,5 @@
 /* =====================================================================
-   Flamme Bleue — en-tête commun (1.7, 10/11/2026 00h03)
+   Flamme Bleue — en-tête commun (1.8, 12/11/2026 18h46)
    - la couronne de cinq flammes (logo 2026) devant le nom « Flamme Bleue », qui ramène à l'accueil ;
    - un lien « La Forge », avec sa petite enclume, en haut à droite, comme dans PRISME :
      il n'apparaît que si la personne a aussi accès à PRISME (la Forge a alors autre chose à proposer) ;
@@ -14,6 +14,7 @@
    - (1.6) le logo « flamme de gaz » en petit (piste B) : flammes bleu dense, cœur bleu clair, pied jaune ; idem pour l'icône d'onglet.
    - (1.7) à l'impression, la mention de droits en fin de document (les pieds de page sont masqués à l'impression) ;
      sur les fiches et portraits, elle rejoint la ligne de bas de feuille (« .pied ») pour ne pas ajouter de hauteur.
+   - (1.8) accès communs de la Forge : « invité » devient « lecteur » (les deux restent compris pendant la transition).
    À charger APRÈS le script de la page (il réutilise son client Supabase « sb »).
    ===================================================================== */
 (function () {
@@ -112,7 +113,7 @@
     setTimeout(async () => {
       try {
         const { data: role } = await client.rpc("flamme_mon_role");
-        const invite = role === "invite";
+        const invite = role === "lecteur" || role === "invite";
         consoleBtn.querySelector("span").textContent = invite ? "Le modèle" : "Console";
         consoleBtn.title = invite ? "Parcourir les profils du modèle ; changer votre mot de passe" : "Console : le contenu du modèle, le catalogue de profils, les résultats";
         consoleBtn.classList.toggle("cache", !role);
