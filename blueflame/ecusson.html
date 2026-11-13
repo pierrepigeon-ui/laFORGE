@@ -87,7 +87,7 @@ dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);c
   <div style="display:flex;gap:10px"><button class="btn" type="submit">Se connecter</button><button class="btn ghost" type="button" id="login-fermer">Fermer</button></div>
   <p class="msg" id="login-msg" role="status"></p></form></dialog>
 <script>
-const VERSION = { numero:"2.11", date:"2026-11-11 22:31" };
+const VERSION = { numero:"2.12", date:"2026-11-13 01:11" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const M = window.FLAMME_MOTEUR, B = window.FLAMME_BLASON;
@@ -243,10 +243,11 @@ sb.auth.onAuthStateChange(async (_e, session) => {
     const src = await lireSource();
     await window.FLAMME_DISPOSITIFS.charger(sb, E, src.dispositif || new URLSearchParams(location.search).get("dispositif"));   // textes de l'organisation, s'il y a lieu
     await rendre(src);
+    if (src.type) window.FlammeBandeau?.pret.then(B => B.sousBandeau("flamme-profils", { id: src.type, titre: E[src.type]?.nom || src.type }));
     $("#bloque").classList.add("hidden"); ["#page", "#outils"].forEach(s => $(s).classList.remove("hidden"));
   } catch (err){ $("#bloque").textContent = err.message; }
 });
 </script>
-<script src="entete.js?v=1.7"></script>
+<script src="entete.js?v=1.9"></script>
 </body>
 </html>

@@ -1,5 +1,5 @@
 /* =====================================================================
-   Flamme Bleue — en-tête commun (1.8, 12/11/2026 18h46)
+   Flamme Bleue — en-tête commun (1.9, 13/11/2026 01h11)
    - la couronne de cinq flammes (logo 2026) devant le nom « Flamme Bleue », qui ramène à l'accueil ;
    - un lien « La Forge », avec sa petite enclume, en haut à droite, comme dans PRISME :
      il n'apparaît que si la personne a aussi accès à PRISME (la Forge a alors autre chose à proposer) ;
@@ -15,6 +15,11 @@
    - (1.7) à l'impression, la mention de droits en fin de document (les pieds de page sont masqués à l'impression) ;
      sur les fiches et portraits, elle rejoint la ligne de bas de feuille (« .pied ») pour ne pas ajouter de hauteur.
    - (1.8) accès communs de la Forge : « invité » devient « lecteur » (les deux restent compris pendant la transition).
+   - (1.9) le bandeau commun de la Forge (charte § 4 bis) : flèche de remontée, logo et nom, menu des pages,
+     puis La Forge, pastille des messages (propriétaire), Console, nom de la personne et connexion. Les styles viennent de
+     ../forge_bandeau.css et ../forge_bandeau.js (Supervision), chargés ici ; l'ancien en-tête de la page est vidé
+     (la console garde ses onglets en barre de page). Les lignes ci-dessus sur le lien « La Forge », le bouton de console
+     et la ligne figée (1.3, 1.4) sont remplacées par ce bandeau.
    À charger APRÈS le script de la page (il réutilise son client Supabase « sb »).
    ===================================================================== */
 (function () {
@@ -22,26 +27,12 @@
   const FLAMME = '<svg class="fb-flamme" viewBox="2 24 96 74" aria-hidden="true"><defs><clipPath id="fbBp"><rect x="0" y="78" width="100" height="8"/></clipPath></defs><rect x="6" y="86" width="88" height="8" rx="4" fill="var(--fb-socle,#0B2E8A)"/><path d="M13 84c-7-7-5-18 9-34-1 14 6 26-1 34zM30 84c-7-9-4-24 13-46-2 18 6 34-1 46zM47 84c-8-10-5-30 15-56-3 22 7 42-1 56zM64 84c-7-9-4-26 13-44-2 18 6 32-1 44zM81 84c-7-7-5-20 10-36-1 14 6 28-1 36z" fill="#1B3FC9"/><path d="M13 84c-7-7-5-18 9-34-1 14 6 26-1 34z" fill="#79C4FF" transform="translate(17 84) scale(0.58) translate(-17 -84)"/><path d="M30 84c-7-9-4-24 13-46-2 18 6 34-1 46z" fill="#79C4FF" transform="translate(36 84) scale(0.58) translate(-36 -84)"/><path d="M47 84c-8-10-5-30 15-56-3 22 7 42-1 56z" fill="#79C4FF" transform="translate(54 84) scale(0.58) translate(-54 -84)"/><path d="M64 84c-7-9-4-26 13-44-2 18 6 32-1 44z" fill="#79C4FF" transform="translate(71 84) scale(0.58) translate(-71 -84)"/><path d="M81 84c-7-7-5-20 10-36-1 14 6 28-1 36z" fill="#79C4FF" transform="translate(87 84) scale(0.58) translate(-87 -84)"/><g clip-path="url(#fbBp)"><path d="M13 84c-7-7-5-18 9-34-1 14 6 26-1 34z" fill="#FFD23F" transform="translate(17 84) scale(0.58) translate(-17 -84)"/><path d="M30 84c-7-9-4-24 13-46-2 18 6 34-1 46z" fill="#FFD23F" transform="translate(36 84) scale(0.58) translate(-36 -84)"/><path d="M47 84c-8-10-5-30 15-56-3 22 7 42-1 56z" fill="#FFD23F" transform="translate(54 84) scale(0.58) translate(-54 -84)"/><path d="M64 84c-7-9-4-26 13-44-2 18 6 32-1 44z" fill="#FFD23F" transform="translate(71 84) scale(0.58) translate(-71 -84)"/><path d="M81 84c-7-7-5-20 10-36-1 14 6 28-1 36z" fill="#FFD23F" transform="translate(87 84) scale(0.58) translate(-87 -84)"/></g></svg>';
   const css = document.createElement("style");
   css.textContent = `
-    .wordmark a{display:inline-flex;align-items:center;gap:.28em}
-    .wordmark .fb-flamme{width:1.45em;height:1.12em;flex:none;margin-left:-.1em}
     :root{--fb-socle:#0B2E8A;--fb-langue:#2F6BFF;--fb-nom:#0B2E8A}
     @media (prefers-color-scheme: dark){:root{--fb-socle:#4A7BFF;--fb-langue:#7FA6FF;--fb-nom:#7FA6FF}}
-    
-    .fb-forge{display:inline-flex;align-items:center;gap:6px;color:inherit;text-decoration:none;font-size:13px;opacity:.85;margin-right:4px}
-    .fb-forge:hover{opacity:1;text-decoration:underline}
-    .fb-forge img{display:block}
-    .fb-forge.cache{display:none}
-    .barre > .fb-forge{margin-right:auto}   /* accueil : calé à gauche */
-    .fb-console{display:inline-flex;align-items:center;gap:6px;color:inherit;text-decoration:none;font-size:13px;font-weight:500;
-      border:1px solid currentColor;border-radius:7px;padding:4px 10px;opacity:.85;margin-right:6px;white-space:nowrap}
-    .fb-console:hover{opacity:1;background:rgba(127,127,127,.12)}
-    .fb-console.cache{display:none}
-    .fb-console svg{width:14px;height:14px;flex:none}
-    .fb-fige{position:sticky!important;top:0;z-index:45}
-    html{scroll-padding-top:calc(var(--ent-h, 0px) + 16px)}
-    @media print{ .fb-fige{position:static!important} }
-    @media (max-width:700px){ .fb-fige{padding-top:6px!important;padding-bottom:6px!important;row-gap:4px!important} .fb-fige .signature{display:none} }
-    @media (prefers-color-scheme: dark){ .fb-forge img{background:#F6F5F1;border-radius:3px;padding:1px} }
+    .fg-bandeau .hidden{display:none!important}                                   /* boutons que la page masque (connexion, déconnexion) */
+    @media (prefers-color-scheme: dark){ .fg-forge img{background:#F6F5F1;border-radius:3px;padding:1px} }
+    .fb-barre-page{position:static!important}
+    @media (min-width:701px){ header.fg-bandeau{flex-wrap:nowrap} }              /* neutralise la règle « header{flex-wrap:wrap} » des pages */
     .fb-droits{display:block;flex-basis:100%;margin-top:2px;text-align:right}
     .fb-droits a{color:inherit;text-decoration:underline}
     .fb-droits-imp{display:none}
@@ -52,16 +43,6 @@
   // icône d'onglet : la couronne seule
   if (!document.querySelector('link[rel="icon"]')){ const ic = document.createElement("link"); ic.rel = "icon"; ic.type = "image/svg+xml";
     ic.href = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 11 100 100"><defs><clipPath id="fbBp"><rect x="0" y="78" width="100" height="8"/></clipPath></defs><rect x="6" y="86" width="88" height="8" rx="4" fill="#0B2E8A"/><path d="M13 84c-7-7-5-18 9-34-1 14 6 26-1 34zM30 84c-7-9-4-24 13-46-2 18 6 34-1 46zM47 84c-8-10-5-30 15-56-3 22 7 42-1 56zM64 84c-7-9-4-26 13-44-2 18 6 32-1 44zM81 84c-7-7-5-20 10-36-1 14 6 28-1 36z" fill="#1B3FC9"/><path d="M13 84c-7-7-5-18 9-34-1 14 6 26-1 34z" fill="#79C4FF" transform="translate(17 84) scale(0.58) translate(-17 -84)"/><path d="M30 84c-7-9-4-24 13-46-2 18 6 34-1 46z" fill="#79C4FF" transform="translate(36 84) scale(0.58) translate(-36 -84)"/><path d="M47 84c-8-10-5-30 15-56-3 22 7 42-1 56z" fill="#79C4FF" transform="translate(54 84) scale(0.58) translate(-54 -84)"/><path d="M64 84c-7-9-4-26 13-44-2 18 6 32-1 44z" fill="#79C4FF" transform="translate(71 84) scale(0.58) translate(-71 -84)"/><path d="M81 84c-7-7-5-20 10-36-1 14 6 28-1 36z" fill="#79C4FF" transform="translate(87 84) scale(0.58) translate(-87 -84)"/><g clip-path="url(#fbBp)"><path d="M13 84c-7-7-5-18 9-34-1 14 6 26-1 34z" fill="#FFD23F" transform="translate(17 84) scale(0.58) translate(-17 -84)"/><path d="M30 84c-7-9-4-24 13-46-2 18 6 34-1 46z" fill="#FFD23F" transform="translate(36 84) scale(0.58) translate(-36 -84)"/><path d="M47 84c-8-10-5-30 15-56-3 22 7 42-1 56z" fill="#FFD23F" transform="translate(54 84) scale(0.58) translate(-54 -84)"/><path d="M64 84c-7-9-4-26 13-44-2 18 6 32-1 44z" fill="#FFD23F" transform="translate(71 84) scale(0.58) translate(-71 -84)"/><path d="M81 84c-7-7-5-20 10-36-1 14 6 28-1 36z" fill="#FFD23F" transform="translate(87 84) scale(0.58) translate(-87 -84)"/></g></svg>'); document.head.appendChild(ic); }
-
-  // la première ligne figée en haut de l'écran
-  const ligne = document.querySelector("header.bandeau") || document.querySelector("#app > header") || document.querySelector("body > header") || document.querySelector("body > .barre");
-  if (ligne){
-    ligne.classList.add("fb-fige");
-    if (getComputedStyle(ligne).backgroundColor === "rgba(0, 0, 0, 0)") ligne.style.background = getComputedStyle(document.body).backgroundColor;
-    const mesurer = () => document.documentElement.style.setProperty("--ent-h", ligne.offsetHeight + "px");
-    mesurer(); window.addEventListener("resize", mesurer);
-    if (window.ResizeObserver) new ResizeObserver(mesurer).observe(ligne);
-  }
 
   // (1.5) les droits d'auteur, en bas du pied de page
   const droits = document.createElement("span");
@@ -86,42 +67,111 @@
   };
   placerDroitsImp(); window.addEventListener("beforeprint", placerDroitsImp);
 
-  // la flamme devant le nom
-  document.querySelectorAll(".wordmark a").forEach(a => { if (!a.querySelector(".fb-flamme")) a.insertAdjacentHTML("afterbegin", FLAMME); });
+  // ---------- (1.9) le bandeau commun de la Forge (forge_bandeau.css / .js, tenus par Supervision ; charte § 4 bis) ----------
+  // Cet en-tête ne fait que construire la structure attendue ; il ne redéfinit aucun style du bandeau.
+  const BANDEAU_V = "1.0";
+  if (!document.querySelector('link[href*="forge_bandeau.css"]')){
+    const l = document.createElement("link"); l.rel = "stylesheet"; l.href = "../forge_bandeau.css?v=" + BANDEAU_V; document.head.appendChild(l);
+  }
+  let pretBandeau;                                                     // les pages attendent ce signal avant d'appeler ForgeBandeau
+  const bandeauPret = new Promise(r => { pretBandeau = r; });
+  if (window.ForgeBandeau) pretBandeau(window.ForgeBandeau);
+  else {
+    const s = document.createElement("script"); s.src = "../forge_bandeau.js?v=" + BANDEAU_V;
+    s.onload = () => { window.ForgeBandeau.publierHauteur(); pretBandeau(window.ForgeBandeau); };
+    document.head.appendChild(s);
+  }
+  window.FlammeBandeau = { pret: bandeauPret };
 
-  // le lien vers la Forge, en tête de la zone de connexion (en haut à droite)
-  const zone = document.querySelector("header .who") || document.querySelector(".barre");
-  if (!zone) return;
-  const lien = document.createElement("a");
-  lien.className = "fb-forge cache"; lien.href = "../"; lien.title = "Revenir à la Forge de l'Arpenteur";
-  lien.innerHTML = `<img src="${ENCLUME}" alt="" width="15" height="17">La Forge`;
-  zone.insertBefore(lien, zone.firstChild);
+  const page = (location.pathname.split("/").pop() || "index.html").replace(/\?.*$/, "");
+  const surAccueil = page === "index.html", surConsole = page === "console.html";
+  const FLECHE_HAUT = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3L5 8l5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const ICONE_CONSOLE = '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M4.5 6.5l2 1.5-2 1.5M8 10h3.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  // menu des pages de Flamme Bleue : [page, libellé, qui la voit]
+  const MENU = [
+    ["autotest.html", "Autotest", "tous"],
+    ["encyclopedie.html", "Encyclopédie", "tous"],
+    ["galerie.html", "Galerie", "comptes"],
+    ["totems.html", "Totems", "comptes"],
+    ["comparaison.html", "Comparaison", "comptes"],
+    ["rosace.html", "Rosace", "gestion"]
+  ];
 
-  // le bouton de la console (pas sur la console elle-même)
-  const surConsole = /console\.html$/.test(location.pathname);
-  const consoleBtn = document.createElement("a");
-  consoleBtn.className = "fb-console cache"; consoleBtn.href = "console.html";
-  consoleBtn.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M4.5 6.5l2 1.5-2 1.5M8 10h3.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Console</span>';
-  if (!surConsole){ const avant = zone.querySelector("#who"); zone.insertBefore(consoleBtn, avant && avant.parentNode === zone ? avant : null); }
+  const bandeau = document.createElement("header");
+  bandeau.className = "fg-bandeau";
+  bandeau.innerHTML =
+    `<a class="fg-haut" href="${surAccueil ? "../" : "index.html"}" title="${surAccueil ? "Revenir à la Forge de l'Arpenteur" : "Accueil de Flamme Bleue"}">${FLECHE_HAUT}</a>` +
+    `<a class="fg-marque" href="index.html" title="Accueil de Flamme Bleue">${FLAMME.replace('class="fb-flamme"', 'class="fg-logo"')}<span class="fg-nom">Flamme Bleue</span></a>` +
+    `<nav class="fg-nav" aria-label="Pages de Flamme Bleue">${MENU.map(([h, l, q]) => `<a href="${h}" data-qui="${q}"${h === page ? ' aria-current="page"' : ""}${q === "tous" ? "" : ' style="display:none"'}>${l}</a>`).join("")}</nav>` +
+    `<div class="fg-droite">` +
+      `<a class="fg-forge" href="../" title="Revenir à la Forge de l'Arpenteur"><img src="${ENCLUME}" alt="" width="15" height="17"><span>La Forge</span></a>` +
+      `<button class="fg-pastille" type="button" title="Lire les messages sur l'accueil de la Forge" style="display:none"></button>` +
+      (surConsole ? "" : `<a class="fg-btn fg-console" href="console.html" style="display:none">${ICONE_CONSOLE}<span class="fg-long">Console</span></a>`) +
+    `</div>`;
+  document.body.prepend(bandeau);
+  const droite = bandeau.querySelector(".fg-droite");
+  const montrer = (el, oui) => { if (el) el.style.display = oui ? "" : "none"; };
+  bandeau.querySelector(".fg-pastille").addEventListener("click", () => { location.href = "../"; });
 
+  // la personne et la connexion : on déplace les éléments de la page (ils gardent leurs identifiants et leurs actions)
+  const qui = document.getElementById("who");
+  if (qui){ qui.className = "fg-qui"; droite.appendChild(qui); }
+  ["btn-login", "btn-logout", "logout"].forEach(id => {
+    const b = document.getElementById(id);
+    if (b){ b.className = "fg-btn" + (b.classList.contains("hidden") ? " hidden" : ""); droite.appendChild(b); }
+  });
+
+  // l'ancien en-tête de la page : on retire ce que le bandeau reprend ; s'il reste des outils (onglets de la console), il devient une barre de page
+  const ancien = document.querySelector("header.bandeau") || document.querySelector("#app > header") || document.querySelector("body > header:not(.fg-bandeau)") || document.querySelector("body > .barre");
+  if (ancien){
+    ancien.querySelectorAll(".wordmark, .signature, :scope > nav:not([role=tablist])").forEach(e => e.remove());
+    ancien.querySelectorAll(".who").forEach(w => { if (!w.querySelector("button:not(.hidden), span:not(:empty), a")) w.remove(); });
+    if (!ancien.querySelector("nav, button, a, input, select")) ancien.remove();
+    else ancien.classList.add("fb-barre-page");
+  }
+
+  // hauteur : le bandeau commun publie --fg-h ; on la recopie dans --ent-h, que les pages utilisent déjà
+  const mesurer = () => {
+    window.ForgeBandeau?.publierHauteur();                                       // --fg-h suit aussi les changements de contenu
+    const h = bandeau.offsetHeight + (document.querySelector(".fg-sous")?.offsetHeight || 0);
+    document.documentElement.style.setProperty("--ent-h", h + "px");
+  };
+  mesurer(); window.addEventListener("resize", mesurer);
+  if (window.ResizeObserver) new ResizeObserver(mesurer).observe(bandeau);
+  bandeauPret.then(mesurer);
+
+  // ce que la personne voit selon son rôle
   let client = null;
   try { client = sb; } catch { return; }                         // « sb » : le client Supabase de la page
-  let vu = undefined;
+  const consoleBtn = bandeau.querySelector(".fg-console"), pastille = bandeau.querySelector(".fg-pastille");
+  let vu = undefined, nomCompte = null, courriel = null;
+  // le nom de la personne plutôt que son adresse, quand la page l'affiche
+  if (qui && window.MutationObserver) new MutationObserver(() => {
+    if (nomCompte && courriel && qui.textContent.includes(courriel)) qui.textContent = qui.textContent.replace(courriel, nomCompte);
+  }).observe(qui, { childList: true, characterData: true, subtree: true });
   client.auth.onAuthStateChange((_e, session) => {
-    const id = session?.user?.id || null; if (id === vu) return; vu = id;
-    if (!id){ lien.classList.add("cache"); consoleBtn.classList.add("cache"); return; }
+    const id = session?.user?.id || null; if (id === vu) return; vu = id; courriel = session?.user?.email || null;
+    const voir = role => bandeau.querySelectorAll(".fg-nav a").forEach(a => {
+      const q = a.dataset.qui; montrer(a, q === "tous" || (q === "comptes" && role) || (q === "gestion" && ["proprietaire", "administrateur"].includes(role)));
+    });
+    if (!id){ voir(null); montrer(consoleBtn, false); montrer(pastille, false); return; }
     setTimeout(async () => {
-      try {
-        const { data: role } = await client.rpc("flamme_mon_role");
-        const invite = role === "lecteur" || role === "invite";
-        consoleBtn.querySelector("span").textContent = invite ? "Le modèle" : "Console";
-        consoleBtn.title = invite ? "Parcourir les profils du modèle ; changer votre mot de passe" : "Console : le contenu du modèle, le catalogue de profils, les résultats";
-        consoleBtn.classList.toggle("cache", !role);
-      } catch { consoleBtn.classList.add("cache"); }
-    }, 0);
-    setTimeout(async () => {
-      try { const { data } = await client.rpc("prisme_mon_role"); lien.classList.toggle("cache", !data); }
-      catch { lien.classList.add("cache"); }
+      let role = null;
+      try { ({ data: role } = await client.rpc("flamme_mon_role")); } catch {}
+      voir(role);
+      if (consoleBtn){
+        const lecteur = role === "lecteur" || role === "invite";
+        consoleBtn.querySelector("span").textContent = lecteur ? "Le modèle" : "Console";
+        consoleBtn.title = lecteur ? "Parcourir les profils du modèle ; changer votre mot de passe" : "Console : le contenu du modèle, le catalogue de profils, les résultats";
+        montrer(consoleBtn, !!role);
+      }
+      try { const { data } = await client.from("forge_comptes").select("nom").eq("user_id", id).maybeSingle();
+            nomCompte = data?.nom?.trim() || null; if (nomCompte && qui && qui.textContent.includes(courriel)) qui.textContent = qui.textContent.replace(courriel, nomCompte); } catch {}
+      if (role === "proprietaire"){
+        try { const { count: nb } = await client.from("forge_messages").select("id", { count: "exact", head: true }).eq("lu", false); const count = nb || 0;
+              pastille.textContent = `${count} message${count > 1 ? "s" : ""} non lu${count > 1 ? "s" : ""}`; montrer(pastille, count > 0); } catch { montrer(pastille, false); }
+      } else montrer(pastille, false);
+      mesurer();
     }, 0);
   });
 })();

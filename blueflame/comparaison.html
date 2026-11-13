@@ -115,7 +115,7 @@ dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);c
    - profil d'autorité : chacun et la moyenne lui sont comparés de la même façon.
    Sources : ses résultats, profils types, scores saisis ; le catalogue pour éditeurs et propriétaire ; tous les résultats pour le propriétaire.
    ===================================================================== */
-const VERSION = { numero:"1.5", date:"2026-11-12 21:10" };
+const VERSION = { numero:"1.6", date:"2026-11-13 01:11" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const M = window.FLAMME_MOTEUR;
@@ -341,6 +341,6 @@ sb.auth.onAuthStateChange(async (_e, session) => {
   } catch (err){ $("#bloque").textContent = err.message; }
 });
 </script>
-<script src="entete.js?v=1.7"></script>
+<script src="entete.js?v=1.9"></script>
 </body>
 </html>

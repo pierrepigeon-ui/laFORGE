@@ -109,7 +109,7 @@ dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);c
    Parcourt les personnages (table flamme_personnages) dans l'autre sens : par personnage, par univers, par profil.
    Onglet « Au travail » : le rôle et les métiers des 90 profils.
    ===================================================================== */
-const VERSION = { numero:"1.4", date:"2026-11-10 09:44" };
+const VERSION = { numero:"1.5", date:"2026-11-13 01:11" };
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";
 const M = window.FLAMME_MOTEUR;
@@ -230,6 +230,6 @@ sb.auth.onAuthStateChange(async (_e, session) => {
   } catch (err){ $("#bloque").textContent = err.message; }
 });
 </script>
-<script src="entete.js?v=1.7"></script>
+<script src="entete.js?v=1.9"></script>
 </body>
 </html>
