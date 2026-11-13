@@ -179,6 +179,8 @@ details.pli.notion > summary strong{color:var(--n-titre)}
   details.pli > summary{padding:8px 14px} details.pli > .contenu{padding:4px 14px 16px}
 }
 </style>
+<link rel="stylesheet" href="../forge_bandeau.css?v=1.0">
+<script src="../forge_bandeau.js?v=1.0"></script>
 </head>
 <body>
 <div class="barre"><a href="index.html" class="marque" title="Accueil de PRISME">PRISME</a><span id="qui"></span></div>
@@ -192,7 +194,7 @@ details.pli.notion > summary strong{color:var(--n-titre)}
 <script src="timeline.js?v=3.27"></script>
 <script src="selecteurs.js?v=1.10"></script>
 <script>
-const VERSION = { numero:"2.31", date:"2026-11-11 23:10" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"2.32", date:"2026-11-13 01:04" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -283,6 +285,8 @@ async function afficher(user){
   const jeu = d.jeux.find(j => j.code === code);
   if (!jeu) return vide('Ce jeu n\'existe pas. <a href="jeux.html">Voir tous les jeux</a>.');
   document.title = `PRISME — ${jeu.nom}`;
+  // (2.32, 13/11/2026) bandeau commun : venu de la liste des jeux, le sous-bandeau offre le retour, le rang et Précédent / Suivant
+  if (window.ForgeBandeau) ForgeBandeau.sousBandeau("prisme-jeux", { id: code, titre: jeu.nom });
   const profil = codeDeResultat(res?.[0]);
   const PL = { moteurs: pm.data || [], temperaments: pt.data || [], styles: ps.data || [] };
   const article = art.data?.[0]?.article || null;
@@ -560,6 +564,6 @@ function afficherThemes(){
   det.innerHTML = dh;
 }
 </script>
-<script src="entete.js?v=1.6"></script>
+<script src="entete.js?v=2.0"></script>
 </body>
 </html>

@@ -53,6 +53,8 @@ table.jeux tr[data-href]{cursor:pointer} table.jeux tr[data-href]:hover td{backg
 @media (prefers-color-scheme: dark){ .sf .ec.baisse{color:#F2A25C} }
 @media (max-width:700px){ main{padding:8px 12px 30px} table.jeux th,table.jeux td{padding:8px} .col-sec{display:none} }
 </style>
+<link rel="stylesheet" href="../forge_bandeau.css?v=1.0">
+<script src="../forge_bandeau.js?v=1.0"></script>
 </head>
 <body>
 <div class="barre"><a href="index.html" class="marque" title="Accueil de PRISME">PRISME</a><span id="qui"></span></div>
@@ -66,7 +68,7 @@ table.jeux tr[data-href]{cursor:pointer} table.jeux tr[data-href]:hover td{backg
 
 <script src="timeline.js?v=3.27"></script>
 <script>
-const VERSION = { numero:"1.24", date:"2026-11-11 23:10" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.25", date:"2026-11-13 01:04" };   // à incrémenter à chaque livraison
 // (1.15, 10/11/2026) timeline.js 3.18 (sessions en nombres entiers) ; rien d'autre ne change
 // (1.14, 10/11/2026) fin de l'ancienne configuration (« jeu complet », « + n configurations ») : la ligne ne lit plus que les sous-fiches ; timeline.js 3.17
 // (1.13, 07/11/2026) sur la pastille « all-in », l'écart de note finale avec la base (à partir de 0,1)
@@ -147,7 +149,29 @@ let tri = { cle:"nom", sens:1 };
 const CLES = { nom: l => sansAccent(l.nom), note: l => l.r?.finale, pour: l => l.r?.notePour, apogee: l => l.r?.c ? l.r.c.y[l.r.c.alpha] : null,
   vie: l => l.r?.c ? (l.r.c.vie ?? 1e9) : null, cout: l => l.r?.cout?.parPartie };
 const sansAccent = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+// (1.25, 13/11/2026) bandeau commun de la Forge : la recherche, le filtre et le tri sont dans l'adresse, pour que le retour
+// depuis une fiche retrouve la liste telle qu'on l'a laissée ; la liste affichée est mémorisée pour le sous-bandeau des fiches
+const CLE_LISTE = "prisme-jeux", LIBELLE_LISTE = "la liste des jeux", MODELE_FICHE = "jeu.html?jeu={id}";
+{ const P = new URLSearchParams(location.search);
+  if (P.get("q")) $("#cherche").value = P.get("q");
+  if (P.get("evalues") === "1") $("#evalues").checked = true;
+  if (CLES[P.get("tri")]) tri = { cle:P.get("tri"), sens: P.get("sens") === "-1" ? -1 : 1 }; }
+function ecrireAdresse(){
+  const P = new URLSearchParams(), q = $("#cherche").value.trim();
+  if (q) P.set("q", q);
+  if ($("#evalues").checked) P.set("evalues", "1");
+  if (tri.cle !== "nom" || tri.sens !== 1){ P.set("tri", tri.cle); P.set("sens", String(tri.sens)); }
+  const s = P.toString(); history.replaceState(history.state, "", location.pathname + (s ? "?" + s : ""));
+}
+let idsAffiches = [], restauree = false;
+function memoriserListe(ids){
+  idsAffiches = ids;
+  if (!window.ForgeBandeau) return;
+  if (!restauree && lignes.length){ restauree = true; ForgeBandeau.restaurerListe(CLE_LISTE); }   // une fois, quand la liste est là
+  ForgeBandeau.memoriserListe(CLE_LISTE, { ids, libelle:LIBELLE_LISTE, modele:MODELE_FICHE });
+}
 function afficher(){
+  ecrireAdresse();
   const q = sansAccent($("#cherche").value.trim());
   const L = lignes.filter(l => (!q || sansAccent(l.autres).includes(q)) && (!$("#evalues").checked || l.n));
   const k = CLES[tri.cle];
@@ -156,7 +180,7 @@ function afficher(){
   const th = (cle, t, cls = "", titre = "") => `<th class="${cls}" data-tri="${cle}"${titre ? ` title="${titre}"` : ""}>${t}${tri.cle === cle ? `<span class="sens">${tri.sens > 0 ? "▲" : "▼"}</span>` : ""}</th>`;
   const evalues = lignes.filter(l => l.n).length;
   $("#compte").textContent = `${evalues} jeu${evalues > 1 ? "x" : ""} évalué${evalues > 1 ? "s" : ""} sur ${lignes.length}`;
-  if (!L.length){ $("#contenu").innerHTML = `<p class="vide">Aucun jeu ne correspond à « ${esc($("#cherche").value)} ».</p>`; return; }
+  if (!L.length){ $("#contenu").innerHTML = `<p class="vide">Aucun jeu ne correspond à « ${esc($("#cherche").value)} ».</p>`; memoriserListe([]); return; }
   const lecteur = NIVEAUX[role] >= NIVEAUX.lecteur;
   const ecart = (a, b) => { if (a == null || b == null) return ""; const v = a - b;
     return `<span class="ecart ${v >= .005 ? "plus" : v <= -.005 ? "moins" : ""}">${Math.abs(v) < .005 ? "±" : v > 0 ? "+" : "−"}${fmt(Math.abs(v))}</span>`; };
@@ -182,10 +206,18 @@ function afficher(){
     <p class="discret">Un clic sur un en-tête trie la colonne. Notes sur 5, moyenne des fiches finales ; pour un jeu qui a son all-in, c'est l'all-in qui compte dès qu'il a des fiches. Apogée : le flow le plus haut de la timeline, sur 10 (le flow n'est pas une note : il mesure le plaisir net à un moment de la vie du jeu). Durée de vie : en sessions, jusqu'à l'abandon ou jusqu'au jeu rangé ; ∞ pour un classique.</p>`;
   // (1.12) un clic sur la ligne ouvre la sous-fiche de référence (les liens de la ligne gardent leur propre cible)
   document.querySelectorAll("table.jeux tr[data-href]").forEach(tr => tr.addEventListener("click", e => { if (!e.target.closest("a")) location.href = tr.dataset.href; }));
+  // (1.25) la liste mémorisée suit l'ordre affiché, une entrée par ligne (la sous-fiche que la ligne ouvre) ;
+  // une pastille « base » / « all-in » met sa propre sous-fiche à la place de celle de sa ligne
+  memoriserListe(L.map(l => l.ouvre.code));
+  const codeDe = u => new URL(u, location.href).searchParams.get("jeu");
+  document.querySelectorAll("table.jeux .sf a").forEach(a => a.addEventListener("click", () => {
+    const ligne = codeDe(a.closest("tr").dataset.href), cible = codeDe(a.href);
+    if (window.ForgeBandeau) ForgeBandeau.memoriserListe(CLE_LISTE, { ids: idsAffiches.map(c => c === ligne ? cible : c), libelle:LIBELLE_LISTE, modele:MODELE_FICHE });
+  }));
   document.querySelectorAll("table.jeux th[data-tri]").forEach(h => h.addEventListener("click", () => {
     const c = h.dataset.tri; tri = { cle:c, sens: tri.cle === c ? -tri.sens : (c === "nom" || c === "cout" ? 1 : -1) }; afficher(); }));
 }
 </script>
-<script src="entete.js?v=1.6"></script>
+<script src="entete.js?v=2.0"></script>
 </body>
 </html>

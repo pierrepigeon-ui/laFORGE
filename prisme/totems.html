@@ -35,6 +35,8 @@ h1{font:600 clamp(28px,4vw,40px)/1.15 var(--serif);margin:6px 0 4px}
 .sombre .carte svg{background:#151A22}
 .version{font-size:12px;color:var(--muted);text-align:right;margin-top:24px}
 </style>
+<link rel="stylesheet" href="../forge_bandeau.css?v=1.0">
+<script src="../forge_bandeau.js?v=1.0"></script>
 </head>
 <body>
 <div class="barre"><a href="index.html" class="marque" title="Accueil de PRISME">PRISME</a><span></span></div>
@@ -49,7 +51,7 @@ h1{font:600 clamp(28px,4vw,40px)/1.15 var(--serif);margin:6px 0 4px}
 </main>
 <script src="totems.js?v=4"></script>
 <script>
-const VERSION = { numero:"1.4", date:"2026-10-31 22:32" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.5", date:"2026-11-13 01:04" };   // à incrémenter à chaque livraison
 const sb = supabase.createClient("https://gugdfpbkscudzkgysteb.supabase.co", "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P");
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const maj = s => { s = String(s ?? ""); return s.charAt(0).toUpperCase() + s.slice(1); };
@@ -87,6 +89,6 @@ document.querySelectorAll("[data-rendu]").forEach(b => b.addEventListener("click
   dessiner();
 })();
 </script>
-<script src="entete.js?v=1.6"></script>
+<script src="entete.js?v=2.0"></script>
 </body>
 </html>

@@ -49,15 +49,15 @@ button,input,select,textarea{font:inherit;color:inherit}
 
 /* application */
 #app{height:100%;display:flex;flex-direction:column}
-header{display:flex;align-items:baseline;gap:18px;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
-header .wordmark{font-size:24px}
-header .wordmark a{color:inherit;text-decoration:none}
-header .signature{margin:0;font-size:14px}
-nav{display:flex;gap:4px;margin-left:12px;flex-wrap:wrap}
-nav button{background:none;border:0;padding:4px 10px;border-radius:5px;cursor:pointer;color:var(--muted)}
-nav button[aria-selected="true"]{background:var(--sel);color:var(--ink)}
-nav .navlink{padding:4px 10px;color:var(--muted);text-decoration:none;border-radius:5px}
-nav .navlink:hover{background:var(--hover);color:var(--ink)}
+#app > header{display:flex;align-items:baseline;gap:18px;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
+#app > header .wordmark{font-size:24px}
+#app > header .wordmark a{color:inherit;text-decoration:none}
+#app > header .signature{margin:0;font-size:14px}
+#app > header nav{display:flex;gap:4px;margin-left:12px;flex-wrap:wrap}
+#app > header nav button{background:none;border:0;padding:4px 10px;border-radius:5px;cursor:pointer;color:var(--muted)}
+#app > header nav button[aria-selected="true"]{background:var(--sel);color:var(--ink)}
+#app > header nav .navlink{padding:4px 10px;color:var(--muted);text-decoration:none;border-radius:5px}
+#app > header nav .navlink:hover{background:var(--hover);color:var(--ink)}
 .who{margin-left:auto;font-size:13px;color:var(--muted);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
 #backup-info.late{color:var(--warn)}
 
@@ -199,6 +199,8 @@ dialog h2{font:600 22px var(--serif);margin:0 0 16px}
 }
 .back{display:none;margin:12px 16px 0}
 </style>
+<link rel="stylesheet" href="../forge_bandeau.css?v=1.0">
+<script src="../forge_bandeau.js?v=1.0"></script>
 </head>
 <body>
 
@@ -232,7 +234,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 16px}
       <button role="tab" aria-selected="false" data-tab="reglages">Réglages</button>
       <a class="navlink" href="totems.html">Totems</a>
     </nav>
-    <div class="who"><span id="backup-info"></span><button class="btn ghost hidden" id="backup" type="button">Sauvegarder PRISME</button><span id="who"></span><button class="btn ghost" id="mdp" type="button">Mon mot de passe</button><button class="btn ghost" id="logout" type="button">Se déconnecter</button></div>
+    <div class="who"><span id="backup-info"></span><button class="btn ghost hidden" id="backup" type="button">Sauvegarder PRISME</button><button class="btn ghost" id="mdp" type="button">Mon mot de passe</button></div>
   </header>
 
   <main id="view-player">
@@ -306,7 +308,7 @@ dialog h2{font:600 22px var(--serif);margin:0 0 16px}
 <script src="selecteurs.js?v=1.10"></script>   <!-- (3.15) les libellés des niveaux de mécaniques et des facettes de thèmes, définis une seule fois -->   <!-- les calculs partagés ; (3.14) le prix en douze tranches -->
 <script>
 /* ================= configuration ================= */
-const VERSION = { numero:"3.26", date:"2026-11-11 23:10" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.27", date:"2026-11-13 01:04" };   // à incrémenter à chaque livraison
 // (3.16, 10/11/2026) la console s'ouvre sur le premier onglet, PRISMEplayer ; retrait de l'onglet « Contrôle de la bascule » (le réglage
 // bascule_description reste dans l'onglet Réglages) ; retrait des liens Rosace, Questionnaire et « Évaluer un jeu » du menu ; timeline.js 3.18
 // (3.15, 10/11/2026) les libellés des niveaux de mécaniques (NIVEAUX_MECA : « Hasard et information », « Grands systèmes »,
@@ -367,7 +369,6 @@ const peutAjouterJeu = () => peutEcrire() || state.role === "evaluateur";
 
 /* ================= connexion : par la Forge ================= */
 const versForge = () => "../?retour=" + encodeURIComponent(location.href);
-$("#logout").addEventListener("click", () => sb.auth.signOut().then(() => location.href = "../"));
 sb.auth.onAuthStateChange((_evt, session) => {
   if (session?.user){ if (state.user?.id !== session.user.id){ state.user = session.user; setTimeout(demarrer, 0); } }
   else { state.user = null; location.replace(versForge()); }   // pas de session : on passe par la Forge, qui ramène ici
@@ -403,7 +404,6 @@ async function demarrer(){
   state.role = role;
   (roles || []).forEach(r => state.noms[r.user_id] = r.nom || ROLES[r.role]);
   const proprio = role === "proprietaire";
-  $("#who").textContent = `${state.noms[state.user.id] || state.user.email} — ${ROLES[role] || "aucun rôle"}`;
   ["#tab-journal","#tab-personnes","#backup"].forEach(s => $(s).classList.toggle("hidden", !proprio));
   $("#tab-resultats").classList.toggle("hidden", !peutEcrire());   // propriétaire et éditeurs voient tous les résultats
   if (proprio) infoSauvegarde();
@@ -1282,6 +1282,6 @@ $("#form-mdp").addEventListener("submit", async e => {
 });
 window.addEventListener("beforeunload", e => { if (blocsModifies()){ e.preventDefault(); e.returnValue = ""; } });
 </script>
-<script src="entete.js?v=1.6"></script>
+<script src="entete.js?v=2.0"></script>
 </body>
 </html>

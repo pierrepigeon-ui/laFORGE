@@ -196,6 +196,8 @@ details.com textarea{display:block;width:100%;margin-top:6px;padding:7px 10px;bo
   .enr{padding:10px 12px} .enr .boutons{flex:1} .enr .boutons .btn{flex:1}
 }
 </style>
+<link rel="stylesheet" href="../forge_bandeau.css?v=1.0">
+<script src="../forge_bandeau.js?v=1.0"></script>
 </head>
 <body>
 <div class="barre"><a href="index.html" class="marque" title="Accueil de PRISME">PRISME</a><span id="qui"></span></div>
@@ -214,7 +216,7 @@ details.com textarea{display:block;width:100%;margin-top:6px;padding:7px 10px;bo
 
 <script src="selecteurs.js?v=1.10"></script>
 <script>
-const VERSION = { numero:"1.13", date:"2026-11-11 17:30" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.14", date:"2026-11-13 01:04" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -663,6 +665,6 @@ const nomCfgMin = c => (CONFIGS[c] || "Jeu de base").toLowerCase();
 // prévenir si l'on quitte la page avec des changements non enregistrés
 addEventListener("beforeunload", e => { if (D.ecrit && !D.part && modifie()){ e.preventDefault(); e.returnValue = ""; } });
 </script>
-<script src="entete.js?v=1.6"></script>
+<script src="entete.js?v=2.0"></script>
 </body>
 </html>

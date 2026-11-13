@@ -399,6 +399,8 @@ button:focus-visible,
   }
 }
 </style>
+<link rel="stylesheet" href="../forge_bandeau.css?v=1.0">
+<script src="../forge_bandeau.js?v=1.0"></script>
 </head>
 <body>
 
@@ -457,7 +459,7 @@ button:focus-visible,
 var ordreCouleurs = ["W", "U", "B", "R", "G"];
 
 /* Version de cette page : à incrémenter à chaque livraison */
-var VERSION = { numero: "3.20", date: "2026-11-11 23:10" };
+var VERSION = { numero: "3.21", date: "2026-11-13 01:04" };
 // (3.11, 10/11/2026) timeline.js 3.18 (sessions en nombres entiers) ; rien d'autre ne change
 // (3.10, 10/11/2026) timeline.js appelé à sa version courante, 3.17 ; rien d'autre ne change
 var SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
@@ -927,6 +929,6 @@ Promise.all([chargerModele(), connexionConnue]).then(async function() {
 });
 
 </script>
-<script src="entete.js?v=1.6"></script>
+<script src="entete.js?v=2.0"></script>
 </body>
 </html>

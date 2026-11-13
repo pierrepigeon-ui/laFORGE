@@ -139,6 +139,8 @@ details.avec-ext > summary::-webkit-details-marker{display:none}
 .ec-p{font-size:7.2pt;padding:.3mm 2mm} .ec-ps{gap:1mm}
 .feuille.ext-court .ec-corps{display:none} .feuille.ext-court .ec-resume{display:block;font-size:7.8pt}
 </style>
+<link rel="stylesheet" href="../forge_bandeau.css?v=1.0">
+<script src="../forge_bandeau.js?v=1.0"></script>
 </head>
 <body>
 <div class="barre"><a href="index.html" class="marque" title="Accueil de PRISME">PRISME</a><span id="qui"></span></div>
@@ -155,7 +157,7 @@ details.avec-ext > summary::-webkit-details-marker{display:none}
 <script src="timeline.js?v=3.27"></script>
 <script src="selecteurs.js?v=1.10"></script>
 <script>
-const VERSION = { numero:"1.15", date:"2026-11-11 23:10" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"1.16", date:"2026-11-13 01:04" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -427,6 +429,6 @@ $("#copier").addEventListener("click", async () => {
   e.style.color = ""; e.textContent = "Texte copié"; clearTimeout(e._t); e._t = setTimeout(() => e.textContent = "", 2500);
 });
 </script>
-<script src="entete.js?v=1.6"></script>
+<script src="entete.js?v=2.0"></script>
 </body>
 </html>

@@ -283,6 +283,8 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
   #pied .btn{min-height:40px;padding:0 14px}
 }
 </style>
+<link rel="stylesheet" href="../forge_bandeau.css?v=1.0">
+<script src="../forge_bandeau.js?v=1.0"></script>
 </head>
 <body>
 <div class="barre"><a href="index.html" class="marque" title="Accueil de PRISME">PRISME</a><span id="qui"></span></div>
@@ -373,7 +375,7 @@ table.recap .aller{cursor:pointer;text-decoration:underline;text-decoration-colo
 <script src="timeline.js?v=3.27"></script>
 <script src="selecteurs.js?v=1.10"></script>
 <script>
-const VERSION = { numero:"4.20", date:"2026-11-11 23:10" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"4.21", date:"2026-11-13 01:04" };   // à incrémenter à chaque livraison
 const SUPABASE_URL = "https://gugdfpbkscudzkgysteb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7aY8jgB45yEGd_M-R7VUDw_IQTNfg6P";   // clé publique : protégée par les droits de la base
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -1739,6 +1741,6 @@ $("#btn-export").addEventListener("click", () => {
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000);
 });
 </script>
-<script src="entete.js?v=1.6"></script>
+<script src="entete.js?v=2.0"></script>
 </body>
 </html>

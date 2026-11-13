@@ -99,6 +99,8 @@ details.repli > section{border:0;margin:0;padding-top:0}
 .vide a{color:var(--ink)}
 @media (max-width:700px){ .trois{grid-template-columns:1fr} .moteurs{grid-template-columns:auto minmax(40px,1fr) auto minmax(0,1.6fr);gap:8px} .moteur .nom{font-size:15px} .moteur .pct{font-size:13px} main{padding:8px 14px 30px} section,.entete{padding:18px} }
 </style>
+<link rel="stylesheet" href="../forge_bandeau.css?v=1.0">
+<script src="../forge_bandeau.js?v=1.0"></script>
 </head>
 <body>
 <div class="barre"><a href="index.html" class="marque" title="Accueil de PRISME">PRISME</a><span id="qui"></span></div>
@@ -108,7 +110,7 @@ details.repli > section{border:0;margin:0;padding-top:0}
 <script src="timeline.js?v=3.27"></script>
 <script src="totems.js?v=4"></script>
 <script>
-const VERSION = { numero:"3.27", date:"2026-11-11 23:10" };   // à incrémenter à chaque livraison
+const VERSION = { numero:"3.28", date:"2026-11-13 01:04" };   // à incrémenter à chaque livraison
 // (3.18, 10/11/2026) surtitre plus visible ; bandeau en symétrie (totem, tempérament | style, emblème) ; plus de ligne « Tempérament X/y, style X.y/z »
 // ni d'info-bulle du style ; dernière ligne du cadre plus petite, à droite ; mentions des moteurs sur la ligne de la barre ; plus aucun code « B/w »
 // à l'affichage ; « Vos jeux » avant « Votre rival » ; « Votre moment » masqué (frise en commentaire) ; barre fine du profil quand le cadre sort
@@ -324,6 +326,6 @@ function frise(mots){
 }
 fin de la frise en commentaire */
 </script>
-<script src="entete.js?v=1.6"></script>
+<script src="entete.js?v=2.0"></script>
 </body>
 </html>
